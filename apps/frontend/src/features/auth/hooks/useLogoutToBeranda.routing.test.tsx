@@ -11,9 +11,9 @@ import { AuthProvider } from '@/features/auth/contexts/AuthContext'
 import { ProtectedRoute } from '@/App'
 import { useLogoutToBeranda } from './useLogoutToBeranda'
 
-const visited = []
+const visited: string[] = []
 
-function PathRecorder() {
+function PathRecorder(): null {
   const location = useLocation()
   useEffect(() => {
     visited.push(location.pathname)

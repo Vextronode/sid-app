@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { scrollToSection } from './scrollToSection'
 
-const mockReducedMotion = (matches) => {
+const mockReducedMotion = (matches: boolean) => {
   window.matchMedia = vi.fn().mockReturnValue({ matches })
 }
 
@@ -13,7 +13,7 @@ describe('scrollToSection', () => {
     window.matchMedia = originalMatchMedia
   })
 
-  const addSection = (id) => {
+  const addSection = (id: string) => {
     const section = document.createElement('section')
     section.id = id
     section.scrollIntoView = vi.fn()

@@ -1,5 +1,5 @@
 // ==========================================
-// OrganisasiDesaPage.jsx
+// OrganisasiDesaPage.tsx
 // Halaman publik struktur organisasi desa:
 // - /bpd           : Badan Permusyawaratan Desa
 // - /lembaga-desa  : LPM, Karang Taruna, dan PKK (dipilih lewat tab,
@@ -27,7 +27,28 @@ import {
   orgRow,
 } from '@/features/profil-desa/components/OrgChart'
 
-const VARIANTS = {
+// GET /api/public/village-orgs/{orgType} (PublicPageService::publicOrganization).
+type PublicOrgMember = { id: number; name: string; photo_url: string | null }
+
+type PublicOrganization = {
+  org_type: string
+  ketua: PublicOrgMember | null
+  wakil_ketua: PublicOrgMember | null
+  anggota: PublicOrgMember[]
+}
+
+type OrgOption = { value: string; label: string; name: string }
+
+type Variant = {
+  title: string
+  intro: (desa: string) => string
+  orgs: OrgOption[]
+  comingSoon?: { label: string }[]
+}
+
+export type OrganisasiVariant = 'bpd' | 'lembaga'
+
+const VARIANTS: Record<OrganisasiVariant, Variant> = {
   bpd: {
     title: 'Badan Permusyawaratan Desa',
     intro: (desa) =>
@@ -50,7 +71,7 @@ const VARIANTS = {
 
 const page = 'bd-container pt-[clamp(32px,20px+3vw,64px)]'
 
-const tabClass = (active) =>
+const tabClass = (active: boolean) =>
   `inline-flex min-h-11 items-center rounded-full border px-5 text-base font-bold transition-colors ${
     active
       ? 'border-pb-laut bg-pb-laut text-white'
@@ -62,20 +83,26 @@ const soonClass =
   'inline-flex min-h-11 cursor-default items-center gap-2 rounded-full border border-dashed border-pb-line-strong bg-white px-5 text-base font-bold text-pb-muted'
 const soonBadge = 'rounded-full bg-pb-padi-soft px-2 py-0.5 text-xs font-bold text-pb-padi-ink'
 
-const toCard = (member, jabatan) => ({
+const toCard = (member: PublicOrgMember | null | undefined, jabatan: string) => ({
   nama: member?.name ?? null,
   foto: member?.photo_url ?? null,
   jabatan,
 })
 
-function OrganizationChart({ org }) {
-  const [state, setState] = useState({ type: null, data: null, error: null })
+function OrganizationChart({ org }: { org: OrgOption }) {
+  const [state, setState] = useState<{
+    type: string | null
+    data: PublicOrganization | null
+    error: string | null
+  }>({ type: null, data: null, error: null })
 
   useEffect(() => {
     let active = true
 
     api
-      .get(`/api/public/village-orgs/${org.value}`, { params: publicVillageParams() })
+      .get<{ data: PublicOrganization | null }>(`/api/public/village-orgs/${org.value}`, {
+        params: publicVillageParams(),
+      })
       .then((res) => {
         if (active) setState({ type: org.value, data: res.data?.data ?? null, error: null })
       })
@@ -136,14 +163,14 @@ function OrganizationChart({ org }) {
   )
 }
 
-export function OrganisasiDesaPage({ variant }) {
+export function OrganisasiDesaPage({ variant }: { variant: OrganisasiVariant }) {
   const config = VARIANTS[variant]
   const { village } = usePublicVillageInfo()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const requested = searchParams.get('lembaga')
   const org = config.orgs.find((o) => o.value === requested) ?? config.orgs[0]
-  const desa = village?.name ? formatVillageName(village.name) : 'desa'
+  const desa = formatVillageName(village?.name) ?? 'desa'
 
   useEffect(() => {
     window.scrollTo(0, 0)

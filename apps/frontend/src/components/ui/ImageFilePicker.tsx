@@ -1,4 +1,21 @@
 import { ImageOff, ImageUp } from 'lucide-react'
+import type { ChangeEventHandler, ReactNode } from 'react'
+
+type ImageFilePickerProps = {
+  id: string
+  title: ReactNode
+  hint?: ReactNode
+  onChange: ChangeEventHandler<HTMLInputElement>
+  disabled?: boolean
+  accept?: string
+}
+
+type ImagePreviewStageProps = {
+  src: string | null | undefined
+  alt: string
+  emptyText?: string
+  cover?: boolean
+}
 
 /**
  * Pemilih berkas gambar pengganti tombol "Choose file" bawaan peramban.
@@ -12,7 +29,7 @@ export default function ImageFilePicker({
   onChange,
   disabled,
   accept = '.png,.jpg,.jpeg,.webp',
-}) {
+}: ImageFilePickerProps) {
   return (
     <label className="sid-image-picker" htmlFor={id} aria-disabled={disabled || undefined}>
       <input
@@ -48,7 +65,12 @@ export default function ImageFilePicker({
  * Bingkai pratinjau bertinggi tetap. Gambar atau keterangan kosong berada di
  * tengahnya, sehingga kartu yang sudah dan belum terisi sama tinggi.
  */
-export function ImagePreviewStage({ src, alt, emptyText = 'Belum diunggah', cover = false }) {
+export function ImagePreviewStage({
+  src,
+  alt,
+  emptyText = 'Belum diunggah',
+  cover = false,
+}: ImagePreviewStageProps) {
   return (
     <div className="sid-image-stage">
       {src ? (

@@ -1,5 +1,5 @@
 // ==========================================
-// KadesListPage.jsx
+// KadesListPage.tsx
 //
 // Kades = approver aktif.
 // List menggunakan status generik.
@@ -35,7 +35,7 @@ export default function KadesListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => setSelectedId(letterId))
@@ -54,7 +54,6 @@ export default function KadesListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'kepala_desa',
     initialStatus,
   })
 

@@ -10,6 +10,7 @@ vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ downloadSuratP
 vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
 
 import { DownloadSuratMenu } from './DownloadSuratMenu'
+import { present } from '@/test/fixtures'
 
 const surat = { id: 'letter-1', letter_number: '470/001' }
 
@@ -113,7 +114,7 @@ describe('DownloadSuratMenu', () => {
   it('focuses the first option, moves with arrow keys and closes on Escape without bubbling', () => {
     // Meniru modal di bawah menu: menutup diri pada Escape yang belum ditangani.
     const outerEscape = vi.fn()
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) outerEscape(event)
     }
     document.addEventListener('keydown', onKeyDown)
@@ -123,10 +124,10 @@ describe('DownloadSuratMenu', () => {
     const [digital, wet] = screen.getAllByRole('menuitem')
     expect(digital).toHaveFocus()
 
-    fireEvent.keyDown(document.activeElement, { key: 'ArrowDown' })
+    fireEvent.keyDown(present(document.activeElement), { key: 'ArrowDown' })
     expect(wet).toHaveFocus()
 
-    fireEvent.keyDown(document.activeElement, { key: 'Escape' })
+    fireEvent.keyDown(present(document.activeElement), { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
     expect(screen.getByRole('button', { name: /Unduh surat/ })).toHaveFocus()
     // Escape milik menu tidak ikut menutup modal di bawahnya.

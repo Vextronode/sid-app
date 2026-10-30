@@ -1,7 +1,12 @@
 // Loading tingkat halaman: lapisan blur dengan spinner berputar di tengah.
 // fullscreen menutupi seluruh layar (cek sesi, sebelum layout ada); tanpa
 // fullscreen hanya mengisi area konten sehingga header/sidebar tetap terlihat.
-export function PageLoader({ label = 'Memuat...', fullscreen = false }) {
+type PageLoaderProps = {
+  label?: string
+  fullscreen?: boolean
+}
+
+export function PageLoader({ label = 'Memuat...', fullscreen = false }: PageLoaderProps) {
   return (
     <div
       className={`sid-page-loader${fullscreen ? ' sid-page-loader--fullscreen' : ''}`}

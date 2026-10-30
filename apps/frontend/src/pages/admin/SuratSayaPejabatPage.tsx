@@ -15,19 +15,11 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Nomor langkah ditambahkan CSS (.sid-apply), jadi judul cukup isinya.
 const APPLY_HEADINGS = { fields: 'Isi data surat', signatures: 'Tanda tangan' }
-
-function toDetail(item) {
-  return {
-    ...item,
-    noSurat: item.letter_number,
-    pemohon: item.applicant_name,
-    jenis: item.letter_type?.name,
-    tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-',
-  }
-}
 
 /**
  * Pengajuan surat untuk diri sendiri oleh pejabat (sebagai warga), terpisah
@@ -49,14 +41,15 @@ export default function SuratSayaPejabatPage() {
   const [error, setError] = useState('')
   const [applying, setApplying] = useState(false)
   const [selectedCode, setSelectedCode] = useState('')
-  const [selectedSurat, setSelectedSurat] = useState(null)
+  const [selectedSurat, setSelectedSurat] = useState<LetterListItem | null>(null)
 
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => {
     const listed = letters.find((item) => String(item.id) === letterId)
 
     // Surat di halaman lain tetap bisa dibuka: modal memuat detailnya sendiri.
-    setSelectedSurat(listed ? toDetail(listed) : { id: letterId })
+    // Surat di halaman lain: modal melengkapi barisnya dari detail surat.
+    setSelectedSurat(listed ?? ({ id: letterId } as LetterListItem))
   }, !loading)
 
   const selectedLetterType = letterTypes.find((type) => type.code === selectedCode)
@@ -67,10 +60,10 @@ export default function SuratSayaPejabatPage() {
     setSelectedCode('')
   }
 
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
-  const handleDelete = async (item) => {
+  const handleDelete = async (item: LetterListItem) => {
     const confirmed = await confirmDialog({
       title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,
       message: 'Tindakan ini tidak dapat dibatalkan.',
@@ -90,7 +83,7 @@ export default function SuratSayaPejabatPage() {
 
       await loadLetters()
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus surat.'))
     } finally {
       setDeletingId(null)
     }
@@ -194,7 +187,7 @@ export default function SuratSayaPejabatPage() {
                 setStatusFilter(value)
                 setPage(1)
               }}
-              onDetail={(item) => setSelectedSurat(toDetail(item))}
+              onDetail={(item) => setSelectedSurat(item)}
               onDelete={handleDelete}
               deletingId={deletingId}
               onCreate={() => setApplying(true)}

@@ -32,6 +32,12 @@ class FamilyResource extends JsonResource
             ),
             'members_count' => $this->members_count
                 ?? ($this->relationLoaded('members') ? $this->members->count() : null),
+            // Hanya di detail KK (findById memuat members); daftar memakai members_count.
+            'members' => $this->whenLoaded('members', fn () => $this->members->map(fn ($member) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'family_role' => $member->family_role,
+            ])->values()),
             'village' => new VillageResource($this->whenLoaded('village')),
             'rt' => new RtResource($this->whenLoaded('rt')),
             'rw' => new RwResource($this->whenLoaded('rw')),

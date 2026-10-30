@@ -9,6 +9,7 @@ const { savePushSubscription, removePushSubscription } = vi.hoisted(() => ({
 vi.mock('../api', () => ({ savePushSubscription, removePushSubscription }))
 
 import useWebPushSubscription from './useWebPushSubscription'
+import type { Mock } from 'vitest'
 
 const endpoint = 'https://push.example/subscription'
 const serializedSubscription = {
@@ -17,8 +18,8 @@ const serializedSubscription = {
 }
 
 describe('useWebPushSubscription', () => {
-  let registration
-  let subscription
+  let registration: { pushManager: { getSubscription: Mock; subscribe: Mock } }
+  let subscription: { endpoint: string; toJSON: Mock; unsubscribe: Mock }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -48,7 +49,7 @@ describe('useWebPushSubscription', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
-    delete navigator.serviceWorker
+    Reflect.deleteProperty(navigator, 'serviceWorker')
   })
 
   it('requests browser permission, subscribes with VAPID, and persists the browser payload', async () => {

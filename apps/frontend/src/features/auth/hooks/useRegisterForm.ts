@@ -1,5 +1,5 @@
 // ==========================================
-// useRegisterForm.js
+// useRegisterForm.ts
 // Logic registrasi akun warga - Backend v5.1
 // ==========================================
 
@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 import api from '@/lib/api'
 import { alertDialog } from '@/shared/lib/dialog'
+import { apiErrorStatus, apiErrorBody } from '@/shared/lib/apiError'
 
 const INITIAL_FORM = {
   nik: '',
@@ -35,7 +36,8 @@ export function useRegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
 
-  const handleChange = (event) => {
+  // Cukup name/value dari input (event onChange).
+  const handleChange = (event: { target: { name: string; value: string } }) => {
     const { name, value } = event.target
 
     const nextValue = name === 'nik' ? value.replace(/\D/g, '').slice(0, 16) : value
@@ -95,7 +97,7 @@ export function useRegisterForm() {
     return messages.length === 0
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault()
 
     if (isLoading) {
@@ -132,11 +134,11 @@ export function useRegisterForm() {
       setRegisteredUsername(username)
       setIsSuccess(true)
     } catch (error) {
-      const status = error.response?.status
+      const status = apiErrorStatus(error)
 
-      const backendErrors = error.response?.data?.errors ?? {}
+      const backendErrors = apiErrorBody(error)?.errors ?? {}
 
-      const backendMessage = error.response?.data?.message
+      const backendMessage = apiErrorBody(error)?.message
 
       if (status === 422) {
         setErrors({

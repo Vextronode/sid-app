@@ -1,13 +1,25 @@
 // ==========================================
-// EditVisiMisiModal.jsx
+// EditVisiMisiModal.tsx
 // Edit vision dan mission berdasarkan
 // PATCH /api/villages/profile.
 // ==========================================
 
 import { useEffect, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { X, Save } from 'lucide-react'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
+
+type VisiMisi = { vision: string; mission: string }
+
+type EditVisiMisiModalProps = {
+  open: boolean
+  onClose: () => void
+  onSubmit: (payload: VisiMisi) => Promise<unknown>
+  initialData: Partial<VisiMisi> | null
+  processing?: boolean
+  error?: string
+}
 
 export default function EditVisiMisiModal({
   open,
@@ -16,12 +28,12 @@ export default function EditVisiMisiModal({
   initialData,
   processing = false,
   error = '',
-}) {
-  const [form, setForm] = useState({
+}: EditVisiMisiModalProps) {
+  const [form, setForm] = useState<VisiMisi>({
     vision: '',
     mission: '',
   })
-  const [baseline, setBaseline] = useState(null)
+  const [baseline, setBaseline] = useState<VisiMisi | null>(null)
   const requestClose = useConfirmDiscard(open && isFormDirty(form, baseline), {
     disabled: processing,
     escapeClose: open ? onClose : null,
@@ -41,7 +53,7 @@ export default function EditVisiMisiModal({
 
   if (!open) return null
 
-  const handleChange = (event) => {
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = event.target
 
     setForm((current) => ({
@@ -50,7 +62,7 @@ export default function EditVisiMisiModal({
     }))
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     await onSubmit({

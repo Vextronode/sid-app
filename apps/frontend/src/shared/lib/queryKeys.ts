@@ -1,18 +1,20 @@
+import type { Id } from '@/types'
+
 export const queryKeys = {
   surat: {
     all: ['surat'],
-    list: (filters) => ['surat', 'list', filters],
-    summary: (filters) => ['surat', 'summary', filters],
-    detail: (id) => ['surat', 'detail', id],
+    list: (filters: unknown) => ['surat', 'list', filters],
+    summary: (filters: unknown) => ['surat', 'summary', filters],
+    detail: (id: Id) => ['surat', 'detail', id],
   },
   kependudukan: {
     citizens: {
-      list: (filters) => ['kependudukan', 'citizens', filters],
-      detail: (id) => ['kependudukan', 'citizens', id],
+      list: (filters: unknown) => ['kependudukan', 'citizens', filters],
+      detail: (id: Id) => ['kependudukan', 'citizens', id],
     },
     families: {
-      list: (filters) => ['kependudukan', 'families', filters],
-      detail: (id) => ['kependudukan', 'families', id],
+      list: (filters: unknown) => ['kependudukan', 'families', filters],
+      detail: (id: Id) => ['kependudukan', 'families', id],
     },
   },
   notifications: {

@@ -1,4 +1,6 @@
-export function AutoFillProfile({ user }) {
+import type { User } from '@/types'
+
+export function AutoFillProfile({ user }: { user: User | null }) {
   return (
     <div className="grid grid-cols-1 gap-4">
       {/* =========================

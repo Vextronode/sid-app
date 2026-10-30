@@ -1,16 +1,29 @@
 // ==========================================
-// KategoriBeritaModal.jsx
+// KategoriBeritaModal.tsx
 // Popup kelola kategori berita: tambah, ubah nama, hapus.
 // Kategori yang sudah dipakai berita tidak bisa dihapus.
 // ==========================================
 
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { NewsCategory } from '@/types'
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react'
 
-import { categoryErrorMessage } from '@/features/kelola-berita/hooks/useNewsCategories'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { notifySuccess } from '@/shared/lib/toast'
+
+type KategoriBeritaModalProps = {
+  open: boolean
+  onClose: () => void
+  categories: NewsCategory[]
+  loading?: boolean
+  processing?: boolean
+  onAdd: (name: string) => Promise<unknown>
+  onRename: (id: number, name: string) => Promise<unknown>
+  onDelete: (id: number) => Promise<unknown>
+}
 
 export default function KategoriBeritaModal({
   open,
@@ -21,9 +34,9 @@ export default function KategoriBeritaModal({
   onAdd,
   onRename,
   onDelete,
-}) {
+}: KategoriBeritaModalProps) {
   const [newName, setNewName] = useState('')
-  const [editingId, setEditingId] = useState(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
   const [error, setError] = useState('')
 
@@ -43,19 +56,19 @@ export default function KategoriBeritaModal({
 
   if (!open) return null
 
-  const attempt = async (request, fallback) => {
+  const attempt = async (request: () => Promise<unknown>, fallback: string) => {
     setError('')
 
     try {
       await request()
       return true
     } catch (requestError) {
-      setError(categoryErrorMessage(requestError, fallback))
+      setError(getApiErrorMessage(requestError, fallback))
       return false
     }
   }
 
-  const handleAdd = async (e) => {
+  const handleAdd = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const name = newName.trim()
@@ -67,7 +80,7 @@ export default function KategoriBeritaModal({
     }
   }
 
-  const startEdit = (category) => {
+  const startEdit = (category: NewsCategory) => {
     setError('')
     setEditingId(category.id)
     setEditingName(category.name)
@@ -78,11 +91,11 @@ export default function KategoriBeritaModal({
     setEditingName('')
   }
 
-  const handleRename = async (e) => {
+  const handleRename = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const name = editingName.trim()
-    if (!name || processing) return
+    if (!name || processing || editingId === null) return
 
     if (await attempt(() => onRename(editingId, name), 'Kategori gagal diubah.')) {
       notifySuccess(`Kategori berhasil diubah menjadi "${name}".`)
@@ -90,7 +103,7 @@ export default function KategoriBeritaModal({
     }
   }
 
-  const handleDelete = async (category) => {
+  const handleDelete = async (category: NewsCategory) => {
     if (processing || !category.can_delete) return
 
     if (

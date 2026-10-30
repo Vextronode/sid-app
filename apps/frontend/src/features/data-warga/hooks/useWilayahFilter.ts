@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
+import type { Hamlet, Rt, Rw } from '@/types'
 
-const EMPTY_FILTERS = { hamletId: '', rwId: '', rtId: '' }
+// Id terpilih per tingkat; '' = semua.
+export type WilayahFilters = { hamletId: string; rwId: string; rtId: string }
+
+export type FilterOption = { value: string; label: string }
+
+const EMPTY_FILTERS: WilayahFilters = { hamletId: '', rwId: '', rtId: '' }
 
 /**
  * Filter bertingkat Dusun -> RW -> RT untuk daftar warga dan KK. Memilih
@@ -11,9 +17,13 @@ const EMPTY_FILTERS = { hamletId: '', rwId: '', rtId: '' }
  * onChange (opsional) dipanggil setiap filter berubah, mis. untuk kembali
  * ke halaman 1.
  */
-export function useWilayahFilter(onChange) {
+export function useWilayahFilter(onChange?: () => void) {
   const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [wilayah, setWilayah] = useState({ hamlets: [], rws: [], rts: [] })
+  const [wilayah, setWilayah] = useState<{ hamlets: Hamlet[]; rws: Rw[]; rts: Rt[] }>({
+    hamlets: [],
+    rws: [],
+    rts: [],
+  })
 
   // Pilihan wilayah tidak bergantung pada halaman daftar yang sedang dibuka.
   useEffect(() => {
@@ -36,7 +46,7 @@ export function useWilayahFilter(onChange) {
     }
   }, [])
 
-  const setFilter = (level, value) => {
+  const setFilter = (level: keyof WilayahFilters, value: string) => {
     setFilters((current) => {
       if (level === 'hamletId') return { hamletId: value, rwId: '', rtId: '' }
       if (level === 'rwId') return { ...current, rwId: value, rtId: '' }

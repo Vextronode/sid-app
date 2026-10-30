@@ -5,13 +5,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import api from '@/lib/api'
 import { OrganisasiDesaPage } from './OrganisasiDesaPage'
+import type { OrganisasiVariant } from './OrganisasiDesaPage'
 
 vi.mock('@/lib/api', () => ({ default: { get: vi.fn() } }))
+
+const mockedGet = vi.mocked(api.get, { partial: true, deep: true })
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
-  usePublicVillageInfo: () => ({ village: { name: 'Cibenda' }, stats: null, contacts: [] }),
+  usePublicVillageInfo: () => ({
+    village: { name: 'Cibenda' },
+    stats: null as unknown,
+    contacts: [] as unknown[],
+  }),
 }))
 
-const STRUCTURES = {
+const STRUCTURES: Record<string, unknown> = {
   bpd: {
     org_type: 'bpd',
     ketua: { id: 1, name: 'Budi Santoso', photo_url: '/storage/ketua.jpg' },
@@ -35,7 +42,7 @@ const LocationProbe = () => {
   return <p data-testid="location">{pathname + search}</p>
 }
 
-const renderPage = (variant, path) =>
+const renderPage = (variant: OrganisasiVariant, path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <OrganisasiDesaPage variant={variant} />
@@ -46,9 +53,9 @@ const renderPage = (variant, path) =>
 describe('OrganisasiDesaPage', () => {
   beforeEach(() => {
     window.scrollTo = vi.fn()
-    api.get.mockImplementation((url) => {
+    mockedGet.mockImplementation((url) => {
       const type = url.split('/').pop()
-      return Promise.resolve({ data: { data: STRUCTURES[type] } })
+      return Promise.resolve({ data: { data: STRUCTURES[type ?? ''] } })
     })
   })
 
@@ -128,7 +135,7 @@ describe('OrganisasiDesaPage', () => {
   })
 
   it('shows the server message when loading fails', async () => {
-    api.get.mockRejectedValueOnce({
+    mockedGet.mockRejectedValueOnce({
       response: { data: { message: 'Profil desa belum tersedia.' } },
     })
     renderPage('bpd', '/bpd')

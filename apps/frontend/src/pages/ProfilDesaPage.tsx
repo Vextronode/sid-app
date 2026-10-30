@@ -1,5 +1,5 @@
 // ==========================================
-// ProfilDesaPage.jsx
+// ProfilDesaPage.tsx
 // Halaman publik Profil Desa.
 // Isinya sama dengan KelolaProfilDesaPage (tanpa tombol edit),
 // tetapi tampilannya mengikuti halaman publik lain.
@@ -29,13 +29,34 @@ import {
   orgRow,
 } from '@/features/profil-desa/components/OrgChart'
 import { PeraturanList } from '@/features/peraturan/components/PeraturanList'
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import type { PublicStats, PublicVillageHead } from '@/features/info-desa/usePublicVillageInfo'
+import type { Village } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+
+// GET /api/public/village-profile: pejabat (PublicOfficialResource), jabatan
+// Kasi/Kaur/Staf berurutan, dan dusun aktif.
+type PublicOfficial = PublicVillageHead
+type StaffPosition = { code: string; label: string }
+type PublicHamlet = { id: number; name: string }
+
+// Satu kartu bagan perangkat desa.
+type OfficialSlot = {
+  id: string | number
+  jabatan: string
+  nama: string | null
+  foto: string | null
+}
 
 const page = 'bd-container pt-[clamp(32px,20px+3vw,64px)]'
 const statValue =
   'mt-0.5 mb-0 font-display text-[clamp(30px,24px+1.2vw,40px)] leading-[1.05] font-bold tracking-tight text-pb-laut-deep tabular-nums'
 const subtitle = 'mt-0 mb-4 text-base font-bold text-pb-laut'
 // Satu baris statistik; ikon tanpa kotak latar.
-function StatItem({ icon: Icon, label, children }) {
+type StatItemProps = { icon: LucideIcon; label: string; children?: ReactNode }
+
+function StatItem({ icon: Icon, label, children }: StatItemProps) {
   return (
     <div className="flex items-center gap-4.5 px-7 py-6 [&+&]:border-t [&+&]:border-pb-line md:[&+&]:border-t-0 md:[&+&]:border-l">
       <Icon className="flex-none text-pb-laut" size={26} strokeWidth={1.8} aria-hidden="true" />
@@ -54,7 +75,11 @@ function StatItem({ icon: Icon, label, children }) {
 // dusun, perangkat, foto), cukup ubah fungsi ini.
 // ==========================================
 
-function toSlot(id, jabatan, official) {
+function toSlot(
+  id: string | number,
+  jabatan: string,
+  official: PublicOfficial | null | undefined,
+): OfficialSlot {
   return {
     id,
     jabatan,
@@ -67,7 +92,7 @@ function toSlot(id, jabatan, official) {
 // (`positions`), jadi jenis jabatan yang ditambah Staf SIDUTama langsung
 // tampil. Jabatan yang belum terisi tetap punya satu slot "Belum tersedia";
 // jabatan yang dijabat beberapa orang tampil satu kartu per orang.
-function mapStaff(officials, positions) {
+function mapStaff(officials: PublicOfficial[], positions: StaffPosition[]) {
   return positions.flatMap(({ code, label }) => {
     const holders = officials.filter((official) => official.position === code)
 
@@ -79,9 +104,10 @@ function mapStaff(officials, positions) {
 
 // Satu slot Kepala Dusun per dusun aktif. Bila daftar dusun tidak dikirim,
 // yang tampil hanya Kadus yang sedang menjabat.
-function mapKadus(officials, hamlets) {
+function mapKadus(officials: PublicOfficial[], hamlets: PublicHamlet[]) {
   const kadus = officials.filter((official) => official.position === 'kadus')
-  const label = (name) => (/^dusun\b/i.test(name ?? '') ? `Kepala ${name}` : `Kepala Dusun ${name}`)
+  const label = (name: string | null) =>
+    /^dusun\b/i.test(name ?? '') ? `Kepala ${name}` : `Kepala Dusun ${name}`
 
   if (hamlets.length === 0) {
     return kadus.map((official) =>
@@ -102,10 +128,17 @@ function mapKadus(officials, hamlets) {
   )
 }
 
-function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = null) {
-  const byPosition = (position) => officials.find((official) => official.position === position)
+function mapProfile(
+  raw: Village | null | undefined,
+  officials: PublicOfficial[] = [],
+  hamlets: PublicHamlet[] = [],
+  positions: StaffPosition[] = [],
+  stats: PublicStats | null = null,
+) {
+  const byPosition = (position: string) =>
+    officials.find((official) => official.position === position)
   const kepalaDesa = byPosition('kepala_desa')
-  const missionList = Array.isArray(raw?.mission)
+  const missionList: string[] = Array.isArray(raw?.mission)
     ? raw.mission
     : typeof raw?.mission === 'string'
       ? raw.mission
@@ -146,9 +179,9 @@ function mapProfile(raw, officials = [], hamlets = [], positions = [], stats = n
 }
 
 export function ProfilDesaPage() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState<ReturnType<typeof mapProfile> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const { hash, key } = useLocation()
 
   useEffect(() => {
@@ -174,7 +207,7 @@ export function ProfilDesaPage() {
         }
       } catch (err) {
         console.error('Gagal memuat profil desa dari API:', err)
-        if (active) setError(err?.response?.data?.message || 'Gagal memuat profil desa.')
+        if (active) setError(getApiErrorMessage(err, 'Gagal memuat profil desa.'))
       } finally {
         if (active) setLoading(false)
       }

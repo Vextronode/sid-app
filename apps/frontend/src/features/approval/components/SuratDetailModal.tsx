@@ -1,5 +1,5 @@
 // ==========================================
-// SuratDetailModal.jsx
+// SuratDetailModal.tsx
 // Popup detail surat untuk approver dan pemantau wilayah (RT, RW, Kadus,
 // Kades/Sekdes) di atas kerangka LetterDossierModal.
 //
@@ -24,7 +24,9 @@ import { FlowTimeline } from '@/features/surat/components/dossier/FlowTimeline'
 import { getApplicantAddress, getApplicantNik } from '@/features/surat/utils/letterDetails'
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import type { Id, Letter, UserRole } from '@/types'
 
+import type { DecisionResponse } from '../api'
 import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
 import {
@@ -37,7 +39,7 @@ import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 // Peran yang hanya memantau surat di wilayahnya, tanpa memberi keputusan.
 const MONITOR_ROLES = ['rw', 'kadus']
 
-function getRejectionReason(surat) {
+function getRejectionReason(surat: Letter) {
   const rejection = getLatestApprovalForLevel(
     (surat?.approvals ?? []).filter((approval) => approval?.action === 'rejected'),
     ['rt', 'kepala_desa', 'sekretaris_desa'],
@@ -46,7 +48,17 @@ function getRejectionReason(surat) {
   return rejection?.notes ?? surat?.notes ?? null
 }
 
-function getHint({ surat, canDecide, canDownload, viewerRole }) {
+function getHint({
+  surat,
+  canDecide,
+  canDownload,
+  viewerRole,
+}: {
+  surat: Letter
+  canDecide: boolean
+  canDownload: boolean
+  viewerRole: string | null
+}) {
   if (canDecide) {
     if (!surat.current_step?.is_final) {
       return 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
@@ -69,11 +81,31 @@ function getHint({ surat, canDecide, canDownload, viewerRole }) {
     return 'Surat ini ditolak. Pemohon dapat mengajukan ulang setelah memperbaikinya.'
   }
 
-  if (MONITOR_ROLES.includes(viewerRole)) {
+  if (viewerRole !== null && MONITOR_ROLES.includes(viewerRole)) {
     return 'Anda memantau surat di wilayah Anda. Keputusan ada di RT dan Kepala Desa.'
   }
 
   return 'Surat sedang menunggu keputusan di tahap lain.'
+}
+
+type SuratDetailModalProps = {
+  // null: modal tertutup.
+  suratId: Id | null
+  onClose: () => void
+  surat: Letter | null | undefined
+  notFound: boolean
+  // Peran yang melihat (menentukan isi), terlepas dari wewenang memutuskan.
+  viewerRole?: string | null
+  // Diisi hanya bila pengguna boleh memutuskan surat ini.
+  currentUserRole?: UserRole | null
+  apiRole?: UserRole | null
+  onApprove?: (response: DecisionResponse) => unknown
+  onReject?: (notes: string, response: DecisionResponse) => unknown
+  // Dipanggil saat keputusan ditolak 409 (surat sudah berubah), mis. muat ulang.
+  onConflict?: () => unknown
+  closeOnDecision?: boolean
+  showPreview?: boolean
+  canDownload?: boolean
 }
 
 export default function SuratDetailModal({
@@ -90,7 +122,7 @@ export default function SuratDetailModal({
   closeOnDecision = true,
   showPreview = true,
   canDownload = false,
-}) {
+}: SuratDetailModalProps) {
   if (suratId === null) {
     return null
   }
@@ -116,7 +148,7 @@ export default function SuratDetailModal({
       preview={showPreview && surat ? <LetterDocumentsPreview surat={surat} /> : null}
       hint={surat ? getHint({ surat, canDecide, canDownload, viewerRole }) : null}
       actions={
-        canDecide ? (
+        canDecide && surat ? (
           <ApprovalStepRenderer
             currentStep={surat.current_step}
             approvals={surat.approvals}

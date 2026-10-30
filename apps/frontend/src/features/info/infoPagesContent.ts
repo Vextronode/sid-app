@@ -7,15 +7,25 @@
 //   di menu Halaman Informasi (skema: backend App\Support\InfoPageFields);
 // - identitas desa ({village.name}, {village.phone}, ...) dari data desa.
 // Isian yang masih kosong tampil sebagai penanda kuning dengan label dari
-// `placeholders` (teks slot draf asli). Aturan token: lihat infoTemplate.js.
+// `placeholders` (teks slot draf asli). Aturan token: lihat infoTemplate.ts.
 //
 // Blok: { type: 'p' | 'h2' | 'h3', text } atau
 // { type: 'ul' | 'ol', items: [teks | { list: 'kunci isian daftar' }] }.
 // status: baris di bawah judul. statusOptional: baris status tidak tampil
 // selama tokennya kosong (mis. halaman belum pernah disimpan).
 
+import type { TemplateBlock, TemplatePlaceholders } from './infoTemplate'
+
+export type InfoPageContent = {
+  title: string
+  status: string
+  statusOptional?: boolean
+  placeholders: TemplatePlaceholders
+  blocks: TemplateBlock[]
+}
+
 // Label slot identitas desa, dipakai ketiga halaman.
-const VILLAGE_PLACEHOLDERS = {
+const VILLAGE_PLACEHOLDERS: TemplatePlaceholders = {
   'village.name': 'NAMA DESA',
   'village.fullName': 'NAMA DESA',
   'village.phone': 'TELEPON DESA',
@@ -23,7 +33,7 @@ const VILLAGE_PLACEHOLDERS = {
   'village.province': 'PROVINSI',
 }
 
-export const INFO_PAGES = {
+export const INFO_PAGES: Record<string, InfoPageContent> = {
   'kebijakan-privasi': {
     title: 'Kebijakan Privasi',
     status: 'Berlaku sejak {effective_date:date}.',

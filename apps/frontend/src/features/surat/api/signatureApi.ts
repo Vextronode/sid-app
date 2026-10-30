@@ -1,89 +1,166 @@
 import api from '@/lib/api'
+import type {
+  Id,
+  IsoDateString,
+  MessageResponse,
+  PaginatedResponse,
+  ResourceResponse,
+} from '@/types'
 
 const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
 
+// Isian pengganti slot tanda tangan: NIK warga, atau nama + berkas TTD basah.
+export type RefillSignatureInput = {
+  nik?: string
+  name?: string
+  file?: File | null
+  familyNumber?: string
+}
+
+// GET /api/profile/signature.
+export type MySignatureStatus = {
+  has_signature: boolean
+  created_at: IsoDateString | null
+  // Pengajuan reset yang masih menunggu keputusan Staf SIDUTama.
+  reset_request?: SignatureResetPending | null
+}
+
+export type SignatureResetPending = { id: number; created_at: IsoDateString | null }
+
+// GET /api/signature-requests (SignatureRequestResource).
+export type SignatureRequest = {
+  id: number
+  slot_label: string
+  // `witness`: diminta menjadi saksi (cukup setuju, tanpa tanda tangan).
+  signer_type: 'other' | 'witness'
+  letter_type: string | null
+  applicant_name: string | null
+  purpose: string | null
+  requested_at: IsoDateString | null
+  expires_at: IsoDateString | null
+}
+
+// GET /api/signature-reset-requests (SignatureResetRequestResource).
+export type SignatureResetRequest = {
+  id: number
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: IsoDateString | null
+  handled_at: IsoDateString | null
+  response_notes: string | null
+  handler?: { id: string; name: string } | null
+  user?: { id: string; name: string; username: string; role: string; role_label: string | null }
+}
+
+// GET /api/signature-blocks.
+export type SignatureBlock = {
+  id: number
+  blocked_user_name: string | null
+  blocked_nik_masked: string | null
+  created_at: IsoDateString | null
+}
+
 // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
 export const getMySignature = async () => {
-  const response = await api.get('/api/profile/signature')
+  const response = await api.get<ResourceResponse<MySignatureStatus>>('/api/profile/signature')
 
   return response.data.data
 }
 
 export const getMySignatureImage = async () => {
-  const response = await api.get('/api/profile/signature/image', { responseType: 'blob' })
+  const response = await api.get<Blob>('/api/profile/signature/image', { responseType: 'blob' })
 
   return response.data
 }
 
-export const saveMySignature = async (file) => {
+export const saveMySignature = async (file: Blob & { name?: string }) => {
   const formData = new FormData()
   formData.append('signature', file, file.name || 'tanda-tangan.png')
 
-  const response = await api.post('/api/profile/signature', formData, multipart)
+  const response = await api.post<MessageResponse<MySignatureStatus>>(
+    '/api/profile/signature',
+    formData,
+    multipart,
+  )
 
   return response.data
 }
 
 // Reset darurat oleh Staf SIDUTama.
-export const resetUserSignature = (userId, reason) =>
+export const resetUserSignature = (userId: Id, reason: string) =>
   api.post(`/api/users/${userId}/signature/reset`, { reason })
 
 // Pemilik akun mengajukan reset; diputuskan Staf SIDUTama.
-export const requestSignatureReset = async (reason) => {
-  const response = await api.post('/api/profile/signature/reset-request', { reason })
+export const requestSignatureReset = async (reason: string) => {
+  const response = await api.post<MessageResponse<SignatureResetPending>>(
+    '/api/profile/signature/reset-request',
+    { reason },
+  )
 
   return response.data
 }
 
 // Pending di atas, lalu riwayat yang sudah diputuskan; { data, meta }.
-export const getSignatureResetRequests = async ({ page = 1, perPage } = {}) => {
-  const response = await api.get('/api/signature-reset-requests', {
-    params: { page, per_page: perPage },
-  })
+export const getSignatureResetRequests = async ({
+  page = 1,
+  perPage,
+}: {
+  page?: number
+  perPage?: number
+} = {}) => {
+  const response = await api.get<PaginatedResponse<SignatureResetRequest>>(
+    '/api/signature-reset-requests',
+    {
+      params: { page, per_page: perPage },
+    },
+  )
 
   return response.data
 }
 
-export const approveSignatureResetRequest = (id) =>
+export const approveSignatureResetRequest = (id: Id) =>
   api.post(`/api/signature-reset-requests/${id}/approve`)
 
-export const rejectSignatureResetRequest = (id, notes) =>
+export const rejectSignatureResetRequest = (id: Id, notes?: string | null) =>
   api.post(`/api/signature-reset-requests/${id}/reject`, { notes: notes || null })
 
 // Permintaan tanda tangan yang ditujukan ke akun ini.
 export const getSignatureRequests = async () => {
-  const response = await api.get('/api/signature-requests')
+  const response = await api.get<ResourceResponse<SignatureRequest[]>>('/api/signature-requests')
 
   return response.data.data
 }
 
 // Kata sandi diminta ulang: menyetujui berarti membubuhkan tanda tangan.
-export const acceptSignatureRequest = (id, password) =>
+export const acceptSignatureRequest = (id: Id, password: string) =>
   api.post(`/api/signature-requests/${id}/accept`, { password })
 
-export const rejectSignatureRequest = (id, { notes, block } = {}) =>
+export const rejectSignatureRequest = (
+  id: Id,
+  { notes, block }: { notes?: string | null; block?: boolean } = {},
+) =>
   api.post(`/api/signature-requests/${id}/reject`, { notes: notes || null, block: Boolean(block) })
 
 export const getSignatureBlocks = async () => {
-  const response = await api.get('/api/signature-blocks')
+  const response = await api.get<ResourceResponse<SignatureBlock[]>>('/api/signature-blocks')
 
   return response.data.data
 }
 
-export const removeSignatureBlock = (id) => api.delete(`/api/signature-blocks/${id}`)
+export const removeSignatureBlock = (id: Id) => api.delete(`/api/signature-blocks/${id}`)
 
 // Blokir warga desa lewat NIK: permintaan TTD/saksi darinya tidak sampai lagi.
-export const addSignatureBlock = async (nik) => {
-  const response = await api.post('/api/signature-blocks', { nik })
+export const addSignatureBlock = async (nik: string) => {
+  const response = await api.post<MessageResponse<SignatureBlock>>('/api/signature-blocks', { nik })
 
   return response.data.data
 }
 
 // Pemohon mengisi ulang slot tanda tangan pihak lain pada suratnya.
 export const refillLetterSignature = async (
-  letterId,
-  slotKey,
-  { nik, name, file, familyNumber },
+  letterId: Id,
+  slotKey: string,
+  { nik, name, file, familyNumber }: RefillSignatureInput,
 ) => {
   const formData = new FormData()
 

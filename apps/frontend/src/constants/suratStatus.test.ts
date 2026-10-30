@@ -10,12 +10,7 @@ import {
 
 describe('generic letter statuses', () => {
   it('exposes only the four backend status values', () => {
-    expect(Object.values(SURAT_STATUS)).toEqual([
-      'pending',
-      'in_progress',
-      'approved',
-      'rejected',
-    ])
+    expect(Object.values(SURAT_STATUS)).toEqual(['pending', 'in_progress', 'approved', 'rejected'])
   })
 
   it('keeps labels, styles, filters, and sorting aligned to the generic statuses', () => {

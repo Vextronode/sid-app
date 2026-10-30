@@ -12,7 +12,7 @@ vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 const api = vi.hoisted(() => ({ getInfoPages: vi.fn(), saveInfoPage: vi.fn() }))
 
 vi.mock('@/features/info-admin/api', () => api)
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 import KelolaHalamanInfoPage from './KelolaHalamanInfoPage'
 
@@ -25,15 +25,19 @@ const PAGES = [
       { key: 'periodic_info', type: 'list', label: 'Informasi berkala' },
       { key: 'ppid_email', type: 'email', label: 'Email PPID' },
     ],
-    fields: { ppid_officer: null, periodic_info: ['Profil desa'], ppid_email: null },
-    updated_at: null,
+    fields: {
+      ppid_officer: null as string | null,
+      periodic_info: ['Profil desa'],
+      ppid_email: null as string | null,
+    },
+    updated_at: null as string | null,
   },
   {
     page: 'aksesibilitas',
     title: 'Aksesibilitas',
     schema: [{ key: 'response_time', type: 'text', label: 'Jangka waktu tanggapan' }],
-    fields: { response_time: null },
-    updated_at: null,
+    fields: { response_time: null as string | null },
+    updated_at: null as string | null,
   },
 ]
 

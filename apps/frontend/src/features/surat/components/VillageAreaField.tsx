@@ -1,7 +1,8 @@
+import type { VillageArea } from '../types'
 import { useState } from 'react'
 
 // Dusun dan RW pemilik RT terpilih, untuk mengisi ulang pilihan bertingkat.
-function locate(areas, rtId) {
+function locate(areas: VillageArea[], rtId: unknown) {
   for (const hamlet of areas) {
     for (const rw of hamlet.rws ?? []) {
       if ((rw.rts ?? []).some((rt) => String(rt.id) === String(rtId))) {
@@ -18,7 +19,25 @@ function locate(areas, rtId) {
  * pemohon tidak mengetik dusun/RT/RW yang tidak ada. Nilai isian = id RT;
  * Dusun dan RW hanya penyaring pilihan.
  */
-export function VillageAreaField({ field, value, setValue, areas, loadFailed, errors }) {
+
+type VillageAreaFieldProps = {
+  field: { name: string; label: string }
+  value: unknown
+  setValue: (name: string, value: string, options?: Record<string, boolean>) => void
+  areas: VillageArea[]
+  // Data wilayah gagal dimuat: tampilkan pesan.
+  loadFailed?: boolean
+  errors: Record<string, unknown>
+}
+
+export function VillageAreaField({
+  field,
+  value,
+  setValue,
+  areas,
+  loadFailed,
+  errors,
+}: VillageAreaFieldProps) {
   const located = locate(areas, value)
   const [hamletId, setHamletId] = useState(located.hamletId)
   const [rwId, setRwId] = useState(located.rwId)
@@ -30,7 +49,7 @@ export function VillageAreaField({ field, value, setValue, areas, loadFailed, er
   const hasError = Boolean(errors[field.name])
   const selectClass = `sid-select ${hasError ? 'sid-input-error' : ''}`
 
-  const chooseRt = (rtId) =>
+  const chooseRt = (rtId: string) =>
     setValue(field.name, rtId, { shouldDirty: true, shouldValidate: hasError })
 
   return (

@@ -1,5 +1,5 @@
 // ==========================================
-// OperatorDesaDashboardPage.jsx
+// OperatorDesaDashboardPage.tsx
 // Halaman Ringkasan Operator Desa
 // Styling menggunakan Global CSS SID.
 // ==========================================

@@ -9,5 +9,5 @@ const MANAGER_ROLES = ['staf_sid', 'kasi_pemerintahan']
 export default function DataWargaAccessPage() {
   const { user } = useAuth()
 
-  return MANAGER_ROLES.includes(user?.role) ? <DataWargaPage /> : <DataWargaReadOnlyPage />
+  return user && MANAGER_ROLES.includes(user.role) ? <DataWargaPage /> : <DataWargaReadOnlyPage />
 }

@@ -1,15 +1,29 @@
 import { useEffect, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { ExternalLink, Image as ImageIcon, Pencil } from 'lucide-react'
 
 import { formatCoords, googleMapsUrl, villageCoords } from '@/shared/lib/villageMap'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
+import type { Village } from '@/types'
+import type { VillageImageKind } from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
+type ImageField = {
+  kind: VillageImageKind
+  urlKey: 'logo_url' | 'hero_image_url'
+  label: string
+  hint: string
+  maxMb: number
+}
+
+type UploadImage = (kind: VillageImageKind, file: File) => Promise<unknown>
+
 // Batas ukuran sama dengan backend (UploadVillageImageRequest).
-const IMAGE_FIELDS = [
+const IMAGE_FIELDS: ImageField[] = [
   {
     kind: 'logo',
     urlKey: 'logo_url',
@@ -26,19 +40,18 @@ const IMAGE_FIELDS = [
   },
 ]
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-  const first = errors && typeof errors === 'object' ? Object.values(errors).flat()[0] : null
-
-  return first ?? error?.response?.data?.message ?? fallback
-}
-
 /**
  * Satu gambar halaman publik. Gambarnya publik, jadi pratinjau memakai URL
  * dari backend langsung (berbeda dengan stempel yang privat).
  */
-function PublicImageField({ field, currentUrl, onUpload }) {
-  const [draft, setDraft] = useState(null)
+type PublicImageFieldProps = {
+  field: ImageField
+  currentUrl: string | null
+  onUpload: UploadImage
+}
+
+function PublicImageField({ field, currentUrl, onUpload }: PublicImageFieldProps) {
+  const [draft, setDraft] = useState<File | null>(null)
   const [draftUrl, setDraftUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -51,7 +64,7 @@ function PublicImageField({ field, currentUrl, onUpload }) {
     [draftUrl],
   )
 
-  const handleSelect = (event) => {
+  const handleSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null
 
     event.target.value = ''
@@ -93,13 +106,15 @@ function PublicImageField({ field, currentUrl, onUpload }) {
     setSaving(true)
     setError('')
 
+    if (!draft) return
+
     try {
       await onUpload(field.kind, draft)
       setDraft(null)
       setDraftUrl('')
       notifySuccess(`${field.label} berhasil disimpan.`)
     } catch (requestError) {
-      setError(serverMessage(requestError, `Gagal menyimpan ${field.label.toLowerCase()}.`))
+      setError(getApiErrorMessage(requestError, `Gagal menyimpan ${field.label.toLowerCase()}.`))
     } finally {
       setSaving(false)
     }
@@ -158,7 +173,32 @@ function PublicImageField({ field, currentUrl, onUpload }) {
  * Logo, foto beranda, jam layanan, link peta, dan kredit foto yang tampil di
  * halaman publik. Teksnya diubah lewat modal Edit Profil Desa.
  */
-export default function TampilanPublikCard({ profile, onUpload, onEditText, disabled }) {
+type TampilanPublikCardProps = {
+  // Cukup field tampilan publik yang dibaca kartu ini.
+  profile: Partial<
+    Pick<
+      Village,
+      | 'name'
+      | 'logo_url'
+      | 'hero_image_url'
+      | 'office_hours'
+      | 'hero_photo_credit'
+      | 'welcome_message'
+      | 'latitude'
+      | 'longitude'
+    >
+  >
+  onUpload: UploadImage
+  onEditText: () => void
+  disabled?: boolean
+}
+
+export default function TampilanPublikCard({
+  profile,
+  onUpload,
+  onEditText,
+  disabled,
+}: TampilanPublikCardProps) {
   const mapUrl = googleMapsUrl(profile)
 
   return (
@@ -191,7 +231,7 @@ export default function TampilanPublikCard({ profile, onUpload, onEditText, disa
           <PublicImageField
             key={field.kind}
             field={field}
-            currentUrl={profile[field.urlKey]}
+            currentUrl={profile[field.urlKey] ?? null}
             onUpload={onUpload}
           />
         ))}

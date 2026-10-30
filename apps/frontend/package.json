@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
     "preview": "vite preview",
     "shot:beranda": "node scripts/screenshot-beranda.mjs",
     "prepare": "git config core.hooksPath .husky",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

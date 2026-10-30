@@ -1,9 +1,12 @@
+import type { LetterFormField, LetterSignatureSlot, LetterType, User } from '@/types'
+import type { SuratField, SuratFormConfig, SuratSignatureSlot } from '../types'
+
 // `accept: 'image'` pada definisi membatasi unggahan ke gambar.
-function fileAccept(field) {
+function fileAccept(field: LetterFormField) {
   return field.accept === 'image' ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'
 }
 
-function normalizeField(field) {
+function normalizeField(field: LetterFormField): SuratField {
   return {
     name: field.name,
     label: field.label ?? field.name,
@@ -71,7 +74,7 @@ function normalizeField(field) {
   }
 }
 
-function normalizeSlot(slot) {
+function normalizeSlot(slot: LetterSignatureSlot): SuratSignatureSlot {
   return {
     key: slot.key,
     label: slot.label ?? slot.key,
@@ -79,19 +82,30 @@ function normalizeSlot(slot) {
   }
 }
 
+// Kolom data warga pemohon, disebut lewat nama dari definisi jenis surat.
+function citizenColumn(user: User | null | undefined, column: string | null): unknown {
+  return column ? (user?.citizen as Record<string, unknown> | undefined)?.[column] : undefined
+}
+
 /**
  * Nilai isian `fromApplicant` dari data pemohon (mis. jenis kelamin L ->
  * suami), atau null bila datanya kosong sehingga isian tetap ditanyakan.
  */
-export function applicantValue(field, user) {
+export function applicantValue(
+  field: Pick<SuratField, 'fromApplicant'>,
+  user: User | null | undefined,
+): string | null {
   const source = field.fromApplicant
-  const raw = source ? user?.citizen?.[source.column] : null
 
-  return raw === null || raw === undefined ? null : (source.map?.[raw] ?? null)
+  if (!source) return null
+
+  const raw = citizenColumn(user, source.column)
+
+  return raw === null || raw === undefined ? null : (source.map?.[String(raw)] ?? null)
 }
 
 /** Nilai awal form untuk semua isian `fromApplicant` yang diketahui. */
-export function applicantValues(fields, user) {
+export function applicantValues(fields: SuratField[], user: User | null | undefined) {
   return Object.fromEntries(
     fields
       .map((field) => [field.name, applicantValue(field, user)])
@@ -100,11 +114,11 @@ export function applicantValues(fields, user) {
 }
 
 /** Nilai awal form untuk isian `prefillFromApplicant` yang datanya ada. */
-export function applicantPrefill(fields, user) {
+export function applicantPrefill(fields: SuratField[], user: User | null | undefined) {
   return Object.fromEntries(
     fields
       .filter((field) => field.prefillFromApplicant)
-      .map((field) => [field.name, user?.citizen?.[field.prefillFromApplicant]])
+      .map((field) => [field.name, citizenColumn(user, field.prefillFromApplicant)])
       .filter(([, value]) => value !== null && value !== undefined && value !== '')
       .map(([name, value]) => [name, String(value)]),
   )
@@ -115,7 +129,23 @@ export function applicantPrefill(fields, user) {
  * (letter_types.form_fields dan signature_slots), sehingga form, validasi
  * server, dan template PDF memakai satu sumber yang sama.
  */
-export function getLetterTypeFormConfig(letterType) {
+// Bagian jenis surat yang dibaca; selain identitas, semuanya boleh kosong.
+type FormConfigSource = Pick<LetterType, 'id' | 'code' | 'name'> &
+  Partial<
+    Pick<
+      LetterType,
+      | 'requirements_info'
+      | 'produces_letter'
+      | 'data_action'
+      | 'has_supporting_document'
+      | 'form_fields'
+      | 'signature_slots'
+    >
+  >
+
+export function getLetterTypeFormConfig(
+  letterType: FormConfigSource | null | undefined,
+): SuratFormConfig | null {
   if (!letterType?.code) return null
 
   // Isian yang diisi sistem saat pengajuan (`same_value`, `family_head_of`)
@@ -129,7 +159,7 @@ export function getLetterTypeFormConfig(letterType) {
     id: letterType.id,
     code: letterType.code,
     title: letterType.name,
-    requirementsInfo: letterType.requirements_info,
+    requirementsInfo: letterType.requirements_info ?? null,
     producesLetter: letterType.produces_letter ?? true,
     dataAction: letterType.data_action ?? 'none',
     hasSupportingDocument: Boolean(letterType.has_supporting_document),
@@ -143,18 +173,20 @@ export function getLetterTypeFormConfig(letterType) {
   }
 }
 
-const DATA_ACTION_LABELS = {
+const DATA_ACTION_LABELS: Record<string, string> = {
   update_citizen: 'ubah data warga',
   create_citizen: 'tambah warga',
 }
 
 // Satu jenis surat boleh menerbitkan surat sekaligus memicu aksi data.
-export function describeLetterTypeOutput(letterType) {
+export function describeLetterTypeOutput(
+  letterType: Pick<LetterType, 'produces_letter' | 'data_action'>,
+) {
   const parts = []
 
   if (letterType.produces_letter ?? true) parts.push('Surat')
-  if (DATA_ACTION_LABELS[letterType.data_action])
-    parts.push(DATA_ACTION_LABELS[letterType.data_action])
+  const actionLabel = letterType.data_action ? DATA_ACTION_LABELS[letterType.data_action] : null
+  if (actionLabel) parts.push(actionLabel)
 
   return parts.length ? parts.join(' + ') : '-'
 }

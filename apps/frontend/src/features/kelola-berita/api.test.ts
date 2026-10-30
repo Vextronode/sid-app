@@ -22,7 +22,7 @@ describe('news API', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('sends every selected category as category_ids[]', () => {
-    createBerita({ title: 'Judul', content: 'Isi', category_ids: [3, 7] })
+    createBerita({ title: 'Judul', content: 'Isi', category_ids: [3, 7], thumbnail: null })
 
     const [url, formData] = api.post.mock.calls[0]
     expect(url).toBe('/api/news')
@@ -31,7 +31,7 @@ describe('news API', () => {
   })
 
   it('sends categories on update through a PATCH override', () => {
-    updateBerita(5, { title: 'Judul', content: 'Isi', category_ids: [2] })
+    updateBerita(5, { title: 'Judul', content: 'Isi', category_ids: [2], thumbnail: null })
 
     const [url, formData] = api.post.mock.calls[0]
     expect(url).toBe('/api/news/5')

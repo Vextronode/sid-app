@@ -1,32 +1,23 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { FulfillmentFormProps } from '../types'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
-
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 /**
  * Terapkan perubahan susunan KK (F09, aksi `restructure_family`): ringkasan
  * rencana dari server, No. KK baru bila membentuk KK baru, lalu pop up daftar
  * perubahan per warga untuk dikonfirmasi.
  */
-export function RestructureFamilyForm({ letterId, proposal, onDone }) {
+export function RestructureFamilyForm({ letterId, proposal, onDone }: FulfillmentFormProps) {
   const needsNumber = (proposal.fields ?? []).some((field) => field.column === 'no_kk')
   const [number, setNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSaving(true)
     setError('')
@@ -38,7 +29,7 @@ export function RestructureFamilyForm({ letterId, proposal, onDone }) {
         onDone(await applyFulfillment(letterId, values, null))
       }
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menerapkan perubahan susunan KK.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menerapkan perubahan susunan KK.'))
     } finally {
       setSaving(false)
     }

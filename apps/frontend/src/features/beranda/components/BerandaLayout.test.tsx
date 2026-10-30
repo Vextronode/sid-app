@@ -4,13 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { BerandaLayout } from './BerandaLayout'
+import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
+import { present } from '@/test/fixtures'
+
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: null, isLoading: false }),
+  useAuth: () => ({ user: null as unknown, isLoading: false }),
 }))
 
 const renderLayout = () =>
@@ -24,13 +28,13 @@ const renderLayout = () =>
 
 describe('BerandaLayout', () => {
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
   })
 
   it('wraps the page in .bd-root with the new header, main and footer', () => {
     const { container } = renderLayout()
 
-    const root = container.firstChild
+    const root = container.firstChild as HTMLElement
     expect(root).toHaveClass('bd-root')
     expect(within(screen.getByRole('main')).getByText('Isi beranda')).toBeInTheDocument()
     expect(root.querySelector('header.bd-header')).not.toBeNull()
@@ -100,7 +104,7 @@ describe('BerandaLayout', () => {
 
   it('opens the Widyatama website in a new tab from its logo only', () => {
     renderLayout()
-    const partners = within(screen.getByText('Didukung oleh').parentElement)
+    const partners = within(present(screen.getByText('Didukung oleh').parentElement))
 
     const links = partners.getAllByRole('link')
     expect(links).toHaveLength(1)
@@ -113,8 +117,8 @@ describe('BerandaLayout', () => {
   // Bar pengumuman menempel di bawah header di semua halaman publik.
   describe('announcement bar', () => {
     const bar = () => screen.queryByRole('region', { name: 'Pengumuman desa' })
-    const withAnnouncement = (announcement) =>
-      usePublicVillageInfo.mockReturnValue({
+    const withAnnouncement = (announcement: Partial<PublicAnnouncement> | null) =>
+      mockedUsePublicVillageInfo.mockReturnValue({
         village: null,
         stats: null,
         contacts: [],
@@ -133,10 +137,10 @@ describe('BerandaLayout', () => {
 
       const region = bar()
       expect(region).toHaveTextContent('Kantor desa tutup Jumat siang')
-      expect(region.closest('.bd-chrome--sticky')).toBe(
+      expect(present(region).closest('.bd-chrome--sticky')).toBe(
         container.querySelector('.bd-chrome--sticky'),
       )
-      expect(region.closest('main')).toBeNull()
+      expect(present(region).closest('main')).toBeNull()
     })
 
     it('is not rendered without an announcement or after it expires', () => {

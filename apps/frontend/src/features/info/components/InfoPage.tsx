@@ -9,10 +9,12 @@ import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
 import { formatVillageName } from '@/shared/lib/villageName'
 import { INFO_PAGES } from '../infoPagesContent'
 import { hasSlot, renderBlocks, renderTemplate } from '../infoTemplate'
+import type { RenderedBlock, TemplatePart } from '../infoTemplate'
+import type { ResourceResponse, Village } from '@/types'
 import { CopyValue } from './CopyValue'
 
 // Halaman informasi (D6): Kebijakan privasi, Aksesibilitas, PPID.
-// Teks baku dari infoPagesContent.js; isian khas desa dari
+// Teks baku dari infoPagesContent.ts; isian khas desa dari
 // /api/public/info-pages/{page} (menu Halaman Informasi) dan data desa.
 // Isian yang belum diisi tampil sebagai penanda kuning "[...]".
 // Dirender di dalam MainLayout (yang sudah punya <main>), jadi isinya <article>.
@@ -21,7 +23,7 @@ import { CopyValue } from './CopyValue'
 
 // Identitas desa untuk token {village.*}. fullName: "Desa X, Kecamatan Y,
 // Kabupaten Z" dari bagian yang tersedia.
-function villageContext(village) {
+function villageContext(village: Village | null) {
   const name = formatVillageName(village?.name) ?? 'Desa'
   const fullName = [
     name,
@@ -45,11 +47,11 @@ function villageContext(village) {
 
 // Bagian teks dan slot "[...]" (isian yang belum diisi) sebagai penanda kuning.
 // Telepon dan email terisi tampil biru dan bisa disalin (CopyValue).
-function Parts({ parts }) {
+function Parts({ parts }: { parts: TemplatePart[] }) {
   return parts.map((part, index) => {
     if (typeof part === 'string') return part
 
-    if (part.copy) return <CopyValue key={index} value={part.copy} kind={part.kind} />
+    if ('copy' in part) return <CopyValue key={index} value={part.copy} kind={part.kind} />
 
     return (
       <mark key={index} className="bd-info-slot rounded-sm bg-pb-padi-soft px-1 text-pb-padi-ink">
@@ -59,7 +61,7 @@ function Parts({ parts }) {
   })
 }
 
-function InfoBlock({ block }) {
+function InfoBlock({ block }: { block: RenderedBlock }) {
   switch (block.type) {
     case 'h2':
       return (
@@ -97,10 +99,19 @@ function InfoBlock({ block }) {
   }
 }
 
-export function InfoPage({ page }) {
+// Isian halaman dari menu Halaman Informasi (GET /api/public/info-pages/{page}).
+type InfoPageData = {
+  fields?: Record<string, unknown>
+  updated_at?: string | null
+}
+
+export function InfoPage({ page }: { page: string }) {
   const content = INFO_PAGES[page]
   const { village } = usePublicVillageInfo()
-  const [state, setState] = useState({ page: null, data: null })
+  const [state, setState] = useState<{ page: string | null; data: InfoPageData | null }>({
+    page: null,
+    data: null,
+  })
 
   // Aplikasi tidak punya scroll restoration, dan link footer ada di dasar beranda.
   useEffect(() => {
@@ -111,10 +122,12 @@ export function InfoPage({ page }) {
     let active = true
 
     api
-      .get(`/api/public/info-pages/${page}`, { params: publicVillageParams() })
+      .get<ResourceResponse<InfoPageData>>(`/api/public/info-pages/${page}`, {
+        params: publicVillageParams(),
+      })
       .then((response) => response.data?.data ?? null)
       // Gagal memuat isian: teks baku tetap tampil, bagian khas desa sebagai penanda.
-      .catch(() => null)
+      .catch((): null => null)
       .then((data) => {
         if (active) setState({ page, data })
       })

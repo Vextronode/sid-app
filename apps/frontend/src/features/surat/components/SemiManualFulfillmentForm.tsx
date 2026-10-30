@@ -1,24 +1,15 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { FulfillmentFormProps } from '../types'
 import { Link } from 'react-router-dom'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { confirmDialog } from '@/shared/lib/dialog'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Data Penduduk dan pengelolaan KK ada di halaman yang sama.
 const POPULATION_PAGE = '/admin/data-warga'
-
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
 
 /**
  * Aksi data semi-manual:
@@ -28,7 +19,7 @@ function serverMessage(error, fallback) {
  * - `manual`: Kasi/Kaur mengerjakan perubahan sendiri di Data Penduduk/KK
  *   (berdasarkan hasil dari instansi), lalu menekan "Tandai selesai".
  */
-export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
+export function SemiManualFulfillmentForm({ letterId, proposal, onDone }: FulfillmentFormProps) {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -37,7 +28,7 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
   const isManual = proposal.action === 'manual' || members.length === 0
   const activeMembers = members.filter((member) => member.found && member.is_active)
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     setSaving(true)
@@ -59,7 +50,7 @@ export function SemiManualFulfillmentForm({ letterId, proposal, onDone }) {
         onDone(await applyFulfillment(letterId, {}, null, notes.trim()))
       }
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menyimpan perubahan data.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menyimpan perubahan data.'))
     } finally {
       setSaving(false)
     }

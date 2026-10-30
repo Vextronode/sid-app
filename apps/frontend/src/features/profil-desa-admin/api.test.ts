@@ -24,12 +24,18 @@ import {
   updatePerangkatDesa,
   uploadOfficialPhoto,
 } from './api'
+import { partialFixture } from '@/test/fixtures'
+import type { OfficialAssignPayload } from './types'
 
 describe('official API', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('uses the current officials and lifecycle endpoints', () => {
-    const payload = { user_id: 'user-id', position: 'rt', started_at: '2026-10-01' }
+    const payload = partialFixture<OfficialAssignPayload>({
+      user_id: 'user-id',
+      position: 'rt',
+      started_at: '2026-10-01',
+    })
 
     getPerangkatDesa()
     createPerangkatDesa({ citizen_id: 'citizen-id', position: 'kepala_desa' })
@@ -77,7 +83,14 @@ describe('official API', () => {
   it('sends the photo with assignments and skips empty optional fields', () => {
     const photo = new File(['foto'], 'foto.jpg', { type: 'image/jpeg' })
 
-    promotePerangkatDesa({ citizen_id: 'citizen-id', position: 'kaur_keuangan', notes: '', photo })
+    promotePerangkatDesa(
+      partialFixture<OfficialAssignPayload>({
+        citizen_id: 'citizen-id',
+        position: 'kaur_keuangan',
+        notes: '',
+        photo,
+      }),
+    )
     uploadOfficialPhoto(7, photo)
     findOfficialCandidate('3207010101900001', 'kaur_keuangan')
     findOfficialCandidate('3207010101900001')

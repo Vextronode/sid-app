@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { Wave } from './Wave'
+import type { BerandaContent } from '../berandaContent'
 
 // Footer beranda, juga dipakai halaman publik lain lewat MainLayout.
 // A33–A35 (privasi, aksesibilitas, PPID) hanya tampil di dev, karena halamannya
@@ -8,7 +9,7 @@ import { Wave } from './Wave'
 // Logo "Didukung oleh" tampil di semua mode karena isinya sudah asli
 // (keputusan pemilik, 11 Okt 2026). Domain dan tanggal pembaruan tidak
 // ditampilkan (permintaan pemilik, 12 Okt 2026).
-export function BerandaFooter({ content }) {
+export function BerandaFooter({ content }: { content: BerandaContent }) {
   const { footer, partners, infoLinks } = content
 
   return (

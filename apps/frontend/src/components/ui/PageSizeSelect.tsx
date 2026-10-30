@@ -1,7 +1,19 @@
 import { PAGE_SIZE_OPTIONS } from './usePageSize'
 
+type PageSizeSelectProps = {
+  value: number
+  onChange: (size: number) => void
+  options?: readonly number[]
+  disabled?: boolean
+}
+
 // Pilihan jumlah baris per halaman di bar pagination.
-export function PageSizeSelect({ value, onChange, options = PAGE_SIZE_OPTIONS, disabled = false }) {
+export function PageSizeSelect({
+  value,
+  onChange,
+  options = PAGE_SIZE_OPTIONS,
+  disabled = false,
+}: PageSizeSelectProps) {
   return (
     <label className="sid-page-size">
       <span>Baris per halaman</span>

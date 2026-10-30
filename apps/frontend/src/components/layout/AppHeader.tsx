@@ -1,6 +1,8 @@
 import '@/styles/beranda.css'
 
 import { Bell, ChevronDown, Menu, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { UserAvatar } from '@/components/ui/UserAvatar'
@@ -9,6 +11,47 @@ import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { BerandaBrand } from '@/features/beranda/components/BerandaBrand'
 import { useDisclosure } from '@/features/beranda/hooks/useDisclosure'
+import type { User } from '@/types'
+
+export type MenuItem = {
+  label: string
+  path: string
+}
+
+export type ExtraAction = {
+  label: string
+  icon: LucideIcon
+  onClick: () => void
+}
+
+type AppHeaderProps = {
+  menuItems?: MenuItem[]
+  profilePath?: string
+  unreadCount?: number
+  onNotificationClick?: () => void
+  extraActions?: ExtraAction[]
+  popover?: ReactNode
+  onMenuOpen?: () => void
+}
+
+type HeaderContent = ReturnType<typeof getBerandaContent>['header']
+
+type AccountMenuProps = {
+  user: User | null | undefined
+  name: string | undefined
+  profilePath?: string
+  onLogout: () => void
+  isLoggingOut: boolean
+  logoutLabel: string
+  onOpen?: () => void
+}
+
+type AppMobileMenuProps = Omit<AccountMenuProps, 'name'> & {
+  header: HeaderContent
+  menuItems: MenuItem[]
+  isActive: (path: string) => boolean
+  extraActions: ExtraAction[]
+}
 
 // Header halaman role (warga, RT/RW/Kadus/Kades/Sekdes) dengan gaya header
 // publik: lambang + nama desa, menu role, notifikasi, dan menu akun.
@@ -28,13 +71,13 @@ export function AppHeader({
   extraActions = [],
   popover,
   onMenuOpen,
-}) {
+}: AppHeaderProps) {
   const { header } = getBerandaContent()
   const { pathname } = useLocation()
   const { user } = useAuth()
   const { handleLogout, isLoggingOut } = useLogoutToBeranda()
 
-  const isActive = (path) => pathname === path
+  const isActive = (path: string) => pathname === path
   const logoutLabel = isLoggingOut ? 'Keluar…' : 'Keluar'
 
   return (
@@ -123,14 +166,22 @@ export function AppHeader({
 }
 
 // Buka/tutup menu; saat dibuka, beri tahu pemanggil (tutup notifikasi).
-function toggleWithOpen(isOpen, toggle, onOpen) {
+function toggleWithOpen(isOpen: boolean, toggle: () => void, onOpen?: () => void) {
   return () => {
     if (!isOpen) onOpen?.()
     toggle()
   }
 }
 
-function AccountMenu({ user, name, profilePath, onLogout, isLoggingOut, logoutLabel, onOpen }) {
+function AccountMenu({
+  user,
+  name,
+  profilePath,
+  onLogout,
+  isLoggingOut,
+  logoutLabel,
+  onOpen,
+}: AccountMenuProps) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
 
   return (
@@ -183,7 +234,7 @@ function AppMobileMenu({
   onLogout,
   isLoggingOut,
   logoutLabel,
-}) {
+}: AppMobileMenuProps) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
 
   return (

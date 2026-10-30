@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Camera, Trash2, User, X } from 'lucide-react'
 
@@ -8,25 +9,21 @@ import { deleteOwnPhoto, uploadOwnPhoto } from '../api'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
-
-const errorMessage = (error, fallback) => {
-  const errors = error?.response?.data?.errors
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
 
 /**
  * Pratinjau foto ukuran besar. Ditutup lewat tombol X di pojok kanan atas
  * bingkai, klik di luar bingkai, atau tombol Escape.
  */
-function PhotoPreview({ src, alt, onClose }) {
-  const closeButton = useRef(null)
+function PhotoPreview({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const closeButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     closeButton.current?.focus()
 
-    const handleKey = (event) => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
 
@@ -67,9 +64,9 @@ function PhotoPreview({ src, alt, onClose }) {
  * Akun yang menjabat: foto pejabat (official.photo_img), hanya tampil;
  * yang mengubahnya Staf SIDUTama lewat halaman Pejabat Desa.
  */
-export function ProfilePhoto({ avatarClassName }) {
+export function ProfilePhoto({ avatarClassName }: { avatarClassName?: string }) {
   const { user, patchUser } = useAuth()
-  const input = useRef(null)
+  const input = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -79,7 +76,11 @@ export function ProfilePhoto({ avatarClassName }) {
   const src = userPhotoUrl(user)
   const alt = `Foto ${user?.name ?? 'profil'}`
 
-  const run = async (request, fallback, successMessage) => {
+  const run = async (
+    request: () => Promise<{ data?: { data?: { photo_url?: string | null } } }>,
+    fallback: string,
+    successMessage: string,
+  ) => {
     setBusy(true)
     setError('')
     try {
@@ -87,13 +88,13 @@ export function ProfilePhoto({ avatarClassName }) {
       patchUser({ photo_url: response?.data?.data?.photo_url ?? null })
       notifySuccess(successMessage)
     } catch (requestError) {
-      setError(errorMessage(requestError, fallback))
+      setError(getApiErrorMessage(requestError, fallback))
     } finally {
       setBusy(false)
     }
   }
 
-  const handleFile = (event) => {
+  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (file)

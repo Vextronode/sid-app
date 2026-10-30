@@ -1,10 +1,20 @@
 import { useRef } from 'react'
+import type { ChangeEvent, MouseEvent } from 'react'
 import { UploadCloud, FileText, Trash2 } from 'lucide-react'
 
-export function FileUploader({ field, files = [], onFileChange, onRemoveFile }) {
-  const inputRef = useRef(null)
+import type { SuratField } from '../types'
 
-  const handleRemove = (e, index) => {
+type FileUploaderProps = {
+  field: Pick<SuratField, 'name' | 'accept'> & Partial<Pick<SuratField, 'multiple' | 'imageOnly'>>
+  files?: File[]
+  onFileChange: (event: ChangeEvent<HTMLInputElement>, name: string) => void
+  onRemoveFile: (event: MouseEvent<HTMLButtonElement>, name: string, index: number) => void
+}
+
+export function FileUploader({ field, files = [], onFileChange, onRemoveFile }: FileUploaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleRemove = (e: MouseEvent<HTMLButtonElement>, index: number) => {
     onRemoveFile(e, field.name, index)
 
     if (inputRef.current) {

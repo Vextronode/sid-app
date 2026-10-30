@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import {
   createHamlet as apiCreateHamlet,
@@ -16,26 +17,31 @@ import {
 } from '../api'
 
 import { WilayahMasterContext } from '../context/WilayahMasterContext'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { Hamlet, Rt, Rw } from '@/types'
+import type {
+  WilayahHamlet,
+  WilayahMasterValue,
+  WilayahPayload,
+  WilayahProcessing,
+  WilayahRt,
+  WilayahRw,
+} from '../types'
 
-function unwrap(response) {
-  return response?.data?.data ?? response?.data ?? null
+// Semua endpoint wilayah membungkus hasilnya dalam { data }.
+function unwrap<T>(response: { data: { data: T } } | null | undefined): T | null {
+  return response?.data?.data ?? null
 }
 
-function unwrapList(response) {
+function unwrapList<T>(response: { data: { data: T[] } } | null | undefined): T[] {
   const data = unwrap(response)
 
-  if (Array.isArray(data)) {
-    return data
-  }
-
-  if (Array.isArray(data?.data)) {
-    return data.data
-  }
-
-  return []
+  return Array.isArray(data) ? data : []
 }
 
-function normalizeHamlet(item) {
+const ERROR_FALLBACK = 'Terjadi kesalahan saat memproses data wilayah.'
+
+function normalizeHamlet(item: Hamlet): WilayahHamlet {
   return {
     id: item?.id ?? null,
     code: item?.code ?? '',
@@ -45,62 +51,33 @@ function normalizeHamlet(item) {
   }
 }
 
-function normalizeRw(item) {
+function normalizeRw(item: Rw): WilayahRw {
   return {
     id: item?.id ?? null,
     number: item?.number ?? '',
     fullLabel: item?.full_label ?? `RW ${item?.number ?? ''}`,
     isActive: Boolean(item?.is_active),
-    hamletId: item?.hamlet_id ?? item?.hamlet?.id ?? null,
-    hamlet: item?.hamlet
-      ? {
-          id: item.hamlet.id ?? null,
-          name: item.hamlet.name ?? '',
-          code: item.hamlet.code ?? '',
-        }
-      : null,
+    hamletId: item?.hamlet_id ?? null,
   }
 }
 
-function normalizeRt(item) {
+function normalizeRt(item: Rt): WilayahRt {
   return {
     id: item?.id ?? null,
     number: item?.number ?? '',
     fullLabel: item?.full_label ?? `RT ${item?.number ?? ''}`,
     isActive: Boolean(item?.is_active),
-    rwId: item?.rw_id ?? item?.rw?.id ?? null,
-    rw: item?.rw
-      ? {
-          id: item.rw.id ?? null,
-          number: item.rw.number ?? '',
-          fullLabel: item.rw.full_label ?? '',
-          hamletId: item.rw.hamlet_id ?? null,
-        }
-      : null,
+    rwId: item?.rw_id ?? null,
   }
 }
 
-function getApiErrorMessage(error) {
-  const response = error?.response?.data
-
-  if (response?.errors) {
-    const firstError = Object.values(response.errors).flat()?.[0]
-
-    if (firstError) {
-      return firstError
-    }
-  }
-
-  return response?.message ?? 'Terjadi kesalahan saat memproses data wilayah.'
-}
-
-export function WilayahMasterProvider({ children }) {
-  const [hamlets, setHamlets] = useState([])
-  const [rws, setRws] = useState([])
-  const [rts, setRts] = useState([])
+export function WilayahMasterProvider({ children }: { children: ReactNode }) {
+  const [hamlets, setHamlets] = useState<WilayahHamlet[]>([])
+  const [rws, setRws] = useState<WilayahRw[]>([])
+  const [rts, setRts] = useState<WilayahRt[]>([])
 
   const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(null)
+  const [processing, setProcessing] = useState<WilayahProcessing>(null)
   const [error, setError] = useState('')
 
   const refresh = useCallback(async () => {
@@ -118,7 +95,7 @@ export function WilayahMasterProvider({ children }) {
       setRws(unwrapList(rwResponse).map(normalizeRw))
       setRts(unwrapList(rtResponse).map(normalizeRt))
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
     } finally {
       setLoading(false)
     }
@@ -133,7 +110,7 @@ export function WilayahMasterProvider({ children }) {
   // DUSUN
   // ==========================================
 
-  const createHamlet = useCallback(async (payload) => {
+  const createHamlet = useCallback(async (payload: WilayahPayload) => {
     setProcessing('create-hamlet')
     setError('')
 
@@ -147,14 +124,14 @@ export function WilayahMasterProvider({ children }) {
 
       return created
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const updateHamlet = useCallback(async (id, payload) => {
+  const updateHamlet = useCallback(async (id: number, payload: WilayahPayload) => {
     setProcessing(`update-hamlet-${id}`)
     setError('')
 
@@ -170,14 +147,14 @@ export function WilayahMasterProvider({ children }) {
 
       return updated
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const deleteHamlet = useCallback(async (id) => {
+  const deleteHamlet = useCallback(async (id: number) => {
     setProcessing(`delete-hamlet-${id}`)
     setError('')
 
@@ -188,7 +165,7 @@ export function WilayahMasterProvider({ children }) {
 
       return true
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return false
     } finally {
       setProcessing(null)
@@ -199,7 +176,7 @@ export function WilayahMasterProvider({ children }) {
   // RW
   // ==========================================
 
-  const createRw = useCallback(async (payload) => {
+  const createRw = useCallback(async (payload: WilayahPayload) => {
     setProcessing('create-rw')
     setError('')
 
@@ -213,14 +190,14 @@ export function WilayahMasterProvider({ children }) {
 
       return created
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const updateRw = useCallback(async (id, payload) => {
+  const updateRw = useCallback(async (id: number, payload: WilayahPayload) => {
     setProcessing(`update-rw-${id}`)
     setError('')
 
@@ -236,14 +213,14 @@ export function WilayahMasterProvider({ children }) {
 
       return updated
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const deleteRw = useCallback(async (id) => {
+  const deleteRw = useCallback(async (id: number) => {
     setProcessing(`delete-rw-${id}`)
     setError('')
 
@@ -254,7 +231,7 @@ export function WilayahMasterProvider({ children }) {
 
       return true
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return false
     } finally {
       setProcessing(null)
@@ -265,7 +242,7 @@ export function WilayahMasterProvider({ children }) {
   // RT
   // ==========================================
 
-  const createRt = useCallback(async (payload) => {
+  const createRt = useCallback(async (payload: WilayahPayload) => {
     setProcessing('create-rt')
     setError('')
 
@@ -279,14 +256,14 @@ export function WilayahMasterProvider({ children }) {
 
       return created
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const updateRt = useCallback(async (id, payload) => {
+  const updateRt = useCallback(async (id: number, payload: WilayahPayload) => {
     setProcessing(`update-rt-${id}`)
     setError('')
 
@@ -302,14 +279,14 @@ export function WilayahMasterProvider({ children }) {
 
       return updated
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return null
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const deleteRt = useCallback(async (id) => {
+  const deleteRt = useCallback(async (id: number) => {
     setProcessing(`delete-rt-${id}`)
     setError('')
 
@@ -320,14 +297,14 @@ export function WilayahMasterProvider({ children }) {
 
       return true
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError))
+      setError(getApiErrorMessage(requestError, ERROR_FALLBACK))
       return false
     } finally {
       setProcessing(null)
     }
   }, [])
 
-  const value = useMemo(
+  const value = useMemo<WilayahMasterValue>(
     () => ({
       hamlets,
       rws,

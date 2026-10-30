@@ -13,7 +13,11 @@ vi.mock('@/shared/lib/dialog', () => ({ alertDialog }))
 
 import { useLoginForm } from './useLoginForm'
 
-function changeField(result, name, value) {
+function changeField(
+  result: { current: ReturnType<typeof useLoginForm> },
+  name: string,
+  value: string,
+) {
   act(() => {
     result.current.handleChange({ target: { name, value } })
   })

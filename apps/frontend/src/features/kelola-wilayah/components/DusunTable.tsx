@@ -1,8 +1,27 @@
 import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusPill } from '@/components/ui/StatusPill'
+import type { WilayahHamlet, WilayahProcessing, WilayahRt, WilayahRw } from '../types'
 
-export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onToggle, onDelete }) {
+type DusunTableProps = {
+  hamlets: WilayahHamlet[]
+  rws: WilayahRw[]
+  rts: WilayahRt[]
+  processing: WilayahProcessing
+  onEdit: (item: WilayahHamlet) => void
+  onToggle: (item: WilayahHamlet) => void
+  onDelete: (item: WilayahHamlet) => void
+}
+
+export default function DusunTable({
+  hamlets,
+  rws,
+  rts,
+  processing,
+  onEdit,
+  onToggle,
+  onDelete,
+}: DusunTableProps) {
   const [search, setSearch] = useState('')
 
   const data = useMemo(() => {
@@ -17,9 +36,10 @@ export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onTo
     })
   }, [hamlets, search])
 
-  const getRwCount = (hamletId) => rws.filter((rw) => rw.hamletId === hamletId).length
+  const getRwCount = (hamletId: number | null) =>
+    rws.filter((rw) => rw.hamletId === hamletId).length
 
-  const getRtCount = (hamletId) => {
+  const getRtCount = (hamletId: number | null) => {
     const rwIds = rws.filter((rw) => rw.hamletId === hamletId).map((rw) => rw.id)
 
     return rts.filter((rt) => rwIds.includes(rt.rwId)).length
@@ -61,7 +81,7 @@ export default function DusunTable({ hamlets, rws, rts, processing, onEdit, onTo
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="7">
+                <td colSpan={7}>
                   <div className="sid-wilayah-empty">Belum ada data dusun.</div>
                 </td>
               </tr>

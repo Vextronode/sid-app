@@ -9,7 +9,7 @@ describe('getBerandaContent', () => {
     const content = getBerandaContent()
 
     for (const key of ['announcement', 'apbdes', 'welcome', 'transparency']) {
-      expect(content[key], key).toBeUndefined()
+      expect((content as Record<string, unknown>)[key], key).toBeUndefined()
     }
     expect(JSON.stringify(content)).not.toMatch(/\[[A-Z ]+\]|example\.com|Dede Rusliana/)
   })
@@ -18,7 +18,7 @@ describe('getBerandaContent', () => {
     const { header } = getBerandaContent()
 
     expect(header.profilItems.at(-1)).toEqual({ label: 'Transparansi APBDes' })
-    expect(header.transparansi).toBeUndefined()
+    expect(header).not.toHaveProperty('transparansi')
   })
 
   it('keeps manual content', () => {
@@ -32,19 +32,19 @@ describe('getBerandaContent', () => {
     // Identitas desa (nama, logo, foto, telepon, email, jam layanan, link peta)
     // dari data desa yang diatur Staf SIDUTama, bukan konten statis.
     expect(content.header.fallbackName).toBe('Desa')
-    expect(content.header.logoSrc).toBeUndefined()
-    expect(content.hero.imageUrl).toBeUndefined()
-    expect(content.complaint.email).toBeUndefined()
-    expect(content.contact.phone).toBeUndefined()
-    expect(content.contact.hours).toBeUndefined()
-    expect(content.mapUrl).toBeUndefined()
+    expect(content.header).not.toHaveProperty('logoSrc')
+    expect(content.hero).not.toHaveProperty('imageUrl')
+    expect(content.complaint).not.toHaveProperty('email')
+    expect(content.contact).not.toHaveProperty('phone')
+    expect(content.contact).not.toHaveProperty('hours')
+    expect(content).not.toHaveProperty('mapUrl')
     expect(JSON.stringify(content)).not.toMatch(
       /2640613|kantordesacibenda|maps\.app\.goo\.gl|google\.com\/maps|108\.55/,
     )
     // Domain dan tanggal pembaruan footer dihapus (permintaan pemilik, 12 Okt 2026).
-    expect(content.site).toBeUndefined()
+    expect(content).not.toHaveProperty('site')
     // Pita angka: hanya label; angkanya dari API, bukan konten statis.
-    expect(content.stats).toBeUndefined()
+    expect(content).not.toHaveProperty('stats')
     expect(content.statsBand).toEqual({
       label: 'Desa dalam angka',
       population: 'jiwa penduduk',

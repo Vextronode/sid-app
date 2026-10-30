@@ -3,9 +3,13 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
+import type { LetterListItem, LetterSummary, PageMeta, PaginatedResponse } from '@/types'
 
-const EMPTY_LETTERS = []
-const EMPTY_META = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
+// Parameter query daftar/ringkasan surat; nilai kosong tidak dikirim.
+export type SuratQueryParams = Record<string, string | number | null | undefined>
+
+const EMPTY_LETTERS: LetterListItem[] = []
+const EMPTY_META: PageMeta = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
 
 export const SURAT_REFRESH_INTERVAL = 30 * 1000
 
@@ -18,7 +22,7 @@ const LIVE_QUERY_OPTIONS = {
   refetchOnWindowFocus: true,
 }
 
-function cleanParams(params) {
+function cleanParams(params?: SuratQueryParams) {
   return Object.fromEntries(
     Object.entries(params ?? {}).filter(
       ([, value]) => value !== undefined && value !== null && value !== '',
@@ -29,7 +33,7 @@ function cleanParams(params) {
 // Daftar surat berpaginasi di server. Scope data ditentukan backend dari
 // sesi pengguna; filter, pencarian, dan halaman dikirim sebagai parameter
 // (page, per_page, status, search, letter_type_id, scope, from, to).
-export function useSuratListQuery(params) {
+export function useSuratListQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
   const queryClient = useQueryClient()
 
@@ -43,7 +47,9 @@ export function useSuratListQuery(params) {
   const { data, isPending, isFetching } = useQuery({
     queryKey: queryKeys.surat.list(query),
     queryFn: async () => {
-      const response = await api.get('/api/letters', { params: query })
+      const response = await api.get<PaginatedResponse<LetterListItem>>('/api/letters', {
+        params: query,
+      })
 
       return {
         letters: Array.isArray(response.data?.data) ? response.data.data : EMPTY_LETTERS,
@@ -65,7 +71,7 @@ export function useSuratListQuery(params) {
 
 const EMPTY_PERIOD = { total: 0, pending: 0, in_progress: 0, approved: 0, rejected: 0 }
 
-const EMPTY_SUMMARY = {
+const EMPTY_SUMMARY: LetterSummary = {
   total: 0,
   by_status: { pending: 0, in_progress: 0, approved: 0, rejected: 0 },
   overdue: 0,
@@ -75,13 +81,15 @@ const EMPTY_SUMMARY = {
 
 // Angka ringkasan dashboard, dihitung backend atas scope yang sama dengan
 // daftar surat sehingga tidak perlu mengunduh seluruh baris.
-export function useSuratSummaryQuery(params) {
+export function useSuratSummaryQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
 
   const { data, isPending } = useQuery({
     queryKey: queryKeys.surat.summary(query),
     queryFn: async () => {
-      const response = await api.get('/api/letters/summary', { params: query })
+      const response = await api.get<{ data?: LetterSummary }>('/api/letters/summary', {
+        params: query,
+      })
 
       return response.data?.data ?? EMPTY_SUMMARY
     },
@@ -95,7 +103,7 @@ export function useSuratSummaryQuery(params) {
 }
 
 // Menunda nilai pencarian supaya tidak ada request untuk tiap ketikan.
-export function useDebouncedValue(value, delay = 300) {
+export function useDebouncedValue<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value)
 
   useEffect(() => {

@@ -1,11 +1,51 @@
 import { useFieldArray } from 'react-hook-form'
 import { Plus, Trash2 } from 'lucide-react'
+import type { InputHTMLAttributes } from 'react'
 
 import { roleOptions } from '../utils/familyHead'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { OTHER_OCCUPATION, otherOccupationFieldName } from '../validation/suratSchema'
+import type { Control, FieldError, FieldErrors, UseFormRegister } from 'react-hook-form'
+import type { Occupation } from '@/types'
+import type { ApplicantFamilyMember, SuratField, SuratFormValues } from '../types'
 
-function SubInput({ field, name, register, error, row, catalogs, taken }) {
+type RepeaterCatalogs = { familyMembers: ApplicantFamilyMember[]; occupations: Occupation[] }
+
+// Pilihan yang sudah dipakai baris lain: anggota KK dan Kepala Keluarga.
+type TakenChoices = { members: string[]; head: boolean }
+
+// Galat per sub-isian dalam satu baris.
+type RowErrors = Record<string, FieldError | undefined>
+
+type SubInputProps = {
+  field: SuratField
+  name: string
+  register: UseFormRegister<SuratFormValues>
+  error: FieldError | undefined
+  row: SuratFormValues
+  catalogs: RepeaterCatalogs
+  taken: TakenChoices
+}
+
+type RepeaterFieldProps = {
+  field: SuratField
+  control: Control<SuratFormValues>
+  register: UseFormRegister<SuratFormValues>
+  rows: SuratFormValues[] | undefined
+  errors: FieldErrors<SuratFormValues>
+  catalogs?: RepeaterCatalogs
+  answers?: SuratFormValues
+}
+
+// Atribut input per jenis sub-isian; selain ini input teks biasa.
+const INPUT_PROPS: Record<string, InputHTMLAttributes<HTMLInputElement>> = {
+  date: { type: 'date' },
+  time: { type: 'time' },
+  number: { type: 'text', inputMode: 'decimal' },
+  nik: { type: 'text', inputMode: 'numeric', maxLength: 16 },
+}
+
+function SubInput({ field, name, register, error, row, catalogs, taken }: SubInputProps) {
   const className = `sid-input ${error ? 'sid-input-error' : ''}`
   const selectClass = `sid-select ${error ? 'sid-input-error' : ''}`
 
@@ -83,12 +123,7 @@ function SubInput({ field, name, register, error, row, catalogs, taken }) {
     )
   }
 
-  const inputProps = {
-    date: { type: 'date' },
-    time: { type: 'time' },
-    number: { type: 'text', inputMode: 'decimal' },
-    nik: { type: 'text', inputMode: 'numeric', maxLength: 16 },
-  }[field.type] ?? { type: 'text' }
+  const inputProps = INPUT_PROPS[field.type] ?? { type: 'text' }
 
   return (
     <input
@@ -113,8 +148,9 @@ export function RepeaterField({
   errors,
   catalogs = { familyMembers: [], occupations: [] },
   answers = {},
-}) {
-  const { fields: items, append, remove } = useFieldArray({ control, name: field.name })
+}: RepeaterFieldProps) {
+  // Nama isian berasal dari konfigurasi jenis surat, jadi tidak dikenal tipe form.
+  const { fields: items, append, remove } = useFieldArray({ control, name: field.name as never })
   const itemLabel = field.itemLabel || 'baris'
   const minRows = repeaterMinRows(field)
   const maxRows = field.max ?? 20
@@ -124,7 +160,7 @@ export function RepeaterField({
     <div className="sid-repeater">
       {items.map((item, index) => {
         const row = rows?.[index] ?? {}
-        const rowErrors = fieldError?.[index] ?? {}
+        const rowErrors = (fieldError as unknown as RowErrors[] | undefined)?.[index] ?? {}
         const others = (rows ?? []).filter((_, other) => other !== index)
 
         return (
@@ -167,12 +203,12 @@ export function RepeaterField({
                   />
                   {rowErrors[subField.name]?.message && (
                     <span className="sid-form-field-error" role="alert">
-                      {rowErrors[subField.name].message}
+                      {rowErrors[subField.name]?.message}
                     </span>
                   )}
                   {rowErrors[otherOccupationFieldName(subField.name)]?.message && (
                     <span className="sid-form-field-error" role="alert">
-                      {rowErrors[otherOccupationFieldName(subField.name)].message}
+                      {rowErrors[otherOccupationFieldName(subField.name)]?.message}
                     </span>
                   )}
                 </div>

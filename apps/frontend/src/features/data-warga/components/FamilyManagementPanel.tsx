@@ -1,8 +1,10 @@
 import { useImperativeHandle, useState } from 'react'
+import type { FormEvent, Ref } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
+import type { useFamilyList } from '../hooks/useFamilyList'
 import { WilayahFilterSelects } from './WilayahFilterSelects'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
@@ -21,9 +23,21 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
-import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealFamilyNumber } from '@/shared/lib/identityApi'
+import type { StatusTone } from '@/components/ui/StatusPill'
+import type { Family, FamilyMember } from '@/types'
+
+// GET /api/families/{id}/socioeconomic.
+type FamilySocioeconomic = {
+  household_income_range?: string | null
+  house_ownership_status?: string | null
+  water_source?: string | null
+  electricity_source?: string | null
+  dependents_count?: number | string | null
+  productive_assets?: unknown
+}
 
 const EMPTY_FAMILY = {
   no_kk: '',
@@ -32,9 +46,23 @@ const EMPTY_FAMILY = {
 }
 
 // Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Pengguna.
-const FAMILY_STATUS_TONE = { aktif: 'active', pindah: 'inactive', bubar: 'danger' }
+const FAMILY_STATUS_TONE: Record<string, StatusTone> = {
+  aktif: 'active',
+  pindah: 'inactive',
+  bubar: 'danger',
+}
 
-const EMPTY_SOCIOECONOMIC = {
+// dependents_count: angka dari API atau teks dari input.
+type SocioeconomicForm = {
+  household_income_range: string
+  house_ownership_status: string
+  water_source: string
+  electricity_source: string
+  dependents_count: number | string
+  productive_assets: string
+}
+
+const EMPTY_SOCIOECONOMIC: SocioeconomicForm = {
   household_income_range: '',
   house_ownership_status: '',
   water_source: '',
@@ -53,8 +81,11 @@ const fieldStyle = {
   fontFamily: 'inherit',
 }
 
-function responseData(response) {
-  return response?.data?.data ?? response?.data ?? {}
+// Body { data } atau langsung objeknya; kosong bila tidak ada.
+function responseData<T>(response: { data?: unknown }): Partial<T> {
+  const body = response?.data as { data?: T } | T | undefined
+
+  return ((body as { data?: T })?.data ?? body ?? {}) as Partial<T>
 }
 
 /**
@@ -62,12 +93,21 @@ function responseData(response) {
  * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
  * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
+export type FamilyManagementPanelHandle = { openCreate: () => void }
+
+type FamilyManagementPanelProps = {
+  familyList: ReturnType<typeof useFamilyList>
+  canEdit?: boolean
+  canViewHistory?: boolean
+  ref?: Ref<FamilyManagementPanelHandle>
+}
+
 export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
   canViewHistory = true,
   ref,
-}) {
+}: FamilyManagementPanelProps) {
   const navigate = useNavigate()
   const {
     families,
@@ -87,16 +127,16 @@ export default function FamilyManagementPanel({
   } = familyList
   const hasActions = canEdit || canViewHistory
   const columnCount = hasActions ? 6 : 5
-  const [modal, setModal] = useState(null)
+  const [modal, setModal] = useState<'family' | 'socioeconomic' | null>(null)
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
-  const [selectedFamily, setSelectedFamily] = useState(null)
-  const [members, setMembers] = useState([])
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
+  const [members, setMembers] = useState<FamilyMember[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [keyword, setKeyword] = useState('')
   // Isian saat modal dibuka (atau saat data survei selesai dimuat).
-  const [baseline, setBaseline] = useState(null)
+  const [baseline, setBaseline] = useState<typeof EMPTY_FAMILY | SocioeconomicForm | null>(null)
 
   const closeModal = () => setModal(null)
   const currentForm =
@@ -106,7 +146,7 @@ export default function FamilyManagementPanel({
     escapeClose: modal ? closeModal : null,
   })
 
-  const showError = (err) => {
+  const showError = (err: unknown) => {
     setMessage(getApiErrorMessage(err, 'Permintaan gagal. Silakan coba lagi.'))
   }
 
@@ -121,7 +161,7 @@ export default function FamilyManagementPanel({
   // Tombol Tambah KK ada di header halaman (sejajar Refresh), di luar panel.
   useImperativeHandle(ref, () => ({ openCreate }))
 
-  const openEdit = async (family) => {
+  const openEdit = async (family: Family) => {
     setSelectedFamily(family)
     setMembers([])
     const initialFamily = {
@@ -134,21 +174,21 @@ export default function FamilyManagementPanel({
     setMessage('')
     setModal('family')
     try {
-      const detail = responseData(await getFamily(family.id))
+      const detail = responseData<Family>(await getFamily(family.id))
       setMembers(detail.members ?? [])
     } catch (err) {
       showError(err)
     }
   }
 
-  const openSocioeconomic = async (family) => {
+  const openSocioeconomic = async (family: Family) => {
     setSelectedFamily(family)
     setMessage('')
     setModal('socioeconomic')
     setSocioeconomic(EMPTY_SOCIOECONOMIC)
     setBaseline(EMPTY_SOCIOECONOMIC)
     try {
-      const result = responseData(await getFamilySocioeconomic(family.id))
+      const result = responseData<FamilySocioeconomic>(await getFamilySocioeconomic(family.id))
       const loaded = {
         household_income_range: result.household_income_range ?? '',
         house_ownership_status: result.house_ownership_status ?? '',
@@ -162,11 +202,11 @@ export default function FamilyManagementPanel({
       setSocioeconomic(loaded)
       setBaseline(loaded)
     } catch (err) {
-      if (err?.response?.status !== 404) showError(err)
+      if (apiErrorStatus(err) !== 404) showError(err)
     }
   }
 
-  const handleFamilySubmit = async (event) => {
+  const handleFamilySubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
     setMessage('')
@@ -191,8 +231,9 @@ export default function FamilyManagementPanel({
     }
   }
 
-  const handleSocioeconomicSubmit = async (event) => {
+  const handleSocioeconomicSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!selectedFamily) return
     setBusy(true)
     setMessage('')
     try {
@@ -231,7 +272,7 @@ export default function FamilyManagementPanel({
     }
   }
 
-  const handleDelete = async (family) => {
+  const handleDelete = async (family: Family) => {
     if (
       !(await confirmDialog({
         title: `Hapus data KK ${family.no_kk_masked ?? ''}?`,
@@ -527,16 +568,18 @@ export default function FamilyManagementPanel({
               </>
             ) : (
               <>
-                <p>
-                  KK:{' '}
-                  <strong>
-                    <RevealableValue
-                      masked={selectedFamily?.no_kk_masked}
-                      reveal={() => revealFamilyNumber(selectedFamily.id)}
-                      label="No. KK"
-                    />
-                  </strong>
-                </p>
+                {selectedFamily && (
+                  <p>
+                    KK:{' '}
+                    <strong>
+                      <RevealableValue
+                        masked={selectedFamily.no_kk_masked}
+                        reveal={() => revealFamilyNumber(selectedFamily.id)}
+                        label="No. KK"
+                      />
+                    </strong>
+                  </p>
+                )}
                 <label className="sid-form-group">
                   <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>
                   <select

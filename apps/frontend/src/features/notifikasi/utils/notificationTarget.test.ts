@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import type { UserRole } from '@/types'
+
 import { getNotificationTarget } from './notificationTarget'
 
 describe('getNotificationTarget', () => {
   const context = { letter_id: 'abc-123', status: 'rt_approved' }
 
-  it.each([
+  it.each<[UserRole, string]>([
     ['warga', '/surat-saya/daftar?surat=abc-123'],
     ['rt', '/admin/rt/surat?surat=abc-123'],
     ['rw', '/admin/rw/surat?surat=abc-123'],
@@ -50,6 +52,7 @@ describe('getNotificationTarget', () => {
     expect(getNotificationTarget('warga', { status: 'info' })).toBeNull()
     expect(getNotificationTarget('warga', undefined)).toBeNull()
     expect(getNotificationTarget(undefined, context)).toBeNull()
-    expect(getNotificationTarget('peran_baru', context)).toBeNull()
+    // Peran di luar UserRole sengaja diuji: tidak ada tujuan.
+    expect(getNotificationTarget('peran_baru' as UserRole, context)).toBeNull()
   })
 })

@@ -3,7 +3,12 @@
 // Contoh 17 halaman: hal. 1 -> 1 2 3 …; hal. 5 -> … 4 5 6 …; hal. 17 -> … 15 16 17.
 const WINDOW_SIZE = 3
 
-export function getPageWindow(currentPage, totalPages) {
+export type PageWindowItem = number | 'ellipsis-start' | 'ellipsis-end'
+
+export function getPageWindow(
+  currentPage: number | string,
+  totalPages: number | string,
+): PageWindowItem[] {
   const total = Math.max(0, Number(totalPages) || 0)
 
   if (total === 0) {
@@ -18,8 +23,8 @@ export function getPageWindow(currentPage, totalPages) {
   const pages = Array.from({ length: size }, (_, index) => start + index)
 
   return [
-    ...(start > 1 ? ['ellipsis-start'] : []),
+    ...(start > 1 ? (['ellipsis-start'] as const) : []),
     ...pages,
-    ...(end < total ? ['ellipsis-end'] : []),
+    ...(end < total ? (['ellipsis-end'] as const) : []),
   ]
 }

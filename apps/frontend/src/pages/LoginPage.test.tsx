@@ -3,8 +3,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = vi.hoisted(() => ({ login: vi.fn() }))
-const form = vi.hoisted(() => ({ user: null }))
-const villageInfo = vi.hoisted(() => ({ village: null }))
+const form = vi.hoisted(() => ({ user: null as { id: number; role: string } | null }))
+const villageInfo = vi.hoisted(() => ({ village: null as Record<string, unknown> | null }))
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: () => villageInfo,
@@ -22,7 +22,10 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
     errors: { username: '', password: '', general: '' },
     isLoading: false,
     handleChange: vi.fn(),
-    handleSubmit: async (event, onSuccess) => {
+    handleSubmit: async (
+      event: { preventDefault: () => void } | undefined,
+      onSuccess: (user: unknown) => Promise<void>,
+    ) => {
       event?.preventDefault()
       await onSuccess(form.user)
     },
@@ -30,13 +33,14 @@ vi.mock('@/features/auth/hooks/useLoginForm', () => ({
 }))
 
 import LoginPage from './LoginPage'
+import { present } from '@/test/fixtures'
 
 function CurrentPath() {
   const location = useLocation()
   return <p data-testid="current-path">{location.pathname + location.search}</p>
 }
 
-async function loginAs(role, entry = '/login') {
+async function loginAs(role: string, entry = '/login') {
   form.user = { id: 1, role }
 
   const { container } = render(
@@ -48,7 +52,7 @@ async function loginAs(role, entry = '/login') {
     </MemoryRouter>,
   )
 
-  fireEvent.submit(container.querySelector('form'))
+  fireEvent.submit(present(container.querySelector('form')))
 
   return screen.findByTestId('current-path')
 }
@@ -160,9 +164,11 @@ describe('LoginPage background', () => {
     villageInfo.village = { hero_image_url: '/storage/hero/sawah.jpg' }
     const { container } = renderLogin()
 
-    const root = container.querySelector('.sid-login')
+    const root = container.querySelector<HTMLElement>('.sid-login')
     expect(root).toHaveClass('sid-login--photo')
-    expect(root.style.getPropertyValue('--sid-login-bg')).toBe('url("/storage/hero/sawah.jpg")')
+    expect(present(root).style.getPropertyValue('--sid-login-bg')).toBe(
+      'url("/storage/hero/sawah.jpg")',
+    )
   })
 
   it('falls back to the plain background without a hero photo', () => {

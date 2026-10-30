@@ -1,18 +1,28 @@
 // ==========================================
-// EditPerangkatDesaModal.jsx
+// EditPerangkatDesaModal.tsx
 // Edit data Official berdasarkan
 // PATCH /api/officials/{id}.
 // ==========================================
 
 import { useEffect, useState } from 'react'
+import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import { Link } from 'react-router-dom'
 import { Save, X, User, Phone, FileText, Power } from 'lucide-react'
 
 import { StatusPill } from '@/components/ui/StatusPill'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
+import type { ProfileOfficial } from '../types'
 
-const EMPTY_OFFICIAL = {
+// Data perangkat yang dapat diubah dari modal.
+export type EditablePerson = Pick<
+  ProfileOfficial,
+  'id' | 'position' | 'positionLabel' | 'name' | 'phoneWa' | 'isActive' | 'notes'
+>
+
+type PersonChanges = Partial<EditablePerson>
+
+const EMPTY_OFFICIAL: EditablePerson = {
   id: null,
   position: '',
   positionLabel: '',
@@ -26,7 +36,7 @@ const EMPTY_OFFICIAL = {
 // NORMALIZE PERSON
 // ==========================================
 
-function normalizePerson(person) {
+function normalizePerson(person: Partial<EditablePerson> | null | undefined): EditablePerson {
   return {
     ...EMPTY_OFFICIAL,
     id: person?.id ?? null,
@@ -43,7 +53,13 @@ function normalizePerson(person) {
 // PERSON EDITOR
 // ==========================================
 
-function PersonEditor({ person, onChange, disabled }) {
+type PersonEditorProps = {
+  person: EditablePerson
+  onChange: (changes: PersonChanges) => void
+  disabled: boolean
+}
+
+function PersonEditor({ person, onChange, disabled }: PersonEditorProps) {
   return (
     <div className="sid-profil-desa-device-form-card">
       <div className="sid-profil-desa-device-form-header">
@@ -125,6 +141,16 @@ function PersonEditor({ person, onChange, disabled }) {
 // MODAL
 // ==========================================
 
+type EditPerangkatDesaModalProps = {
+  open: boolean
+  onClose: () => void
+  onSubmit: (perangkat: EditablePerson[], kadus: EditablePerson[]) => Promise<unknown>
+  initialPerangkat: ProfileOfficial[]
+  initialKadus?: ProfileOfficial[]
+  processing?: boolean
+  error?: string
+}
+
 export default function EditPerangkatDesaModal({
   open,
   onClose,
@@ -133,12 +159,15 @@ export default function EditPerangkatDesaModal({
   initialKadus = [],
   processing = false,
   error = '',
-}) {
-  const [perangkatList, setPerangkatList] = useState([])
+}: EditPerangkatDesaModalProps) {
+  const [perangkatList, setPerangkatList] = useState<EditablePerson[]>([])
 
-  const [kadusList, setKadusList] = useState([])
+  const [kadusList, setKadusList] = useState<EditablePerson[]>([])
 
-  const [baseline, setBaseline] = useState(null)
+  const [baseline, setBaseline] = useState<{
+    perangkat: EditablePerson[]
+    kadus: EditablePerson[]
+  } | null>(null)
   const requestClose = useConfirmDiscard(
     open && isFormDirty({ perangkat: perangkatList, kadus: kadusList }, baseline),
     { disabled: processing, escapeClose: open ? onClose : null },
@@ -165,11 +194,13 @@ export default function EditPerangkatDesaModal({
   // UPDATE PERANGKAT & KADUS
   // ==========================================
 
-  const updateIn = (setList) => (id, changes) => {
-    setList((current) =>
-      current.map((person) => (person.id === id ? { ...person, ...changes } : person)),
-    )
-  }
+  const updateIn =
+    (setList: Dispatch<SetStateAction<EditablePerson[]>>) =>
+    (id: number | null, changes: PersonChanges) => {
+      setList((current) =>
+        current.map((person) => (person.id === id ? { ...person, ...changes } : person)),
+      )
+    }
 
   const updatePerangkat = updateIn(setPerangkatList)
 
@@ -179,7 +210,7 @@ export default function EditPerangkatDesaModal({
   // SUBMIT
   // ==========================================
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     await onSubmit(perangkatList, kadusList)

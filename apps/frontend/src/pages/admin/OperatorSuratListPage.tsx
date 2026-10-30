@@ -1,5 +1,5 @@
 // ==========================================
-// OperatorSuratListPage.jsx
+// OperatorSuratListPage.tsx
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa.
 // Status menggunakan status generic.
 // Daftar, detail, riwayat, dan unduhan bersifat read-only.
@@ -30,10 +30,12 @@ import { formatPageRange } from '@/components/ui/pageRange'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
+import { apiErrorStatus } from '@/shared/lib/apiError'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
-const STATUS_FILTER_PARAM = {
+const STATUS_FILTER_PARAM: Record<string, string> = {
   verification: SURAT_STATUS.IN_PROGRESS,
   completed: SURAT_STATUS.APPROVED,
   rejected: SURAT_STATUS.REJECTED,
@@ -47,16 +49,17 @@ export default function OperatorSuratListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('surat-operator')
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }
 
-  const [previewSurat, setPreviewSurat] = useState(null)
+  const [previewSurat, setPreviewSurat] = useState<LetterListItem | null>(null)
   const [exporting, setExporting] = useState(false)
 
   // Dibuka dari notifikasi: ?surat=<id>. Modal memuat detailnya sendiri.
-  useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId }))
+  // Surat di halaman lain: modal melengkapi barisnya dari detail surat.
+  useLetterDeepLink((letterId) => setPreviewSurat({ id: letterId } as LetterListItem))
 
   // ==========================================
   // LOAD DATA
@@ -99,7 +102,7 @@ export default function OperatorSuratListPage() {
         search: debouncedSearch || undefined,
       })
     } catch (error) {
-      const isEmpty = error?.response?.status === 422
+      const isEmpty = apiErrorStatus(error) === 422
       alertDialog({
         title: isEmpty ? 'Data kosong' : 'Unduhan gagal',
         tone: isEmpty ? 'warning' : 'error',
@@ -234,7 +237,7 @@ export default function OperatorSuratListPage() {
             renderActions={(surat) => (
               <LetterRowActions
                 surat={surat}
-                onOpen={setPreviewSurat}
+                onOpen={() => setPreviewSurat(surat)}
                 canDownload={surat.status === SURAT_STATUS.APPROVED}
               />
             )}

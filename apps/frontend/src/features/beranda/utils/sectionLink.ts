@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { HAL_BERANDA } from '@/lib/constants/routes'
@@ -9,9 +10,9 @@ import { scrollToSection } from './scrollToSection'
 export function useSectionLink() {
   const navigate = useNavigate()
 
-  return (id, onSelect) => ({
+  return (id: string, onSelect?: () => void) => ({
     href: `${HAL_BERANDA}#${id}`,
-    onClick: (event) => {
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault()
       if (!scrollToSection(id)) navigate(`${HAL_BERANDA}#${id}`)
       onSelect?.()

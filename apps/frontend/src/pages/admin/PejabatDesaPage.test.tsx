@@ -25,16 +25,17 @@ vi.mock('@/features/kelola-wilayah/api', () => wilayahApi)
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'staf-1', role: 'staf_sid' } }),
 }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 import PejabatDesaPage from './PejabatDesaPage'
+import { present } from '@/test/fixtures'
 
-const official = (overrides) => ({
+const official = (overrides: Record<string, unknown>) => ({
   id: Math.random(),
   is_active: true,
-  rt_id: null,
-  rw_id: null,
-  hamlet_id: null,
+  rt_id: null as number | null,
+  rw_id: null as number | null,
+  hamlet_id: null as number | null,
   citizen: { name: 'Pejabat' },
   ...overrides,
 })
@@ -68,7 +69,7 @@ const openPromotion = async () => {
   return { user, dialog: screen.getByRole('heading', { name: 'Tetapkan Pejabat' }).closest('form') }
 }
 
-const option = (scope, name) => within(scope).getByRole('option', { name })
+const option = (scope: HTMLElement, name: string) => within(scope).getByRole('option', { name })
 
 describe('PejabatDesaPage - Tetapkan Pejabat', () => {
   beforeEach(() => {
@@ -91,22 +92,25 @@ describe('PejabatDesaPage - Tetapkan Pejabat', () => {
   it('disables single positions that are already held', async () => {
     const { dialog } = await openPromotion()
 
-    expect(option(dialog, 'Kepala Desa (sudah dijabat)')).toBeDisabled()
-    expect(option(dialog, 'Staf SIDUTama (sudah dijabat)')).toBeDisabled()
-    expect(option(dialog, 'Kasi Trantib (tanpa akun) (sudah dijabat)')).toBeDisabled()
+    expect(option(present(dialog), 'Kepala Desa (sudah dijabat)')).toBeDisabled()
+    expect(option(present(dialog), 'Staf SIDUTama (sudah dijabat)')).toBeDisabled()
+    expect(option(present(dialog), 'Kasi Trantib (tanpa akun) (sudah dijabat)')).toBeDisabled()
 
-    expect(option(dialog, 'Sekretaris Desa')).toBeEnabled()
-    expect(option(dialog, 'Staf Umum (tanpa akun)')).toBeEnabled()
+    expect(option(present(dialog), 'Sekretaris Desa')).toBeEnabled()
+    expect(option(present(dialog), 'Staf Umum (tanpa akun)')).toBeEnabled()
     // Jabatan berwilayah dicek per wilayah, bukan per jabatan.
-    expect(option(dialog, 'Ketua RT')).toBeEnabled()
+    expect(option(present(dialog), 'Ketua RT')).toBeEnabled()
   })
 
   it('disables areas that already have an active holder', async () => {
     const { user, dialog } = await openPromotion()
 
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: /Jabatan/ }), 'rt')
+    await user.selectOptions(
+      within(present(dialog)).getByRole('combobox', { name: /Jabatan/ }),
+      'rt',
+    )
 
-    expect(option(dialog, 'RT 001 / RW 001 (sudah ada)')).toBeDisabled()
-    expect(option(dialog, 'RT 002 / RW 001')).toBeEnabled()
+    expect(option(present(dialog), 'RT 001 / RW 001 (sudah ada)')).toBeDisabled()
+    expect(option(present(dialog), 'RT 002 / RW 001')).toBeEnabled()
   })
 })

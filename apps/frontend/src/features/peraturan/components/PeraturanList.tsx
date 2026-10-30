@@ -1,5 +1,5 @@
 // ==========================================
-// PeraturanList.jsx
+// PeraturanList.tsx
 // Daftar peraturan desa untuk halaman publik (section di Profil Desa).
 // Mengambil datanya sendiri, jadi kegagalan di sini tidak menjatuhkan
 // halaman yang memuatnya.
@@ -9,10 +9,12 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, ScrollText } from 'lucide-react'
 
 import { getPublicRegulations } from '@/features/peraturan/api'
+import type { Regulation } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { errorBox, stateBox } from '@/features/beranda/publicClasses'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
 
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
   if (!value) return null
 
   return new Date(value).toLocaleDateString('id-ID', {
@@ -23,10 +25,10 @@ function formatDate(value) {
 }
 
 export function PeraturanList() {
-  const [regulations, setRegulations] = useState([])
+  const [regulations, setRegulations] = useState<Regulation[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [openId, setOpenId] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -39,8 +41,8 @@ export function PeraturanList() {
       } catch (err) {
         // Backend menjawab 404 bila belum ada peraturan; itu keadaan kosong, bukan error.
         if (!active) return
-        if (err?.response?.status === 404) setRegulations([])
-        else setError(err?.response?.data?.message || 'Gagal memuat peraturan desa.')
+        if (apiErrorStatus(err) === 404) setRegulations([])
+        else setError(getApiErrorMessage(err, 'Gagal memuat peraturan desa.'))
       } finally {
         if (active) setLoading(false)
       }

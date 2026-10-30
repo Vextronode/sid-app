@@ -10,6 +10,21 @@ import {
   markNotificationAsRead,
 } from '../api'
 import useNotifications from './useNotifications'
+import type { ReactNode } from 'react'
+
+const mockedGetNotifications = vi.mocked(getNotifications, { partial: true, deep: true })
+const mockedGetUnreadNotificationCount = vi.mocked(getUnreadNotificationCount, {
+  partial: true,
+  deep: true,
+})
+const mockedMarkAllNotificationsAsRead = vi.mocked(markAllNotificationsAsRead, {
+  partial: true,
+  deep: true,
+})
+const mockedMarkNotificationAsRead = vi.mocked(markNotificationAsRead, {
+  partial: true,
+  deep: true,
+})
 
 vi.mock('../api', () => ({
   getNotifications: vi.fn(),
@@ -25,7 +40,8 @@ const notifications = [
 
 function renderNotifications() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client }, children)
 
   return renderHook(() => useNotifications(), { wrapper })
 }
@@ -33,10 +49,10 @@ function renderNotifications() {
 describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getNotifications.mockResolvedValue({ data: { data: notifications } })
-    getUnreadNotificationCount.mockResolvedValue({ data: { data: { count: 1 } } })
-    markNotificationAsRead.mockResolvedValue({ data: { message: 'ok' } })
-    markAllNotificationsAsRead.mockResolvedValue({ data: { message: 'ok' } })
+    mockedGetNotifications.mockResolvedValue({ data: { data: notifications } })
+    mockedGetUnreadNotificationCount.mockResolvedValue({ data: { data: { count: 1 } } })
+    mockedMarkNotificationAsRead.mockResolvedValue({ data: { message: 'ok' } })
+    mockedMarkAllNotificationsAsRead.mockResolvedValue({ data: { message: 'ok' } })
   })
 
   it('loads notifications and unread count from BE response shapes', async () => {
@@ -53,7 +69,7 @@ describe('useNotifications', () => {
   it('updates a notification locally only after mark-read succeeds', async () => {
     const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
-    getUnreadNotificationCount.mockResolvedValueOnce({ data: { data: { count: 0 } } })
+    mockedGetUnreadNotificationCount.mockResolvedValueOnce({ data: { data: { count: 0 } } })
 
     await act(async () => {
       await result.current.markAsRead('notification-1')
@@ -67,7 +83,8 @@ describe('useNotifications', () => {
 
   it('reuses cached data when another layout mounts the hook', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const wrapper = ({ children }) => createElement(QueryClientProvider, { client }, children)
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children)
 
     const first = renderHook(() => useNotifications(), { wrapper })
     await waitFor(() => expect(first.result.current.loading).toBe(false))
@@ -82,7 +99,7 @@ describe('useNotifications', () => {
   })
 
   it('does not update notification state when mark-read fails', async () => {
-    markNotificationAsRead.mockRejectedValueOnce(new Error('request failed'))
+    mockedMarkNotificationAsRead.mockRejectedValueOnce(new Error('request failed'))
     const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))
 

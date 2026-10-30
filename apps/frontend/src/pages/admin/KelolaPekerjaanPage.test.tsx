@@ -14,11 +14,12 @@ const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/pekerjaan/api', () => api)
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
-vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: (): null => null }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import KelolaPekerjaanPage from './KelolaPekerjaanPage'
+import { present } from '@/test/fixtures'
 
 const PETANI = { id: 1, name: 'Petani', sort_order: 1, is_active: true, citizens_count: 3 }
 
@@ -35,7 +36,7 @@ describe('KelolaPekerjaanPage status toggle', () => {
     render(<KelolaPekerjaanPage />)
 
     const row = (await screen.findByText('Petani')).closest('tr')
-    await user.click(within(row).getByRole('button', { name: 'Nonaktifkan Petani' }))
+    await user.click(within(present(row)).getByRole('button', { name: 'Nonaktifkan Petani' }))
 
     expect(confirmDialog).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Nonaktifkan pekerjaan "Petani"?' }),
@@ -50,7 +51,7 @@ describe('KelolaPekerjaanPage status toggle', () => {
     render(<KelolaPekerjaanPage />)
 
     const row = (await screen.findByText('Petani')).closest('tr')
-    await user.click(within(row).getByRole('button', { name: 'Nonaktifkan Petani' }))
+    await user.click(within(present(row)).getByRole('button', { name: 'Nonaktifkan Petani' }))
 
     expect(api.updateOccupation).not.toHaveBeenCalled()
   })
@@ -60,7 +61,7 @@ describe('KelolaPekerjaanPage status toggle', () => {
     render(<KelolaPekerjaanPage />)
 
     const row = (await screen.findByText('Petani')).closest('tr')
-    await user.click(within(row).getByRole('button', { name: 'Edit Pekerjaan' }))
+    await user.click(within(present(row)).getByRole('button', { name: 'Edit Pekerjaan' }))
 
     expect(screen.getByLabelText('Nama Pekerjaan')).toHaveValue('Petani')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()

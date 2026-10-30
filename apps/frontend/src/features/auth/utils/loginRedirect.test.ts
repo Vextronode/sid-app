@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { UserRole } from '@/types'
+
 import { buildLoginPath, isSafeInternalPath, resolveLoginRedirect } from './loginRedirect'
 
 describe('isSafeInternalPath', () => {
@@ -59,7 +61,7 @@ describe('resolveLoginRedirect', () => {
     expect(resolveLoginRedirect(path, 'warga')).toBeNull()
   })
 
-  it.each([
+  it.each<[UserRole, string]>([
     ['rt', '/admin/surat-saya'],
     ['rw', '/admin/surat-saya'],
     ['kadus', '/admin/surat-saya'],

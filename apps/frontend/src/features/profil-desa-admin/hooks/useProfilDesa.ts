@@ -8,6 +8,14 @@ import {
   updateProfilDesa,
   uploadVillageImage,
 } from '../api'
+import type { Official, ResourceResponse, Village } from '@/types'
+import type {
+  ProfileOfficial,
+  VillageImageKind,
+  VillageProfileForm,
+  VillageProfilePayload,
+} from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // ==========================================
 // POSISI YANG TIDAK TAMPIL DI PROFIL DESA
@@ -22,7 +30,7 @@ const HIDDEN_POSITIONS = ['rt', 'rw']
 // DEFAULT PROFIL
 // ==========================================
 
-const EMPTY_PROFILE = {
+const EMPTY_PROFILE: VillageProfileForm = {
   id: null,
   name: '',
   code: '',
@@ -50,7 +58,7 @@ const EMPTY_PROFILE = {
 }
 
 // Teks profil yang dikirim lewat PATCH /villages/profile; kosong = null.
-const TEXT_FIELDS = [
+const TEXT_FIELDS: (keyof VillageProfileForm)[] = [
   'address',
   'phone',
   'district',
@@ -67,25 +75,28 @@ const TEXT_FIELDS = [
 ]
 
 // Response backend -> state halaman. Nilai null jadi '' agar aman di input.
-function normalizeProfile(village) {
-  const profile = { ...EMPTY_PROFILE }
+function normalizeProfile(village: Village | null | undefined): VillageProfileForm {
+  const profile: Record<string, unknown> = { ...EMPTY_PROFILE }
 
   for (const key of Object.keys(EMPTY_PROFILE)) {
-    if (village?.[key] !== undefined && village?.[key] !== null) profile[key] = village[key]
+    const value = village?.[key as keyof Village]
+
+    if (value !== undefined && value !== null) profile[key] = value
   }
 
-  return profile
+  return profile as VillageProfileForm
 }
 
 // ==========================================
 // UNWRAP RESPONSE
 // ==========================================
 
-function unwrap(response) {
-  return response?.data?.data ?? response?.data ?? null
+// Semua endpoint di sini membungkus hasilnya dalam { data }.
+function unwrap<T>(response: { data: ResourceResponse<T> } | null | undefined): T | null {
+  return response?.data?.data ?? null
 }
 
-function toNumberOrNull(value) {
+function toNumberOrNull(value: number | string | null | undefined) {
   return value === '' || value === null || value === undefined ? null : Number(value)
 }
 
@@ -93,7 +104,7 @@ function toNumberOrNull(value) {
 // NORMALIZE OFFICIAL
 // ==========================================
 
-function normalizeOfficial(official) {
+function normalizeOfficial(official: Official): ProfileOfficial {
   return {
     id: official?.id ?? null,
     position: official?.position ?? '',
@@ -117,8 +128,8 @@ function normalizeOfficial(official) {
 // ==========================================
 
 export function useProfilDesa() {
-  const [profile, setProfile] = useState(EMPTY_PROFILE)
-  const [officials, setOfficials] = useState([])
+  const [profile, setProfile] = useState<VillageProfileForm>(EMPTY_PROFILE)
+  const [officials, setOfficials] = useState<ProfileOfficial[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -138,9 +149,7 @@ export function useProfilDesa() {
 
   const fetchOfficials = useCallback(async () => {
     const response = await getPerangkatDesa()
-    const result = unwrap(response)
-
-    const items = Array.isArray(result) ? result : (result?.data ?? [])
+    const items = unwrap(response) ?? []
 
     const normalizedOfficials = items
       .map(normalizeOfficial)
@@ -162,16 +171,11 @@ export function useProfilDesa() {
     try {
       await Promise.all([fetchProfile(), fetchOfficials()])
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Data profil desa gagal dimuat.'
+      const message = getApiErrorMessage(err, 'Data profil desa gagal dimuat.')
 
       setError(message)
 
-      console.error('GET PROFIL DESA ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('GET PROFIL DESA ERROR:', err)
     } finally {
       setLoading(false)
     }
@@ -241,7 +245,7 @@ export function useProfilDesa() {
   // UPDATE PROFIL DESA
   // ==========================================
 
-  const updateProfile = async (payload) => {
+  const updateProfile = async (payload: Partial<VillageProfileForm>) => {
     setProcessing(true)
     setError('')
 
@@ -260,7 +264,7 @@ export function useProfilDesa() {
         ...payload,
       }
 
-      const response = await updateProfilDesa({
+      const fields: VillageProfilePayload = {
         name: nextProfile.name,
         head_name: nextProfile.head_name,
         ...Object.fromEntries(TEXT_FIELDS.map((key) => [key, nextProfile[key] || null])),
@@ -268,7 +272,8 @@ export function useProfilDesa() {
         area_ha: toNumberOrNull(nextProfile.area_ha),
         latitude: nextProfile.latitude ?? null,
         longitude: nextProfile.longitude ?? null,
-      })
+      }
+      const response = await updateProfilDesa(fields)
 
       const updated = unwrap(response)
 
@@ -278,16 +283,11 @@ export function useProfilDesa() {
 
       return updated
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Profil desa gagal diperbarui.'
+      const message = getApiErrorMessage(err, 'Profil desa gagal diperbarui.')
 
       setError(message)
 
-      console.error('UPDATE PROFIL DESA ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('UPDATE PROFIL DESA ERROR:', err)
 
       throw err
     } finally {
@@ -305,14 +305,14 @@ export function useProfilDesa() {
   // kind: 'logo' | 'hero'. Galat dilempar ke komponen agar pesannya tampil
   // di kartu gambar yang bersangkutan.
 
-  const uploadImage = async (kind, file) => {
+  const uploadImage = async (kind: VillageImageKind, file: File) => {
     const response = await uploadVillageImage(kind, file)
 
     setProfile(normalizeProfile(unwrap(response)))
     refreshPublicVillageInfo()
   }
 
-  const updateVisiMisi = async (payload) => {
+  const updateVisiMisi = async (payload: { vision?: string; mission?: string } | null) => {
     return updateProfile({
       vision: payload?.vision ?? '',
       mission: payload?.mission ?? '',
@@ -323,7 +323,7 @@ export function useProfilDesa() {
   // UPDATE PERANGKAT DESA
   // ==========================================
 
-  const updateOfficial = async (id, payload) => {
+  const updateOfficial = async (id: number, payload: Parameters<typeof updatePerangkatDesa>[1]) => {
     setProcessing(true)
     setError('')
 
@@ -338,16 +338,11 @@ export function useProfilDesa() {
        */
       await fetchOfficials()
     } catch (err) {
-      const message = err?.response?.data?.message ?? 'Data perangkat desa gagal diperbarui.'
+      const message = getApiErrorMessage(err, 'Data perangkat desa gagal diperbarui.')
 
       setError(message)
 
-      console.error('UPDATE OFFICIAL ERROR:', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        url: err?.config?.url,
-        method: err?.config?.method,
-      })
+      console.error('UPDATE OFFICIAL ERROR:', err)
 
       throw err
     } finally {

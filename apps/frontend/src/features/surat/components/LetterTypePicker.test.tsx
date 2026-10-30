@@ -2,8 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LetterTypePicker } from './LetterTypePicker'
+import { partialFixture } from '@/test/fixtures'
+import type { LetterType } from '@/types'
 
-const TYPES = [
+const TYPES = partialFixture<LetterType[]>([
   {
     id: 1,
     code: 'SKD',
@@ -13,7 +15,7 @@ const TYPES = [
     validity_days: 30,
   },
   { id: 2, code: 'SKU', name: 'Surat Keterangan Usaha', signature_slots: [{ key: 'saksi' }] },
-]
+])
 
 function renderPicker(props = {}) {
   const onSelect = vi.fn()

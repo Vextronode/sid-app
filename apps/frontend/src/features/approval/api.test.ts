@@ -7,12 +7,14 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
+import type { UserRole } from '@/types'
+
 import { submitDecision } from './api'
 
 describe('approval decision API', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it.each([
+  it.each<[UserRole, string]>([
     ['rt', '/api/rt/letters/letter-1/decision'],
     ['kepala_desa', '/api/kades/letters/letter-1/decision'],
     ['sekretaris_desa', '/api/kades/letters/letter-1/decision'],

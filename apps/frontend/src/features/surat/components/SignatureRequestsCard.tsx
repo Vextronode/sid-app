@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ShieldBan, ShieldCheck } from 'lucide-react'
 import { SIGNATURE_REQUESTS_ANCHOR } from '@/features/notifikasi/utils/notificationTarget'
@@ -10,22 +11,12 @@ import {
   rejectSignatureRequest,
   removeSignatureBlock,
 } from '../api/signatureApi'
+import type { SignatureBlock, SignatureRequest } from '../api/signatureApi'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
-
-const isWitness = (request) => request.signer_type === 'witness'
+const isWitness = (request: SignatureRequest) => request.signer_type === 'witness'
 
 /**
  * Permintaan tanda tangan dan saksi dari warga lain yang ditujukan ke akun
@@ -33,15 +24,16 @@ const isWitness = (request) => request.signer_type === 'witness'
  * Persetujuan berlaku per surat dan memerlukan kata sandi.
  */
 export function SignatureRequestsCard() {
-  const [requests, setRequests] = useState([])
-  const [blocks, setBlocks] = useState([])
+  const [requests, setRequests] = useState<SignatureRequest[]>([])
+  const [blocks, setBlocks] = useState<SignatureBlock[]>([])
   const [loading, setLoading] = useState(true)
-  const [busyId, setBusyId] = useState(null)
-  const [blockOnReject, setBlockOnReject] = useState({})
-  const [passwords, setPasswords] = useState({})
+  // Id permintaan/blokir yang sedang diproses, atau 'block-add'.
+  const [busyId, setBusyId] = useState<number | string | null>(null)
+  const [blockOnReject, setBlockOnReject] = useState<Record<number, boolean>>({})
+  const [passwords, setPasswords] = useState<Record<number, string>>({})
   const [showBlocks, setShowBlocks] = useState(false)
   const [blockNik, setBlockNik] = useState('')
-  const sectionRef = useRef(null)
+  const sectionRef = useRef<HTMLElement>(null)
   const { hash } = useLocation()
   const [error, setError] = useState('')
 
@@ -55,7 +47,7 @@ export function SignatureRequestsCard() {
       setRequests(Array.isArray(requestData) ? requestData : [])
       setBlocks(Array.isArray(blockData) ? blockData : [])
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal memuat permintaan tanda tangan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat permintaan tanda tangan.'))
     } finally {
       setLoading(false)
     }
@@ -73,7 +65,11 @@ export function SignatureRequestsCard() {
     }
   }, [loading, hash])
 
-  const run = async (id, action, successMessage) => {
+  const run = async (
+    id: number | string,
+    action: () => Promise<unknown>,
+    successMessage: string,
+  ) => {
     setBusyId(id)
     setError('')
 
@@ -84,7 +80,7 @@ export function SignatureRequestsCard() {
 
       return true
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Aksi gagal diproses.'))
+      setError(getApiErrorMessage(requestError, 'Aksi gagal diproses.'))
 
       return false
     } finally {
@@ -92,7 +88,7 @@ export function SignatureRequestsCard() {
     }
   }
 
-  const reject = async (request) => {
+  const reject = async (request: SignatureRequest) => {
     const confirmed = await confirmDialog({
       title: isWitness(request)
         ? `Tolak menjadi saksi untuk ${request.applicant_name}?`
@@ -110,7 +106,7 @@ export function SignatureRequestsCard() {
     )
   }
 
-  const addBlock = async (event) => {
+  const addBlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const done = await run('block-add', () => addSignatureBlock(blockNik), 'Warga diblokir.')

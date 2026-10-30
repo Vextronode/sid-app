@@ -10,7 +10,7 @@ const categories = [
 ]
 
 const renderModal = (props = {}) => {
-  const onSubmit = vi.fn().mockResolvedValue()
+  const onSubmit = vi.fn().mockResolvedValue(undefined)
   render(
     <BeritaFormModal
       open

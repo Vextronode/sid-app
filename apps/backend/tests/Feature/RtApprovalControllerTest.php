@@ -116,6 +116,43 @@ class RtApprovalControllerTest extends TestCase
         ]);
     }
 
+    public function test_letter_list_carries_the_rejection_reason_of_a_rejected_letter(): void
+    {
+        Notification::fake();
+
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
+        $user = $this->makeRtUser($village, $rt);
+
+        $this->actingAs($user)
+            ->patchJson("/api/rt/letters/{$letter->id}/decision", [
+                'status' => 'rejected',
+                'notes' => 'Dokumen tidak sesuai',
+            ])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $letter->id,
+                'status' => 'rejected',
+                'rejection_reason' => 'Dokumen tidak sesuai',
+            ]);
+    }
+
+    public function test_letter_list_has_no_rejection_reason_for_a_letter_that_is_not_rejected(): void
+    {
+        $village = Village::factory()->create();
+        ['letter' => $letter, 'rt' => $rt] = $this->makeLetterAtRtStep($village);
+        $user = $this->makeRtUser($village, $rt);
+
+        $this->actingAs($user)
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $letter->id, 'rejection_reason' => null]);
+    }
+
     public function test_decision_reject_requires_notes(): void
     {
         $village = Village::factory()->create();

@@ -31,11 +31,11 @@ describe('useLogoutToBeranda', () => {
   })
 
   it('stays on the page until the server has ended the session', async () => {
-    let finishLogout
+    let finishLogout: () => void
     // Seperti AuthContext: onLoggedOut dipanggil saat server sudah menghapus sesi.
     auth.logout.mockImplementation(
       ({ onLoggedOut }) =>
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           finishLogout = () => {
             onLoggedOut()
             resolve()
@@ -44,7 +44,7 @@ describe('useLogoutToBeranda', () => {
     )
     const { result } = renderLogout()
 
-    let pending
+    let pending: Promise<void>
     act(() => {
       pending = result.current.handleLogout()
     })

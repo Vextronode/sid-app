@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicNews } from '@/features/berita/usePublicNews'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import type { User } from '@/types'
 import { BerandaPage } from './BerandaPage'
+import { present } from '@/test/fixtures'
+
+const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
+const mockedUsePublicNews = vi.mocked(usePublicNews, { partial: true, deep: true })
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
 vi.mock('@/features/berita/usePublicNews', () => ({
   usePublicNews: vi.fn(),
@@ -19,18 +25,18 @@ vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
 }))
 
-const renderPage = (props) =>
+const renderPage = () =>
   render(
     <MemoryRouter>
-      <BerandaPage {...props} />
+      <BerandaPage />
     </MemoryRouter>,
   )
 
 beforeEach(() => {
   vi.clearAllMocks()
-  usePublicNews.mockReturnValue({ news: [], loading: false, error: null })
-  usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
-  useAuth.mockReturnValue({ user: null, isLoading: false })
+  mockedUsePublicNews.mockReturnValue({ news: [], loading: false, error: null })
+  mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+  mockedUseAuth.mockReturnValue({ user: null, isLoading: false })
 })
 
 describe('BerandaPage structure and accessibility', () => {
@@ -43,7 +49,7 @@ describe('BerandaPage structure and accessibility', () => {
       ['Sambutan Kepala Desa', 'Kabar desa', 'Cara mengajukan surat', 'Butuh bantuan?'],
     ],
   ])('has one h1 and an h2 for every titled section (%s, Ak3)', (_, village, expected) => {
-    usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: [] })
     renderPage()
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
@@ -71,7 +77,7 @@ describe('BerandaPage structure and accessibility', () => {
 
   it('renders only real-data sections in production (K1)', () => {
     // Pita angka hanya tampil bila API mengirim angkanya.
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: null,
       stats: { total_population: 6080, total_hamlets: 5 },
       contacts: [],
@@ -91,7 +97,7 @@ describe('BerandaPage structure and accessibility', () => {
 
 describe('BerandaPage news section', () => {
   it('shows loading state while fetching public news', () => {
-    usePublicNews.mockReturnValue({ news: [], loading: true, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: [], loading: true, error: null })
 
     renderPage()
 
@@ -99,7 +105,7 @@ describe('BerandaPage news section', () => {
   })
 
   it('shows API errors explicitly', () => {
-    usePublicNews.mockReturnValue({
+    mockedUsePublicNews.mockReturnValue({
       news: [],
       loading: false,
       error: 'Gagal memuat berita.',
@@ -111,14 +117,14 @@ describe('BerandaPage news section', () => {
   })
 
   it('shows an empty state when there is no published news', () => {
-    usePublicNews.mockReturnValue({ news: [], loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: [], loading: false, error: null })
 
     renderPage()
 
     expect(screen.getByRole('status')).toHaveTextContent('Belum ada berita yang dipublikasikan.')
   })
 
-  const newsItems = (count) =>
+  const newsItems = (count: number) =>
     Array.from({ length: count }, (_, i) => ({
       id: i + 1,
       title: `Berita ${i + 1}`,
@@ -132,7 +138,7 @@ describe('BerandaPage news section', () => {
   const newsRegion = () => within(screen.getByRole('region', { name: 'Kabar desa' }))
 
   it('links one featured and three compact news cards, not the fifth (A21–A24)', () => {
-    usePublicNews.mockReturnValue({ news: newsItems(5), loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: newsItems(5), loading: false, error: null })
 
     renderPage()
 
@@ -156,7 +162,7 @@ describe('BerandaPage news section', () => {
   })
 
   it('shows a one-sentence plain-text summary only on the featured card', () => {
-    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
 
     renderPage()
 
@@ -166,7 +172,7 @@ describe('BerandaPage news section', () => {
   })
 
   it('lazy-loads thumbnails and shows a neutral placeholder when empty (K2)', () => {
-    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
 
     const { container } = renderPage()
 
@@ -187,7 +193,7 @@ describe('BerandaPage news section', () => {
   })
 
   it('shows the news categories from the API', () => {
-    usePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: newsItems(4), loading: false, error: null })
 
     const { container } = renderPage()
 
@@ -200,14 +206,14 @@ describe('BerandaPage stats band', () => {
   const band = () => screen.queryByRole('region', { name: 'Desa dalam angka' })
 
   it('shows the figures from the API and links to the village profile (A19)', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { name: 'Cibenda', area_ha: 759.319 },
-      stats: { total_letter_types: 4, total_population: 6080, total_hamlets: 5 },
+      stats: { total_population: 6080, total_hamlets: 5 },
       contacts: [],
     })
     renderPage()
 
-    const region = within(band())
+    const region = within(present(band()))
     expect(region.getByText('6.080')).toBeInTheDocument()
     expect(region.getByText('jiwa penduduk')).toBeInTheDocument()
     expect(region.getByText('759,319 ha')).toBeInTheDocument()
@@ -223,20 +229,20 @@ describe('BerandaPage stats band', () => {
   })
 
   it('leaves out figures without data and hides the band when none is available', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { name: 'Cibenda', area_ha: null },
-      stats: { total_letter_types: 4, total_population: 0, total_hamlets: 5 },
+      stats: { total_population: 0, total_hamlets: 5 },
       contacts: [],
     })
     const { unmount } = renderPage()
 
-    const region = within(band())
+    const region = within(present(band()))
     expect(region.getByText('dusun')).toBeInTheDocument()
     expect(region.queryByText('jiwa penduduk')).toBeNull()
     expect(region.queryByText('luas wilayah')).toBeNull()
 
     unmount()
-    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
     renderPage()
 
     expect(band()).toBeNull()
@@ -267,7 +273,7 @@ describe('BerandaPage hero', () => {
   })
 
   it('links signed-in users straight to the destination', () => {
-    useAuth.mockReturnValue({ user: { role: 'warga' }, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user: { role: 'warga' }, isLoading: false })
 
     renderPage()
 
@@ -290,15 +296,15 @@ describe('BerandaPage hero', () => {
 
   // Foto dan kreditnya dari data desa (diatur Staf SIDUTama).
   it('uses the hero photo and credit from the village data', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { hero_image_url: '/storage/village-media/hero.jpg', hero_photo_credit: 'Warga' },
       stats: null,
       contacts: [],
     })
     const { container } = renderPage()
 
-    const hero = container.querySelector('.bd-hero')
-    expect(hero.style.getPropertyValue('--bd-hero-image')).toBe(
+    const hero = container.querySelector<HTMLElement>('.bd-hero')
+    expect(present(hero).style.getPropertyValue('--bd-hero-image')).toBe(
       'url("/storage/village-media/hero.jpg")',
     )
     expect(screen.getByText('Foto: Warga')).toBeInTheDocument()
@@ -307,7 +313,11 @@ describe('BerandaPage hero', () => {
   it('falls back to the plain hero colour and hides an empty credit (K2)', () => {
     const { container } = renderPage()
 
-    expect(container.querySelector('.bd-hero').style.getPropertyValue('--bd-hero-image')).toBe('')
+    expect(
+      present(container.querySelector<HTMLElement>('.bd-hero')).style.getPropertyValue(
+        '--bd-hero-image',
+      ),
+    ).toBe('')
     expect(screen.queryByText(/^Foto:/)).toBeNull()
   })
 })
@@ -315,14 +325,14 @@ describe('BerandaPage hero', () => {
 describe('BerandaPage service cards', () => {
   const cards = () => within(screen.getByRole('region', { name: 'Layanan populer' }))
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string, string]>([
     ['guest', null, '/login?redirect=%2Fjenis-surat', '/login?redirect=%2Fsurat-saya%2Fdaftar'],
     ['warga', { role: 'warga' }, '/jenis-surat', '/surat-saya/daftar'],
     // Pejabat tidak lagi terlempar ke beranda publik: ke Surat Saya pejabat.
     ['rt', { role: 'rt' }, '/admin/surat-saya', '/admin/surat-saya'],
     ['staf_sid', { role: 'staf_sid' }, '/admin/surat-saya', '/admin/surat-saya'],
   ])('makes the whole Ajukan and Status cards links (%s)', (_, user, ajukan, status) => {
-    useAuth.mockReturnValue({ user, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user, isLoading: false })
 
     renderPage()
 
@@ -333,11 +343,11 @@ describe('BerandaPage service cards', () => {
     )
   })
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string]>([
     ['guest', null, '/login?redirect=%2Fsurat-saya%2Fdaftar%3Fstatus%3Dapproved'],
     ['warga', { role: 'warga' }, '/surat-saya/daftar?status=approved'],
   ])('links Unduh surat selesai to the approved letters (%s)', (_, user, href) => {
-    useAuth.mockReturnValue({ user, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user, isLoading: false })
 
     renderPage()
 
@@ -346,7 +356,7 @@ describe('BerandaPage service cards', () => {
   })
 
   it('only links the WhatsApp and email rows of the complaint card (K14, D2)', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { email: 'kantor@desa.test' },
       stats: null,
       contacts: [],
@@ -355,7 +365,9 @@ describe('BerandaPage service cards', () => {
 
     const title = cards().getByText('Sampaikan pengaduan')
     expect(title.closest('a')).toBeNull()
-    const links = within(title.closest('.bd-service-card')).getAllByRole('link')
+    const links = within(present(title.closest<HTMLElement>('.bd-service-card'))).getAllByRole(
+      'link',
+    )
     expect(links).toHaveLength(2)
 
     // D2: menu bagikan AddToAny di tab baru (permintaan pemilik, 12 Okt 2026).
@@ -380,9 +392,9 @@ describe('BerandaPage service cards', () => {
   it('leaves out the email row when the village has no email', () => {
     renderPage()
 
-    const card = cards().getByText('Sampaikan pengaduan').closest('.bd-service-card')
-    expect(within(card).getAllByRole('link')).toHaveLength(1)
-    expect(within(card).queryByText(/@/)).toBeNull()
+    const card = cards().getByText('Sampaikan pengaduan').closest<HTMLElement>('.bd-service-card')
+    expect(within(present(card)).getAllByRole('link')).toHaveLength(1)
+    expect(within(present(card)).queryByText(/@/)).toBeNull()
   })
 
   it('shows all four cards in production as well', () => {
@@ -409,11 +421,11 @@ describe('BerandaPage how-to steps', () => {
     expect(howTo().getAllByRole('heading', { level: 3 })).toHaveLength(4)
   })
 
-  it.each([
+  it.each<[string, Pick<User, 'role'> | null, string]>([
     ['guest', null, '/login?redirect=%2Fjenis-surat'],
     ['warga', { role: 'warga' }, '/jenis-surat'],
   ])('links "Mulai ajukan surat" through the login flow (%s, A25)', (_, user, href) => {
-    useAuth.mockReturnValue({ user, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user, isLoading: false })
 
     renderPage()
 
@@ -442,7 +454,7 @@ describe('BerandaPage Kepala Desa welcome', () => {
   const block = () => screen.queryByRole('region', { name: 'Sambutan Kepala Desa' })
 
   it('shows the welcome message with the head name and no links (P9)', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: {
         name: 'Desa Cibenda',
         head_name: 'Nama Kades Asli',
@@ -454,7 +466,7 @@ describe('BerandaPage Kepala Desa welcome', () => {
 
     renderPage()
 
-    const region = within(block())
+    const region = within(present(block()))
     expect(region.getByRole('heading', { level: 2 })).toHaveTextContent('Sambutan Kepala Desa')
     expect(region.getByText('Nama Kades Asli')).toBeInTheDocument()
     expect(region.getByText('Kepala Desa Cibenda')).toBeInTheDocument()
@@ -463,7 +475,7 @@ describe('BerandaPage Kepala Desa welcome', () => {
   })
 
   it.each([null, '', '   '])('is hidden when the welcome message is %j', (message) => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { name: 'Desa Cibenda', head_name: 'Nama Kades', welcome_message: message },
       stats: null,
       contacts: [],
@@ -491,7 +503,7 @@ describe('BerandaPage contact section', () => {
   const officialContacts = [{ name: 'Petugas Lama', position: 'kasi_pemerintahan', wa_link: 'x' }]
 
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: officialContacts })
+    mockedUsePublicVillageInfo.mockReturnValue({ village, stats: null, contacts: officialContacts })
   })
 
   it('renders id="kontak" with three cards and no old staff list (K14)', () => {
@@ -507,14 +519,14 @@ describe('BerandaPage contact section', () => {
   // Nomor kantor dari data desa, tanpa WhatsApp (permintaan pemilik, 11 Okt 2026).
   // Diklik untuk disalin, bukan tel: (permintaan pemilik, 12 Okt 2026).
   it('shows only the office phone as a copy button in the phone card (A31)', async () => {
-    const writeText = vi.fn().mockResolvedValue()
+    const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     renderPage()
 
-    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
-    expect(card.tagName).toBe('DIV')
-    expect(within(card).queryByRole('link')).toBeNull()
-    const button = within(card).getByRole('button', {
+    const card = within(section()).getByText('Telepon').closest<HTMLElement>('.bd-contact-card')
+    expect(present(card).tagName).toBe('DIV')
+    expect(within(present(card)).queryByRole('link')).toBeNull()
+    const button = within(present(card)).getByRole('button', {
       name: 'Salin nomor telepon (0265) 2640613',
     })
     expect(button).toHaveTextContent('(0265) 2640613')
@@ -522,45 +534,50 @@ describe('BerandaPage contact section', () => {
     fireEvent.click(button)
 
     expect(writeText).toHaveBeenCalledWith('(0265) 2640613')
-    expect(await within(card).findByText('Nomor disalin')).toHaveAttribute('aria-live', 'polite')
+    expect(await within(present(card)).findByText('Nomor disalin')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    )
 
     expect(within(section()).queryByText(/WhatsApp/)).toBeNull()
-    delete navigator.clipboard
+    Reflect.deleteProperty(navigator, 'clipboard')
   })
 
   it('shows the village email in its own card, also copied on click', async () => {
-    const writeText = vi.fn().mockResolvedValue()
+    const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     renderPage()
 
-    const card = within(section()).getByText('Email').closest('.bd-contact-card')
-    const button = within(card).getByRole('button', {
+    const card = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
+    const button = within(present(card)).getByRole('button', {
       name: 'Salin email kantordesacibenda@gmail.com',
     })
     expect(button).toHaveTextContent('kantordesacibenda@gmail.com')
-    expect(within(card).queryByRole('link')).toBeNull()
+    expect(within(present(card)).queryByRole('link')).toBeNull()
 
     fireEvent.click(button)
 
     expect(writeText).toHaveBeenCalledWith('kantordesacibenda@gmail.com')
-    expect(await within(card).findByText('Email disalin')).toBeInTheDocument()
-    delete navigator.clipboard
+    expect(await within(present(card)).findByText('Email disalin')).toBeInTheDocument()
+    Reflect.deleteProperty(navigator, 'clipboard')
   })
 
   it('marks the email card unavailable when the village has no email', () => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: { ...village, email: null },
       stats: null,
       contacts: [],
     })
     renderPage()
 
-    const phoneCard = within(section()).getByText('Telepon').closest('.bd-contact-card')
-    expect(within(phoneCard).getAllByRole('button')).toHaveLength(1)
-    expect(within(phoneCard).queryByText('Belum tersedia')).toBeNull()
-    const emailCard = within(section()).getByText('Email').closest('.bd-contact-card')
-    expect(within(emailCard).queryByRole('button')).toBeNull()
-    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
+    const phoneCard = within(section())
+      .getByText('Telepon')
+      .closest<HTMLElement>('.bd-contact-card')
+    expect(within(present(phoneCard)).getAllByRole('button')).toHaveLength(1)
+    expect(within(present(phoneCard)).queryByText('Belum tersedia')).toBeNull()
+    const emailCard = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
+    expect(within(present(emailCard)).queryByRole('button')).toBeNull()
+    expect(within(present(emailCard)).getByText('Belum tersedia')).toBeInTheDocument()
   })
 
   it('tells the user when the phone number could not be copied', async () => {
@@ -571,12 +588,12 @@ describe('BerandaPage contact section', () => {
     document.execCommand = vi.fn().mockReturnValue(false)
     renderPage()
 
-    const card = within(section()).getByText('Telepon').closest('.bd-contact-card')
-    fireEvent.click(within(card).getByRole('button', { name: /Salin nomor telepon/ }))
+    const card = within(section()).getByText('Telepon').closest<HTMLElement>('.bd-contact-card')
+    fireEvent.click(within(present(card)).getByRole('button', { name: /Salin nomor telepon/ }))
 
-    expect(await within(card).findByText(/Gagal menyalin/)).toBeInTheDocument()
-    delete navigator.clipboard
-    delete document.execCommand
+    expect(await within(present(card)).findByText(/Gagal menyalin/)).toBeInTheDocument()
+    Reflect.deleteProperty(navigator, 'clipboard')
+    Reflect.deleteProperty(document, 'execCommand')
   })
 
   it('keeps the service hours card unclickable', () => {
@@ -593,8 +610,10 @@ describe('BerandaPage contact section', () => {
     // Hanya "Buka di peta" yang menjadi link; kartu kantor (judul + alamat) tidak.
     const link = within(section()).getByRole('link', { name: 'Buka di peta (tab baru)' })
     expect(link).not.toHaveTextContent('Jl. Raya Cibenda No. 1')
-    const card = within(section()).getByText('Kantor Desa Cibenda').closest('.bd-contact-card')
-    expect(card.tagName).toBe('DIV')
+    const card = within(section())
+      .getByText('Kantor Desa Cibenda')
+      .closest<HTMLElement>('.bd-contact-card')
+    expect(present(card).tagName).toBe('DIV')
     expect(card).toHaveTextContent('Jl. Raya Cibenda No. 1')
     expect(card).toContainElement(link)
     expect(link).toHaveAttribute(
@@ -611,17 +630,21 @@ describe('BerandaPage contact section', () => {
   // Tidak ada data desa yang ditulis di kode: tanpa data, kartu menyatakan
   // "Belum tersedia" dan kartu kantor tidak menjadi link.
   it('shows neutral placeholders while village data is missing', () => {
-    usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+    mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
 
     renderPage()
 
-    const phoneCard = within(section()).getByText('Telepon').closest('.bd-contact-card')
-    expect(within(phoneCard).queryByRole('button')).toBeNull()
-    expect(within(phoneCard).getByText('Belum tersedia')).toBeInTheDocument()
-    const emailCard = within(section()).getByText('Email').closest('.bd-contact-card')
-    expect(within(emailCard).getByText('Belum tersedia')).toBeInTheDocument()
-    const hoursCard = within(section()).getByText('Jam layanan kantor').closest('.bd-contact-card')
-    expect(within(hoursCard).getByText('Belum tersedia')).toBeInTheDocument()
+    const phoneCard = within(section())
+      .getByText('Telepon')
+      .closest<HTMLElement>('.bd-contact-card')
+    expect(within(present(phoneCard)).queryByRole('button')).toBeNull()
+    expect(within(present(phoneCard)).getByText('Belum tersedia')).toBeInTheDocument()
+    const emailCard = within(section()).getByText('Email').closest<HTMLElement>('.bd-contact-card')
+    expect(within(present(emailCard)).getByText('Belum tersedia')).toBeInTheDocument()
+    const hoursCard = within(section())
+      .getByText('Jam layanan kantor')
+      .closest<HTMLElement>('.bd-contact-card')
+    expect(within(present(hoursCard)).getByText('Belum tersedia')).toBeInTheDocument()
     expect(within(section()).getByText('Kantor Desa')).toBeInTheDocument()
     expect(within(section()).queryAllByRole('link')).toHaveLength(0)
   })
@@ -629,7 +652,7 @@ describe('BerandaPage contact section', () => {
 
 describe('BerandaPage section hash', () => {
   afterEach(() => {
-    delete Element.prototype.scrollIntoView
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
   })
 
   it('scrolls to the section named in the URL hash, e.g. Kontak from another page', () => {
@@ -641,7 +664,7 @@ describe('BerandaPage section hash', () => {
     )
 
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1)
-    expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
       document.getElementById('kontak'),
     )
   })

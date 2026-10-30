@@ -2,8 +2,49 @@ import { useEffect, useState } from 'react'
 
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
+import type { Village } from '@/types'
 
-const EMPTY_INFO = {
+// Sumber: GET /api/public/home (PublicOfficialResource, AnnouncementResource,
+// PublicPageService::publicStats) dan GET /api/public/contact-us (PublicContactResource).
+export type PublicVillageHead = {
+  id: number
+  position: string
+  position_label: string
+  name: string | null
+  hamlet_id: number | null
+  hamlet_name: string | null
+  photo_url: string | null
+}
+
+export type PublicStats = {
+  total_population: number
+  total_hamlets: number
+}
+
+export type PublicContact = {
+  position: string
+  name: string | null
+  phone_wa: string | null
+  wa_link: string | null
+}
+
+export type PublicAnnouncement = {
+  title: string
+  body: string | null
+  link_url: string | null
+  expires_at: string | null
+  updated_at: string | null
+}
+
+export type PublicVillageInfo = {
+  village: Village | null
+  villageHead: PublicVillageHead | null
+  stats: PublicStats | null
+  contacts: PublicContact[]
+  announcement: PublicAnnouncement | null
+}
+
+const EMPTY_INFO: PublicVillageInfo = {
   village: null,
   villageHead: null,
   stats: null,
@@ -23,15 +64,15 @@ const EMPTY_INFO = {
 // pertama, lalu tetap diperbarui dari API.
 const CACHE_PREFIX = 'sid:public-village-info:'
 
-let sharedRequest = null
-let current = null
-const listeners = new Set()
+let sharedRequest: Promise<PublicVillageInfo> | null = null
+let current: PublicVillageInfo | null = null
+const listeners = new Set<(info: PublicVillageInfo) => void>()
 
 function cacheKey() {
   return CACHE_PREFIX + (publicVillageParams().village_code ?? 'default')
 }
 
-function readCache() {
+function readCache(): PublicVillageInfo | null {
   try {
     const cached = JSON.parse(window.localStorage.getItem(cacheKey()) ?? 'null')
     return cached?.village
@@ -47,7 +88,11 @@ function readCache() {
   }
 }
 
-function writeCache({ village, villageHead, stats }) {
+function writeCache({
+  village,
+  villageHead,
+  stats,
+}: Pick<PublicVillageInfo, 'village' | 'villageHead' | 'stats'>) {
   try {
     window.localStorage.setItem(cacheKey(), JSON.stringify({ village, villageHead, stats }))
   } catch {
@@ -60,9 +105,10 @@ function currentInfo() {
   return current
 }
 
-function publish(partial) {
-  current = { ...currentInfo(), ...partial }
-  listeners.forEach((listener) => listener(current))
+function publish(partial: Partial<PublicVillageInfo>) {
+  const next = { ...currentInfo(), ...partial }
+  current = next
+  listeners.forEach((listener) => listener(next))
 }
 
 function loadPublicVillageInfo() {
@@ -83,12 +129,12 @@ function loadPublicVillageInfo() {
         publish({ ...identity, announcement: response?.data?.data?.announcement ?? null })
       })
       // Gagal: identitas dari cache (bila ada) tetap dipakai.
-      .catch(() => null)
+      .catch((): null => null)
 
     const contacts = api
       .get('/api/public/contact-us', { params })
       .then((response) => publish({ contacts: response?.data?.data ?? [] }))
-      .catch(() => null)
+      .catch((): null => null)
 
     sharedRequest = Promise.all([home, contacts]).then(() => currentInfo())
   }
@@ -108,7 +154,7 @@ export function usePublicVillageInfo() {
 
   useEffect(() => {
     let active = true
-    const listener = (result) => {
+    const listener = (result: PublicVillageInfo) => {
       if (active) setInfo(result)
     }
 

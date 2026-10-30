@@ -6,6 +6,10 @@ import { copyText } from '@/shared/lib/copyText'
 import { formatVillageName } from '@/shared/lib/villageName'
 import { googleMapsUrl } from '@/shared/lib/villageMap'
 import { sectionGap, sectionTitle } from '../publicClasses'
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import type { BerandaContent } from '../berandaContent'
+import type { Village } from '@/types'
 
 const COPY_FEEDBACK_MS = 2000
 
@@ -18,7 +22,14 @@ const detailClass = 'text-base leading-normal text-pb-muted'
 
 // Ikon tanpa kotak latar, sama seperti panel layanan.
 // centered: teks rata tengah di layar lebar (kartu jam layanan).
-function CardContent({ icon: Icon, title, children, centered = false }) {
+type CardContentProps = {
+  icon: LucideIcon
+  title: string
+  children?: ReactNode
+  centered?: boolean
+}
+
+function CardContent({ icon: Icon, title, children, centered = false }: CardContentProps) {
   return (
     <>
       <span className="mt-0.5 flex-none text-pb-laut" aria-hidden="true">
@@ -38,8 +49,16 @@ function CardContent({ icon: Icon, title, children, centered = false }) {
 // memanggil lewat tel:/mailto: (permintaan pemilik, 12 Okt 2026). Hasilnya
 // diumumkan lewat aria-live agar terdengar juga oleh pembaca layar.
 // email: alamat panjang boleh dipatahkan (sebelum "@", lalu di mana saja).
-function CopyValue({ value, copyLabel, copiedLabel, failedLabel, email = false }) {
-  const [status, setStatus] = useState(null) // null | 'copied' | 'failed'
+type CopyValueProps = {
+  value: string
+  copyLabel: string
+  copiedLabel: string
+  failedLabel: string
+  email?: boolean
+}
+
+function CopyValue({ value, copyLabel, copiedLabel, failedLabel, email = false }: CopyValueProps) {
+  const [status, setStatus] = useState<'copied' | 'failed' | null>(null)
 
   useEffect(() => {
     if (!status) return undefined
@@ -95,7 +114,9 @@ function CopyValue({ value, copyLabel, copiedLabel, failedLabel, email = false }
 //   tampil bila titik kantor (village.latitude/longitude) diatur.
 // Data yang belum termuat atau kosong tampil "Belum tersedia" (telepon & email, jam)
 // atau tidak dirender (alamat).
-export function ContactSection({ content, village }) {
+type ContactSectionProps = { content: BerandaContent; village: Village | null }
+
+export function ContactSection({ content, village }: ContactSectionProps) {
   const { contact: labels } = content
   const phone = village?.phone
   const email = village?.email

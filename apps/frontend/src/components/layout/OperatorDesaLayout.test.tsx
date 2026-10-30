@@ -10,16 +10,18 @@ const { useAuth, useNotifications, reload } = vi.hoisted(() => ({
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({ useAuth }))
 vi.mock('@/features/kelola-wilayah/hooks/WilayahMasterProvider', () => ({
-  WilayahMasterProvider: ({ children }) => children,
+  WilayahMasterProvider: ({ children }: { children: ReactNode }) => children,
 }))
 vi.mock('@/features/notifikasi/hooks/useNotifications', () => ({
   default: useNotifications,
 }))
-vi.mock('@/features/notifikasi/components/NotificationPopover-Admin', () => ({
-  default: ({ open }) => (open ? <div>Notification list</div> : null),
+vi.mock('@/features/notifikasi/components/NotificationPopover', () => ({
+  default: ({ open }: { open: boolean }) => (open ? <div>Notification list</div> : null),
 }))
 
 import { OperatorDesaLayout } from './OperatorDesaLayout'
+import type { ReactNode } from 'react'
+import { present } from '@/test/fixtures'
 
 describe('OperatorDesaLayout role regression', () => {
   beforeEach(() => {
@@ -84,7 +86,7 @@ describe('OperatorDesaLayout role regression', () => {
 describe('OperatorDesaLayout sidebar', () => {
   const originalMatchMedia = window.matchMedia
 
-  function mockViewport(mobile) {
+  function mockViewport(mobile: boolean) {
     window.matchMedia = vi.fn().mockReturnValue({
       matches: mobile,
       addEventListener: vi.fn(),
@@ -155,7 +157,7 @@ describe('OperatorDesaLayout sidebar', () => {
     const { container } = renderLayout()
 
     fireEvent.click(screen.getByRole('button', { name: 'Perluas menu' }))
-    fireEvent.click(container.querySelector('.sid-operator-sidebar-backdrop'))
+    fireEvent.click(present(container.querySelector('.sid-operator-sidebar-backdrop')))
 
     expect(container.querySelector('.sid-operator-layout')).toHaveClass('is-rail')
   })

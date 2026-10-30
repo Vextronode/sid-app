@@ -7,6 +7,10 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { getBerandaContent } from '../berandaContent'
 import { BerandaHeader } from './BerandaHeader'
+import { present } from '@/test/fixtures'
+
+const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
+const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
@@ -24,14 +28,14 @@ const renderHeader = () => {
       <section id="kontak">Kontak</section>
     </MemoryRouter>,
   )
-  const desktopNav = within(utils.container.querySelector('.bd-nav'))
-  const mobileMenu = within(utils.container.querySelector('.bd-mobile-menu'))
+  const desktopNav = within(present(utils.container.querySelector('.bd-nav')))
+  const mobileMenu = within(present(utils.container.querySelector('.bd-mobile-menu')))
   return { ...utils, desktopNav, mobileMenu }
 }
 
 describe('BerandaHeader', () => {
   beforeEach(() => {
-    usePublicVillageInfo.mockReturnValue({
+    mockedUsePublicVillageInfo.mockReturnValue({
       village: {
         name: 'Cibenda',
         district: 'Parigi',
@@ -41,13 +45,13 @@ describe('BerandaHeader', () => {
       stats: null,
       contacts: [],
     })
-    useAuth.mockReturnValue({ user: null, isLoading: false })
+    mockedUseAuth.mockReturnValue({ user: null, isLoading: false })
     Element.prototype.scrollIntoView = vi.fn()
   })
 
   afterEach(() => {
     vi.clearAllMocks()
-    delete Element.prototype.scrollIntoView
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
   })
 
   describe('identitas dan tautan (A1, A2, A8, A9)', () => {
@@ -62,7 +66,7 @@ describe('BerandaHeader', () => {
     // Tidak ada nama desa yang ditulis di kode: selagi data belum termuat
     // tampil nama netral, dan tempat lambang tetap dipesan.
     it('falls back to a neutral name without emblem or region while data is missing', () => {
-      usePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
+      mockedUsePublicVillageInfo.mockReturnValue({ village: null, stats: null, contacts: [] })
       const { container } = renderHeader()
 
       const brand = screen.getByRole('link', { name: 'Desa' })
@@ -72,7 +76,7 @@ describe('BerandaHeader', () => {
     })
 
     it('does not double the "Desa" prefix stored by the backend', () => {
-      usePublicVillageInfo.mockReturnValue({
+      mockedUsePublicVillageInfo.mockReturnValue({
         village: { name: 'Desa Cibenda' },
         stats: null,
         contacts: [],
@@ -87,7 +91,7 @@ describe('BerandaHeader', () => {
       const { container } = renderHeader()
 
       const mark = container.querySelector('.bd-brand-mark')
-      expect(mark.tagName).toBe('IMG')
+      expect(present(mark).tagName).toBe('IMG')
       expect(mark).toHaveAttribute('src', '/assets/image/lambang-kabupaten-pangandaran.webp')
       expect(mark).toHaveAttribute('alt', '')
       expect(screen.queryByText('CB')).toBeNull()
@@ -104,7 +108,7 @@ describe('BerandaHeader', () => {
 
     // Sudah login: tombol akun menuju dashboard (lewat GuestRoute di /login).
     it('shows "Dashboard Saya" instead of "Masuk" for a logged-in user', async () => {
-      useAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
+      mockedUseAuth.mockReturnValue({ user: { role: 'staf_sid' }, isLoading: false })
       const user = userEvent.setup()
       const { desktopNav, mobileMenu } = renderHeader()
 
@@ -130,20 +134,20 @@ describe('BerandaHeader', () => {
 
       const { container } = render(
         <MemoryRouter initialEntries={['/berita']}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
-      const otherNav = within(container.querySelector('.bd-nav'))
+      const otherNav = within(present(container.querySelector('.bd-nav')))
       expect(otherNav.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current')
     })
 
-    const navAt = (path) => {
+    const navAt = (path: string) => {
       const { container } = render(
         <MemoryRouter initialEntries={[path]}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
         </MemoryRouter>,
       )
-      return within(container.querySelector('.bd-nav'))
+      return within(present(container.querySelector('.bd-nav')))
     }
 
     it('marks Berita as the current page on the news list and a news detail', () => {
@@ -193,7 +197,7 @@ describe('BerandaHeader', () => {
       await user.click(desktopNav.getByRole('link', { name: 'Kontak' }))
 
       expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1)
-      expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
         document.getElementById('kontak'),
       )
     })
@@ -206,13 +210,13 @@ describe('BerandaHeader', () => {
       }
       const { container } = render(
         <MemoryRouter initialEntries={['/berita']}>
-          <BerandaHeader content={getBerandaContent(true)} />
+          <BerandaHeader content={getBerandaContent()} />
           <LocationProbe />
         </MemoryRouter>,
       )
 
       await user.click(
-        within(container.querySelector('.bd-nav')).getByRole('link', { name: 'Kontak' }),
+        within(present(container.querySelector('.bd-nav'))).getByRole('link', { name: 'Kontak' }),
       )
 
       expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
@@ -221,7 +225,10 @@ describe('BerandaHeader', () => {
   })
 
   describe('dropdown Tentang Desa (A3–A7)', () => {
-    const openDropdown = async (user, desktopNav) => {
+    const openDropdown = async (
+      user: ReturnType<typeof userEvent.setup>,
+      desktopNav: ReturnType<typeof within>,
+    ) => {
       const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
       await user.click(trigger)
       return trigger
@@ -231,7 +238,7 @@ describe('BerandaHeader', () => {
       const user = userEvent.setup()
       const { desktopNav } = renderHeader()
       const trigger = desktopNav.getByRole('button', { name: 'Tentang Desa' })
-      const panel = document.getElementById(trigger.getAttribute('aria-controls'))
+      const panel = document.getElementById(present(trigger.getAttribute('aria-controls')))
 
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
       expect(panel).not.toBeVisible()
@@ -252,7 +259,7 @@ describe('BerandaHeader', () => {
 
       const item = desktopNav.getByText('Transparansi APBDes').closest('li')
       expect(item).toHaveTextContent('Segera hadir')
-      expect(item.querySelector('a, button, [tabindex]')).toBeNull()
+      expect(present(item).querySelector('a, button, [tabindex]')).toBeNull()
       expect(desktopNav.queryByText('Peta wilayah')).toBeNull()
 
       await user.click(mobileMenu.getByRole('button', { name: 'Menu' }))
@@ -390,14 +397,14 @@ describe('BerandaHeader', () => {
       const user = userEvent.setup()
       const { mobileMenu } = renderHeader()
       const button = mobileMenu.getByRole('button', { name: 'Menu' })
-      const panel = document.getElementById(button.getAttribute('aria-controls'))
+      const panel = document.getElementById(present(button.getAttribute('aria-controls')))
 
       expect(button).toHaveAttribute('aria-expanded', 'false')
       expect(panel).not.toBeVisible()
 
       await user.click(button)
       expect(button).toHaveAttribute('aria-expanded', 'true')
-      const list = within(panel)
+      const list = within(present(panel))
       expect(list.getByRole('link', { name: 'Berita' })).toHaveAttribute('href', '/berita')
       expect(list.getByRole('link', { name: 'Beranda' })).toHaveAttribute('href', '/')
       expect(list.getByText('Tentang Desa')).toBeVisible()
@@ -449,7 +456,7 @@ describe('BerandaHeader', () => {
 
       await user.click(mobileMenu.getByRole('link', { name: 'Kontak' }))
 
-      expect(Element.prototype.scrollIntoView.mock.contexts[0]).toBe(
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(
         document.getElementById('kontak'),
       )
       expect(button).toHaveAttribute('aria-expanded', 'false')

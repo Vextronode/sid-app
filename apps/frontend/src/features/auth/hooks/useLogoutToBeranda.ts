@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { HAL_BERANDA } from '@/lib/constants/routes'
 import { alertDialog } from '@/shared/lib/dialog'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Keluar lalu ke beranda publik. Pindah halaman baru setelah server menghapus
 // sesi: bila pindah duluan, tombol "Masuk" yang diklik selagi request
@@ -22,7 +23,7 @@ export function useLogoutToBeranda() {
     } catch (error) {
       alertDialog({
         title: 'Gagal keluar',
-        message: error.response?.data?.message ?? 'Logout gagal. Silakan coba lagi.',
+        message: getApiErrorMessage(error, 'Logout gagal. Silakan coba lagi.'),
       })
     }
   }

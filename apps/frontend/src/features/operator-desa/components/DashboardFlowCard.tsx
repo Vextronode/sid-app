@@ -1,5 +1,5 @@
 // ==========================================
-// DashboardFlowCard.jsx
+// DashboardFlowCard.tsx
 // Card status surat dengan filter periode dan carousel.
 // Status menggunakan status generic.
 // Styling mengikuti SID Global Theme.
@@ -10,7 +10,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
-export default function DashboardFlowCard({ periods = {}, loading }) {
+// Jumlah surat per status untuk tiap periode (day/week/month), dari ringkasan surat.
+type PeriodCounts = Record<string, Record<string, number>>
+
+export default function DashboardFlowCard({
+  periods = {},
+  loading,
+}: {
+  periods?: PeriodCounts
+  loading: boolean
+}) {
   const [period, setPeriod] = useState('day')
   const [index, setIndex] = useState(0)
 

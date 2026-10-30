@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { UserRound } from 'lucide-react'
 
 import { formatVillageName } from '@/shared/lib/villageName'
+import type { PublicVillageHead } from '@/features/info-desa/usePublicVillageInfo'
+import type { BerandaContent } from '../berandaContent'
+import type { Village } from '@/types'
 
 // Sambutan Kepala Desa. Teksnya diisi Staf SIDUTama (village.welcome_message,
 // Kelola Profil Desa); bila kosong, seluruh blok tidak dirender.
@@ -14,12 +17,18 @@ import { formatVillageName } from '@/shared/lib/villageName'
 // (seperti foto hero) menembus tepi atas panel. Jarak atas sengaja lebih
 // rapat dari sectionGap karena sambutan langsung menyambung hero; nilainya
 // = bagian foto yang menonjol + ±24px.
-export function KadesWelcome({ content, village, head }) {
+type KadesWelcomeProps = {
+  content: BerandaContent
+  village: Village | null
+  head: PublicVillageHead | null
+}
+
+export function KadesWelcome({ content, village, head }: KadesWelcomeProps) {
   const labels = content.welcomeBlock
   const message = village?.welcome_message?.trim()
   const photoUrl = head?.photo_url
   // URL foto yang gagal dimuat; foto baru (URL lain) dicoba lagi.
-  const [failedUrl, setFailedUrl] = useState(null)
+  const [failedUrl, setFailedUrl] = useState<string | null | undefined>(null)
 
   if (!message) return null
 
@@ -35,7 +44,7 @@ export function KadesWelcome({ content, village, head }) {
         <span className="-mt-21 flex aspect-5/6 w-30 items-center justify-center overflow-hidden rounded-t-full bg-pb-laut text-white/70 shadow-[0_0_0_6px_#fff,0_0_0_7px_var(--color-pb-line)] min-[721px]:col-start-2 min-[721px]:row-start-1 min-[721px]:-mt-28 min-[721px]:w-auto">
           {showPhoto ? (
             <img
-              src={photoUrl}
+              src={photoUrl ?? undefined}
               alt={headName ? `Foto ${headName}` : 'Foto Kepala Desa'}
               className="size-full object-cover"
               loading="lazy"

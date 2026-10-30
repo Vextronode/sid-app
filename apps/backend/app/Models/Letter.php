@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LetterResultStage;
 use App\Enums\LetterStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -111,6 +112,19 @@ class Letter extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(LetterApproval::class);
+    }
+
+    /**
+     * Keputusan tolak terakhir; notes-nya alasan penolakan untuk daftar surat.
+     *
+     * @return HasOne<LetterApproval, $this>
+     */
+    public function latestRejection(): HasOne
+    {
+        return $this->hasOne(LetterApproval::class)->ofMany(
+            ['id' => 'max'],
+            fn (Builder $query) => $query->where('action', 'rejected'),
+        );
     }
 
     /** @return HasMany<LetterAttachment, $this> */

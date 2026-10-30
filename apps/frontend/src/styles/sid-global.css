@@ -9321,7 +9321,7 @@
 /* ==========================================
    STATUS BADGE
    Satu-satunya gaya badge status di dashboard; dipakai lewat
-   components/ui/StatusPill.jsx.
+   components/ui/StatusPill.tsx.
    ========================================== */
 
 .sid-operator-status {

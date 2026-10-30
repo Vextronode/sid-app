@@ -16,7 +16,7 @@ describe('groupLetterTypes', () => {
   })
 
   it('skips empty groups and treats types without a category as Persuratan Desa', () => {
-    const groups = groupLetterTypes([{ code: 'A01' }])
+    const groups = groupLetterTypes([{ code: 'A01', category: null }])
 
     expect(groups).toHaveLength(1)
     expect(groups[0].key).toBe('persuratan')

@@ -1,5 +1,5 @@
 // ==========================================
-// RWListPage.jsx
+// RWListPage.tsx
 // Daftar permohonan surat RW
 //
 // STATUS:
@@ -29,6 +29,7 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
 
 export default function RWListPage() {
   const pageRefresh = useQueryRefresh(['surat'])
@@ -36,7 +37,7 @@ export default function RWListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // ==========================================
   // DATA
@@ -56,7 +57,6 @@ export default function RWListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'rw',
     initialStatus,
   })
 
@@ -73,7 +73,7 @@ export default function RWListPage() {
   // RW SELALU READ-ONLY.
   // ==========================================
 
-  const handleOpenDetail = (surat) => {
+  const handleOpenDetail = (surat: LetterListItem) => {
     setSelectedId(surat.id)
   }
 

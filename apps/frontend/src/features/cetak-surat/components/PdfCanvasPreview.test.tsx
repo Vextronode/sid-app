@@ -12,12 +12,13 @@ vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ previewSuratPD
 vi.mock('@/lib/pdfjs', () => ({ loadPdfjs }))
 
 import { PdfCanvasPreview } from './PdfCanvasPreview'
+import { present } from '@/test/fixtures'
 
 // Bentuk API pdf.js 6: destroy() hanya ada di loading task, dokumen
 // (PDFDocumentProxy) tidak punya destroy().
 function fakePdfjs({ renderPromise = Promise.resolve() } = {}) {
   const page = {
-    getViewport: ({ scale }) => ({ width: 600 * scale, height: 848 * scale }),
+    getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 848 * scale }),
     render: () => ({ promise: renderPromise, cancel: renderCancel }),
   }
   const pdfDocument = { numPages: 1, getPage: vi.fn().mockResolvedValue(page) }
@@ -35,7 +36,10 @@ describe('PdfCanvasPreview', () => {
     vi.clearAllMocks()
     previewSuratPDF.mockResolvedValue('blob:preview')
     globalThis.URL.revokeObjectURL = vi.fn()
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ setTransform: vi.fn() }))
+    // Cukup setTransform yang dipakai PdfCanvasPreview.
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+      setTransform: vi.fn(),
+    })) as unknown as HTMLCanvasElement['getContext']
   })
 
   it('renders pages into canvases and blocks the context menu', async () => {
@@ -48,7 +52,7 @@ describe('PdfCanvasPreview', () => {
     expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'digital', 'main')
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    container.querySelector('canvas').dispatchEvent(event)
+    present(container.querySelector('canvas')).dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
   })
 

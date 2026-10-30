@@ -16,19 +16,24 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { ChangeEvent, FormEvent } from 'react'
+import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
+import type { AnnouncementPayload, DurationUnit } from '@/features/pengumuman/api'
+import type { News } from '@/types'
 
 const TITLE_MAX = 150
 const BODY_MAX = 1000
 
 // Pilihan cepat lama tayang; "Lainnya" membuka isian angka + satuan.
-const PRESETS = [
+const PRESETS: { id: string; label: string; value: number; unit: DurationUnit }[] = [
   { id: '1h', label: '1 jam', value: 1, unit: 'hour' },
   { id: '12h', label: '12 jam', value: 12, unit: 'hour' },
   { id: '1d', label: '1 hari', value: 1, unit: 'day' },
   { id: '1w', label: '1 minggu', value: 1, unit: 'week' },
 ]
 
-const UNIT_LABELS = { hour: 'jam', day: 'hari', week: 'minggu' }
+const UNIT_LABELS: Record<DurationUnit, string> = { hour: 'jam', day: 'hari', week: 'minggu' }
 
 // Pilihan saat mengubah: waktu berakhir tidak diganti.
 const KEEP = 'keep'
@@ -36,14 +41,27 @@ const CUSTOM = 'custom'
 
 // Jenis link pengumuman. Berita desa dipilih dari daftar, disimpan sebagai
 // alamat halaman detailnya (/berita/{id}).
-const LINK_MODES = [
+type LinkMode = 'none' | 'news' | 'other'
+
+type LinkState = { mode: LinkMode; newsId: string; url: string }
+
+// Lama tayang kustom: jumlah diketik sebagai teks.
+type CustomDuration = { value: string; unit: DurationUnit }
+
+type PublishedNews = {
+  status: 'loading' | 'ready' | 'error'
+  items: News[]
+  reload: () => Promise<void>
+}
+
+const LINK_MODES: { id: LinkMode; label: string }[] = [
   { id: 'none', label: 'Tanpa link' },
   { id: 'news', label: 'Berita desa' },
   { id: 'other', label: 'Link lain' },
 ]
 const NEWS_LINK = /^\/berita\/(\d+)$/
 
-function chipClass(active) {
+function chipClass(active: boolean) {
   return `min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
     active
       ? 'border-[#185fa5] bg-[#185fa5] text-white'
@@ -51,7 +69,7 @@ function chipClass(active) {
   }`
 }
 
-function initialLink(linkUrl) {
+function initialLink(linkUrl: string | null | undefined): LinkState {
   if (!linkUrl) return { mode: 'none', newsId: '', url: '' }
 
   const match = linkUrl.match(NEWS_LINK)
@@ -62,7 +80,10 @@ function initialLink(linkUrl) {
 
 // Berita yang sudah terbit, terbaru dulu, untuk dropdown link.
 function usePublishedNews() {
-  const [state, setState] = useState({ status: 'loading', items: [] })
+  const [state, setState] = useState<Omit<PublishedNews, 'reload'>>({
+    status: 'loading',
+    items: [],
+  })
 
   const load = useCallback(async () => {
     setState({ status: 'loading', items: [] })
@@ -84,14 +105,8 @@ function usePublishedNews() {
   return { ...state, reload: load }
 }
 
-function resolveError(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
-
 /** "sisa 3 jam", "sisa 2 hari", "kurang dari 1 jam lagi" */
-function remainingLabel(expiresAt) {
+function remainingLabel(expiresAt: string) {
   const minutes = Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000))
   if (minutes < 60) return 'kurang dari 1 jam lagi'
 
@@ -101,7 +116,24 @@ function remainingLabel(expiresAt) {
   return `sisa ${Math.floor(hours / 24)} hari`
 }
 
-function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled }) {
+type DurationPickerProps = {
+  // KEEP, CUSTOM, id preset, atau null bila belum dipilih.
+  choice: string | null
+  custom: CustomDuration
+  onChoice: (choice: string) => void
+  onCustom: (custom: CustomDuration) => void
+  current: PublicAnnouncement | null
+  disabled: boolean
+}
+
+function DurationPicker({
+  choice,
+  custom,
+  onChoice,
+  onCustom,
+  current,
+  disabled,
+}: DurationPickerProps) {
   return (
     <fieldset className="m-0 border-0 p-0" disabled={disabled}>
       <legend className="mb-2 text-sm font-semibold text-gray-800">Lama tayang</legend>
@@ -114,7 +146,7 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
             aria-pressed={choice === KEEP}
             onClick={() => onChoice(KEEP)}
           >
-            Tetap sampai {formatAnnouncementUntil(current.expires_at)}
+            Tetap sampai {current.expires_at ? formatAnnouncementUntil(current.expires_at) : '-'}
           </button>
         )}
 
@@ -159,7 +191,9 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
             Satuan
             <select
               value={custom.unit}
-              onChange={(event) => onCustom({ ...custom, unit: event.target.value })}
+              onChange={(event) =>
+                onCustom({ ...custom, unit: event.target.value as DurationUnit })
+              }
               className="h-11 rounded-lg border border-gray-300 px-3"
             >
               {Object.entries(UNIT_LABELS).map(([unit, label]) => (
@@ -175,7 +209,15 @@ function DurationPicker({ choice, custom, onChoice, onCustom, current, disabled 
   )
 }
 
-function LinkPicker({ link, onChange, news, missing, disabled }) {
+type LinkPickerProps = {
+  link: LinkState
+  onChange: (link: LinkState) => void
+  news: PublishedNews
+  missing: boolean
+  disabled: boolean
+}
+
+function LinkPicker({ link, onChange, news, missing, disabled }: LinkPickerProps) {
   return (
     <fieldset className="m-0 border-0 p-0" disabled={disabled}>
       <legend className="mb-2 text-sm font-semibold text-gray-800">Link (opsional)</legend>
@@ -264,15 +306,30 @@ function LinkPicker({ link, onChange, news, missing, disabled }) {
   )
 }
 
-function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
+type AnnouncementFormProps = {
+  current: PublicAnnouncement | null
+  processing: boolean
+  error: string
+  onSubmit: (payload: AnnouncementPayload) => Promise<void>
+  // Tanpa onCancel (belum ada pengumuman) tombol Batal tidak tampil.
+  onCancel: (() => void) | null
+}
+
+function AnnouncementForm({
+  current,
+  processing,
+  error,
+  onSubmit,
+  onCancel,
+}: AnnouncementFormProps) {
   const [form, setForm] = useState({
     title: current?.title ?? '',
     body: current?.body ?? '',
   })
   const [link, setLink] = useState(() => initialLink(current?.link_url))
   const news = usePublishedNews()
-  const [choice, setChoice] = useState(current ? KEEP : null)
-  const [custom, setCustom] = useState({ value: '2', unit: 'hour' })
+  const [choice, setChoice] = useState<string | null>(current ? KEEP : null)
+  const [custom, setCustom] = useState<CustomDuration>({ value: '2', unit: 'hour' })
   const [durationError, setDurationError] = useState('')
   const [linkError, setLinkError] = useState('')
   // Isian awal untuk peringatan "Buang perubahan?" saat Batal.
@@ -292,10 +349,11 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
     link.newsId !== '' &&
     !news.items.some((item) => String(item.id) === link.newsId)
 
-  const change = (field) => (event) =>
-    setForm((value) => ({ ...value, [field]: event.target.value }))
+  const change =
+    (field: 'title' | 'body') => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((value) => ({ ...value, [field]: event.target.value }))
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     let linkUrl = null
@@ -313,7 +371,7 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
 
     setLinkError('')
 
-    let duration = {}
+    let duration: Pick<AnnouncementPayload, 'duration_value' | 'duration_unit'> = {}
 
     if (choice === CUSTOM) {
       const value = Number(custom.value)
@@ -326,7 +384,7 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
       duration = { duration_value: value, duration_unit: custom.unit }
     } else if (choice && choice !== KEEP) {
       const preset = PRESETS.find((item) => item.id === choice)
-      duration = { duration_value: preset.value, duration_unit: preset.unit }
+      if (preset) duration = { duration_value: preset.value, duration_unit: preset.unit }
     } else if (!choice) {
       setDurationError('Pilih berapa lama pengumuman tampil.')
       return
@@ -434,7 +492,7 @@ function AnnouncementForm({ current, processing, error, onSubmit, onCancel }) {
 
 export default function KelolaPengumumanPage() {
   const content = getBerandaContent()
-  const [announcement, setAnnouncement] = useState(null)
+  const [announcement, setAnnouncement] = useState<PublicAnnouncement | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -447,7 +505,7 @@ export default function KelolaPengumumanPage() {
       setAnnouncement(response.data?.data ?? null)
       setError('')
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal memuat pengumuman.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat pengumuman.'))
     } finally {
       setLoading(false)
     }
@@ -459,7 +517,7 @@ export default function KelolaPengumumanPage() {
     void load()
   }, [load])
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload: AnnouncementPayload) => {
     setProcessing(true)
     setFormError('')
 
@@ -471,13 +529,15 @@ export default function KelolaPengumumanPage() {
       // Beranda yang sedang terbuka di tab lain ikut memakai data baru.
       refreshPublicVillageInfo()
     } catch (requestError) {
-      setFormError(resolveError(requestError, 'Gagal menyimpan pengumuman.'))
+      setFormError(getApiErrorMessage(requestError, 'Gagal menyimpan pengumuman.'))
     } finally {
       setProcessing(false)
     }
   }
 
   const handleDelete = async () => {
+    if (!announcement) return
+
     if (
       !(await confirmDialog({
         title: `Hapus pengumuman "${announcement.title}"?`,
@@ -496,7 +556,7 @@ export default function KelolaPengumumanPage() {
       setEditing(false)
       refreshPublicVillageInfo()
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal menghapus pengumuman.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus pengumuman.'))
     } finally {
       setProcessing(false)
     }
@@ -548,10 +608,12 @@ export default function KelolaPengumumanPage() {
               <div className="sid-wilayah-table-toolbar">
                 <div>
                   <h3>Sedang tayang</h3>
-                  <p>
-                    Berakhir {formatAnnouncementUntil(announcement.expires_at)} (
-                    {remainingLabel(announcement.expires_at)}).
-                  </p>
+                  {announcement.expires_at && (
+                    <p>
+                      Berakhir {formatAnnouncementUntil(announcement.expires_at)} (
+                      {remainingLabel(announcement.expires_at)}).
+                    </p>
+                  )}
                 </div>
 
                 {!editing && (

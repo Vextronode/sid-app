@@ -1,6 +1,6 @@
 // pdf.js berukuran besar; dimuat saat pratinjau PDF pertama kali dibuka
 // supaya tidak ikut ke bundle halaman.
-let pdfjsPromise = null
+let pdfjsPromise: Promise<typeof import('pdfjs-dist')> | null = null
 
 export function loadPdfjs() {
   if (!pdfjsPromise) {

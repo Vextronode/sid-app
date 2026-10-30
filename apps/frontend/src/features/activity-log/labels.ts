@@ -8,7 +8,7 @@ export const POPULATION_TYPE_OPTIONS = [
   { value: 'family', label: 'Kartu Keluarga' },
 ]
 
-export const POPULATION_EVENT_LABELS = {
+export const POPULATION_EVENT_LABELS: Record<string, string> = {
   created: 'Ditambahkan',
   updated: 'Diubah',
   deleted: 'Dihapus',
@@ -21,7 +21,7 @@ export const POPULATION_EVENT_OPTIONS = Object.entries(POPULATION_EVENT_LABELS).
   ([value, label]) => ({ value, label }),
 )
 
-const FIELD_LABELS = {
+const FIELD_LABELS: Record<string, string> = {
   // Warga
   nik: 'NIK',
   name: 'Nama',
@@ -73,13 +73,13 @@ const FIELD_LABELS = {
   productive_assets: 'Aset produktif',
 }
 
-export function fieldLabel(field) {
+export function fieldLabel(field: string) {
   return FIELD_LABELS[field] ?? humanize(field)
 }
 
 // `field` (opsional) memetakan nilai enum ke labelnya, mis. family_role
 // `kepala_keluarga` -> "Kepala Keluarga".
-export function formatChangeValue(value, field) {
+export function formatChangeValue(value: unknown, field: string) {
   if (value === null || value === undefined || value === '') return '-'
   if (value === true) return 'Ya'
   if (value === false) return 'Tidak'
@@ -92,10 +92,10 @@ export function formatChangeValue(value, field) {
 
   const labels = field ? FIELD_VALUE_LABELS[field] : null
 
-  return labels?.[value] ?? String(value)
+  return labels?.[String(value)] ?? String(value)
 }
 
-export function formatDateTime(value) {
+export function formatDateTime(value: string | null | undefined) {
   if (!value) return '-'
 
   return new Date(value).toLocaleString('id-ID', {

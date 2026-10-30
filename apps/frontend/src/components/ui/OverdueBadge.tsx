@@ -1,6 +1,12 @@
 import { AlertCircle } from 'lucide-react'
 
-export function OverdueBadge({ isOverdue, count }) {
+type OverdueBadgeProps = {
+  isOverdue: boolean | null | undefined
+  // Angka di belakang label; tanpa angka bila tidak diisi.
+  count?: number
+}
+
+export function OverdueBadge({ isOverdue, count }: OverdueBadgeProps) {
   if (isOverdue !== true) {
     return null
   }

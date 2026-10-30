@@ -17,14 +17,22 @@ import {
 } from '@/features/surat/api/signatureApi'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { StatusTone } from '@/components/ui/StatusPill'
+import type { SignatureResetRequest } from '@/features/surat/api/signatureApi'
+import type { PageMeta } from '@/types'
 
-const STATUS = {
+const STATUS: Record<string, { tone: StatusTone; label: string }> = {
   pending: { tone: 'warning', label: 'Menunggu' },
   approved: { tone: 'active', label: 'Disetujui' },
   rejected: { tone: 'danger', label: 'Ditolak' },
 }
 
-const EMPTY_META = { current_page: 1, last_page: 1, total: 0 }
+const EMPTY_META: Pick<PageMeta, 'current_page' | 'last_page' | 'total'> = {
+  current_page: 1,
+  last_page: 1,
+  total: 0,
+}
 
 // Dua jenis pengajuan sebagai tab seperti halaman Data Warga; tab aktif
 // disimpan di ?tab= agar tetap saat halaman dimuat ulang.
@@ -33,13 +41,7 @@ const SECTIONS = [
   { value: 'password', label: 'Reset Kata Sandi' },
 ]
 
-function resolveError(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
-
-function formatDateTime(value) {
+function formatDateTime(value: string | null | undefined) {
   return value
     ? new Date(value).toLocaleString('id-ID', {
         day: 'numeric',
@@ -59,14 +61,14 @@ function formatDateTime(value) {
 export default function PengajuanResetPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'password' ? 'password' : 'ttd'
-  const switchSection = (value) =>
+  const switchSection = (value: string) =>
     setSearchParams(value === 'ttd' ? {} : { tab: value }, { replace: true })
-  const [requests, setRequests] = useState([])
+  const [requests, setRequests] = useState<SignatureResetRequest[]>([])
   const [meta, setMeta] = useState(EMPTY_META)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = usePageSize('pengajuan-reset-ttd')
   const [loading, setLoading] = useState(true)
-  const [busyId, setBusyId] = useState(null)
+  const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
@@ -77,7 +79,7 @@ export default function PengajuanResetPage() {
       setMeta(response.meta ?? EMPTY_META)
       setError('')
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal memuat pengajuan reset.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat pengajuan reset.'))
     } finally {
       setLoading(false)
     }
@@ -89,17 +91,21 @@ export default function PengajuanResetPage() {
     void load()
   }, [load])
 
-  const run = async (item, action, fallback) => {
+  const run = async (
+    item: SignatureResetRequest,
+    action: () => Promise<{ data?: { message?: string } }>,
+    fallback: string,
+  ) => {
     setBusyId(item.id)
     setError('')
 
     try {
       const response = await action()
 
-      notifySuccess(response.data?.message)
+      notifySuccess(response.data?.message ?? 'Pengajuan berhasil diproses.')
       await load()
     } catch (requestError) {
-      setError(resolveError(requestError, fallback))
+      setError(getApiErrorMessage(requestError, fallback))
       // Pengajuan mungkin sudah diproses petugas lain; segarkan tabel.
       await load()
     } finally {
@@ -107,7 +113,7 @@ export default function PengajuanResetPage() {
     }
   }
 
-  const handleApprove = async (item) => {
+  const handleApprove = async (item: SignatureResetRequest) => {
     const confirmed = await confirmDialog({
       title: `Setujui reset tanda tangan ${item.user?.name}?`,
       message:
@@ -121,7 +127,7 @@ export default function PengajuanResetPage() {
     await run(item, () => approveSignatureResetRequest(item.id), 'Gagal menyetujui pengajuan.')
   }
 
-  const handleReject = async (item) => {
+  const handleReject = async (item: SignatureResetRequest) => {
     const notes = await promptDialog({
       title: `Tolak pengajuan ${item.user?.name}?`,
       message: 'Tanda tangan akun tidak berubah. Pemilik akun menerima notifikasi penolakan.',

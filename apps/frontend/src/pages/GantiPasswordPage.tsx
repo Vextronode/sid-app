@@ -1,5 +1,5 @@
 // ==========================================
-// GantiPasswordPage.jsx
+// GantiPasswordPage.tsx
 // Wajib ganti kata sandi: akun yang kata sandinya baru dibuat/direset
 // Staf SIDUTama (must_change_password) ditolak backend di semua endpoint
 // lain sampai kata sandi sementara diganti di sini.
@@ -14,14 +14,10 @@ import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { ChangeEvent, FormEvent } from 'react'
 
 const EMPTY_FORM = { current_password: '', password: '', password_confirmation: '' }
-
-function firstMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
 
 export default function GantiPasswordPage() {
   const navigate = useNavigate()
@@ -46,10 +42,10 @@ export default function GantiPasswordPage() {
     return <Navigate to="/login" replace />
   }
 
-  const handleChange = (field) => (e) =>
+  const handleChange = (field: keyof typeof EMPTY_FORM) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((current) => ({ ...current, [field]: e.target.value }))
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
 
@@ -66,12 +62,17 @@ export default function GantiPasswordPage() {
       notifySuccess('Kata sandi berhasil diperbarui.')
       navigate('/login', { replace: true })
     } catch (err) {
-      setError(firstMessage(err, 'Kata sandi gagal diperbarui.'))
+      setError(getApiErrorMessage(err, 'Kata sandi gagal diperbarui.'))
       setSaving(false)
     }
   }
 
-  const fields = [
+  const fields: {
+    id: keyof typeof EMPTY_FORM
+    label: string
+    autoComplete: string
+    placeholder: string
+  }[] = [
     {
       id: 'current_password',
       label: 'Kata Sandi Sementara',

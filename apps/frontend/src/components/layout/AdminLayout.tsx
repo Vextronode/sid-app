@@ -1,18 +1,27 @@
 // ==========================================
-// AdminLayout.jsx
+// AdminLayout.tsx
 // Layout untuk role RT, RW, Kadus, Kades, dan Sekdes.
 // Header bergaya publik (AppHeader); footer dirender tiap halaman (SiteFooter).
 // ==========================================
 
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
+import type { UserRole } from '@/types'
 import { AppHeader } from './AppHeader'
+import type { MenuItem } from './AppHeader'
+
+type AdminLayoutProps = {
+  children: ReactNode
+  // Menu pengganti; tanpa ini dipakai menu bawaan peran.
+  menuItems?: MenuItem[]
+}
 
 // Menu bawaan per peran: beranda, surat yang diproses, dan surat pribadi.
-const ROLE_MENUS = {
+const ROLE_MENUS: Partial<Record<UserRole, [string, string]>> = {
   rt: ['/admin/rt', '/admin/rt/surat'],
   rw: ['/admin/rw', '/admin/rw/surat'],
   kadus: ['/admin/kadus', '/admin/kadus/surat'],
@@ -20,8 +29,8 @@ const ROLE_MENUS = {
   sekretaris_desa: ['/admin/kades', '/admin/kades/surat'],
 }
 
-function defaultMenuItems(role) {
-  const routes = ROLE_MENUS[role]
+function defaultMenuItems(role: UserRole | undefined): MenuItem[] | null {
+  const routes = role ? ROLE_MENUS[role] : undefined
 
   if (!routes) return null
 
@@ -32,7 +41,7 @@ function defaultMenuItems(role) {
   ]
 }
 
-export function AdminLayout({ children, menuItems: customMenuItems }) {
+export function AdminLayout({ children, menuItems: customMenuItems }: AdminLayoutProps) {
   const { user } = useAuth()
   const menuItems = customMenuItems ?? defaultMenuItems(user?.role) ?? []
   const notificationState = useNotifications()

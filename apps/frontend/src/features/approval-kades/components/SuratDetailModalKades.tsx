@@ -1,9 +1,17 @@
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
-import { useSuratDetail } from '../hooks/useSuratDetailKades'
+import type { DecisionResponse } from '@/features/approval/api'
+import type { Id } from '@/types'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
-export default function SuratDetailModalKades({ suratId, onClose }) {
+export default function SuratDetailModalKades({
+  suratId,
+  onClose,
+}: {
+  suratId: Id | null
+  onClose: () => void
+}) {
   const { user } = useAuth()
   const { surat, notFound, refresh } = useSuratDetail(suratId)
 
@@ -25,13 +33,13 @@ export default function SuratDetailModalKades({ suratId, onClose }) {
       (surat.citizen_id && String(surat.citizen_id) === String(user?.citizen_id)))
   const currentUserRole = !isApplicantOfficial ? user?.role : null
 
-  const handleApprove = async (response) => {
+  const handleApprove = async (response: DecisionResponse) => {
     if (response) {
       await refresh()
     }
   }
 
-  const handleReject = async (_notes, response) => {
+  const handleReject = async (_notes: string, response: DecisionResponse) => {
     if (response) {
       await refresh()
     }

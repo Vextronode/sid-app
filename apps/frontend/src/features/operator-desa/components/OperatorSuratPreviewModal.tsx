@@ -1,5 +1,5 @@
 // ==========================================
-// OperatorSuratPreviewModal.jsx
+// OperatorSuratPreviewModal.tsx
 // Detail surat untuk Kasi/Kaur dan Staf SIDUTama (read-only), di atas
 // kerangka LetterDossierModal: surat di kiri, berkas di kanan, menu
 // "Unduh surat" (digital / tanda tangan basah) di footer.
@@ -31,9 +31,17 @@ import {
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
+import type { Letter, LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose }) {
-  const [surat, setSurat] = useState(null)
+export default function OperatorSuratPreviewModal({
+  surat: listedSurat,
+  onClose,
+}: {
+  surat: LetterListItem
+  onClose: () => void
+}) {
+  const [surat, setSurat] = useState<Letter | null>(null)
   const [detailLoading, setDetailLoading] = useState(true)
   const [detailError, setDetailError] = useState('')
 
@@ -55,8 +63,8 @@ export default function OperatorSuratPreviewModal({ surat: listedSurat, onClose 
         if (isMounted) setSurat(detail)
       } catch (error) {
         if (isMounted) {
-          console.error('Gagal mengambil detail surat operator:', error.response?.data ?? error)
-          setDetailError(error.response?.data?.message ?? 'Gagal mengambil detail surat.')
+          console.error('Gagal mengambil detail surat operator:', error)
+          setDetailError(getApiErrorMessage(error, 'Gagal mengambil detail surat.'))
         }
       } finally {
         if (isMounted) setDetailLoading(false)

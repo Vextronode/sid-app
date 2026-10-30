@@ -1,5 +1,5 @@
 // ==========================================
-// PdfCanvasPreview.jsx
+// PdfCanvasPreview.tsx
 // Pratinjau surat yang dirender sebagai canvas (pdf.js) di dalam halaman.
 //
 // Sengaja tidak memakai viewer PDF bawaan browser (tab baru / iframe):
@@ -11,14 +11,26 @@ import { useEffect, useRef, useState } from 'react'
 import { FileText } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist/types/src/display/api'
 import { loadPdfjs } from '@/lib/pdfjs'
 
-export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'main' }) {
+type PdfCanvasPreviewProps = {
+  surat: Pick<PrintableLetter, 'id'> | null | undefined
+  template?: PdfTemplate
+  documentKey?: string
+}
+
+export function PdfCanvasPreview({
+  surat,
+  template = 'digital',
+  documentKey = 'main',
+}: PdfCanvasPreviewProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
-  const containerRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const suratId = surat?.id
 
@@ -28,8 +40,8 @@ export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'm
     }
 
     let cancelled = false
-    let loadingTask = null
-    let renderTask = null
+    let loadingTask: PDFDocumentLoadingTask | null = null
+    let renderTask: RenderTask | null = null
 
     const loadPDF = async () => {
       setLoading(true)
@@ -87,6 +99,8 @@ export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'm
 
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
+          if (!context) return
+
           const pixelRatio = window.devicePixelRatio || 1
 
           canvas.width = Math.floor(viewport.width * pixelRatio)
@@ -99,7 +113,8 @@ export function PdfCanvasPreview({ surat, template = 'digital', documentKey = 'm
           pageWrapper.appendChild(canvas)
           container.appendChild(pageWrapper)
 
-          renderTask = page.render({ canvasContext: context, viewport })
+          // pdf.js 6 mewajibkan `canvas`; sama dengan kanvas milik context.
+          renderTask = page.render({ canvas, canvasContext: context, viewport })
           await renderTask.promise
           renderTask = null
         }

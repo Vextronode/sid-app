@@ -1,9 +1,11 @@
+import type { LetterStatus } from '@/types'
+
 export const SURAT_STATUS = {
   PENDING: 'pending',
   IN_PROGRESS: 'in_progress',
   APPROVED: 'approved',
   REJECTED: 'rejected',
-}
+} as const satisfies Record<string, LetterStatus>
 
 export const SURAT_STATUS_OPTIONS = [
   {
@@ -24,14 +26,14 @@ export const SURAT_STATUS_OPTIONS = [
   },
 ]
 
-export const STATUS_LABELS = {
+export const STATUS_LABELS: Record<string, string> = {
   [SURAT_STATUS.PENDING]: 'Menunggu',
   [SURAT_STATUS.IN_PROGRESS]: 'Sedang Diproses',
   [SURAT_STATUS.APPROVED]: 'Disetujui',
   [SURAT_STATUS.REJECTED]: 'Ditolak',
 }
 
-export const STATUS_CLASSES = {
+export const STATUS_CLASSES: Record<string, string> = {
   [SURAT_STATUS.PENDING]: 'bg-[#FFEFBD] text-black',
 
   [SURAT_STATUS.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
@@ -55,26 +57,26 @@ export const RELEVANT_STATUSES = [
   SURAT_STATUS.REJECTED,
 ]
 
-export function getStatusLabel(status) {
-  return STATUS_LABELS[status] ?? status ?? '-'
+export function getStatusLabel(status: string | null | undefined) {
+  return (status ? STATUS_LABELS[status] : undefined) ?? status ?? '-'
 }
 
-export function getStatusClass(status) {
-  return STATUS_CLASSES[status] ?? 'bg-gray-100 text-gray-800'
+export function getStatusClass(status: string | null | undefined) {
+  return (status ? STATUS_CLASSES[status] : undefined) ?? 'bg-gray-100 text-gray-800'
 }
 
-export function isPendingStatus(status) {
+export function isPendingStatus(status: string | null | undefined) {
   return status === SURAT_STATUS.PENDING
 }
 
-export function isInProgressStatus(status) {
+export function isInProgressStatus(status: string | null | undefined) {
   return status === SURAT_STATUS.IN_PROGRESS
 }
 
-export function isApprovedStatus(status) {
+export function isApprovedStatus(status: string | null | undefined) {
   return status === SURAT_STATUS.APPROVED
 }
 
-export function isRejectedStatus(status) {
+export function isRejectedStatus(status: string | null | undefined) {
   return status === SURAT_STATUS.REJECTED
 }

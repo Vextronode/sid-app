@@ -1,32 +1,23 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { FulfillmentFormProps } from '../types'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
-
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 /**
  * Terapkan perubahan data beberapa warga yang NIK-nya diisi di form (aksi
  * `update_citizens`, mis. status kawin suami dan istri). Warga yang tidak
  * terdata di desa dilewati.
  */
-export function UpdateCitizensForm({ letterId, proposal, onDone }) {
+export function UpdateCitizensForm({ letterId, proposal, onDone }: FulfillmentFormProps) {
   const subjects = proposal.subjects ?? []
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const found = subjects.filter((subject) => subject.found)
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSaving(true)
     setError('')
@@ -36,7 +27,7 @@ export function UpdateCitizensForm({ letterId, proposal, onDone }) {
         onDone(await applyFulfillment(letterId, {}, null))
       }
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menerapkan perubahan data.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menerapkan perubahan data.'))
     } finally {
       setSaving(false)
     }

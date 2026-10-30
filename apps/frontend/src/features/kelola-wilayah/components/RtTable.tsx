@@ -1,8 +1,27 @@
 import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusPill } from '@/components/ui/StatusPill'
+import type { WilayahHamlet, WilayahProcessing, WilayahRt, WilayahRw } from '../types'
 
-export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggle, onDelete }) {
+type RtTableProps = {
+  rts: WilayahRt[]
+  rws: WilayahRw[]
+  hamlets: WilayahHamlet[]
+  processing: WilayahProcessing
+  onEdit: (item: WilayahRt) => void
+  onToggle: (item: WilayahRt) => void
+  onDelete: (item: WilayahRt) => void
+}
+
+export default function RtTable({
+  rts,
+  rws,
+  hamlets,
+  processing,
+  onEdit,
+  onToggle,
+  onDelete,
+}: RtTableProps) {
   const [search, setSearch] = useState('')
   const [filterHamlet, setFilterHamlet] = useState('')
   const [filterRw, setFilterRw] = useState('')
@@ -13,7 +32,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
     [rws, filterHamlet],
   )
 
-  const changeHamlet = (value) => {
+  const changeHamlet = (value: string) => {
     setFilterHamlet(value)
     setFilterRw('')
   }
@@ -35,9 +54,9 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
     })
   }, [rts, rwOptions, search, filterHamlet, filterRw])
 
-  const getRw = (rwId) => rws.find((rw) => rw.id === rwId)
+  const getRw = (rwId: number | null) => rws.find((rw) => rw.id === rwId)
 
-  const getHamletName = (rwId) => {
+  const getHamletName = (rwId: number | null) => {
     const rw = getRw(rwId)
 
     return hamlets.find((hamlet) => hamlet.id === rw?.hamletId)?.name ?? '-'
@@ -71,7 +90,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
             <option value="">Semua Dusun</option>
 
             {hamlets.map((hamlet) => (
-              <option key={hamlet.id} value={hamlet.id}>
+              <option key={hamlet.id} value={hamlet.id ?? ''}>
                 {hamlet.name}
               </option>
             ))}
@@ -86,7 +105,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
             <option value="">Semua RW</option>
 
             {rwOptions.map((rw) => (
-              <option key={rw.id} value={rw.id}>
+              <option key={rw.id} value={rw.id ?? ''}>
                 RW {rw.number}
                 {!filterHamlet &&
                   ` - ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}
@@ -112,7 +131,7 @@ export default function RtTable({ rts, rws, hamlets, processing, onEdit, onToggl
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="6">
+                <td colSpan={6}>
                   <div className="sid-wilayah-empty">
                     {rts.length === 0
                       ? 'Belum ada data RT.'

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProfilePhoto } from './ProfilePhoto'
 
-const auth = vi.hoisted(() => ({ user: null }))
+const auth = vi.hoisted(() => ({ user: null as Record<string, unknown> | null }))
 
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ user: auth.user, patchUser: vi.fn() }),

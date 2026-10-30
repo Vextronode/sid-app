@@ -1,5 +1,5 @@
 // ==========================================
-// LetterDossierModal.jsx
+// LetterDossierModal.tsx
 // Kerangka popup detail surat "meja dokumen" yang dipakai semua peran:
 // surat tampil besar di kiri (`preview`), berkas permohonan di kanan
 // (`children`), aksi di footer. Isi tiap bagian ditentukan pemanggil
@@ -8,10 +8,32 @@
 
 import '@/styles/surat-dokumen.css'
 import { useEffect, useId, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { Letter } from '@/types'
 
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
+
+// Bagian surat yang dibaca kepala modal; detail lengkap atau baris daftar.
+type DossierLetter = Pick<Letter, 'letter_number' | 'status' | 'is_overdue'> & {
+  letter_type?: { name: string } | null
+}
+
+type LetterDossierModalProps = {
+  surat: DossierLetter | null | undefined
+  fallbackTitle?: string
+  loading?: boolean
+  error?: string
+  notFound?: boolean
+  badges?: ReactNode
+  preview: ReactNode
+  hint?: ReactNode
+  actions?: ReactNode
+  onClose: () => void
+  children?: ReactNode
+}
 
 export function LetterDossierModal({
   surat,
@@ -25,9 +47,9 @@ export function LetterDossierModal({
   actions = null,
   onClose,
   children,
-}) {
+}: LetterDossierModalProps) {
   const titleId = useId()
-  const closeRef = useRef(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef(onClose)
 
   useEffect(() => {
@@ -39,7 +61,7 @@ export function LetterDossierModal({
 
     // Escape yang sudah ditangani lapisan di atasnya (menu unduh, dialog
     // konfirmasi) ditandai defaultPrevented dan tidak menutup modal.
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) onCloseRef.current?.()
     }
 
@@ -113,7 +135,9 @@ export function LetterDossierModal({
 }
 
 /** Keadaan kosong area dokumen (surat belum bisa dipratinjau). */
-export function DossierDocumentEmpty({ icon: Icon, title, children }) {
+type DossierDocumentEmptyProps = { icon?: LucideIcon; title: string; children?: ReactNode }
+
+export function DossierDocumentEmpty({ icon: Icon, title, children }: DossierDocumentEmptyProps) {
   return (
     <div className="sid-dossier-document-empty">
       {Icon && <Icon size={36} aria-hidden="true" />}

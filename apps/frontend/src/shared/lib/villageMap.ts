@@ -4,11 +4,20 @@
 
 import { formatVillageName } from './villageName'
 
-const isCoord = (value, limit) =>
+export type Coords = [number, number]
+
+// Cukup lokasi (dan nama untuk link peta), mis. Village dari API.
+type VillageLocation = {
+  latitude?: unknown
+  longitude?: unknown
+  name?: unknown
+}
+
+const isCoord = (value: unknown, limit: number): value is number =>
   typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit
 
 /** [lat, lng], atau null bila lokasi belum diatur. */
-export function villageCoords(village) {
+export function villageCoords(village: VillageLocation | null | undefined): Coords | null {
   const lat = village?.latitude
   const lng = village?.longitude
 
@@ -21,7 +30,7 @@ export function villageCoords(village) {
  * kartu tempatnya (dengan nama), bukan sekadar angka koordinat. Tanpa nama
  * desa, link menunjuk koordinatnya saja.
  */
-export function googleMapsUrl(village) {
+export function googleMapsUrl(village: VillageLocation | null | undefined) {
   const coords = villageCoords(village)
   if (!coords) return null
 
@@ -35,7 +44,7 @@ export function googleMapsUrl(village) {
  * Teks "lat, lng" (mis. hasil salin dari Google Maps) -> [lat, lng].
  * Teks kosong -> null; teks yang tidak valid -> undefined.
  */
-export function parseCoords(text) {
+export function parseCoords(text: unknown): Coords | null | undefined {
   const trimmed = String(text ?? '').trim()
   if (trimmed === '') return null
 
@@ -48,6 +57,6 @@ export function parseCoords(text) {
 }
 
 /** [lat, lng] -> "lat, lng" dengan 7 angka desimal (presisi kolom backend). */
-export function formatCoords(coords) {
+export function formatCoords(coords: Coords | null | undefined) {
   return coords ? coords.map((value) => Number(value.toFixed(7))).join(', ') : ''
 }

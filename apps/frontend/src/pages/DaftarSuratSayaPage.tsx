@@ -1,5 +1,5 @@
 // ==========================================
-// DaftarSuratSayaPage.jsx
+// DaftarSuratSayaPage.tsx
 // Daftar surat warga beserta tahap prosesnya (MyLettersList).
 // ==========================================
 
@@ -19,9 +19,11 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Nilai ?status= di URL -> status surat di backend.
-const STATUS_PARAM = {
+const STATUS_PARAM: Record<string, string> = {
   ditolak: SURAT_STATUS.REJECTED,
   approved: SURAT_STATUS.APPROVED,
 }
@@ -34,17 +36,18 @@ export default function DaftarSuratSayaPage() {
   const filterStatus = searchParams.get('status') ?? ''
   const activeStatus = STATUS_PARAM[filterStatus] ?? filterStatus
 
-  const changeFilter = (status) => setSearchParams(status ? { status } : {}, { replace: true })
+  const changeFilter = (status: string) =>
+    setSearchParams(status ? { status } : {}, { replace: true })
 
   // Halaman disimpan bersama filter yang berlaku saat itu, sehingga
   // berpindah filter otomatis kembali ke halaman pertama.
   const [pageState, setPageState] = useState({ status: filterStatus, page: 1 })
   const page = pageState.status === filterStatus ? pageState.page : 1
-  const setPage = (nextPage) => setPageState({ status: filterStatus, page: nextPage })
+  const setPage = (nextPage: number) => setPageState({ status: filterStatus, page: nextPage })
 
   // Filter status dan pagination diproses di server.
   const [pageSize, setPageSizeState] = usePageSize('surat-saya')
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setPage(1)
   }
@@ -55,12 +58,12 @@ export default function DaftarSuratSayaPage() {
     status: activeStatus,
   })
 
-  const [selectedSurat, setSelectedSurat] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [selectedSurat, setSelectedSurat] = useState<LetterListItem | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
-  const handleDelete = async (item) => {
+  const handleDelete = async (item: LetterListItem) => {
     const confirmed = await confirmDialog({
       title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,
       message: 'Tindakan ini tidak dapat dibatalkan.',
@@ -80,26 +83,18 @@ export default function DaftarSuratSayaPage() {
 
       await refresh()
     } catch (requestError) {
-      setDeleteError(requestError?.response?.data?.message || 'Gagal menghapus surat.')
+      setDeleteError(getApiErrorMessage(requestError, 'Gagal menghapus surat.'))
     } finally {
       setDeletingId(null)
     }
   }
-
-  const toDetail = (item) => ({
-    ...item,
-    noSurat: item.letter_number,
-    pemohon: item.applicant_name,
-    jenis: item.letter_type?.name,
-    tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-',
-  })
 
   // Dibuka dari notifikasi: ?surat=<id>.
   useLetterDeepLink((letterId) => {
     const listed = letters.find((item) => String(item.id) === letterId)
 
     // Surat di halaman lain tetap bisa dibuka: modal memuat detailnya sendiri.
-    setSelectedSurat(listed ? toDetail(listed) : { id: letterId })
+    setSelectedSurat(listed ?? ({ id: letterId } as LetterListItem))
   }, !loading)
 
   return (
@@ -140,7 +135,7 @@ export default function DaftarSuratSayaPage() {
           loading={loading}
           filter={activeStatus}
           onFilterChange={changeFilter}
-          onDetail={(item) => setSelectedSurat(toDetail(item))}
+          onDetail={(item) => setSelectedSurat(item)}
           onDelete={handleDelete}
           deletingId={deletingId}
           onCreate={() => navigate('/jenis-surat')}

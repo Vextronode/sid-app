@@ -2,12 +2,22 @@ openapi: 3.0.3
 
 info:
   title: Sistem Informasi Desa (SID) - SIDUTama REST API
-  version: "5.3.0"
+  version: "5.4.0"
   description: |
     Spesifikasi API SIDUTama, diselaraskan ke source backend aktif
     (`apps/backend/routes/api.php`, `routes/auth.php`, controller, form
     request, resource, policy, dan service) per 2026-10-16. Bila ada
     perbedaan antara dokumen ini dan source, source yang berlaku.
+
+    ## Perubahan v5.4 — Field yang sudah dipakai frontend (2026-10-31)
+
+    Penambahan field, tanpa mengubah field yang ada:
+    - `LetterListItem.rejection_reason`: catatan keputusan tolak terakhir
+      (`letter_approvals.notes`); `null` bila surat tidak ditolak.
+    - `Family.members` (hanya `GET /families/{family}`): anggota KK
+      `{ id, name, family_role }`. Daftar KK tetap memakai `members_count`.
+    - `GET /user`: `official` kini memuat `rt`, `rw`, dan `hamlet` untuk
+      label wilayah jabatan di dashboard RT/RW/Kadus.
 
     ## Perubahan v5.3 — Surat dinamis, tanda tangan, identitas desa
 

@@ -1,5 +1,5 @@
 // ==========================================
-// RegisterPage.jsx
+// RegisterPage.tsx
 // Registrasi akun warga - Backend v5.1
 // NIK + Password
 // Username dibuat otomatis oleh backend

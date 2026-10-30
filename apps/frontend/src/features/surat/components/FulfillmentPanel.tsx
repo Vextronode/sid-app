@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { Id, Letter, MessageResponse } from '@/types'
+import type { FulfillmentProposal, FulfillmentValues } from '../api/letterExtrasApi'
 import { applyFulfillment, getFulfillmentProposal } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
 import { SemiManualFulfillmentForm } from './SemiManualFulfillmentForm'
 import { MemberChangesForm } from './MemberChangesForm'
 import { UpdateCitizensForm } from './UpdateCitizensForm'
 import { RestructureFamilyForm } from './RestructureFamilyForm'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-const ACTION_TITLES = {
+const ACTION_TITLES: Record<string, string> = {
   update_citizen: 'Perubahan Data Warga',
   create_citizen: 'Penambahan Data Warga',
   deactivate_members: 'Penonaktifan Anggota Keluarga',
@@ -17,19 +21,7 @@ const ACTION_TITLES = {
   manual: 'Pembaruan Data Penduduk & KK',
 }
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
-
-function display(value) {
+function display(value: unknown) {
   if (value === true) return 'Ya'
   if (value === false) return 'Tidak'
 
@@ -47,16 +39,26 @@ function display(value) {
  * tidak ada isian wajib yang masih kosong (mis. NIK atau No. KK baru dari
  * dokumen terbitan); bila ada, Kasi/Kaur diminta melengkapinya dulu.
  */
-export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
-  const [proposal, setProposal] = useState(null)
-  const [values, setValues] = useState({})
+type FulfillmentPanelProps = {
+  letterId: Id
+  onApplied?: (letter?: Letter) => void
+  autoStart?: boolean
+}
+
+export function FulfillmentPanel({
+  letterId,
+  onApplied,
+  autoStart = false,
+}: FulfillmentPanelProps) {
+  const [proposal, setProposal] = useState<FulfillmentProposal | null>(null)
+  const [values, setValues] = useState<FulfillmentValues>({})
   const [subjectNik, setSubjectNik] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [needsInput, setNeedsInput] = useState(false)
-  const section = useRef(null)
+  const section = useRef<HTMLElement>(null)
   const autoStarted = useRef(false)
 
   useEffect(() => {
@@ -77,7 +79,8 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
         )
       })
       .catch((requestError) => {
-        if (active) setError(serverMessage(requestError, 'Gagal memuat usulan perubahan data.'))
+        if (active)
+          setError(getApiErrorMessage(requestError, 'Gagal memuat usulan perubahan data.'))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -88,7 +91,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
     }
   }, [letterId])
 
-  const handleApply = async (event) => {
+  const handleApply = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     setSaving(true)
@@ -106,10 +109,10 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
       const response = await applyFulfillment(letterId, filled, nik)
 
       setMessage(response?.message ?? 'Perubahan data berhasil diterapkan.')
-      setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+      setProposal((current) => current && { ...current, fulfilled_at: new Date().toISOString() })
       onApplied?.(response?.data)
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menerapkan perubahan data.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menerapkan perubahan data.'))
     } finally {
       setSaving(false)
     }
@@ -137,7 +140,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
     }
 
     const form = section.current?.querySelector('form')
-    const submit = form?.querySelector('button[type="submit"]')
+    const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]')
 
     if (form && !submit?.disabled) form.requestSubmit()
   }, [autoStart, loading, proposal, values])
@@ -158,9 +161,9 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
   const isCreate = proposal.action === 'create_citizen'
   const isSemiManual = ['deactivate_members', 'manual'].includes(proposal.action)
 
-  const handleSemiManualDone = (response) => {
+  const handleSemiManualDone = (response: MessageResponse<Letter>) => {
     setMessage(response?.message ?? 'Perubahan data berhasil disimpan.')
-    setProposal((current) => ({ ...current, fulfilled_at: new Date().toISOString() }))
+    setProposal((current) => current && { ...current, fulfilled_at: new Date().toISOString() })
     onApplied?.(response?.data)
   }
 
@@ -189,7 +192,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
       {done ? (
         <p className="sid-modal-note-text">
           Sudah {proposal.action === 'manual' ? 'ditandai selesai' : 'diterapkan'} pada{' '}
-          {new Date(proposal.fulfilled_at).toLocaleString('id-ID')}.
+          {proposal.fulfilled_at ? new Date(proposal.fulfilled_at).toLocaleString('id-ID') : '-'}.
         </p>
       ) : proposal.action === 'update_members' ? (
         <MemberChangesForm letterId={letterId} proposal={proposal} onDone={handleSemiManualDone} />
@@ -282,7 +285,7 @@ export function FulfillmentPanel({ letterId, onApplied, autoStart = false }) {
                         <input
                           className="sid-input"
                           aria-label={`Nilai diterapkan untuk ${field.label}`}
-                          value={values[field.column] ?? ''}
+                          value={String(values[field.column] ?? '')}
                           onChange={(event) =>
                             setValues((current) => ({
                               ...current,

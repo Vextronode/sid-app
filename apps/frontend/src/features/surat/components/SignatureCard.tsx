@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { PointerEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -10,23 +11,13 @@ import {
   requestSignatureReset,
   saveMySignature,
 } from '../api/signatureApi'
+import type { MySignatureStatus } from '../api/signatureApi'
 import { promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const PAD_WIDTH = 480
 const PAD_HEIGHT = 180
-
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
 
 /**
  * Tanda tangan pribadi akun. Diisi sekali (digambar atau diunggah) dengan
@@ -37,13 +28,13 @@ function serverMessage(error, fallback) {
 export function SignatureCard() {
   const { user } = useAuth()
   const { hash } = useLocation()
-  const sectionRef = useRef(null)
-  const canvasRef = useRef(null)
+  const sectionRef = useRef<HTMLElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef(false)
   const [requesting, setRequesting] = useState(false)
-  const [status, setStatus] = useState(null)
+  const [status, setStatus] = useState<MySignatureStatus | null>(null)
   const [imageUrl, setImageUrl] = useState('')
-  const [draft, setDraft] = useState(null)
+  const [draft, setDraft] = useState<File | null>(null)
   const [draftUrl, setDraftUrl] = useState('')
   const [hasStrokes, setHasStrokes] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -66,7 +57,7 @@ export function SignatureCard() {
         }
       })
       .catch((requestError) => {
-        if (active) setError(serverMessage(requestError, 'Gagal memuat tanda tangan.'))
+        if (active) setError(getApiErrorMessage(requestError, 'Gagal memuat tanda tangan.'))
       })
 
     return () => {
@@ -107,17 +98,17 @@ export function SignatureCard() {
     try {
       const response = await requestSignatureReset(reason.trim())
 
-      setStatus((current) => ({ ...current, reset_request: response.data }))
+      setStatus((current) => current && { ...current, reset_request: response.data })
       notifySuccess(response.message ?? 'Pengajuan reset tanda tangan terkirim.')
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal mengirim pengajuan reset tanda tangan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal mengirim pengajuan reset tanda tangan.'))
     } finally {
       setRequesting(false)
     }
   }
 
-  const pointerPosition = (event) => {
-    const canvas = canvasRef.current
+  const pointerPosition = (event: PointerEvent<HTMLCanvasElement>) => {
+    const canvas = event.currentTarget
     const rect = canvas.getBoundingClientRect()
 
     return {
@@ -126,8 +117,9 @@ export function SignatureCard() {
     }
   }
 
-  const startStroke = (event) => {
-    const context = canvasRef.current.getContext('2d')
+  const startStroke = (event: PointerEvent<HTMLCanvasElement>) => {
+    const context = event.currentTarget.getContext('2d')
+    if (!context) return
     const { x, y } = pointerPosition(event)
 
     drawingRef.current = true
@@ -138,10 +130,12 @@ export function SignatureCard() {
     context.moveTo(x, y)
   }
 
-  const continueStroke = (event) => {
+  const continueStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     if (!drawingRef.current) return
 
-    const context = canvasRef.current.getContext('2d')
+    const context = event.currentTarget.getContext('2d')
+    if (!context) return
+
     const { x, y } = pointerPosition(event)
 
     context.lineTo(x, y)
@@ -156,23 +150,25 @@ export function SignatureCard() {
   const clearPad = () => {
     const canvas = canvasRef.current
 
-    canvas?.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
     setHasStrokes(false)
   }
 
-  const setDraftFile = (file) => {
+  const setDraftFile = (file: File | null) => {
     setDraft(file)
     setDraftUrl(file ? URL.createObjectURL(file) : '')
     setError('')
   }
 
   const useDrawing = () => {
-    canvasRef.current.toBlob((blob) => {
+    canvasRef.current?.toBlob((blob) => {
       if (blob) setDraftFile(new File([blob], 'tanda-tangan.png', { type: 'image/png' }))
     }, 'image/png')
   }
 
   const handleSave = async () => {
+    if (!draft) return
+
     setSaving(true)
     setError('')
 
@@ -185,7 +181,7 @@ export function SignatureCard() {
       setDraftUrl('')
       notifySuccess('Tanda tangan berhasil disimpan.')
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menyimpan tanda tangan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menyimpan tanda tangan.'))
     } finally {
       setSaving(false)
     }

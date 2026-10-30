@@ -16,7 +16,7 @@ vi.mock('@/features/kelola-berita/api', () => beritaApi)
 vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   refreshPublicVillageInfo: vi.fn(),
 }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 const { confirmDialog } = vi.hoisted(() => ({ confirmDialog: vi.fn() }))
 vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
@@ -26,7 +26,7 @@ import KelolaPengumumanPage from './KelolaPengumumanPage'
 const ACTIVE = {
   title: 'Kantor desa tutup Jumat siang',
   body: 'Pelayanan dibuka lagi Senin.',
-  link_url: null,
+  link_url: null as string | null,
   expires_at: new Date(Date.now() + 5 * 3_600_000).toISOString(),
   updated_at: '2026-10-20T09:00:00+07:00',
 }

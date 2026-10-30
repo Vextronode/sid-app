@@ -121,6 +121,10 @@ class UserRepository
             'citizen.rw',
             'citizen.occupation',
             'official.citizen.occupation',
+            // Wilayah jabatan RT/RW/Kadus untuk label di dashboard.
+            'official.rt',
+            'official.rw',
+            'official.hamlet',
         ]);
     }
 }

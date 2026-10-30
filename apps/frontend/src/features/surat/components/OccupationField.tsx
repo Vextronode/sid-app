@@ -1,4 +1,20 @@
+import type { ChangeEvent, ReactNode } from 'react'
+import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form'
+
 import { OTHER_OCCUPATION, otherOccupationFieldName } from '../validation/suratSchema'
+import type { Occupation } from '@/types'
+import type { SuratField, SuratFormValues } from '../types'
+
+type OccupationFieldProps = {
+  field: SuratField
+  register: UseFormRegister<SuratFormValues>
+  setValue: UseFormSetValue<SuratFormValues>
+  value: unknown
+  occupations: Occupation[]
+  loadFailed: boolean
+  errors: FieldErrors<SuratFormValues>
+  renderError: (name: string) => ReactNode
+}
 
 /**
  * Isian pekerjaan: pilihan dari katalog pekerjaan desa, plus "Lainnya"
@@ -14,12 +30,12 @@ export function OccupationField({
   loadFailed,
   errors,
   renderError,
-}) {
+}: OccupationFieldProps) {
   const otherName = otherOccupationFieldName(field.name)
   const isOther = value === OTHER_OCCUPATION
   const selectField = register(field.name)
 
-  const handleChange = (event) => {
+  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
     selectField.onChange(event)
 
     // Teks Lainnya dikosongkan begitu pilihan beralih ke katalog.

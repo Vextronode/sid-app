@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
-// SuratDateTracker.jsx
+// SuratDateTracker.tsx
 //
 // Tracking surat berdasarkan tanggal pengajuan.
 //
@@ -19,16 +19,19 @@
 // ==========================================
 
 import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
 import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
+import type { PdfTemplate } from '@/features/cetak-surat/utils/letterDocuments'
 import { LetterValidityNote } from '@/features/surat/components/LetterValidityNote'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import { useLetters } from '@/features/surat/hooks/useLetters'
+import type { Id, LetterListItem } from '@/types'
 
 // ==========================================
 // TRACKING STEPS
@@ -40,7 +43,7 @@ const STEPS = ['Pengajuan', 'RT', 'Kades', 'Selesai']
 // TRACKING STATE
 // ==========================================
 
-function getTrackingState(surat) {
+function getTrackingState(surat: LetterListItem) {
   const status = surat?.status
 
   const currentStepOrder = Number(surat?.current_step_order)
@@ -93,7 +96,7 @@ function getTrackingState(surat) {
 // TRACKING STEPPER
 // ==========================================
 
-function TrackingStepper({ surat }) {
+function TrackingStepper({ surat }: { surat: LetterListItem }) {
   const { currentStep, rejectedStep, completed } = getTrackingState(surat)
 
   return (
@@ -128,7 +131,7 @@ function TrackingStepper({ surat }) {
 
           let labelClass = 'sid-tracker-label'
 
-          let circleContent = stepNumber
+          let circleContent: ReactNode = stepNumber
 
           // =================================
           // REJECTED
@@ -197,13 +200,12 @@ function TrackingStepper({ surat }) {
 // REJECTION REASON
 // ==========================================
 
-function RejectionReason({ surat }) {
+function RejectionReason({ surat }: { surat: LetterListItem }) {
   if (surat?.status !== SURAT_STATUS.REJECTED) {
     return null
   }
 
-  const reason =
-    surat?.notes ?? surat?.reason ?? surat?.rejection_reason ?? 'Tidak ada catatan penolakan.'
+  const reason = surat?.rejection_reason || 'Tidak ada catatan penolakan.'
 
   return (
     <div className="sid-date-tracker-rejection">
@@ -224,15 +226,13 @@ function RejectionReason({ surat }) {
 // STATUS PREVIEW PDF
 // ==========================================
 
-const canPreviewStatuses = [SURAT_STATUS.APPROVED]
-
-const canPreviewSurat = (status) => canPreviewStatuses.includes(status)
+const canPreviewSurat = (status: string) => status === SURAT_STATUS.APPROVED
 
 // ==========================================
 // TEMPLATE PDF
 // ==========================================
 
-function getPreviewTemplate(status) {
+function getPreviewTemplate(status: string): PdfTemplate | null {
   if (status === SURAT_STATUS.APPROVED) {
     return 'digital'
   }
@@ -244,7 +244,15 @@ function getPreviewTemplate(status) {
 // PREVIEW PDF
 // ==========================================
 
-function SuratPreview({ suratId, status, isExpired = false }) {
+function SuratPreview({
+  suratId,
+  status,
+  isExpired = false,
+}: {
+  suratId: Id
+  status: string
+  isExpired?: boolean
+}) {
   const [showPreview, setShowPreview] = useState(false)
 
   // Surat kedaluwarsa tinggal riwayat: tombol tetap tampil tetapi nonaktif.
@@ -302,7 +310,7 @@ const MAX_DOTS = 10
 
 // Awal dan akhir hari YYYY-MM-DD menurut zona waktu perangkat, sebagai
 // waktu ISO, supaya server menyaring tanggal lokal dengan tepat.
-function localDayRange(dateString) {
+function localDayRange(dateString: string) {
   const [year, month, day] = dateString.split('-').map(Number)
 
   return {
@@ -331,7 +339,7 @@ export default function SuratDateTracker() {
 
   const totalLetters = meta.total
 
-  const dateInputRef = useRef(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   // ==========================================
   // JAGA SLIDE INDEX
@@ -348,7 +356,7 @@ export default function SuratDateTracker() {
   // FILTER TANGGAL
   // ==========================================
 
-  const handleDateChange = (e) => {
+  const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value)
 
     setSlideIndex(0)

@@ -1,5 +1,5 @@
 // ==========================================
-// FlowTimeline.jsx
+// FlowTimeline.tsx
 // Tahapan alur surat secara vertikal (Diajukan -> RT -> Kades -> Selesai)
 // untuk panel berkas.
 //
@@ -12,6 +12,8 @@
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { getLatestApprovalForLevel } from '@/features/approval/constants/statusFlow'
 import { getLetterTrackingState } from '@/features/surat/utils/letterDetails'
+import type { LetterTrackingState } from '@/features/surat/utils/letterDetails'
+import type { Letter } from '@/types'
 import { formatDossierDateTime, getApprovalActor } from './dossierFormat'
 
 const STEPS = [
@@ -21,8 +23,22 @@ const STEPS = [
   { key: 'done', label: 'Surat terbit', levels: [] },
 ]
 
+type TimelineLetter = Partial<
+  Pick<
+    Letter,
+    | 'status'
+    | 'current_step_order'
+    | 'rejected_at_step'
+    | 'approvals'
+    | 'submitted_at'
+    | 'created_at'
+    | 'processed_at'
+    | 'updated_at'
+  >
+>
+
 // Langkah UI 1 = Diajukan; backend step 1 = RT, step 2 = persetujuan final.
-function getDetailedState(surat) {
+function getDetailedState(surat: TimelineLetter | null | undefined): LetterTrackingState {
   const currentStepOrder = Number(surat?.current_step_order) || 1
 
   if (surat?.status === SURAT_STATUS.REJECTED) {
@@ -42,7 +58,10 @@ function getDetailedState(surat) {
   }
 }
 
-function stepState(stepNumber, { currentStep, rejectedStep, completed }) {
+function stepState(
+  stepNumber: number,
+  { currentStep, rejectedStep, completed }: LetterTrackingState,
+) {
   if (!completed && rejectedStep === stepNumber) return 'rejected'
   if (completed || stepNumber < currentStep) return 'done'
   if (stepNumber === currentStep) return 'current'
@@ -50,14 +69,19 @@ function stepState(stepNumber, { currentStep, rejectedStep, completed }) {
   return 'waiting'
 }
 
-const STATE_TEXT = {
+const STATE_TEXT: Record<ReturnType<typeof stepState>, string> = {
   done: 'Selesai',
   current: 'Sedang diproses',
   waiting: 'Menunggu',
   rejected: 'Ditolak',
 }
 
-export function FlowTimeline({ surat, variant = 'detailed' }) {
+type FlowTimelineProps = {
+  surat: TimelineLetter | null | undefined
+  variant?: 'detailed' | 'generic'
+}
+
+export function FlowTimeline({ surat, variant = 'detailed' }: FlowTimelineProps) {
   const generic = variant === 'generic'
   const state = generic ? getLetterTrackingState(surat) : getDetailedState(surat)
   const approvals = surat?.approvals ?? []

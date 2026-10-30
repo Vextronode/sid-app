@@ -2,11 +2,16 @@ import { ChevronDown } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useDisclosure } from '../hooks/useDisclosure'
+import type { BerandaContent } from '../berandaContent'
+
+type BerandaHeaderContent = BerandaContent['header']
 
 // Isi Profil Desa, dipakai dropdown desktop dan menu ponsel.
 // A4–A7: butir yang halamannya sudah ada menjadi link; sisanya teks biasa
 // + "Segera hadir" (tidak bisa diklik/difokus), mis. Transparansi APBDes.
-export function ProfilDesaItems({ header, onSelect }) {
+type ProfilDesaItemsProps = { header: BerandaHeaderContent; onSelect?: () => void }
+
+export function ProfilDesaItems({ header, onSelect }: ProfilDesaItemsProps) {
   return (
     <ul className="bd-menu-list">
       {header.profilItems.map(({ label, to }) =>
@@ -29,11 +34,11 @@ export function ProfilDesaItems({ header, onSelect }) {
 
 // Halaman Tentang Desa sedang dibuka bila path-nya sama dengan salah satu
 // butir menu (tanpa #, mis. /profil-desa#perangkat-desa -> /profil-desa).
-function isProfilPage(pathname, items) {
+function isProfilPage(pathname: string, items: BerandaHeaderContent['profilItems']) {
   return items.some(({ to }) => to && to.split('#')[0] === pathname)
 }
 
-export function ProfilDesaDropdown({ header }) {
+export function ProfilDesaDropdown({ header }: { header: BerandaHeaderContent }) {
   const { isOpen, toggle, close, containerRef, triggerRef, panelId, onBlur } = useDisclosure()
   const { pathname } = useLocation()
   const active = isProfilPage(pathname, header.profilItems)

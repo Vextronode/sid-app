@@ -1,4 +1,4 @@
-export const APPROVAL_SETTING_LABELS = {
+export const APPROVAL_SETTING_LABELS: Record<string, string> = {
   rt: 'RT',
   kepala_desa: 'Kepala Desa',
   sekretaris_desa: 'Sekretaris Desa',

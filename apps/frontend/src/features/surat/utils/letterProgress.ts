@@ -1,4 +1,30 @@
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import type { LetterListItem, LetterResultStage } from '@/types'
+
+export type LetterProgressTone = 'pending' | 'progress' | 'done' | 'rejected'
+
+export type LetterProgress = {
+  stages: string[]
+  tone: LetterProgressTone
+  current: number
+  rejected: boolean
+  message: string
+}
+
+// Bagian surat yang menentukan posisinya di jalur tahapan.
+type ProgressLetter = Partial<
+  Pick<
+    LetterListItem,
+    | 'status'
+    | 'result_stage'
+    | 'result_rejected'
+    | 'is_expired'
+    | 'rejected_at_step'
+    | 'awaiting_signatures'
+    | 'current_step'
+    | 'current_step_order'
+  >
+>
 
 // Semua jenis surat memakai satu alur tetap: RT -> Kepala/Sekretaris Desa.
 // Tahap milik pemohon sendiri dilewati backend, tetapi tetap tampil sebagai
@@ -9,7 +35,10 @@ export const LETTER_STAGES = ['Diajukan', 'RT', 'Desa', 'Terbit']
 // dari instansi luar pada surat yang sama, lalu desa memverifikasinya.
 export const RESULT_LETTER_STAGES = [...LETTER_STAGES, 'Unggah hasil', 'Verifikasi']
 
-const RESULT_PROGRESS = {
+const RESULT_PROGRESS: Record<
+  LetterResultStage,
+  Pick<LetterProgress, 'tone' | 'current' | 'message'>
+> = {
   awaiting_upload: {
     tone: 'pending',
     current: 4,
@@ -27,18 +56,18 @@ const RESULT_PROGRESS = {
   },
 }
 
-const POSITION_STAGE = { rt: 1, kepala_desa: 2, sekretaris_desa: 2 }
+const POSITION_STAGE: Record<string, number> = { rt: 1, kepala_desa: 2, sekretaris_desa: 2 }
 
-const POSITION_NAME = {
+const POSITION_NAME: Record<string, string> = {
   rt: 'Ketua RT',
   kepala_desa: 'Kepala Desa',
   sekretaris_desa: 'Sekretaris Desa',
 }
 
-const STAGE_NAME = { 1: 'Ketua RT', 2: 'pemerintah desa' }
+const STAGE_NAME: Record<number, string> = { 1: 'Ketua RT', 2: 'pemerintah desa' }
 
 // Nomor urut tahap di backend (1 = RT, 2 = desa) -> indeks tahap di jalur.
-function stageFromOrder(order) {
+function stageFromOrder(order: number | null | undefined) {
   return Math.min(Math.max(Number(order) || 1, 1), 2)
 }
 
@@ -49,7 +78,7 @@ function stageFromOrder(order) {
  * ditolak); tahap sebelumnya selesai. Surat terbit menandai semua tahap
  * selesai (`current` = jumlah tahap).
  */
-export function getLetterProgress(letter) {
+export function getLetterProgress(letter: ProgressLetter | null | undefined): LetterProgress {
   const status = String(letter?.status ?? '').toLowerCase()
   const stages = letter?.result_stage ? RESULT_LETTER_STAGES : LETTER_STAGES
 
@@ -64,8 +93,10 @@ export function getLetterProgress(letter) {
     }
   }
 
-  if (status === SURAT_STATUS.APPROVED && RESULT_PROGRESS[letter?.result_stage]) {
-    return { ...RESULT_PROGRESS[letter.result_stage], stages, rejected: false }
+  const resultStage = letter?.result_stage
+
+  if (status === SURAT_STATUS.APPROVED && resultStage && RESULT_PROGRESS[resultStage]) {
+    return { ...RESULT_PROGRESS[resultStage], stages, rejected: false }
   }
 
   if (status === SURAT_STATUS.APPROVED) {
@@ -103,18 +134,19 @@ export function getLetterProgress(letter) {
   }
 
   const position = letter?.current_step?.approver_position
-  const current = POSITION_STAGE[position] ?? stageFromOrder(letter?.current_step_order)
+  const current =
+    (position ? POSITION_STAGE[position] : undefined) ?? stageFromOrder(letter?.current_step_order)
 
   return {
     stages,
     tone: status === SURAT_STATUS.PENDING ? 'pending' : 'progress',
     current,
     rejected: false,
-    message: `Menunggu persetujuan ${POSITION_NAME[position] ?? STAGE_NAME[current]}.`,
+    message: `Menunggu persetujuan ${(position ? POSITION_NAME[position] : undefined) ?? STAGE_NAME[current]}.`,
   }
 }
 
-export function formatLetterDate(value) {
+export function formatLetterDate(value: string | null | undefined) {
   if (!value) return '-'
 
   return new Date(value).toLocaleDateString('id-ID', {

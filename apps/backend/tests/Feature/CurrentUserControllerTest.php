@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Citizen;
+use App\Models\Official;
 use App\Models\Rt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,23 @@ class CurrentUserControllerTest extends TestCase
             ->assertJsonPath('data.citizen.rt.id', $rt->id)
             ->assertJsonPath('data.must_change_password', false)
             ->assertJsonMissingPath('data.password');
+    }
+
+    public function test_show_returns_the_area_of_the_official_position(): void
+    {
+        $rt = Rt::factory()->create(['full_label' => 'RT 001 / RW 002']);
+        $user = User::factory()->create(['role' => 'rt']);
+        Official::factory()->forUser($user)->position('rt')->create([
+            'rt_id' => $rt->id,
+            'rw_id' => $rt->rw_id,
+        ]);
+
+        // Label wilayah di dashboard RT/RW/Kadus dibentuk dari official.rt/rw/hamlet.
+        $this->actingAs($user)
+            ->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('data.official.rt.full_label', 'RT 001 / RW 002')
+            ->assertJsonPath('data.official.rw.id', $rt->rw_id);
     }
 
     public function test_show_returns_role_label_following_configured_app_name(): void

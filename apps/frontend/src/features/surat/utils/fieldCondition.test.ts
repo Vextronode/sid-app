@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { matchesCondition, visibleFields } from './fieldCondition'
+import type { SuratField } from '../types'
 
 describe('matchesCondition', () => {
   it('compares answers as text like the backend', () => {
@@ -35,7 +36,7 @@ describe('matchesCondition', () => {
 })
 
 describe('visibleFields', () => {
-  const fields = [
+  const fields: (Pick<SuratField, 'name'> & Partial<Pick<SuratField, 'visibleWhen'>>)[] = [
     { name: 'warga' },
     { name: 'paspor', visibleWhen: { field: 'warga', equals: 'wna' } },
     { name: 'sponsor', visibleWhen: { field: 'paspor', filled: true } },

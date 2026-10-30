@@ -1,8 +1,25 @@
 import { Pencil, Power, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusPill } from '@/components/ui/StatusPill'
+import type { WilayahHamlet, WilayahProcessing, WilayahRw } from '../types'
 
-export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, onDelete }) {
+type RwTableProps = {
+  rws: WilayahRw[]
+  hamlets: WilayahHamlet[]
+  processing: WilayahProcessing
+  onEdit: (item: WilayahRw) => void
+  onToggle: (item: WilayahRw) => void
+  onDelete: (item: WilayahRw) => void
+}
+
+export default function RwTable({
+  rws,
+  hamlets,
+  processing,
+  onEdit,
+  onToggle,
+  onDelete,
+}: RwTableProps) {
   const [search, setSearch] = useState('')
   const [filterHamlet, setFilterHamlet] = useState('')
 
@@ -21,7 +38,8 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, on
     })
   }, [rws, search, filterHamlet])
 
-  const getHamletName = (hamletId) => hamlets.find((hamlet) => hamlet.id === hamletId)?.name ?? '-'
+  const getHamletName = (hamletId: number | null) =>
+    hamlets.find((hamlet) => hamlet.id === hamletId)?.name ?? '-'
 
   return (
     <div className="sid-wilayah-table-card">
@@ -49,7 +67,7 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, on
           >
             <option value="">Semua Dusun</option>
             {hamlets.map((hamlet) => (
-              <option key={hamlet.id} value={hamlet.id}>
+              <option key={hamlet.id} value={hamlet.id ?? ''}>
                 {hamlet.name}
               </option>
             ))}
@@ -72,7 +90,7 @@ export default function RwTable({ rws, hamlets, processing, onEdit, onToggle, on
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan="5">
+                <td colSpan={5}>
                   <div className="sid-wilayah-empty">Belum ada data RW.</div>
                 </td>
               </tr>

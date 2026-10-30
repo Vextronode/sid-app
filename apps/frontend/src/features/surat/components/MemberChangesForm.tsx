@@ -1,22 +1,17 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { FulfillmentProposal } from '../api/letterExtrasApi'
+import type { FulfillmentFormProps } from '../types'
 
 import { applyFulfillment } from '../api/letterExtrasApi'
 import { confirmFulfillment } from '../utils/confirmFulfillment'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
+// Nilai pilihan per indeks baris anggota, lalu per kolom.
+type MemberValues = Record<string, Record<string, string>>
 
 // Nilai awal pilihan per anggota: usulan warga (kosong bila harus dipilih).
-function initialValues(memberChanges) {
+function initialValues(memberChanges: FulfillmentProposal['member_changes']): MemberValues {
   return Object.fromEntries(
     memberChanges.map((member) => [
       member.index,
@@ -35,20 +30,20 @@ function initialValues(memberChanges) {
  * `update_members`). Tiap kolom boleh dikoreksi; pekerjaan "Lainnya" yang
  * belum ada di katalog wajib dipilih dari katalog agar ikut diterapkan.
  */
-export function MemberChangesForm({ letterId, proposal, onDone }) {
+export function MemberChangesForm({ letterId, proposal, onDone }: FulfillmentFormProps) {
   const memberChanges = proposal.member_changes ?? []
   const [values, setValues] = useState(() => initialValues(memberChanges))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const setValue = (index, column, value) =>
+  const setValue = (index: number, column: string, value: string) =>
     setValues((current) => ({ ...current, [index]: { ...current[index], [column]: value } }))
 
   const unresolved = memberChanges.flatMap((member) =>
     member.fields.filter((field) => field.needs_choice && !values[member.index]?.[field.column]),
   )
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     setSaving(true)
@@ -68,7 +63,7 @@ export function MemberChangesForm({ letterId, proposal, onDone }) {
         onDone(await applyFulfillment(letterId, filled, null))
       }
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menerapkan perubahan data.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menerapkan perubahan data.'))
     } finally {
       setSaving(false)
     }

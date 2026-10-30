@@ -61,7 +61,9 @@ User:
       allOf:
         - $ref: '../citizens/citizens.yaml#/Citizen'
     official:
-      description: "Jabatan aktif; included when relation is loaded"
+      description: |
+        Jabatan aktif; included when relation is loaded. Pada `GET /user`
+        memuat juga `rt`, `rw`, dan `hamlet` (wilayah jabatan RT/RW/Kadus).
       allOf:
         - $ref: '#/Official'
 

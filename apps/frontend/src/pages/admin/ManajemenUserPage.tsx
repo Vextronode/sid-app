@@ -1,5 +1,5 @@
 // ==========================================
-// ManajemenUserPage.jsx
+// ManajemenUserPage.tsx
 // Halaman kelola user & role.
 // Layout disamakan dengan OperatorSuratListPage.
 // Logic/API tidak diubah.
@@ -30,6 +30,9 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
+import type { ChangeEvent, FormEvent } from 'react'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { User } from '@/types'
 
 export default function ManajemenUserPage() {
   const {
@@ -52,14 +55,16 @@ export default function ManajemenUserPage() {
   } = useUserList()
 
   const [keyword, setKeyword] = useState('')
-  const [editingUser, setEditingUser] = useState(null)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState('')
-  const [signatureNotice, setSignatureNotice] = useState(null)
+  const [signatureNotice, setSignatureNotice] = useState<{ type: 'error'; text: string } | null>(
+    null,
+  )
 
   // Reset darurat tanda tangan akun. Tanda tangan lama tetap tersimpan
   // untuk dokumen yang sudah terbit; pemilik akun dapat mengisi yang baru.
-  const handleResetSignature = async (user) => {
+  const handleResetSignature = async (user: User) => {
     const reason = await promptDialog({
       title: `Atur ulang tanda tangan ${user.name}?`,
       message: 'Tanda tangan lama tetap tersimpan untuk dokumen yang sudah terbit.',
@@ -76,17 +81,13 @@ export default function ManajemenUserPage() {
       setSignatureNotice(null)
       notifySuccess(response.data?.message ?? 'Tanda tangan berhasil diatur ulang.')
     } catch (requestError) {
-      const errors = requestError?.response?.data?.errors
-      const text =
-        (errors && Object.values(errors).flat()[0]) ||
-        requestError?.response?.data?.message ||
-        'Gagal mengatur ulang tanda tangan.'
+      const text = getApiErrorMessage(requestError, 'Gagal mengatur ulang tanda tangan.')
 
       setSignatureNotice({ type: 'error', text })
     }
   }
 
-  const handleToggleStatus = async (user) => {
+  const handleToggleStatus = async (user: User) => {
     const deactivating = user.is_active
     const confirmed = await confirmDialog(
       deactivating
@@ -112,10 +113,10 @@ export default function ManajemenUserPage() {
 
   // Reset kata sandi: backend membuat kata sandi sementara yang hanya
   // ditampilkan sekali di sini untuk diserahkan langsung ke pengguna.
-  const [passwordReset, setPasswordReset] = useState(null)
+  const [passwordReset, setPasswordReset] = useState<{ user: User; password: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const handleResetPassword = async (user) => {
+  const handleResetPassword = async (user: User) => {
     const confirmed = await confirmDialog({
       title: `Atur ulang kata sandi ${user.name}?`,
       message: 'Kata sandi lama tidak dapat dipakai lagi.',
@@ -132,12 +133,14 @@ export default function ManajemenUserPage() {
     } catch (requestError) {
       setSignatureNotice({
         type: 'error',
-        text: requestError?.response?.data?.message || 'Gagal mengatur ulang kata sandi.',
+        text: getApiErrorMessage(requestError, 'Gagal mengatur ulang kata sandi.'),
       })
     }
   }
 
   const handleCopyPassword = async () => {
+    if (!passwordReset) return
+
     try {
       await navigator.clipboard.writeText(passwordReset.password)
       setCopied(true)
@@ -149,10 +152,15 @@ export default function ManajemenUserPage() {
   // Foto profil akun warga. Satu input berkas tersembunyi dipakai bersama;
   // akun yang dituju disimpan di ref. Foto akun yang menjabat diatur di
   // halaman Pejabat Desa.
-  const photoInput = useRef(null)
-  const photoTarget = useRef(null)
+  const photoInput = useRef<HTMLInputElement>(null)
+  const photoTarget = useRef<User | null>(null)
 
-  const runPhoto = async (request, user, successText, fallback) => {
+  const runPhoto = async (
+    request: () => Promise<{ data?: { data?: { photo_url?: string | null } } }>,
+    user: User,
+    successText: string,
+    fallback: string,
+  ) => {
     try {
       const response = await request()
 
@@ -160,22 +168,18 @@ export default function ManajemenUserPage() {
       setSignatureNotice(null)
       notifySuccess(successText)
     } catch (requestError) {
-      const errors = requestError?.response?.data?.errors
-      const text =
-        (errors && Object.values(errors).flat()[0]) ||
-        requestError?.response?.data?.message ||
-        fallback
+      const text = getApiErrorMessage(requestError, fallback)
 
       setSignatureNotice({ type: 'error', text })
     }
   }
 
-  const pickPhotoFor = (user) => {
+  const pickPhotoFor = (user: User) => {
     photoTarget.current = user
     photoInput.current?.click()
   }
 
-  const handlePhotoChange = (event) => {
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     const user = photoTarget.current
 
@@ -190,7 +194,7 @@ export default function ManajemenUserPage() {
     )
   }
 
-  const handleDeletePhoto = async (user) => {
+  const handleDeletePhoto = async (user: User) => {
     if (
       !(await confirmDialog({
         title: `Hapus foto profil ${user.name}?`,
@@ -208,7 +212,7 @@ export default function ManajemenUserPage() {
     )
   }
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setSearch(keyword)
   }
@@ -219,13 +223,13 @@ export default function ManajemenUserPage() {
     { escapeClose: editingUser ? closeEdit : null },
   )
 
-  const handleOpenEdit = (user) => {
+  const handleOpenEdit = (user: User) => {
     setEditingUser(user)
     setEditName(user.name ?? '')
     setEditError('')
   }
 
-  const handleSubmitName = async (event) => {
+  const handleSubmitName = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!editingUser) return
     setEditError('')
@@ -234,7 +238,7 @@ export default function ManajemenUserPage() {
       notifySuccess('Nama pengguna berhasil diperbarui.')
       setEditingUser(null)
     } catch (err) {
-      setEditError(err?.response?.data?.message || 'Gagal memperbarui nama pengguna.')
+      setEditError(getApiErrorMessage(err, 'Gagal memperbarui nama pengguna.'))
     }
   }
 

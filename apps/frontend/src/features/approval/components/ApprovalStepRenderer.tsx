@@ -1,9 +1,27 @@
 import { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import { submitDecision } from '../api'
+import type { DecisionResponse } from '../api'
 import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import type { Id, LetterApproval, LetterCurrentStep, UserRole } from '@/types'
 import { canDecideOnLetter } from '../utils/canDecide'
+import { getApiErrorMessage, apiErrorStatus } from '@/shared/lib/apiError'
+
+type ApprovalStepRendererProps = {
+  currentStep: Pick<LetterCurrentStep, 'approver_position' | 'is_final'> | null | undefined
+  approvals?: Pick<LetterApproval, 'approval_level' | 'action'>[]
+  letterStatus: string
+  currentUserRole: UserRole | null | undefined
+  apiRole: UserRole | null | undefined
+  letterId: Id
+  onApprove?: (response: DecisionResponse) => unknown
+  onReject?: (notes: string, response: DecisionResponse) => unknown
+  // Keputusan ditolak 409 (surat sudah berubah), mis. muat ulang detail.
+  onConflict?: () => unknown
+  onClose?: () => void
+  closeOnDecision?: boolean
+}
 
 /**
  * Render aksi untuk pengguna yang berhak pada step aktif dan belum memiliki keputusan.
@@ -20,7 +38,7 @@ export default function ApprovalStepRenderer({
   onConflict,
   onClose,
   closeOnDecision = true,
-}) {
+}: ApprovalStepRendererProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showRejectBox, setShowRejectBox] = useState(false)
   const [alasan, setAlasan] = useState('')
@@ -38,7 +56,7 @@ export default function ApprovalStepRenderer({
   }
 
   const handleApprove = async () => {
-    if (isProcessing) return
+    if (isProcessing || !apiRole) return
 
     // Tahap final menerbitkan surat resmi, jadi minta konfirmasi dulu.
     const confirmed = await confirmDialog(
@@ -76,13 +94,13 @@ export default function ApprovalStepRenderer({
       )
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
-      console.error('APPROVE ERROR:', error.response?.data ?? error)
-      if (error.response?.status === 409 && onConflict) {
+      console.error('APPROVE ERROR:', error)
+      if (apiErrorStatus(error) === 409 && onConflict) {
         await onConflict()
       }
       alertDialog({
         title: 'Gagal menyetujui',
-        message: error.response?.data?.message ?? 'Gagal menyetujui surat.',
+        message: getApiErrorMessage(error, 'Gagal menyetujui surat.'),
       })
     } finally {
       setIsProcessing(false)
@@ -91,7 +109,7 @@ export default function ApprovalStepRenderer({
 
   const handleSubmitReject = async () => {
     const notes = alasan.trim()
-    if (!notes || isProcessing) return
+    if (!notes || isProcessing || !apiRole) return
 
     try {
       setIsProcessing(true)
@@ -107,13 +125,13 @@ export default function ApprovalStepRenderer({
       notifySuccess('Penolakan surat berhasil dikirim ke pemohon.')
       if (closeOnDecision && onClose) onClose()
     } catch (error) {
-      console.error('REJECT ERROR:', error.response?.data ?? error)
-      if (error.response?.status === 409 && onConflict) {
+      console.error('REJECT ERROR:', error)
+      if (apiErrorStatus(error) === 409 && onConflict) {
         await onConflict()
       }
       alertDialog({
         title: 'Gagal menolak',
-        message: error.response?.data?.message ?? 'Gagal menolak surat.',
+        message: getApiErrorMessage(error, 'Gagal menolak surat.'),
       })
     } finally {
       setIsProcessing(false)

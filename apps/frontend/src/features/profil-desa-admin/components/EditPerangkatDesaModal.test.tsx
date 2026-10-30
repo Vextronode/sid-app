@@ -3,10 +3,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import EditPerangkatDesaModal from './EditPerangkatDesaModal'
+import type { ProfileOfficial } from '../types'
 
 // Referensi tetap, seperti dari halaman: array baru tiap render memicu ulang
 // effect pemuatan data modal.
-const NO_OFFICIALS = []
+const NO_OFFICIALS: ProfileOfficial[] = []
 
 describe('EditPerangkatDesaModal', () => {
   it('explains in plain words where names and photos are changed', () => {

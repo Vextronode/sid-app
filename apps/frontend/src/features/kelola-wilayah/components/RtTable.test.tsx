@@ -2,17 +2,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import RtTable from './RtTable'
+import { partialFixture } from '@/test/fixtures'
+import type { WilayahHamlet, WilayahRw } from '../types'
 
-const HAMLETS = [
+const HAMLETS = partialFixture<WilayahHamlet[]>([
   { id: 1, name: 'Krajan' },
   { id: 2, name: 'Sukamaju' },
-]
+])
 
-const RWS = [
+const RWS = partialFixture<WilayahRw[]>([
   { id: 10, number: '01', hamletId: 1 },
   { id: 11, number: '02', hamletId: 1 },
   { id: 20, number: '03', hamletId: 2 },
-]
+])
 
 const RTS = [
   { id: 100, number: '01', rwId: 10, fullLabel: 'RT 001', isActive: true },
@@ -34,7 +36,8 @@ function renderTable() {
   )
 }
 
-const optionLabels = (select) => [...select.options].map((option) => option.textContent)
+const optionLabels = (select: HTMLSelectElement) =>
+  [...select.options].map((option) => option.textContent)
 const rowCount = () => screen.getAllByRole('row').length - 1
 
 describe('RtTable', () => {
@@ -42,7 +45,7 @@ describe('RtTable', () => {
     renderTable()
 
     const hamletSelect = screen.getByRole('combobox', { name: 'Filter dusun' })
-    const rwSelect = screen.getByRole('combobox', { name: 'Filter RW' })
+    const rwSelect = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Filter RW' })
 
     expect(rowCount()).toBe(3)
 
@@ -61,7 +64,7 @@ describe('RtTable', () => {
     renderTable()
 
     const hamletSelect = screen.getByRole('combobox', { name: 'Filter dusun' })
-    const rwSelect = screen.getByRole('combobox', { name: 'Filter RW' })
+    const rwSelect = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Filter RW' })
 
     fireEvent.change(hamletSelect, { target: { value: '1' } })
     fireEvent.change(rwSelect, { target: { value: '10' } })

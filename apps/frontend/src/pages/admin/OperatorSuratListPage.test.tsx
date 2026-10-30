@@ -9,18 +9,18 @@ const list = vi.hoisted(() => ({
 const { downloadFile } = vi.hoisted(() => ({ downloadFile: vi.fn() }))
 
 vi.mock('@/features/surat/hooks/useSuratListQuery', () => ({
-  useDebouncedValue: (value) => value,
-  useSuratListQuery: () => ({ letters: [], meta: list.meta, loading: false }),
-  useSuratSummaryQuery: () => ({ summary: { by_type: [] } }),
+  useDebouncedValue: (value: unknown) => value,
+  useSuratListQuery: () => ({ letters: [] as unknown[], meta: list.meta, loading: false }),
+  useSuratSummaryQuery: () => ({ summary: { by_type: [] as unknown[] } }),
 }))
 vi.mock('@/shared/hooks/useQueryRefresh', () => ({
   useQueryRefresh: () => ({ refresh: vi.fn(), refreshing: false }),
 }))
 vi.mock('@/features/notifikasi/hooks/useLetterDeepLink', () => ({ useLetterDeepLink: () => {} }))
-vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: () => null }))
+vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 vi.mock('@/lib/downloadFile', () => ({
   downloadFile,
-  downloadErrorMessage: async (_error, fallback) => fallback,
+  downloadErrorMessage: async (_error: unknown, fallback: string) => fallback,
 }))
 
 import OperatorSuratListPage from './OperatorSuratListPage'

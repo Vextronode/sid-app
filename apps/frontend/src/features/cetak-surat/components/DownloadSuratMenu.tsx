@@ -1,5 +1,5 @@
 // ==========================================
-// DownloadSuratMenu.jsx
+// DownloadSuratMenu.tsx
 // Tombol "Unduh surat" dengan dua pilihan format:
 // - digital: TTD Kepala Desa + stempel desa tercetak di surat
 // - wet: area tanda tangan kosong, untuk dicetak lalu ditandatangani
@@ -16,14 +16,37 @@
 import '@/styles/surat-dokumen.css'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown, Download, FileText, PenLine, Stamp } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import { downloadSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { isSignedByVillageHead } from '@/features/cetak-surat/utils/letterSigning'
 import { alertDialog } from '@/shared/lib/dialog'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { Id, LetterDocument } from '@/types'
 
-const FORMAT_OPTIONS = [
+type DownloadOption = {
+  key: string
+  template: PdfTemplate
+  documentKey: string
+  icon: LucideIcon
+  label: string
+  hint: string
+}
+
+type DownloadSuratMenuProps = {
+  surat: PrintableLetter
+  label?: string
+  variant?: string
+  disabled?: boolean
+  title?: string
+  className?: string
+  // Memuat rincian surat (daftar dokumen) saat tombol ditekan, untuk baris tabel.
+  loadDetail?: (id: Id) => Promise<PrintableLetter>
+}
+
+const FORMAT_OPTIONS: DownloadOption[] = [
   {
     key: 'digital',
     template: 'digital',
@@ -43,7 +66,9 @@ const FORMAT_OPTIONS = [
 ]
 
 // Format formulir pelayanan.
-const FORM_FORMATS = [
+const FORM_FORMATS: (Omit<DownloadOption, 'key' | 'template' | 'documentKey'> & {
+  key: PdfTemplate
+})[] = [
   {
     key: 'digital',
     icon: Stamp,
@@ -58,7 +83,11 @@ const FORM_FORMATS = [
   },
 ]
 
-function documentOption(document, hint, template = 'digital') {
+function documentOption(
+  document: LetterDocument,
+  hint: string,
+  template: PdfTemplate = 'digital',
+): DownloadOption {
   return {
     key: `document-${document.key}`,
     template,
@@ -69,7 +98,7 @@ function documentOption(document, hint, template = 'digital') {
   }
 }
 
-function formDocuments(surat) {
+function formDocuments(surat: PrintableLetter | null | undefined): LetterDocument[] {
   const documents = surat?.documents ?? []
   const main = documents.find((document) => document.key === MAIN_DOCUMENT) ?? {
     key: MAIN_DOCUMENT,
@@ -80,11 +109,14 @@ function formDocuments(surat) {
 }
 
 // Formulir pelayanan berisi beberapa dokumen: format dipilih terpisah.
-function hasFormatChoice(surat) {
+function hasFormatChoice(surat: PrintableLetter | null | undefined) {
   return !isSignedByVillageHead(surat) && formDocuments(surat).length > 1
 }
 
-function downloadOptions(surat, format = 'digital') {
+function downloadOptions(
+  surat: PrintableLetter | null | undefined,
+  format: PdfTemplate = 'digital',
+): DownloadOption[] {
   const documents = surat?.documents ?? []
   const extras = documents.filter((document) => document.key !== MAIN_DOCUMENT)
 
@@ -118,16 +150,16 @@ export function DownloadSuratMenu({
   title,
   className = '',
   loadDetail,
-}) {
+}: DownloadSuratMenuProps) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [detail, setDetail] = useState(null)
+  const [detail, setDetail] = useState<PrintableLetter | null>(null)
   const current = detail ?? surat
-  const [position, setPosition] = useState(null)
-  const [format, setFormat] = useState('digital')
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
+  const [format, setFormat] = useState<PdfTemplate>('digital')
 
-  const buttonRef = useRef(null)
-  const menuRef = useRef(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
 
   // Menu memakai position: fixed supaya tidak terpotong oleh tabel atau
@@ -151,15 +183,17 @@ export function DownloadSuratMenu({
       return
     }
 
-    menuRef.current?.querySelector('[role^="menuitem"]')?.focus()
+    menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]')?.focus()
 
     const close = () => setOpen(false)
-    const onPointerDown = (event) => {
-      if (!menuRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+
+      if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) {
         close()
       }
     }
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         // Escape milik menu; jangan sampai ikut menutup modal di bawahnya.
         event.preventDefault()
@@ -170,8 +204,10 @@ export function DownloadSuratMenu({
 
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault()
-        const items = [...(menuRef.current?.querySelectorAll('[role^="menuitem"]') ?? [])]
-        const index = items.indexOf(document.activeElement)
+        const items = [
+          ...(menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []),
+        ]
+        const index = items.indexOf(document.activeElement as HTMLElement)
         const next = event.key === 'ArrowDown' ? index + 1 : index - 1
         items[(next + items.length) % items.length]?.focus()
       }
@@ -193,7 +229,7 @@ export function DownloadSuratMenu({
   const options = downloadOptions(current, format)
   const triggerLabel = label
 
-  const handleSelect = async (option, target = current) => {
+  const handleSelect = async (option: DownloadOption, target: PrintableLetter = current) => {
     setOpen(false)
     setBusy(true)
 
@@ -211,6 +247,8 @@ export function DownloadSuratMenu({
 
   // Muat rincian (daftar dokumen) dulu; satu pilihan langsung diunduh.
   const handleLazyOpen = async () => {
+    if (!loadDetail) return
+
     setBusy(true)
 
     try {

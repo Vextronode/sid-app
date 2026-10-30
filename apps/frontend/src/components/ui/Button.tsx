@@ -1,4 +1,6 @@
-export function Button({ children, disabled, ...props }) {
+import type { ButtonHTMLAttributes } from 'react'
+
+export function Button({ children, disabled, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       disabled={disabled}

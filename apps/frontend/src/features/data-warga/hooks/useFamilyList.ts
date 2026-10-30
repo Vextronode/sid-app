@@ -2,10 +2,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { createFamily, deleteFamily, getFamilies, getFamilyOptions, updateFamily } from '../api'
+import type { Family, FamilyOption, Id } from '@/types'
 import { useWilayahFilter } from './useWilayahFilter'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+
+type FamilyPayload = Record<string, unknown>
 
 export function useFamilyList() {
-  const [families, setFamilies] = useState([])
+  const [families, setFamilies] = useState<Family[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -14,7 +18,7 @@ export function useFamilyList() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   // Pilihan KK di form warga: semua KK, terpisah dari daftar berhalaman.
-  const [options, setOptions] = useState([])
+  const [options, setOptions] = useState<FamilyOption[]>([])
   // Filter bertingkat Dusun -> RW -> RT; mengubahnya kembali ke halaman 1.
   const wilayahFilter = useWilayahFilter(() => setCurrentPage(1))
   const { params: wilayahParams } = wilayahFilter
@@ -34,7 +38,7 @@ export function useFamilyList() {
       setTotalPages(response.data?.meta?.last_page ?? 1)
       setTotalItems(response.data?.meta?.total ?? (Array.isArray(result) ? result.length : 0))
     } catch (err) {
-      setError(err?.response?.data?.message || 'Gagal memuat data kartu keluarga.')
+      setError(getApiErrorMessage(err, 'Gagal memuat data kartu keluarga.'))
     } finally {
       setLoading(false)
     }
@@ -60,27 +64,27 @@ export function useFamilyList() {
 
   const reloadAll = () => Promise.all([loadFamilies(), loadOptions()])
 
-  const searchFamilies = (value) => {
+  const searchFamilies = (value: string) => {
     setSearch(value)
     setCurrentPage(1)
   }
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }
 
-  const addFamily = async (payload) => {
+  const addFamily = async (payload: FamilyPayload) => {
     await createFamily(payload)
     await reloadAll()
   }
 
-  const editFamily = async (id, payload) => {
+  const editFamily = async (id: Id, payload: FamilyPayload) => {
     await updateFamily(id, payload)
     await reloadAll()
   }
 
-  const removeFamily = async (id) => {
+  const removeFamily = async (id: Id) => {
     await deleteFamily(id)
     await reloadAll()
   }

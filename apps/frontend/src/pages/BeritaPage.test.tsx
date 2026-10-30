@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePublicNews } from '@/features/berita/usePublicNews'
 import { BeritaPage } from './BeritaPage'
 
+const mockedUsePublicNews = vi.mocked(usePublicNews, { partial: true, deep: true })
+
 vi.mock('@/features/berita/usePublicNews', () => ({
   usePublicNews: vi.fn(),
 }))
@@ -22,7 +24,7 @@ describe('BeritaPage', () => {
     )
 
   it('shows a loading state while public news is being fetched', () => {
-    usePublicNews.mockReturnValue({ news: [], loading: true, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: [], loading: true, error: null })
 
     renderPage()
 
@@ -30,7 +32,7 @@ describe('BeritaPage', () => {
   })
 
   it('shows the API error instead of an empty success state', () => {
-    usePublicNews.mockReturnValue({
+    mockedUsePublicNews.mockReturnValue({
       news: [],
       loading: false,
       error: 'Gagal memuat berita.',
@@ -43,7 +45,7 @@ describe('BeritaPage', () => {
   })
 
   it('shows an explicit empty state when the public API has no news', () => {
-    usePublicNews.mockReturnValue({ news: [], loading: false, error: null })
+    mockedUsePublicNews.mockReturnValue({ news: [], loading: false, error: null })
 
     renderPage()
 
@@ -51,7 +53,7 @@ describe('BeritaPage', () => {
   })
 
   it('renders news supplied by the public API hook', () => {
-    usePublicNews.mockReturnValue({
+    mockedUsePublicNews.mockReturnValue({
       news: [
         {
           id: 1,

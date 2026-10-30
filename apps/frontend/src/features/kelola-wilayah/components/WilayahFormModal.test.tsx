@@ -6,7 +6,7 @@ const { confirmDialog, notifySuccess } = vi.hoisted(() => ({
   confirmDialog: vi.fn(),
   notifySuccess: vi.fn(),
 }))
-vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: () => null }))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: (): null => null }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess }))
 
 import WilayahFormModal from './WilayahFormModal'

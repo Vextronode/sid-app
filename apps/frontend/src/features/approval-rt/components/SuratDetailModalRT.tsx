@@ -1,7 +1,9 @@
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
-import { useSuratDetail } from '../hooks/useSuratDetail'
+import type { DecisionResponse } from '@/features/approval/api'
+import type { Id } from '@/types'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
 export default function SuratDetailModalRT({
   suratId,
@@ -9,9 +11,16 @@ export default function SuratDetailModalRT({
   onApprove,
   onReject,
   readOnly = false,
+}: {
+  suratId: Id | null
+  onClose: () => void
+  onApprove?: (response: DecisionResponse) => unknown
+  onReject?: (notes: string, response: DecisionResponse) => unknown
+  // Tampilan saja: tanpa tombol keputusan.
+  readOnly?: boolean
 }) {
   const { user } = useAuth()
-  const { surat, notFound } = useSuratDetail(suratId)
+  const { surat, notFound, refresh } = useSuratDetail(suratId)
 
   // ==========================================
   // CEK ID
@@ -42,6 +51,7 @@ export default function SuratDetailModalRT({
       apiRole={currentUserRole}
       onApprove={onApprove}
       onReject={onReject}
+      onConflict={refresh}
     />
   )
 }

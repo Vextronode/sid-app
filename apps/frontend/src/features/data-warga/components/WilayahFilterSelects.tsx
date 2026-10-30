@@ -3,12 +3,37 @@
  * grid filter (.warga-filter) bersama kolom pencarian. Datanya dari
  * useWilayahFilter.
  */
-export function WilayahFilterSelects({ filters, setFilter, hamletOptions, rwOptions, rtOptions }) {
-  return [
+import type { FilterOption, WilayahFilters } from '../hooks/useWilayahFilter'
+
+type WilayahFilterSelectsProps = {
+  filters: WilayahFilters
+  setFilter: (level: keyof WilayahFilters, value: string) => void
+  hamletOptions: FilterOption[]
+  rwOptions: FilterOption[]
+  rtOptions: FilterOption[]
+}
+
+type FilterField = {
+  level: keyof WilayahFilters
+  label: string
+  all: string
+  options: FilterOption[]
+}
+
+export function WilayahFilterSelects({
+  filters,
+  setFilter,
+  hamletOptions,
+  rwOptions,
+  rtOptions,
+}: WilayahFilterSelectsProps) {
+  const fields: FilterField[] = [
     { level: 'hamletId', label: 'Dusun', all: 'Semua Dusun', options: hamletOptions },
     { level: 'rwId', label: 'RW', all: 'Semua RW', options: rwOptions },
     { level: 'rtId', label: 'RT', all: 'Semua RT', options: rtOptions },
-  ].map((filter) => (
+  ]
+
+  return fields.map((filter) => (
     <div key={filter.level} className="sid-operator-filter-field">
       <p>{filter.label}</p>
       <select

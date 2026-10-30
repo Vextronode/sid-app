@@ -7,7 +7,17 @@ import { useState } from 'react'
  * (boleh mengembalikan Promise) berjalan, atau selama `refreshing` true
  * (mis. isFetching dari React Query).
  */
-export function RefreshButton({ onRefresh, refreshing = false, disabled = false }) {
+type RefreshButtonProps = {
+  onRefresh: () => unknown
+  refreshing?: boolean
+  disabled?: boolean
+}
+
+export function RefreshButton({
+  onRefresh,
+  refreshing = false,
+  disabled = false,
+}: RefreshButtonProps) {
   const [pending, setPending] = useState(false)
   const busy = pending || refreshing
 

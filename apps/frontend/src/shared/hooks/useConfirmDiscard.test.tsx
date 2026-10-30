@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { confirmDialog } = vi.hoisted(() => ({ confirmDialog: vi.fn() }))
-vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: () => null }))
+vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, currentDialog: (): null => null }))
 
 import { useConfirmDiscard } from './useConfirmDiscard'
 

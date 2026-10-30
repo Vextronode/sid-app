@@ -1,5 +1,5 @@
 // ==========================================
-// KadusDashboardPage.jsx
+// KadusDashboardPage.tsx
 // Dashboard Kepala Dusun
 //
 // Monitoring-only.
@@ -12,13 +12,14 @@
 // Mobile  : 2 x 2
 //
 // Styling mengikuti SID Global Theme,
-// sama seperti RWDashboardPage.jsx.
+// sama seperti RWDashboardPage.tsx.
 // ==========================================
 
 import { useNavigate } from 'react-router-dom'
 import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { officialAreaLabel } from '@/features/auth/utils/officialArea'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -133,7 +134,7 @@ export default function KadusDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
+                Pantau administrasi warga {officialAreaLabel(user, 'dusun')} secara digital.
               </p>
             </div>
 
@@ -206,7 +207,7 @@ export default function KadusDashboardPage() {
           </h1>
 
           <p className="sid-page-description">
-            Pantau administrasi warga {user?.wilayah_label ?? 'dusun'} secara digital.
+            Pantau administrasi warga {officialAreaLabel(user, 'dusun')} secara digital.
           </p>
           <div className="mt-3">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />

@@ -1,5 +1,5 @@
 // ==========================================
-// KelolaBeritaPage.jsx
+// KelolaBeritaPage.tsx
 // Halaman Kelola Berita untuk Operator Desa.
 //
 // Response backend:
@@ -40,6 +40,9 @@ import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { alertDialog, confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import type { BeritaForm } from '@/features/kelola-berita/components/BeritaFormModal'
+import type { News } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 export default function KelolaBeritaPage() {
   const {
@@ -71,11 +74,11 @@ export default function KelolaBeritaPage() {
   } = useNewsCategories()
 
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingBerita, setEditingBerita] = useState(null)
+  const [editingBerita, setEditingBerita] = useState<News | null>(null)
   const [kategoriModalOpen, setKategoriModalOpen] = useState(false)
 
   // Nama kategori ikut tampil di kartu berita, jadi berita dimuat ulang.
-  const handleRenameCategory = async (id, name) => {
+  const handleRenameCategory = async (id: number, name: string) => {
     await renameCategory(id, name)
     await refreshBerita()
   }
@@ -93,7 +96,7 @@ export default function KelolaBeritaPage() {
   // delete BERITA
   // ==========================================
 
-  const handleDeleteBerita = async (berita) => {
+  const handleDeleteBerita = async (berita: News) => {
     if (!berita?.id) {
       return
     }
@@ -115,16 +118,11 @@ export default function KelolaBeritaPage() {
       setModalOpen(false)
       setEditingBerita(null)
     } catch (error) {
-      console.error('DELETE BERITA ERROR:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method,
-      })
+      console.error('DELETE BERITA ERROR:', error)
 
       alertDialog({
         title: 'Terjadi kesalahan',
-        message: error.response?.data?.message ?? 'Berita gagal dihapus.',
+        message: getApiErrorMessage(error, 'Berita gagal dihapus.'),
       })
     }
   }
@@ -132,7 +130,7 @@ export default function KelolaBeritaPage() {
   // EDIT BERITA
   // ==========================================
 
-  const handleOpenEdit = (berita) => {
+  const handleOpenEdit = (berita: News) => {
     if (!berita) return
 
     setEditingBerita(berita)
@@ -144,7 +142,7 @@ export default function KelolaBeritaPage() {
   // CREATE / UPDATE
   // ==========================================
 
-  const handleSubmitForm = async (formData) => {
+  const handleSubmitForm = async (formData: BeritaForm) => {
     try {
       if (editingBerita) {
         await updateBerita(editingBerita.id, formData)
@@ -159,12 +157,7 @@ export default function KelolaBeritaPage() {
       setModalOpen(false)
       setEditingBerita(null)
     } catch (error) {
-      console.error('SUBMIT BERITA ERROR:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method,
-      })
+      console.error('SUBMIT BERITA ERROR:', error)
 
       throw error
     }
@@ -174,7 +167,7 @@ export default function KelolaBeritaPage() {
   // PUBLISH BERITA
   // ==========================================
 
-  const handlePublish = async (berita) => {
+  const handlePublish = async (berita: News) => {
     if (!berita?.id) {
       return
     }
@@ -196,7 +189,7 @@ export default function KelolaBeritaPage() {
     } catch (error) {
       alertDialog({
         title: 'Terjadi kesalahan',
-        message: error.response?.data?.message ?? 'Berita gagal dipublikasikan.',
+        message: getApiErrorMessage(error, 'Berita gagal dipublikasikan.'),
       })
     }
   }
@@ -205,13 +198,13 @@ export default function KelolaBeritaPage() {
   // CEK STATUS
   // ==========================================
 
-  const isPublished = (berita) => Boolean(berita?.is_published)
+  const isPublished = (berita: News | null) => Boolean(berita?.is_published)
 
   // ==========================================
   // FORMAT TANGGAL
   // ==========================================
 
-  const formatDate = (date) => {
+  const formatDate = (date: string | null | undefined) => {
     if (!date) {
       return '-'
     }
@@ -233,7 +226,7 @@ export default function KelolaBeritaPage() {
   // RINGKAS CONTENT
   // ==========================================
 
-  const truncateContent = (content, maxLength = 120) => {
+  const truncateContent = (content: string | null | undefined, maxLength = 120) => {
     if (!content) {
       return '-'
     }

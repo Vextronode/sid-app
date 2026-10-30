@@ -11,8 +11,10 @@ vi.mock('../api/letterExtrasApi', () => ({ applyFulfillment, previewFulfillment 
 vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { MemberChangesForm } from './MemberChangesForm'
+import { partialFixture } from '@/test/fixtures'
+import type { FulfillmentProposal } from '../api/letterExtrasApi'
 
-const proposal = {
+const proposal = partialFixture<FulfillmentProposal>({
   action: 'update_members',
   options: {
     marital_status: [
@@ -50,7 +52,7 @@ const proposal = {
       ],
     },
   ],
-}
+})
 
 describe('MemberChangesForm', () => {
   beforeEach(() => {

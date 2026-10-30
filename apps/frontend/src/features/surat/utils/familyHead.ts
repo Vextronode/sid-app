@@ -1,16 +1,22 @@
+import type { ApplicantFamilyMember, SuratField, SuratFormValues } from '../types'
+
+export type HeadChoice = { visible: boolean; candidates: ApplicantFamilyMember[] }
+
 /**
  * Isian kepala keluarga baru (requiredWhenHead): tampil hanya bila kepala
  * keluarga termasuk anggota terpilih di isian acuannya (almarhum, atau
  * anggota yang pindah) dan masih ada anggota yang tinggal sebagai calon.
  * Calonnya anggota selain kepala keluarga dan selain yang terpilih.
- *
- * @returns {{ visible: boolean, candidates: Array<object> }}
  */
-export function newHeadChoice(field, familyMembers, formData) {
+export function newHeadChoice(
+  field: Pick<SuratField, 'requiredWhenHead'>,
+  familyMembers: ApplicantFamilyMember[],
+  formData: SuratFormValues | undefined,
+): HeadChoice {
   // Satu id, daftar id, atau baris repeater dengan kolom `anggota`.
-  const leaving = []
-    .concat(formData?.[field.requiredWhenHead] ?? [])
-    .map((item) => (item && typeof item === 'object' ? item.anggota : item))
+  const leaving = ([] as unknown[])
+    .concat((field.requiredWhenHead ? formData?.[field.requiredWhenHead] : undefined) ?? [])
+    .map((item) => (item && typeof item === 'object' ? (item as SuratFormValues).anggota : item))
     .filter(Boolean)
     .map(String)
   const candidates = familyMembers.filter(
@@ -28,8 +34,15 @@ export function newHeadChoice(field, familyMembers, formData) {
  * sekian tahun lebih tua dari acuan di isian itu (anggota KK terpilih atau
  * tanggal). Tanpa acuan atau tanpa tanggal lahir anggota, tidak disaring.
  */
-export function isOldEnough(member, olderThan, familyMembers, formData) {
-  const value = olderThan ? formData?.[olderThan.field] : null
+export function isOldEnough(
+  member: ApplicantFamilyMember,
+  olderThan: SuratField['olderThan'],
+  familyMembers: ApplicantFamilyMember[],
+  formData: SuratFormValues | undefined,
+) {
+  if (!olderThan) return true
+
+  const value = formData?.[olderThan.field] as string | undefined
 
   if (!value || !member.date_of_birth) return true
 
@@ -49,10 +62,18 @@ export function isOldEnough(member, olderThan, familyMembers, formData) {
  * yang lolos syarat jenis kelamin, hubungan dalam KK, selisih usia, dan
  * bukan pemohon bila `notSelf`.
  */
-export function memberChoices(field, familyMembers, formData, headChoice = null) {
+export function memberChoices(
+  field: Pick<SuratField, 'gender' | 'roles' | 'olderThan' | 'notSelf'>,
+  familyMembers: ApplicantFamilyMember[],
+  formData: SuratFormValues | undefined,
+  headChoice: HeadChoice | null = null,
+) {
   return (headChoice?.candidates ?? familyMembers)
     .filter((member) => !field.gender || member.gender === field.gender)
-    .filter((member) => !field.roles || field.roles.includes(member.family_role))
+    .filter(
+      (member) =>
+        !field.roles || (member.family_role !== null && field.roles.includes(member.family_role)),
+    )
     .filter((member) => isOldEnough(member, field.olderThan, familyMembers, formData))
     .filter((member) => !field.notSelf || !member.is_self)
 }
@@ -62,14 +83,21 @@ export function memberChoices(field, familyMembers, formData, headChoice = null)
  * isian ini (mis. SHDK pasangan saat salah satu anggota sudah kepala
  * keluarga KK baru).
  */
-export function headTakenBy(fieldName, fields, formData) {
-  return fields.some(
-    (field) =>
-      field.oneHead?.with === fieldName &&
-      (formData?.[field.name] ?? []).some(
-        (row) => row?.[field.oneHead.column] === 'kepala_keluarga',
-      ),
-  )
+export function headTakenBy(
+  fieldName: string,
+  fields: Pick<SuratField, 'name' | 'oneHead'>[],
+  formData: SuratFormValues | undefined,
+) {
+  return fields.some((field) => {
+    const oneHead = field.oneHead
+
+    return (
+      oneHead?.with === fieldName &&
+      ((formData?.[field.name] as SuratFormValues[] | undefined) ?? []).some(
+        (row) => row?.[oneHead.column] === 'kepala_keluarga',
+      )
+    )
+  })
 }
 
 /**
@@ -79,14 +107,18 @@ export function headTakenBy(fieldName, fields, formData) {
  * kelaminnya belum diketahui (mis. NIK warga lain), semua pilihan tampil dan
  * diperiksa server.
  */
-export function roleOptions(field, familyMembers, answers) {
+export function roleOptions(
+  field: Pick<SuratField, 'roleOf' | 'options'>,
+  familyMembers: ApplicantFamilyMember[],
+  answers: SuratFormValues | undefined,
+) {
   if (!field.roleOf) return field.options
 
-  const value = answers?.[field.roleOf]
+  const value = answers?.[field.roleOf] as string | undefined
   const gender =
     field.roleOf === 'family_head'
       ? familyMembers.find((member) => member.family_role === 'kepala_keluarga')?.gender
-      : ['L', 'P'].includes(value)
+      : value !== undefined && ['L', 'P'].includes(value)
         ? value
         : familyMembers.find((member) => String(member.id) === String(value))?.gender
 

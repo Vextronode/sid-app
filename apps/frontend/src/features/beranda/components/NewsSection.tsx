@@ -13,12 +13,13 @@ import {
   textLink,
 } from '../publicClasses'
 import { summarizeNews } from '../utils/newsSummary'
+import type { BerandaContent } from '../berandaContent'
 
 const NEWS_COUNT = 4
 
 // Thumbnail berita, atau placeholder netral bila kosong (K2). Judul sudah ada
 // di dalam link yang sama, jadi gambar diberi alt="" agar tidak dibaca dua kali.
-function NewsImage({ src, className }) {
+function NewsImage({ src, className }: { src: string | null; className: string }) {
   const base = `relative block flex-none overflow-hidden bg-pb-laut-tint ${className}`
 
   if (!src) {
@@ -45,7 +46,7 @@ function NewsImage({ src, className }) {
   )
 }
 
-function NewsMeta({ categories = [], date }) {
+function NewsMeta({ categories = [], date }: { categories?: string[]; date: string }) {
   if (categories.length === 0 && !date) return null
 
   return (
@@ -63,7 +64,7 @@ function NewsMeta({ categories = [], date }) {
 // Kabar desa (A20–A24): satu berita utama + tiga berita ringkas, seluruh kartu
 // adalah link. Data dari usePublicNews (hook bersama). Chip kategori dari
 // kategori berita yang diatur Staf SIDUTama (1-2 per berita).
-export function NewsSection({ content }) {
+export function NewsSection({ content }: { content: BerandaContent }) {
   const { news: labels } = content
   const { news, loading, error } = usePublicNews()
   const [featured, ...others] = news.slice(0, NEWS_COUNT)

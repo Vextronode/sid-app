@@ -4,6 +4,7 @@ import '@/styles/public.css'
 import { getBerandaContent } from '../berandaContent'
 import { BerandaFooter } from './BerandaFooter'
 import { PublicStickyChrome } from './PublicStickyChrome'
+import type { ReactNode } from 'react'
 
 // Layout khusus route `/`. Halaman publik lain memakai MainLayout dengan
 // header dan footer yang sama.
@@ -11,7 +12,7 @@ import { PublicStickyChrome } from './PublicStickyChrome'
 // public.css (tampilan halaman publik) hanya berlaku di .pub.
 // Tanpa bottom bar (K5): navigasi ponsel lewat tombol "Menu" di header.
 // Header dan bar pengumuman menempel bersama (PublicStickyChrome).
-export function BerandaLayout({ children }) {
+export function BerandaLayout({ children }: { children: ReactNode }) {
   const content = getBerandaContent()
 
   return (

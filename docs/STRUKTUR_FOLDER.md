@@ -43,46 +43,48 @@ apps/frontend/
 ├── public/                  # push-handler.js (service worker push), assets/ (ikon PWA, aset default)
 ├── scripts/                 # skrip bantu (screenshot beranda)
 ├── src/
-│   ├── App.jsx              # semua route + GuestRoute / ProtectedRoute + layout route
-│   ├── main.jsx             # QueryClientProvider + CSS global
+│   ├── App.tsx              # semua route + GuestRoute / ProtectedRoute + layout route
+│   ├── main.tsx             # QueryClientProvider + CSS global
 │   ├── index.css            # Tailwind v4 + token @theme (palet pb-*)
 │   ├── assets/
 │   ├── components/
 │   │   ├── layout/          # MainLayout, OfficialLayout, OperatorDesaLayout, WargaLayout, AppHeader, SiteFooter, ...
-│   │   └── ui/              # Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader, NewsCard
+│   │   └── ui/              # Button, Input, StatusBadge, OverdueBadge, SimplePagination, PageLoader
 │   ├── constants/           # suratStatus
 │   ├── features/            # kode per domain, mis.:
 │   │   ├── auth/            # contexts/AuthContext, hooks, schemas, services, utils
 │   │   ├── surat/           # api/, components/ (DynamicSuratForm, SignatureCard, FulfillmentPanel, ...), hooks/, utils/
 │   │   ├── approval/        # ApprovalStepRenderer, api keputusan
 │   │   ├── notifikasi/      # popover, WebPushControls, hooks push & deep link
-│   │   ├── operator-desa/   # constants/roleNavigation.js (kapabilitas route operator)
+│   │   ├── operator-desa/   # constants/roleNavigation.ts (kapabilitas route operator)
 │   │   └── ...              # data-warga, kelola-berita, kelola-wilayah, profil-desa-admin, pekerjaan, organisasi, dst
 │   ├── lib/
-│   │   ├── api.js           # instance axios tunggal (withCredentials, withXSRFToken)
+│   │   ├── api.ts           # instance axios tunggal (withCredentials, withXSRFToken)
 │   │   └── constants/       # konstanta route
 │   ├── pages/               # halaman publik & warga; pages/admin/ untuk pejabat & operator
 │   ├── shared/lib/          # queryClient, queryKeys, publicVillageParams, villageName
 │   ├── styles/              # sid-global.css, public.css, beranda.css
-│   └── test/                # setup Vitest
+│   ├── test/                # setup Vitest, fixtures.ts (partialFixture)
+│   └── types/               # tipe domain & API lintas fitur (import dari @/types)
 ├── .env.example             # VITE_API_URL, VITE_API_BASE_URL, VITE_VAPID_PUBLIC_KEY
 ├── Dockerfile
 ├── index.html
 ├── package.json
-└── vite.config.js           # plugin react, tailwind, PWA; proxy dev /api & /sanctum
+├── tsconfig.json            # TypeScript (noEmit; cek dengan npm run typecheck)
+└── vite.config.ts           # plugin react, tailwind, PWA; proxy dev /api & /sanctum
 ```
 
 ### Play Rules
 
 - `features/` dikelompokkan per domain - komponen, hook, dan API call satu fitur ditaruh satu folder
 - `pages/` = komponen yang langsung dipasang ke route. `components/` = reusable
-- Semua request ke backend wajib lewat `src/lib/api.js` - jangan bikin axios instance baru
+- Semua request ke backend wajib lewat `src/lib/api.ts` - jangan bikin axios instance baru
 - Jangan simpan token auth di `localStorage`; auth memakai cookie session Sanctum
 - Identitas desa (nama, logo, kontak) diambil dari API, bukan di-hardcode
 
 ### Nambah Fitur Baru
 
-Buat folder `src/features/<fitur>/` (components, hooks, api), halaman di `src/pages/` (atau `src/pages/admin/`), lalu daftarkan route di `src/App.jsx`. Untuk halaman operator, tambahkan kapabilitas role di `features/operator-desa/constants/roleNavigation.js`.
+Buat folder `src/features/<fitur>/` (components, hooks, api), halaman di `src/pages/` (atau `src/pages/admin/`), lalu daftarkan route di `src/App.tsx`. Untuk halaman operator, tambahkan kapabilitas role di `features/operator-desa/constants/roleNavigation.ts`.
 
 ---
 

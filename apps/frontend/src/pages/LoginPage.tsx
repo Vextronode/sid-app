@@ -1,5 +1,5 @@
 // ==========================================
-// LoginPage.jsx
+// LoginPage.tsx
 // ==========================================
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import { HAL_BERANDA, HAL_DAFTAR } from '@/lib/constants/routes'
 
 import { ArrowLeft, Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
 import { APP_NAME } from '@/lib/constants/app'
+import type { User as AuthUser } from '@/types'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -38,7 +39,7 @@ export default function LoginPage() {
   // LOGIN SUCCESS
   // ==========================================
 
-  const handleLoginSuccess = async (loggedUser) => {
+  const handleLoginSuccess = async (loggedUser: AuthUser) => {
     try {
       // Simpan user hasil login ke AuthContext
       await login(loggedUser)

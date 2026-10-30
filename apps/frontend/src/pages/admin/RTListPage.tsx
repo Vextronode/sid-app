@@ -1,5 +1,5 @@
 // ==========================================
-// RTListPage.jsx
+// RTListPage.tsx
 // Daftar Permohonan Surat RT
 //
 // STATUS:
@@ -46,6 +46,11 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterStatus } from '@/types'
+import type { LetterListItem } from '@/types'
+
+// Surat yang masih dapat diproses RT.
+const OPEN_STATUSES: LetterStatus[] = [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS]
 
 export default function RTListPage() {
   const pageRefresh = useQueryRefresh(['surat'])
@@ -53,7 +58,7 @@ export default function RTListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isReadOnly, setIsReadOnly] = useState(false)
 
   // ==========================================
@@ -75,7 +80,6 @@ export default function RTListPage() {
     setPageSize,
     refresh,
   } = useApprovalLetterList({
-    role: 'rt',
     initialStatus,
   })
 
@@ -120,12 +124,11 @@ export default function RTListPage() {
   // BUKA DETAIL
   // ==========================================
 
-  const handleOpenDetail = (surat) => {
+  const handleOpenDetail = (surat: LetterListItem) => {
     setSelectedId(surat.id)
 
     const canProcessAtRt =
-      [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS].includes(surat.status) &&
-      surat.current_step?.approver_position === 'rt'
+      OPEN_STATUSES.includes(surat.status) && surat.current_step?.approver_position === 'rt'
 
     setIsReadOnly(!canProcessAtRt)
   }
@@ -232,8 +235,7 @@ export default function RTListPage() {
                   surat={s}
                   onOpen={handleOpenDetail}
                   openLabel={
-                    [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS].includes(s.status) &&
-                    s.current_step?.approver_position === 'rt'
+                    OPEN_STATUSES.includes(s.status) && s.current_step?.approver_position === 'rt'
                       ? 'Proses'
                       : 'Detail'
                   }
@@ -348,8 +350,7 @@ export default function RTListPage() {
                   surat={s}
                   onOpen={handleOpenDetail}
                   openLabel={
-                    [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS].includes(s.status) &&
-                    s.current_step?.approver_position === 'rt'
+                    OPEN_STATUSES.includes(s.status) && s.current_step?.approver_position === 'rt'
                       ? 'Proses'
                       : 'Detail'
                   }

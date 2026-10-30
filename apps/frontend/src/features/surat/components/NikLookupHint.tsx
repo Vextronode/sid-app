@@ -2,6 +2,24 @@ import { useEffect, useState } from 'react'
 
 import { lookupNik } from '../api/letterExtrasApi'
 
+export type NikLookupResult = {
+  nik?: string
+  status: 'idle' | 'loading' | 'found' | 'not_found'
+  name?: string
+  hasAccount?: boolean
+  isSelf?: boolean
+  familyNumber?: string
+}
+
+type NikLookupHintProps = {
+  nik: string | null | undefined
+  onResult: (result: NikLookupResult) => void
+  witness?: string | null
+  // Pesan bila NIK tidak boleh dipakai; fungsi menerima hasil pencarian.
+  conflict?: string | null | ((result: NikLookupResult) => string | null | undefined)
+  includeInactive?: boolean
+}
+
 /**
  * Keterangan di bawah isian NIK yang berpasangan dengan isian nama
  * (`from_nik`): begitu NIK lengkap, nama dicari di data penduduk desa.
@@ -15,14 +33,14 @@ export function NikLookupHint({
   witness = null,
   conflict = null,
   includeInactive = false,
-}) {
-  const [result, setResult] = useState({ nik: '', status: 'idle', name: '' })
+}: NikLookupHintProps) {
+  const [result, setResult] = useState<NikLookupResult>({ nik: '', status: 'idle', name: '' })
   const complete = /^\d{16}$/.test(nik ?? '')
-  const current =
+  const current: NikLookupResult =
     complete && result.nik === nik ? result : { status: complete ? 'loading' : 'idle' }
 
   useEffect(() => {
-    if (!complete) {
+    if (!complete || !nik) {
       onResult({ status: 'idle', name: '' })
 
       return undefined
@@ -33,7 +51,7 @@ export function NikLookupHint({
     lookupNik(nik, { includeInactive })
       .then((data) => {
         if (!active) return
-        const next = {
+        const next: NikLookupResult = {
           nik,
           status: data?.found ? 'found' : 'not_found',
           // Pemilik NIK yang punya akun harus menyetujui: nama tersamar,
@@ -49,7 +67,7 @@ export function NikLookupHint({
       .catch(() => {
         if (!active) return
         // Gagal mencari: nama diketik manual.
-        const next = { nik, status: 'not_found', name: '' }
+        const next: NikLookupResult = { nik, status: 'not_found', name: '' }
         setResult(next)
         onResult(next)
       })

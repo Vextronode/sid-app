@@ -1,5 +1,5 @@
 // ==========================================
-// KadusListPage.jsx
+// KadusListPage.tsx
 // Daftar permohonan surat Kadus
 //
 // STATUS:
@@ -10,7 +10,7 @@
 // Workflow monitoring menggunakan status generik.
 //
 // Styling menggunakan SID Global Theme.
-// Struktur dibuat konsisten dengan RWListPage.jsx.
+// Struktur dibuat konsisten dengan RWListPage.tsx.
 // ==========================================
 
 import { useState } from 'react'
@@ -31,6 +31,7 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
 
 export default function KadusListPage() {
   const pageRefresh = useQueryRefresh(['surat'])
@@ -38,7 +39,7 @@ export default function KadusListPage() {
 
   const initialStatus = searchParams.get('status') ?? ''
 
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // ==========================================
   // DATA
@@ -58,7 +59,6 @@ export default function KadusListPage() {
     pageSize,
     setPageSize,
   } = useApprovalLetterList({
-    role: 'kadus',
     initialStatus,
   })
   // ==========================================
@@ -74,7 +74,7 @@ export default function KadusListPage() {
   // KADUS SELALU READ-ONLY.
   // ==========================================
 
-  const handleOpenDetail = (surat) => {
+  const handleOpenDetail = (surat: LetterListItem) => {
     setSelectedId(surat.id)
   }
 

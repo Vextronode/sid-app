@@ -1,35 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import type { Id, Letter, LetterSignature } from '@/types'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import {
-  downloadProtectedFile,
-  getLetterDetail,
-  openProtectedFile,
-  supportingDocumentUrl,
-} from '../api/letterExtrasApi'
+import { downloadFile, openProtectedFile } from '@/lib/downloadFile'
+import { getLetterDetail, supportingDocumentUrl } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
 import { LetterResultPanel } from './LetterResultPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Terapkan hanya oleh Kasi/Kaur yang ditugaskan; Staf SIDUTama mengubah
 // data lewat Data Penduduk.
 const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum']
 
 // Cara saksi tercatat (signer_type witness).
-const WITNESS_METHOD_LABELS = {
+const WITNESS_METHOD_LABELS: Record<string, string> = {
   consent: 'disetujui lewat akun',
   rt_check: 'warga tanpa akun, perlu verifikasi RT',
   manual: 'di luar data penduduk, diisi pemohon',
 }
 
 // Saksi tidak menandatangani: status menyesuaikan.
-const WITNESS_STATUS_LABELS = {
+const WITNESS_STATUS_LABELS: Record<string, string> = {
   signed: 'Tercatat',
   pending: 'Menunggu persetujuan saksi',
 }
 
-const SIGNATURE_STATUS_LABELS = {
+const SIGNATURE_STATUS_LABELS: Record<string, string> = {
   signed: 'Sudah ditandatangani',
   pending: 'Menunggu persetujuan pemilik NIK',
   rejected: 'Ditolak',
@@ -37,29 +36,19 @@ const SIGNATURE_STATUS_LABELS = {
   cancelled: 'Dibatalkan',
 }
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
+type RefillProps = { letterId: Id; slot: LetterSignature; onDone: () => void }
 
 /**
  * Ganti saksi yang menolak/kedaluwarsa: NIK baru (nama diketik bila NIK di
  * luar data penduduk). Warga desa ber-akun diminta persetujuan lagi.
  */
-function WitnessRefill({ letterId, slot, onDone }) {
+function WitnessRefill({ letterId, slot, onDone }: RefillProps) {
   const [nik, setNik] = useState('')
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSaving(true)
     setError('')
@@ -69,7 +58,7 @@ function WitnessRefill({ letterId, slot, onDone }) {
       notifySuccess('Saksi diperbarui.')
       onDone()
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal memperbarui saksi.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memperbarui saksi.'))
     } finally {
       setSaving(false)
     }
@@ -107,15 +96,15 @@ function WitnessRefill({ letterId, slot, onDone }) {
   )
 }
 
-function SignatureRefill({ letterId, slot, onDone }) {
+function SignatureRefill({ letterId, slot, onDone }: RefillProps) {
   const [mode, setMode] = useState('digital')
   const [nik, setNik] = useState('')
   const [name, setName] = useState('')
-  const [file, setFile] = useState(null)
+  const [file, setFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const confirmed = await confirmDialog(
@@ -152,7 +141,7 @@ function SignatureRefill({ letterId, slot, onDone }) {
       )
       onDone()
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal memperbarui tanda tangan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memperbarui tanda tangan.'))
     } finally {
       setSaving(false)
     }
@@ -229,9 +218,9 @@ function SignatureRefill({ letterId, slot, onDone }) {
  * dokumen pendukung, dan aksi data. Memuat detail surat sendiri supaya
  * dapat ditempel di modal mana pun (warga, approver, operator).
  */
-export function LetterExtrasPanel({ letterId }) {
+export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
   const { user } = useAuth()
-  const [letter, setLetter] = useState(null)
+  const [letter, setLetter] = useState<Letter | null>(null)
   const [error, setError] = useState('')
   // Hasil instansi baru diterima: Terapkan langsung dimulai (pop up perubahan).
   const [resultAccepted, setResultAccepted] = useState(false)
@@ -241,7 +230,7 @@ export function LetterExtrasPanel({ letterId }) {
       setLetter(await getLetterDetail(letterId))
       setError('')
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal memuat rincian surat.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat rincian surat.'))
     }
   }, [letterId])
 
@@ -250,12 +239,12 @@ export function LetterExtrasPanel({ letterId }) {
     void load()
   }, [load])
 
-  const openFile = async (action) => {
+  const openFile = async (action: () => Promise<unknown>) => {
     try {
       await action()
       setError('')
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal membuka berkas.'))
+      setError(getApiErrorMessage(requestError, 'Gagal membuka berkas.'))
     }
   }
 
@@ -298,7 +287,11 @@ export function LetterExtrasPanel({ letterId }) {
 
       // Anggota KK: tampilkan namanya, bukan id warga.
       if (field.type === 'family_member' && letter.payload?.[`${field.name}_nama`]) {
-        return { name: field.name, label: field.label, value: letter.payload[`${field.name}_nama`] }
+        return {
+          name: field.name,
+          label: field.label,
+          value: String(letter.payload[`${field.name}_nama`]),
+        }
       }
 
       // Wilayah desa: tampilkan label yang disimpan saat pengajuan.
@@ -310,15 +303,17 @@ export function LetterExtrasPanel({ letterId }) {
       }
 
       const option = (field.options ?? []).find((item) => String(item.value) === String(raw))
+      // Selain repeater, isian form berupa teks atau angka.
+      const scalar = raw as string | number | null | undefined
 
-      return { name: field.name, label: field.label, value: option?.label ?? raw }
+      return { name: field.name, label: field.label, value: option?.label ?? scalar }
     })
     .filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
   const isOwner = letter.submitted_by === user?.id
   const canRefill = isOwner && letter.awaiting_signatures
   // can_fulfill dari backend: hanya Kasi/Kaur sesuai assigned_role.
   const canFulfill =
-    FULFILLMENT_ROLES.includes(user?.role) &&
+    Boolean(user && FULFILLMENT_ROLES.includes(user.role)) &&
     letter.needs_fulfillment &&
     letter.can_fulfill !== false
   const documentUrl = supportingDocumentUrl(letter.id)
@@ -395,7 +390,7 @@ export function LetterExtrasPanel({ letterId }) {
               className="sid-btn sid-btn-secondary"
               onClick={() =>
                 openFile(() =>
-                  downloadProtectedFile(documentUrl, `dokumen-pendukung-${letter.id}.pdf`, {
+                  downloadFile(documentUrl, `dokumen-pendukung-${letter.id}.pdf`, {
                     download: 1,
                   }),
                 )
@@ -418,7 +413,8 @@ export function LetterExtrasPanel({ letterId }) {
                   className="underline"
                   onClick={() => openFile(() => openProtectedFile(attachment.url))}
                 >
-                  {fieldLabels[attachment.field] ?? attachment.original_name}
+                  {(attachment.field ? fieldLabels[attachment.field] : undefined) ??
+                    attachment.original_name}
                 </button>
                 {attachment.kind === 'wet_signature' && ' (dokumen ber-tanda tangan basah)'}
               </li>

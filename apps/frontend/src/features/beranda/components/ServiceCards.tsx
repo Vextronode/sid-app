@@ -6,9 +6,12 @@ import { HAL_AJUKAN_SURAT, HAL_STATUS_SURAT } from '@/lib/constants/routes'
 import { sectionGap } from '../publicClasses'
 import { useLoginAwareHref } from '../hooks/useLoginAwareHref'
 import { WhatsAppIcon } from './WhatsAppIcon'
+import type { LucideIcon } from 'lucide-react'
+import type { BerandaContent } from '../berandaContent'
+import type { Village } from '@/types'
 
 // Alamat email panjang dipatahkan di depan "@" bila tidak muat satu baris.
-function EmailText({ email }) {
+function EmailText({ email }: { email: string }) {
   const at = email.indexOf('@')
   if (at <= 0) return <span>{email}</span>
 
@@ -22,7 +25,7 @@ function EmailText({ email }) {
 }
 
 // Ikon tanpa kotak latar: warna laut, sejajar kiri dengan judul.
-function CardIcon({ icon: Icon }) {
+function CardIcon({ icon: Icon }: { icon: LucideIcon }) {
   return <Icon className="mb-3 text-pb-laut" size={28} strokeWidth={1.8} aria-hidden="true" />
 }
 
@@ -44,7 +47,9 @@ const item =
 // - Pengaduan: kartu tidak bisa diklik; hanya baris WA dan email (K14). Baris WA
 //   (D2) membuka menu bagikan AddToAny di tab baru; nama aksesibel = teksnya.
 //   Email dari data desa (village.email); tanpa email barisnya tidak dirender.
-export function ServiceCards({ content, village }) {
+type ServiceCardsProps = { content: BerandaContent; village: Village | null }
+
+export function ServiceCards({ content, village }: ServiceCardsProps) {
   const { services, complaint } = content
   const email = village?.email
   const ajukanHref = useLoginAwareHref(HAL_AJUKAN_SURAT)

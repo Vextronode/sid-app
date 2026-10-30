@@ -45,7 +45,7 @@ describe('PageSizeSelect', () => {
 
     render(<PageSizeSelect value={10} onChange={onChange} />)
 
-    const select = screen.getByRole('combobox', { name: 'Baris per halaman' })
+    const select = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Baris per halaman' })
 
     expect([...select.options].map((option) => option.value)).toEqual(['10', '25', '50'])
 

@@ -9,13 +9,16 @@ import {
   updateMember,
   uploadMemberPhoto,
 } from '../api'
+import type { Id } from '@/types'
+import type { AddOrgMemberPayload, OrgSlots, UpdateOrgMemberPayload } from '../types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-const EMPTY_SLOTS = { ketua: null, wakil_ketua: null, anggota: null }
+const EMPTY_SLOTS: OrgSlots = { ketua: null, wakil_ketua: null, anggota: null }
 
-export function useOrganisasi(orgType) {
-  const [slots, setSlots] = useState(EMPTY_SLOTS)
+export function useOrganisasi(orgType: string) {
+  const [slots, setSlots] = useState<OrgSlots>(EMPTY_SLOTS)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const requestId = useRef(0)
 
   const fetchList = useCallback(async () => {
@@ -33,7 +36,7 @@ export function useOrganisasi(orgType) {
       })
     } catch (err) {
       if (current !== requestId.current) return
-      setError(err?.response?.data?.message || 'Gagal memuat data organisasi.')
+      setError(getApiErrorMessage(err, 'Gagal memuat data organisasi.'))
     } finally {
       if (current === requestId.current) setLoading(false)
     }
@@ -44,8 +47,8 @@ export function useOrganisasi(orgType) {
   }, [fetchList])
 
   const withRefresh =
-    (request) =>
-    async (...args) => {
+    <A extends unknown[]>(request: (...args: A) => Promise<unknown>) =>
+    async (...args: A) => {
       try {
         await request(...args)
       } finally {
@@ -55,12 +58,17 @@ export function useOrganisasi(orgType) {
     }
 
   // Foto opsional diunggah setelah data anggota tersimpan.
-  const fillSlot = async (positionId, payload, photo) => {
+  const fillSlot = async (positionId: Id, payload: AddOrgMemberPayload, photo?: File | null) => {
     const res = await addMember(positionId, payload)
     if (photo) await uploadMemberPhoto(positionId, res.data.data.id, photo)
   }
 
-  const editMember = async (positionId, memberId, payload, photo) => {
+  const editMember = async (
+    positionId: Id,
+    memberId: Id,
+    payload: UpdateOrgMemberPayload,
+    photo?: File | null,
+  ) => {
     await updateMember(positionId, memberId, payload)
     if (photo) await uploadMemberPhoto(positionId, memberId, photo)
   }

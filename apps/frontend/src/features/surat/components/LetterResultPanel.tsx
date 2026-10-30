@@ -1,43 +1,38 @@
 import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import type { Id, Letter, LetterResult, LetterResultStage } from '@/types'
 
 import { reviewLetterResult, submitLetterResult } from '../api/letterExtrasApi'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const MAX_FILES = 5
 
-const STAGE_TEXT = {
+type ResultDecision = 'accepted' | 'rejected'
+
+const STAGE_TEXT: Record<LetterResultStage, string> = {
   awaiting_upload: 'Unduh formulir, bawa ke instansi yang dituju, lalu unggah hasilnya di sini.',
   under_review: 'Hasil sudah diunggah dan menunggu verifikasi desa.',
   accepted: 'Hasil dari instansi sudah diverifikasi desa.',
 }
 
-const RESULT_STATUS = {
+const RESULT_STATUS: Record<LetterResult['status'], string> = {
   submitted: 'Menunggu verifikasi',
   accepted: 'Diterima',
   rejected: 'Ditolak',
 }
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
+type UploadFormProps = { letterId: Id; resubmit: boolean; onDone: () => void }
 
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
-
-function UploadForm({ letterId, resubmit, onDone }) {
-  const [files, setFiles] = useState([])
+function UploadForm({ letterId, resubmit, onDone }: UploadFormProps) {
+  const [files, setFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Berkas dipilih bertahap: tiap pilihan menambah daftar (bukan menimpa)
   // sampai batas MAX_FILES; berkas yang sama tidak terdaftar dua kali.
-  const addFiles = (event) => {
+  const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? [])
     event.target.value = ''
 
@@ -52,12 +47,12 @@ function UploadForm({ letterId, resubmit, onDone }) {
     })
   }
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setFiles((current) => current.filter((_, position) => position !== index))
     setError('')
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const confirmed = await confirmDialog({
@@ -78,7 +73,7 @@ function UploadForm({ letterId, resubmit, onDone }) {
       setFiles([])
       onDone()
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal mengunggah hasil.'))
+      setError(getApiErrorMessage(requestError, 'Gagal mengunggah hasil.'))
     } finally {
       setSaving(false)
     }
@@ -135,12 +130,18 @@ function UploadForm({ letterId, resubmit, onDone }) {
   )
 }
 
-function ReviewForm({ letterId, resultId, onDone }) {
+type ReviewFormProps = {
+  letterId: Id
+  resultId: Id
+  onDone: (decision: ResultDecision) => void
+}
+
+function ReviewForm({ letterId, resultId, onDone }: ReviewFormProps) {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const decide = async (decision) => {
+  const decide = async (decision: ResultDecision) => {
     const accepted = decision === 'accepted'
     const confirmed = await confirmDialog({
       title: accepted ? 'Terima hasil dari instansi?' : 'Tolak hasil dari instansi?',
@@ -161,7 +162,7 @@ function ReviewForm({ letterId, resultId, onDone }) {
       notifySuccess(accepted ? 'Hasil diterima.' : 'Hasil ditolak.')
       onDone(decision)
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal menyimpan verifikasi.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menyimpan verifikasi.'))
     } finally {
       setSaving(false)
     }
@@ -211,7 +212,14 @@ function ReviewForm({ letterId, resultId, onDone }) {
  * Tahap setelah formulir pelayanan terbit: pemohon mengunggah hasil dari
  * instansi luar di surat yang sama, lalu desa menerima atau menolaknya.
  */
-export function LetterResultPanel({ letter, onChanged, onOpenFile }) {
+type LetterResultPanelProps = {
+  letter: Letter
+  // Tanpa keputusan bila pemohon baru mengunggah hasil.
+  onChanged: (decision?: ResultDecision) => void
+  onOpenFile: (url: string) => void
+}
+
+export function LetterResultPanel({ letter, onChanged, onOpenFile }: LetterResultPanelProps) {
   const results = letter.results ?? []
   const latest = results[results.length - 1]
   // Ditolak (mis. foto buram): unggah ulang di surat ini, tanpa pengajuan baru.
@@ -231,7 +239,9 @@ export function LetterResultPanel({ letter, onChanged, onOpenFile }) {
         </div>
       )}
 
-      <p className="sid-modal-note-text">{STAGE_TEXT[letter.result_stage]}</p>
+      {letter.result_stage && (
+        <p className="sid-modal-note-text">{STAGE_TEXT[letter.result_stage]}</p>
+      )}
 
       {letter.result_stage === 'awaiting_upload' && letter.result_upload_hint && (
         <div className="sid-result-hint">
@@ -247,7 +257,11 @@ export function LetterResultPanel({ letter, onChanged, onOpenFile }) {
             {results.map((result) => (
               <li key={result.id} className="sid-result-history-item">
                 <div className="sid-result-history-head">
-                  <span>{new Date(result.submitted_at).toLocaleString('id-ID')}</span>
+                  <span>
+                    {result.submitted_at
+                      ? new Date(result.submitted_at).toLocaleString('id-ID')
+                      : '-'}
+                  </span>
                   <span className={`sid-result-status ${result.status}`}>
                     {RESULT_STATUS[result.status] ?? result.status}
                   </span>

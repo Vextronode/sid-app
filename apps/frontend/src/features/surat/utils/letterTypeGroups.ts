@@ -1,3 +1,5 @@
+import type { LetterType } from '@/types'
+
 // Urutan tampil kelompok jenis surat (LetterTypeCategory di backend).
 const GROUPS = [
   { key: 'persuratan', label: 'Persuratan Desa' },
@@ -9,7 +11,9 @@ const GROUPS = [
  * Layanan Kependudukan di bawah. Kelompok kosong dilewati; jenis tanpa kategori
  * dianggap Persuratan Desa.
  */
-export function groupLetterTypes(letterTypes = []) {
+export function groupLetterTypes<T extends Partial<Pick<LetterType, 'category'>>>(
+  letterTypes: T[] = [],
+) {
   return GROUPS.map((group) => ({
     ...group,
     types: letterTypes.filter((type) => (type.category ?? 'persuratan') === group.key),

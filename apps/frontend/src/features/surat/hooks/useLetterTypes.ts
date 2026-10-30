@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import type { LetterType } from '@/types'
 import { getLetterTypes } from '../api/letterTypeApi'
 
 export function useLetterTypes() {
-  const [letterTypes, setLetterTypes] = useState([])
+  const [letterTypes, setLetterTypes] = useState<LetterType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 

@@ -1,11 +1,13 @@
 // Apakah isian form berbeda dari nilai awalnya (saat modal dibuka).
 // Perbandingan dangkal per kunci; array dibandingkan per nilai, dan berkas
 // (File/Blob) yang dipilih selalu dihitung sebagai perubahan.
-function isFile(value) {
+type FormValues = Record<string, unknown>
+
+function isFile(value: unknown) {
   return typeof Blob !== 'undefined' && value instanceof Blob
 }
 
-function sameValue(a, b) {
+function sameValue(a: unknown, b: unknown): boolean {
   if (isFile(a) || isFile(b)) return a === b
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
@@ -15,13 +17,16 @@ function sameValue(a, b) {
     return JSON.stringify(a) === JSON.stringify(b)
   }
   // null/undefined/'' dianggap sama-sama kosong.
-  const empty = (value) => value === null || value === undefined || value === ''
+  const empty = (value: unknown) => value === null || value === undefined || value === ''
   if (empty(a) && empty(b)) return true
 
   return String(a) === String(b)
 }
 
-export function isFormDirty(current, initial) {
+export function isFormDirty(
+  current: FormValues | null | undefined,
+  initial: FormValues | null | undefined,
+) {
   if (!current || !initial) return false
 
   const keys = new Set([...Object.keys(current), ...Object.keys(initial)])

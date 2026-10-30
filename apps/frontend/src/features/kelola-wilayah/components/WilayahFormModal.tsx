@@ -1,10 +1,31 @@
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import type {
+  WilayahHamlet,
+  WilayahItem,
+  WilayahPayload,
+  WilayahProcessing,
+  WilayahRw,
+  WilayahType,
+} from '../types'
 
-const TYPE_CONFIG = {
+// Satu bentuk isian untuk ketiga jenis; kolom yang tidak dipakai jenisnya
+// tetap kosong.
+type WilayahForm = {
+  name: string
+  code: string
+  number: string
+  hamlet_id: number | string
+  rw_id: number | string
+}
+
+const EMPTY_FORM: WilayahForm = { name: '', code: '', number: '', hamlet_id: '', rw_id: '' }
+
+const TYPE_CONFIG: Record<WilayahType, { title: string; name: string }> = {
   dusun: {
     title: 'Dusun',
     name: 'Nama Dusun',
@@ -19,9 +40,10 @@ const TYPE_CONFIG = {
   },
 }
 
-function getInitialForm(type, item) {
+function getInitialForm(type: WilayahType, item: WilayahItem | null | undefined): WilayahForm {
   if (type === 'dusun') {
     return {
+      ...EMPTY_FORM,
       name: item?.name ?? '',
       code: item?.code ?? '',
     }
@@ -29,15 +51,30 @@ function getInitialForm(type, item) {
 
   if (type === 'rw') {
     return {
+      ...EMPTY_FORM,
       number: item?.number ?? '',
       hamlet_id: item?.hamletId ?? '',
     }
   }
 
   return {
+    ...EMPTY_FORM,
     number: item?.number ?? '',
     rw_id: item?.rwId ?? '',
   }
+}
+
+type WilayahFormModalProps = {
+  open: boolean
+  type: WilayahType
+  item: WilayahItem | null
+  hamlets: WilayahHamlet[]
+  rws: WilayahRw[]
+  processing: WilayahProcessing
+  error: string
+  onClose: () => void
+  // true bila tersimpan; modal lalu ditutup.
+  onSubmit: (payload: WilayahPayload) => Promise<unknown>
 }
 
 export default function WilayahFormModal({
@@ -50,7 +87,7 @@ export default function WilayahFormModal({
   error,
   onClose,
   onSubmit,
-}) {
+}: WilayahFormModalProps) {
   const config = TYPE_CONFIG[type]
 
   const initialForm = useMemo(() => getInitialForm(type, item), [type, item])
@@ -67,17 +104,17 @@ export default function WilayahFormModal({
 
   const isEdit = Boolean(item?.id)
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: keyof WilayahForm, value: string) => {
     setForm((current) => ({
       ...current,
       [field]: value,
     }))
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    let payload
+    let payload: WilayahPayload
 
     if (type === 'dusun') {
       payload = isEdit
@@ -195,7 +232,7 @@ export default function WilayahFormModal({
                   <option value="">Pilih dusun</option>
 
                   {hamlets.map((hamlet) => (
-                    <option key={hamlet.id} value={hamlet.id}>
+                    <option key={hamlet.id} value={hamlet.id ?? ''}>
                       {hamlet.name}
                     </option>
                   ))}
@@ -240,7 +277,7 @@ export default function WilayahFormModal({
                     const hamlet = hamlets.find((item) => item.id === rw.hamletId)
 
                     return (
-                      <option key={rw.id} value={rw.id}>
+                      <option key={rw.id} value={rw.id ?? ''}>
                         RW {rw.number}
                         {hamlet ? ` - ${hamlet.name}` : ''}
                       </option>

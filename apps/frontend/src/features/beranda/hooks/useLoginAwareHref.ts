@@ -7,7 +7,7 @@ import { buildLoginPath } from '@/features/auth/utils/loginRedirect'
 // Sudah login → tujuan untuk perannya (pejabat ke Surat Saya pejabat, dst.).
 // Belum → halaman login yang membawa ?redirect=<tujuan>, sehingga pengguna
 // kembali ke halaman itu (atau padanannya) setelah berhasil masuk.
-export function useLoginAwareHref(target) {
+export function useLoginAwareHref(target: string) {
   const { user } = useAuth()
 
   return user ? letterTargetForRole(target, user.role) : buildLoginPath(target)

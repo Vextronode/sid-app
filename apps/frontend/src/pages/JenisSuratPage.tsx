@@ -1,5 +1,5 @@
 // ==========================================
-// JenisSuratPage.jsx
+// JenisSuratPage.tsx
 // Ringkasan surat milik warga.
 // Status menggunakan status generic.
 // ==========================================

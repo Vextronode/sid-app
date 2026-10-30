@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,9 +21,9 @@ vi.mock('@/shared/lib/dialog', () => ({ confirmDialog }))
 
 import { FulfillmentPanel } from './FulfillmentPanel'
 
-const newCitizen = (nik) => ({
+const newCitizen = (nik: string | null) => ({
   action: 'create_citizen',
-  fulfilled_at: null,
+  fulfilled_at: null as string | null,
   family: { mode: 'join', description: 'Masuk ke No. KK ************0001.' },
   fields: [
     { column: 'nik', label: 'NIK', proposed: nik, proposed_label: nik ?? '-', fixed: false },
@@ -40,7 +41,7 @@ const newCitizen = (nik) => ({
   ],
 })
 
-const renderPanel = (props) =>
+const renderPanel = (props: Partial<ComponentProps<typeof FulfillmentPanel>> = {}) =>
   render(
     <MemoryRouter>
       <FulfillmentPanel letterId="l-1" onApplied={vi.fn()} {...props} />

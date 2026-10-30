@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { removePushSubscription, savePushSubscription } from '../api'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-function decodeApplicationServerKey(key) {
+function decodeApplicationServerKey(key: string) {
   const padding = '='.repeat((4 - (key.length % 4)) % 4)
   const base64 = `${key}${padding}`.replace(/-/g, '+').replace(/_/g, '/')
   const raw = window.atob(base64)

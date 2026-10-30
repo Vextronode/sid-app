@@ -1,10 +1,15 @@
 import { useCallback, useState } from 'react'
 
-export const PAGE_SIZE_OPTIONS = [10, 25, 50]
+export const PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50]
 
-const storageKeyOf = (key) => `sid-page-size:${key}`
+type PageSizeOptions = {
+  options?: readonly number[]
+  defaultSize?: number
+}
 
-function readPageSize(key, options, defaultSize) {
+const storageKeyOf = (key: string) => `sid-page-size:${key}`
+
+function readPageSize(key: string, options: readonly number[], defaultSize: number) {
   try {
     const stored = Number(window.localStorage.getItem(storageKeyOf(key)))
 
@@ -19,11 +24,14 @@ function readPageSize(key, options, defaultSize) {
  * Pilihan diingat per daftar di browser; nilai di luar `options` jatuh
  * ke `defaultSize`.
  */
-export function usePageSize(key, { options = PAGE_SIZE_OPTIONS, defaultSize = options[0] } = {}) {
+export function usePageSize(
+  key: string,
+  { options = PAGE_SIZE_OPTIONS, defaultSize = options[0] }: PageSizeOptions = {},
+) {
   const [pageSize, setPageSizeState] = useState(() => readPageSize(key, options, defaultSize))
 
   const setPageSize = useCallback(
-    (value) => {
+    (value: number | string) => {
       const next = options.includes(Number(value)) ? Number(value) : defaultSize
 
       setPageSizeState(next)
@@ -37,5 +45,5 @@ export function usePageSize(key, { options = PAGE_SIZE_OPTIONS, defaultSize = op
     [key, options, defaultSize],
   )
 
-  return [pageSize, setPageSize]
+  return [pageSize, setPageSize] as const
 }

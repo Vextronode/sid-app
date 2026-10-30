@@ -1,19 +1,34 @@
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
+import type { Id, ResourceResponse } from '@/types'
 
-export function getRegulations() {
-  return api.get('/api/regulations')
+// RegulationResource.
+export type Regulation = {
+  id: number
+  village_id: string
+  regulation_number: string
+  title: string
+  content: string | null
+  enacted_date: string | null
+  created_by: string | null
 }
 
-export function createRegulation(payload) {
+// Objek isian, atau FormData bila ada berkas peraturan.
+type Payload = Record<string, unknown> | FormData
+
+export function getRegulations() {
+  return api.get<ResourceResponse<Regulation[]>>('/api/regulations')
+}
+
+export function createRegulation(payload: Payload) {
   return api.post('/api/regulations', payload)
 }
 
-export function updateRegulation(id, payload) {
+export function updateRegulation(id: Id, payload: Payload) {
   return api.patch(`/api/regulations/${id}`, payload)
 }
 
-export function deleteRegulation(id) {
+export function deleteRegulation(id: Id) {
   return api.delete(`/api/regulations/${id}`)
 }
 

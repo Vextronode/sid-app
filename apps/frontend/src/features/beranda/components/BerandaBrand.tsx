@@ -9,7 +9,20 @@ import { formatVillageName } from '@/shared/lib/villageName'
 // mis. "Admin Staf SIDUTama" di sidebar. Nama dan lambang dari data desa
 // (diatur Staf SIDUTama); selagi belum termuat, tempat lambang tetap dipesan
 // agar header tidak bergeser.
-export function BerandaBrand({ header, to = HAL_BERANDA, subtitle, className = 'bd-brand' }) {
+type BerandaBrandProps = {
+  // Hanya nama cadangan yang dipakai, selagi data desa belum termuat.
+  header: { fallbackName: string }
+  to?: string
+  subtitle?: string
+  className?: string
+}
+
+export function BerandaBrand({
+  header,
+  to = HAL_BERANDA,
+  subtitle,
+  className = 'bd-brand',
+}: BerandaBrandProps) {
   const { village } = usePublicVillageInfo()
 
   const villageName = formatVillageName(village?.name) ?? header.fallbackName

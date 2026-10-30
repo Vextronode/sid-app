@@ -5,6 +5,8 @@ import { SimplePagination } from '@/components/ui/SimplePagination'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 import { formatLetterDate, getLetterProgress } from '@/features/surat/utils/letterProgress'
+import type { LetterProgress } from '@/features/surat/utils/letterProgress'
+import type { Id, LetterListItem, LetterStatus } from '@/types'
 import { LetterRowActions } from './LetterRowActions'
 
 const MY_LETTER_FILTERS = [
@@ -15,13 +17,13 @@ const MY_LETTER_FILTERS = [
   { value: SURAT_STATUS.REJECTED, label: 'Ditolak' },
 ]
 
-function stageState(index, progress) {
+function stageState(index: number, progress: LetterProgress) {
   if (index < progress.current) return 'done'
   if (index === progress.current) return progress.rejected ? 'rejected' : 'current'
   return 'upcoming'
 }
 
-function LetterTrack({ progress }) {
+function LetterTrack({ progress }: { progress: LetterProgress }) {
   return (
     <ol className="sid-my-letters-track" aria-label="Tahapan surat">
       {progress.stages.map((label, index) => {
@@ -42,7 +44,14 @@ function LetterTrack({ progress }) {
   )
 }
 
-function LetterRow({ letter, onDetail, onDelete, deleting }) {
+type LetterRowProps = {
+  letter: LetterListItem
+  onDetail: (letter: LetterListItem) => void
+  onDelete: (letter: LetterListItem) => void
+  deleting: boolean
+}
+
+function LetterRow({ letter, onDetail, onDelete, deleting }: LetterRowProps) {
   const progress = getLetterProgress(letter)
   const name = letter.letter_type?.name ?? 'Surat'
   const isApproved = letter.status === SURAT_STATUS.APPROVED
@@ -112,6 +121,24 @@ function LetterRow({ letter, onDetail, onDelete, deleting }) {
  * Daftar surat milik pengguna sendiri (warga maupun pejabat): filter status,
  * baris surat dengan jalur tahapan, dan pagination dari server.
  */
+type MyLettersListProps = {
+  letters: LetterListItem[]
+  loading: boolean
+  // Status surat yang difilter; '' = semua.
+  filter: string
+  onFilterChange: (status: string) => void
+  onDetail: (letter: LetterListItem) => void
+  onDelete: (letter: LetterListItem) => void
+  deletingId: Id | null
+  onCreate: () => void
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  // Pemilih jumlah baris hanya tampil bila onPageSizeChange diisi.
+  pageSize?: number
+  onPageSizeChange?: (size: number) => void
+}
+
 export function MyLettersList({
   letters,
   loading,
@@ -126,10 +153,11 @@ export function MyLettersList({
   onPageChange,
   pageSize,
   onPageSizeChange,
-}) {
+}: MyLettersListProps) {
   const isEmpty = !loading && letters.length === 0
   const { summary, loading: summaryLoading } = useSuratSummaryQuery({ scope: 'mine' })
-  const countOf = (value) => (value ? summary.by_status?.[value] : summary.total) ?? 0
+  const countOf = (value: string) =>
+    (value ? summary.by_status?.[value as LetterStatus] : summary.total) ?? 0
 
   return (
     <section className="sid-my-letters">

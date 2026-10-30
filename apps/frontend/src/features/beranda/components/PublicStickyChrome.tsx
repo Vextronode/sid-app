@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { AnnouncementBar } from './AnnouncementBar'
 import { BerandaHeader } from './BerandaHeader'
+import type { BerandaContent } from '../berandaContent'
 
 const OFFSET_VAR = '--bd-sticky-offset'
 
@@ -11,7 +12,7 @@ const OFFSET_VAR = '--bd-sticky-offset'
 // halaman publik (beranda, berita, profil desa, halaman informasi, ...).
 // Tingginya disimpan di --bd-sticky-offset (scroll-padding-top di
 // beranda.css) agar tujuan tautan #section tidak tertutup header + bar.
-export function PublicStickyChrome({ content }) {
+export function PublicStickyChrome({ content }: { content: BerandaContent }) {
   const { announcement } = usePublicVillageInfo()
   const ref = useRef(null)
 
@@ -21,7 +22,10 @@ export function PublicStickyChrome({ content }) {
 
     const root = document.documentElement
     const observer = new ResizeObserver(([entry]) => {
-      root.style.setProperty(OFFSET_VAR, `${Math.ceil(entry.target.offsetHeight)}px`)
+      root.style.setProperty(
+        OFFSET_VAR,
+        `${Math.ceil((entry.target as HTMLElement).offsetHeight)}px`,
+      )
     })
     observer.observe(element)
 

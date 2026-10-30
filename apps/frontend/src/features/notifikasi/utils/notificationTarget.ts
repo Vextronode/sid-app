@@ -1,6 +1,8 @@
+import type { NotificationContext, UserRole } from '@/types'
+
 // Halaman daftar surat tiap peran. Halaman-halaman ini membuka detail
 // surat bila diberi parameter ?surat=<id> (lihat useLetterDeepLink).
-const LETTER_LIST_ROUTES = {
+const LETTER_LIST_ROUTES: Record<UserRole, string> = {
   warga: '/surat-saya/daftar',
   rt: '/admin/rt/surat',
   rw: '/admin/rw/surat',
@@ -16,7 +18,7 @@ const LETTER_LIST_ROUTES = {
 // Staf SIDUTama.
 export const SELF_LETTER_ROUTE = '/admin/surat-saya'
 
-export const SELF_LETTER_ROLES = [
+export const SELF_LETTER_ROLES: UserRole[] = [
   'rt',
   'rw',
   'kadus',
@@ -41,7 +43,7 @@ const SIGNATURE_RESET_DECISION_STATUSES = ['signature_reset_approved', 'signatur
 
 export const SIGNATURE_CARD_ANCHOR = 'tanda-tangan'
 
-function profileRoute(role) {
+function profileRoute(role: UserRole) {
   return role === 'warga' ? '/profil' : '/admin/profil'
 }
 
@@ -49,10 +51,13 @@ function profileRoute(role) {
  * Tujuan navigasi saat sebuah notifikasi diklik, atau null bila
  * notifikasinya tidak merujuk ke halaman mana pun.
  */
-export function getNotificationTarget(role, context) {
+export function getNotificationTarget(
+  role: UserRole | null | undefined,
+  context: NotificationContext | null | undefined,
+) {
   if (!role || !context) return null
 
-  if (SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
+  if (context.status && SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_REQUESTS_ANCHOR}`
   }
 
@@ -60,7 +65,7 @@ export function getNotificationTarget(role, context) {
     return role === 'staf_sid' ? SIGNATURE_RESET_REQUESTS_ROUTE : null
   }
 
-  if (SIGNATURE_RESET_DECISION_STATUSES.includes(context.status)) {
+  if (context.status && SIGNATURE_RESET_DECISION_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_CARD_ANCHOR}`
   }
 

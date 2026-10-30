@@ -1,29 +1,37 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
-// EditProfilWargaModal.jsx
+// EditProfilWargaModal.tsx
 // Pengaturan akun untuk semua peran: ubah username/email
 // (PATCH /api/profile) dan ubah kata sandi (PUT /api/profile/password).
 // Data kependudukan (nama, alamat, dst.) tidak diubah dari sini; itu
 // dikelola Staf SIDUTama atau lewat surat.
 // ==========================================
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import api from '@/lib/api'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { User } from '@/types'
+
+type EditProfilWargaModalProps = {
+  open: boolean
+  onClose: () => void
+  onSaved?: (user: User) => void
+  initialData: Pick<User, 'username' | 'email'> | null | undefined
+}
+
+// Respons PATCH /api/profile dan PUT /api/profile/password.
+type ProfileResponse = { data?: { message?: string; user?: User } }
 
 const EMPTY_PASSWORD = { current_password: '', password: '', password_confirmation: '' }
 
-function fieldErrors(error) {
-  return error?.response?.data?.errors ?? {}
-}
-
-function firstMessage(error, fallback) {
-  const first = Object.values(fieldErrors(error)).flat()[0]
-
-  return first ?? error?.response?.data?.message ?? fallback
-}
-
-export default function EditProfilWargaModal({ open, onClose, onSaved, initialData }) {
+export default function EditProfilWargaModal({
+  open,
+  onClose,
+  onSaved,
+  initialData,
+}: EditProfilWargaModalProps) {
   const [account, setAccount] = useState({ username: '', email: '' })
   const [password, setPassword] = useState(EMPTY_PASSWORD)
   const [saving, setSaving] = useState('')
@@ -52,7 +60,11 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
 
   if (!open) return null
 
-  const submit = async (kind, request, successMessage) => {
+  const submit = async (
+    kind: 'account' | 'password',
+    request: () => Promise<ProfileResponse>,
+    successMessage: string,
+  ) => {
     setSaving(kind)
     setError('')
 
@@ -65,7 +77,7 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
 
       return true
     } catch (requestError) {
-      setError(firstMessage(requestError, 'Perubahan gagal disimpan.'))
+      setError(getApiErrorMessage(requestError, 'Perubahan gagal disimpan.'))
 
       return false
     } finally {
@@ -73,7 +85,7 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
     }
   }
 
-  const handleAccountSubmit = (event) => {
+  const handleAccountSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     return submit(
@@ -87,7 +99,7 @@ export default function EditProfilWargaModal({ open, onClose, onSaved, initialDa
     )
   }
 
-  const handlePasswordSubmit = async (event) => {
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (password.password !== password.password_confirmation) {

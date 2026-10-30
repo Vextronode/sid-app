@@ -1,5 +1,5 @@
 // ==========================================
-// BeritaPage.jsx
+// BeritaPage.tsx
 // Halaman publik Berita.
 // Ditata dengan utility Tailwind (token di index.css), di bawah .pub milik
 // MainLayout.
@@ -69,7 +69,7 @@ export function BeritaPage() {
   // NAVIGATE DETAIL
   // ==========================================
 
-  const handleDetail = (id) => {
+  const handleDetail = (id: number) => {
     navigate(`/berita/${id}`)
   }
 

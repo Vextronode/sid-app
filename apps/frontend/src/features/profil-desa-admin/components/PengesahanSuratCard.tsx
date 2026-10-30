@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { ChangeEvent } from 'react'
+import type { Official } from '@/types'
 import { Stamp } from 'lucide-react'
 
 import {
@@ -12,29 +14,35 @@ import {
 import ImageFilePicker, { ImagePreviewStage } from '@/components/ui/ImageFilePicker'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024
-
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
 
 /**
  * Satu berkas pengesahan (stempel atau tanda tangan). Gambar tersimpan
  * privat di server, jadi pratinjau diambil sebagai blob.
  */
-function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded }) {
+type PrivateImageFieldProps = {
+  id: string
+  label: string
+  hasImage: boolean
+  // Gambar tersimpan diambil sebagai blob (dilindungi sesi login).
+  loadImage: () => Promise<Blob>
+  upload: (file: File) => Promise<unknown>
+  onUploaded?: () => void
+}
+
+function PrivateImageField({
+  id,
+  label,
+  hasImage,
+  loadImage,
+  upload,
+  onUploaded,
+}: PrivateImageFieldProps) {
   const [imageUrl, setImageUrl] = useState('')
-  const [draft, setDraft] = useState(null)
+  const [draft, setDraft] = useState<File | null>(null)
   const [draftUrl, setDraftUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -52,7 +60,8 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
         if (active) setImageUrl(objectUrl)
       })
       .catch((requestError) => {
-        if (active) setError(serverMessage(requestError, `Gagal memuat ${label.toLowerCase()}.`))
+        if (active)
+          setError(getApiErrorMessage(requestError, `Gagal memuat ${label.toLowerCase()}.`))
       })
 
     return () => {
@@ -69,7 +78,7 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
     [draftUrl],
   )
 
-  const handleSelect = (event) => {
+  const handleSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null
 
     event.target.value = ''
@@ -112,6 +121,8 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
     setSaving(true)
     setError('')
 
+    if (!draft) return
+
     try {
       await upload(draft)
 
@@ -122,7 +133,7 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
       notifySuccess(`${label} berhasil disimpan.`)
       onUploaded?.()
     } catch (requestError) {
-      setError(serverMessage(requestError, `Gagal menyimpan ${label.toLowerCase()}.`))
+      setError(getApiErrorMessage(requestError, `Gagal menyimpan ${label.toLowerCase()}.`))
     } finally {
       setSaving(false)
     }
@@ -177,13 +188,36 @@ function PrivateImageField({ id, label, hasImage, loadImage, upload, onUploaded 
   )
 }
 
+// Tanda tangan melekat pada record Kepala Desa yang sedang menjabat.
+function KadesSignatureField({ official }: { official: Official }) {
+  const loadImage = useCallback(() => getOfficialSignatureImage(official.id), [official.id])
+  const upload = useCallback(
+    (file: File) => uploadOfficialSignature(official.id, file),
+    [official.id],
+  )
+
+  return (
+    <PrivateImageField
+      id="kades-signature-upload"
+      label={`Tanda Tangan Kepala Desa (${official.citizen?.name ?? '-'})`}
+      hasImage={Boolean(official.has_signature_img)}
+      loadImage={loadImage}
+      upload={upload}
+    />
+  )
+}
+
 /**
  * Stempel desa dan tanda tangan Kepala Desa yang dibubuhkan pada PDF surat.
  * Tanda tangan melekat pada record Kepala Desa yang sedang menjabat; setelah
  * rotasi Kades, tanda tangan pejabat baru perlu diunggah lagi.
  */
 export default function PengesahanSuratCard() {
-  const [state, setState] = useState({ loading: true, hasStamp: false, kepalaDesa: null })
+  const [state, setState] = useState<{
+    loading: boolean
+    hasStamp: boolean
+    kepalaDesa: Official | null
+  }>({ loading: true, hasStamp: false, kepalaDesa: null })
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -208,7 +242,7 @@ export default function PengesahanSuratCard() {
       .catch((requestError) => {
         if (!active) return
 
-        setError(serverMessage(requestError, 'Gagal memuat data pengesahan surat.'))
+        setError(getApiErrorMessage(requestError, 'Gagal memuat data pengesahan surat.'))
         setState((current) => ({ ...current, loading: false }))
       })
 
@@ -216,14 +250,6 @@ export default function PengesahanSuratCard() {
       active = false
     }
   }, [])
-
-  const kepalaDesaId = state.kepalaDesa?.id ?? null
-
-  const loadSignature = useCallback(() => getOfficialSignatureImage(kepalaDesaId), [kepalaDesaId])
-  const uploadSignature = useCallback(
-    (file) => uploadOfficialSignature(kepalaDesaId, file),
-    [kepalaDesaId],
-  )
 
   return (
     <div className="sid-profil-desa-card">
@@ -255,14 +281,7 @@ export default function PengesahanSuratCard() {
           />
 
           {state.kepalaDesa ? (
-            <PrivateImageField
-              key={kepalaDesaId}
-              id="kades-signature-upload"
-              label={`Tanda Tangan Kepala Desa (${state.kepalaDesa.citizen?.name ?? '-'})`}
-              hasImage={Boolean(state.kepalaDesa.has_signature_img)}
-              loadImage={loadSignature}
-              upload={uploadSignature}
-            />
+            <KadesSignatureField key={state.kepalaDesa.id} official={state.kepalaDesa} />
           ) : (
             <div className="sid-profil-desa-info-item">
               <span className="sid-profil-desa-info-label">Tanda Tangan Kepala Desa</span>
