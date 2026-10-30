@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ mode }) => {
-  // Nama aplikasi dari VITE_APP_NAME (sama dengan src/lib/constants/app.js).
+  // Nama aplikasi dari VITE_APP_NAME (sama dengan src/lib/constants/app.ts).
   const appName = loadEnv(mode, process.cwd(), 'VITE_').VITE_APP_NAME || 'SIDUTama'
 
   return {
@@ -147,7 +148,7 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: true,
       environment: 'jsdom',
-      setupFiles: './src/test/setup.js',
+      setupFiles: './src/test/setup.ts',
     },
   }
 })
