@@ -1,5 +1,5 @@
 // ==========================================
-// BerandaPage.jsx
+// BerandaPage.tsx
 // Halaman beranda publik Desa Cibenda.
 // Semua section dari features/beranda (beranda.css), sesuai
 // docs/refactor-beranda/03-spesifikasi-beranda.md.

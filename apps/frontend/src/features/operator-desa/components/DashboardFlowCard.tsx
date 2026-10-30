@@ -1,5 +1,5 @@
 // ==========================================
-// DashboardFlowCard.jsx
+// DashboardFlowCard.tsx
 // Card status surat dengan filter periode dan carousel.
 // Status menggunakan status generic.
 // Styling mengikuti SID Global Theme.

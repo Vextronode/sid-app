@@ -1,5 +1,5 @@
 // ==========================================
-// KadesDashboardPage.jsx
+// KadesDashboardPage.tsx
 // Dashboard Kepala Desa
 //
 // Kades sekarang menjadi approver aktif.

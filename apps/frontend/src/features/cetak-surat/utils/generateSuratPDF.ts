@@ -1,5 +1,5 @@
 // ==========================================
-// generateSuratPDF.js
+// generateSuratPDF.ts
 // Unduh dan pratinjau PDF surat dari backend.
 // template: 'digital' (TTD + stempel) atau 'wet' (area tanda tangan kosong).
 // documentKey: kunci dokumen yang terbit bersama (surat.documents); kosong =
@@ -9,7 +9,7 @@
 import { responseError } from '@/shared/lib/apiError'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
 
-// VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.js)
+// VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.ts)
 const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
 
 function letterPdfUrl(surat, action, template, documentKey) {

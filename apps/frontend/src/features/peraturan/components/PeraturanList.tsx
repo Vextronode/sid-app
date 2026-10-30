@@ -1,5 +1,5 @@
 // ==========================================
-// PeraturanList.jsx
+// PeraturanList.tsx
 // Daftar peraturan desa untuk halaman publik (section di Profil Desa).
 // Mengambil datanya sendiri, jadi kegagalan di sini tidak menjatuhkan
 // halaman yang memuatnya.

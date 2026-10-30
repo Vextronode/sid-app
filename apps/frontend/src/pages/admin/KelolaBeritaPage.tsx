@@ -1,5 +1,5 @@
 // ==========================================
-// KelolaBeritaPage.jsx
+// KelolaBeritaPage.tsx
 // Halaman Kelola Berita untuk Operator Desa.
 //
 // Response backend:

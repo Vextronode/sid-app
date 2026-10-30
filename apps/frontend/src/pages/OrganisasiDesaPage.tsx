@@ -1,5 +1,5 @@
 // ==========================================
-// OrganisasiDesaPage.jsx
+// OrganisasiDesaPage.tsx
 // Halaman publik struktur organisasi desa:
 // - /bpd           : Badan Permusyawaratan Desa
 // - /lembaga-desa  : LPM, Karang Taruna, dan PKK (dipilih lewat tab,

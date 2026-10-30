@@ -1,5 +1,5 @@
 // ==========================================
-// RWListPage.jsx
+// RWListPage.tsx
 // Daftar permohonan surat RW
 //
 // STATUS:

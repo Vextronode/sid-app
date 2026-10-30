@@ -14,7 +14,7 @@ const ICONS = {
 }
 
 // Kartu dialog di tengah layar untuk alertDialog/confirmDialog/promptDialog.
-// Dipasang sekali di main.jsx.
+// Dipasang sekali di main.tsx.
 export function DialogHost() {
   const dialog = useSyncExternalStore(subscribeDialogs, currentDialog)
 

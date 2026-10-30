@@ -1,5 +1,5 @@
 // ==========================================
-// statusFlow.js
+// statusFlow.ts
 // GLOBAL - MODEL GENERIK APPROVAL FLOW
 // ==========================================
 

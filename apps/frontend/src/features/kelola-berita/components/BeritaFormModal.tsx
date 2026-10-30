@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
-// BeritaFormModal.jsx
+// BeritaFormModal.tsx
 // Popup form Tambah/Edit Berita.
 // Styling menggunakan SID Global Theme.
 // ==========================================

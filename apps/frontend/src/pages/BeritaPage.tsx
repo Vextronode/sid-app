@@ -1,5 +1,5 @@
 // ==========================================
-// BeritaPage.jsx
+// BeritaPage.tsx
 // Halaman publik Berita.
 // Ditata dengan utility Tailwind (token di index.css), di bawah .pub milik
 // MainLayout.

@@ -1,5 +1,5 @@
 // ==========================================
-// DetailBeritaPage.jsx
+// DetailBeritaPage.tsx
 // Halaman detail berita publik.
 // Ditata dengan utility Tailwind, di bawah .pub milik MainLayout.
 // ==========================================

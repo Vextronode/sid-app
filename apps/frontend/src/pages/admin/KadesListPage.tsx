@@ -1,5 +1,5 @@
 // ==========================================
-// KadesListPage.jsx
+// KadesListPage.tsx
 //
 // Kades = approver aktif.
 // List menggunakan status generik.

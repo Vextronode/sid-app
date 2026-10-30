@@ -1,5 +1,5 @@
 // ==========================================
-// KadusListPage.jsx
+// KadusListPage.tsx
 // Daftar permohonan surat Kadus
 //
 // STATUS:
@@ -10,7 +10,7 @@
 // Workflow monitoring menggunakan status generik.
 //
 // Styling menggunakan SID Global Theme.
-// Struktur dibuat konsisten dengan RWListPage.jsx.
+// Struktur dibuat konsisten dengan RWListPage.tsx.
 // ==========================================
 
 import { useState } from 'react'

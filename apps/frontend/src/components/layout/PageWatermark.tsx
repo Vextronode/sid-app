@@ -1,5 +1,5 @@
 // ==========================================
-// PageWatermark.jsx
+// PageWatermark.tsx
 // Watermark logo fixed di background halaman, opacity rendah, di belakang
 // semua konten (z-index rendah + pointer-events-none supaya nggak
 // ganggu klik). Tetap kelihatan meski ada card/form di atasnya karena
@@ -18,5 +18,5 @@ export function PageWatermark() {
         className="w-64 md:w-96 opacity-100 object-contain border-4 border-red-500"
       />
     </div>
-  );
+  )
 }

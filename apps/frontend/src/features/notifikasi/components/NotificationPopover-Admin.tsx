@@ -1,5 +1,5 @@
 // ==========================================
-// NotificationPopover-Admin.jsx
+// NotificationPopover-Admin.tsx
 // Popup notifikasi dari ikon lonceng navbar.
 // Styling mengikuti SID Global Theme.
 // Logic/API tidak diubah.

@@ -1,5 +1,5 @@
 // ==========================================
-// OperatorDesaLayout.jsx
+// OperatorDesaLayout.tsx
 // Layout khusus Operator Desa
 // Styling menggunakan Global CSS SID; sidebar dan topbar memakai token
 // publik (.bd-theme dari beranda.css) dengan lambang + nama desa.

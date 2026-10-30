@@ -1,5 +1,5 @@
 // ==========================================
-// LetterRowActions.jsx
+// LetterRowActions.tsx
 // Tombol aksi pada baris/kartu surat, dipakai semua peran:
 // - "Proses" (primer) saat giliran pengguna memutuskan, selain itu
 //   "Detail" (outline);

@@ -1,5 +1,5 @@
 // ==========================================
-// AuthContext.jsx
+// AuthContext.tsx
 // Session & Logout - Backend v5.1
 // Sanctum cookie-based authentication
 // ==========================================

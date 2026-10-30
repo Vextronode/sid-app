@@ -1,5 +1,5 @@
 // ==========================================
-// KelolaProfilDesaPage.jsx
+// KelolaProfilDesaPage.tsx
 // Halaman Profil Desa untuk Operator Desa
 // Data berasal dari API backend.
 // ==========================================

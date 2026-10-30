@@ -1,5 +1,5 @@
 // ==========================================
-// AdminProfilePage.jsx
+// AdminProfilePage.tsx
 // Halaman Profil untuk RT/RW/Kadus/Kades/
 // Operator Desa dan role admin lainnya.
 //

@@ -1,5 +1,5 @@
 // ==========================================
-// RTListPage.jsx
+// RTListPage.tsx
 // Daftar Permohonan Surat RT
 //
 // STATUS:

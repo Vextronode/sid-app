@@ -1,7 +1,7 @@
 // Notifikasi singkat (toast) setelah aksi berhasil, mis. "Data warga
-// berhasil disimpan". Seperti dialog.js, store-nya di level modul sehingga
+// berhasil disimpan". Seperti dialog.ts, store-nya di level modul sehingga
 // bisa dipanggil dari mana saja dan tetap tampil walau halaman berpindah
-// (mis. setelah mengajukan surat). <ToastHost /> di main.jsx yang merender.
+// (mis. setelah mengajukan surat). <ToastHost /> di main.tsx yang merender.
 
 const MAX_VISIBLE = 3
 const DEFAULT_DURATION = 3000

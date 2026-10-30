@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
-// SuratDateTracker.jsx
+// SuratDateTracker.tsx
 //
 // Tracking surat berdasarkan tanggal pengajuan.
 //

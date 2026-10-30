@@ -1,5 +1,5 @@
 // ==========================================
-// LetterDossierModal.jsx
+// LetterDossierModal.tsx
 // Kerangka popup detail surat "meja dokumen" yang dipakai semua peran:
 // surat tampil besar di kiri (`preview`), berkas permohonan di kanan
 // (`children`), aksi di footer. Isi tiap bagian ditentukan pemanggil

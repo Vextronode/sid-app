@@ -1,5 +1,5 @@
 // ==========================================
-// NotificationPopover.jsx
+// NotificationPopover.tsx
 // Popup notifikasi, dibuka dari ikon lonceng di navbar.
 // Styling mengikuti SID Global Theme.
 // ==========================================

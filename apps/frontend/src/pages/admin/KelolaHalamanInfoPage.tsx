@@ -7,7 +7,7 @@ import { getInfoPages, saveInfoPage } from '@/features/info-admin/api'
 import { ListField } from '@/features/info-admin/components/ListField'
 import { notifySuccess } from '@/shared/lib/toast'
 
-// Alamat publik tiap halaman (route di App.jsx).
+// Alamat publik tiap halaman (route di App.tsx).
 const PUBLIC_PATHS = {
   ppid: '/ppid',
   'kebijakan-privasi': '/kebijakan-privasi',

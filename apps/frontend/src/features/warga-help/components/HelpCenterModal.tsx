@@ -1,5 +1,5 @@
 // ==========================================
-// HelpCenterModal.jsx
+// HelpCenterModal.tsx
 // Popup "Pusat Bantuan" untuk Warga: kontak, alamat, jam operasional
 // desa. Dibuka dari ikon Pusat Bantuan di navbar WargaLayout.
 // Semua isian dari data desa (Kelola Profil Desa); tanpa data tampil "-".

@@ -1,5 +1,5 @@
 // ==========================================
-// LoginPage.jsx
+// LoginPage.tsx
 // ==========================================
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'

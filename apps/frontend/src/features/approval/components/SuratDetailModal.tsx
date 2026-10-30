@@ -1,5 +1,5 @@
 // ==========================================
-// SuratDetailModal.jsx
+// SuratDetailModal.tsx
 // Popup detail surat untuk approver dan pemantau wilayah (RT, RW, Kadus,
 // Kades/Sekdes) di atas kerangka LetterDossierModal.
 //

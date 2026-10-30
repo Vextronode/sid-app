@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 // ==========================================
-// useSuratDetailKadus.js
+// useSuratDetailKadus.ts
 //
 // Mengambil detail surat untuk monitoring Kadus.
 //

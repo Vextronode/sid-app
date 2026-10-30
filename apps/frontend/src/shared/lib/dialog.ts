@@ -1,7 +1,7 @@
 // Dialog peringatan/konfirmasi di dalam aplikasi, pengganti window.alert,
 // window.confirm, dan window.prompt (yang tampil sebagai pop-up browser
 // berjudul alamat server, mis. "127.0.0.1 says"). Bisa dipanggil dari mana
-// saja, termasuk hook dan handler async; <DialogHost /> di main.jsx yang
+// saja, termasuk hook dan handler async; <DialogHost /> di main.tsx yang
 // merendernya. Dialog dibuka satu per satu sesuai urutan pemanggilan.
 
 let queue = []

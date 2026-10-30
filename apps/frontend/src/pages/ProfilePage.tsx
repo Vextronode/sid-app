@@ -1,5 +1,5 @@
 // ==========================================
-// ProfilePage.jsx
+// ProfilePage.tsx
 // Halaman profil warga sesuai Image 5.
 // Edit lewat popup.
 // Styling mengikuti SID Global Theme.

@@ -1,5 +1,5 @@
 // ==========================================
-// EditProfilDesaModal.jsx
+// EditProfilDesaModal.tsx
 // Edit informasi profil desa berdasarkan
 // contract PATCH /api/villages/profile.
 // ==========================================

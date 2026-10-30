@@ -1,5 +1,5 @@
 // ==========================================
-// FlowTimeline.jsx
+// FlowTimeline.tsx
 // Tahapan alur surat secara vertikal (Diajukan -> RT -> Kades -> Selesai)
 // untuk panel berkas.
 //

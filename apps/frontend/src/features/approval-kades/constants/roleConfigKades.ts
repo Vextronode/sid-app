@@ -1,5 +1,5 @@
 // ==========================================
-// roleConfigKades.js
+// roleConfigKades.ts
 //
 // Konfigurasi feature Kades.
 // Status workflow dipusatkan di:

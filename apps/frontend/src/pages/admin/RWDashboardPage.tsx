@@ -1,5 +1,5 @@
 // ==========================================
-// RWDashboardPage.jsx
+// RWDashboardPage.tsx
 // Dashboard RW
 // 4 kotak: Menunggu / Sedang Diproses / Selesai / Ditolak
 // Desktop 4 kolom, Mobile 2x2.

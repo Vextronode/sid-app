@@ -1,5 +1,5 @@
 // ==========================================
-// OperatorSuratListPage.jsx
+// OperatorSuratListPage.tsx
 // Halaman "Daftar Permohonan Surat" untuk Operator Desa.
 // Status menggunakan status generic.
 // Daftar, detail, riwayat, dan unduhan bersifat read-only.

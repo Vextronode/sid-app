@@ -1,5 +1,5 @@
 // ==========================================
-// WargaLayout.jsx
+// WargaLayout.tsx
 // Header dan footer bergaya publik (AppHeader, SiteFooter).
 // ==========================================
 

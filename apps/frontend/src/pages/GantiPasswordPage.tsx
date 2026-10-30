@@ -1,5 +1,5 @@
 // ==========================================
-// GantiPasswordPage.jsx
+// GantiPasswordPage.tsx
 // Wajib ganti kata sandi: akun yang kata sandinya baru dibuat/direset
 // Staf SIDUTama (must_change_password) ditolak backend di semua endpoint
 // lain sampai kata sandi sementara diganti di sini.

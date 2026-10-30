@@ -1,5 +1,5 @@
 // ==========================================
-// EditVisiMisiModal.jsx
+// EditVisiMisiModal.tsx
 // Edit vision dan mission berdasarkan
 // PATCH /api/villages/profile.
 // ==========================================

@@ -1,5 +1,5 @@
 // ==========================================
-// useRegisterForm.js
+// useRegisterForm.ts
 // Logic registrasi akun warga - Backend v5.1
 // ==========================================
 

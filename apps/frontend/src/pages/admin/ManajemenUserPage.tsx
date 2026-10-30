@@ -1,5 +1,5 @@
 // ==========================================
-// ManajemenUserPage.jsx
+// ManajemenUserPage.tsx
 // Halaman kelola user & role.
 // Layout disamakan dengan OperatorSuratListPage.
 // Logic/API tidak diubah.

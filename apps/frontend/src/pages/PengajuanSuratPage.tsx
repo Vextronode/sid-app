@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 // ==========================================
-// PengajuanSuratPage.jsx
+// PengajuanSuratPage.tsx
 // Dua mode:
 // - DENGAN kode di URL (klik kartu jenis surat) -> langsung terisi,
 //   dropdown jenis surat locked/tidak bisa diganti.

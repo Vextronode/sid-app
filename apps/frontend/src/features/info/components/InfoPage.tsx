@@ -12,7 +12,7 @@ import { hasSlot, renderBlocks, renderTemplate } from '../infoTemplate'
 import { CopyValue } from './CopyValue'
 
 // Halaman informasi (D6): Kebijakan privasi, Aksesibilitas, PPID.
-// Teks baku dari infoPagesContent.js; isian khas desa dari
+// Teks baku dari infoPagesContent.ts; isian khas desa dari
 // /api/public/info-pages/{page} (menu Halaman Informasi) dan data desa.
 // Isian yang belum diisi tampil sebagai penanda kuning "[...]".
 // Dirender di dalam MainLayout (yang sudah punya <main>), jadi isinya <article>.

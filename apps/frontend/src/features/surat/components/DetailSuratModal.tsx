@@ -1,5 +1,5 @@
 // ==========================================
-// DetailSuratModal.jsx
+// DetailSuratModal.tsx
 // Popup detail surat milik pemohon sendiri (warga, atau pejabat di
 // "Surat Saya"), di atas kerangka LetterDossierModal.
 //

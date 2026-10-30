@@ -1,5 +1,5 @@
 // ==========================================
-// DossierParts.jsx
+// DossierParts.tsx
 // Bagian-bagian panel berkas pada LetterDossierModal.
 // ==========================================
 

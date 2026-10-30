@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 // ==========================================
-// EditProfilWargaModal.jsx
+// EditProfilWargaModal.tsx
 // Pengaturan akun untuk semua peran: ubah username/email
 // (PATCH /api/profile) dan ubah kata sandi (PUT /api/profile/password).
 // Data kependudukan (nama, alamat, dst.) tidak diubah dari sini; itu

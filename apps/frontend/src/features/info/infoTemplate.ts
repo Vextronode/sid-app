@@ -1,4 +1,4 @@
-// Mesin template halaman informasi (infoPagesContent.js).
+// Mesin template halaman informasi (infoPagesContent.ts).
 //
 // - {kunci}        isian halaman (menu Halaman Informasi) atau data desa
 //                  ({village.phone}); {a|b} memakai b bila a kosong;

@@ -1,5 +1,5 @@
 // ==========================================
-// ActivityLogPage.jsx
+// ActivityLogPage.tsx
 // Log Aktivitas Staf SIDUTama (S-05): riwayat perubahan data warga & KK
 // dan riwayat status surat desa. Hanya baca. Tab dan filter disimpan di
 // query string agar bisa ditautkan dari baris warga/KK.

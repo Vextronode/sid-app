@@ -1,5 +1,5 @@
 // ==========================================
-// PdfCanvasPreview.jsx
+// PdfCanvasPreview.tsx
 // Pratinjau surat yang dirender sebagai canvas (pdf.js) di dalam halaman.
 //
 // Sengaja tidak memakai viewer PDF bawaan browser (tab baru / iframe):

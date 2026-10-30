@@ -1,5 +1,5 @@
 // ==========================================
-// dummyBerita.js
+// dummyBerita.ts
 // Dataset dummy berita & pengumuman desa, sesuai desain: ada kategori,
 // gambar, ringkasan, status publikasi/draft.
 // ==========================================
@@ -89,4 +89,4 @@ export const dummyBerita = [
     penulis: 'Admin Desa',
     utama: false,
   },
-];
+]

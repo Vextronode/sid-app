@@ -1,5 +1,5 @@
 // ==========================================
-// EditPerangkatDesaModal.jsx
+// EditPerangkatDesaModal.tsx
 // Edit data Official berdasarkan
 // PATCH /api/officials/{id}.
 // ==========================================

@@ -1,5 +1,5 @@
 // ==========================================
-// SuratTableKades.jsx
+// SuratTableKades.tsx
 // Tabel surat khusus Kades.
 //
 // - Menampilkan status generik.

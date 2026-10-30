@@ -1,5 +1,5 @@
 // ==========================================
-// ResetPasswordPage.jsx
+// ResetPasswordPage.tsx
 // Tujuan tautan reset dari email: /reset-password/:token?email=...
 // ==========================================
 

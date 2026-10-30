@@ -1,5 +1,5 @@
 // ==========================================
-// ProfilDesaPage.jsx
+// ProfilDesaPage.tsx
 // Halaman publik Profil Desa.
 // Isinya sama dengan KelolaProfilDesaPage (tanpa tombol edit),
 // tetapi tampilannya mengikuti halaman publik lain.

@@ -1,5 +1,5 @@
 // ==========================================
-// LetterTable.jsx
+// LetterTable.tsx
 // Tabel daftar permohonan surat untuk pejabat (RT, RW, Kadus,
 // Kades/Sekdes, Kasi/Kaur, Staf SIDUTama). Header dan sel memakai
 // perataan yang sama: kolom teks rata kiri, kolom Aksi rata kanan.

@@ -7,7 +7,7 @@
 //   di menu Halaman Informasi (skema: backend App\Support\InfoPageFields);
 // - identitas desa ({village.name}, {village.phone}, ...) dari data desa.
 // Isian yang masih kosong tampil sebagai penanda kuning dengan label dari
-// `placeholders` (teks slot draf asli). Aturan token: lihat infoTemplate.js.
+// `placeholders` (teks slot draf asli). Aturan token: lihat infoTemplate.ts.
 //
 // Blok: { type: 'p' | 'h2' | 'h3', text } atau
 // { type: 'ul' | 'ol', items: [teks | { list: 'kunci isian daftar' }] }.

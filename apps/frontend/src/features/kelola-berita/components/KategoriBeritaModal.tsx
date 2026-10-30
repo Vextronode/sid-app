@@ -1,5 +1,5 @@
 // ==========================================
-// KategoriBeritaModal.jsx
+// KategoriBeritaModal.tsx
 // Popup kelola kategori berita: tambah, ubah nama, hapus.
 // Kategori yang sudah dipakai berita tidak bisa dihapus.
 // ==========================================

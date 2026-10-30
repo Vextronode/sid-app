@@ -10,7 +10,7 @@ import { buttonPrimary, sectionGap, sectionSubtitle, sectionTitle } from '../pub
 // langkah sebelumnya sehingga tangganya tidak putus.
 const RISE = ['min-[901px]:mt-24', 'min-[901px]:mt-16', 'min-[901px]:mt-8', 'min-[901px]:mt-0']
 
-// Cara mengajukan surat (A25). Copy langkah dari berandaContent.js (K10).
+// Cara mengajukan surat (A25). Copy langkah dari berandaContent.ts (K10).
 // Langkah terakhir memakai warna aksen; tombol memakai alur login yang sama
 // dengan "Ajukan Surat" di hero (K4). Nomor besar hanya visual (aria-hidden);
 // pembaca layar membaca label "Langkah N" yang disembunyikan secara visual.

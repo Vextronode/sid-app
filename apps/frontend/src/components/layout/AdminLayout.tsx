@@ -1,5 +1,5 @@
 // ==========================================
-// AdminLayout.jsx
+// AdminLayout.tsx
 // Layout untuk role RT, RW, Kadus, Kades, dan Sekdes.
 // Header bergaya publik (AppHeader); footer dirender tiap halaman (SiteFooter).
 // ==========================================

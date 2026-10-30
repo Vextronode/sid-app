@@ -1,5 +1,5 @@
 // ==========================================
-// RTDashboardPage.jsx
+// RTDashboardPage.tsx
 // Dashboard RT
 //
 // UI mengikuti pola RWDashboardPage:

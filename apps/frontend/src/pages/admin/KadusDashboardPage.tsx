@@ -1,5 +1,5 @@
 // ==========================================
-// KadusDashboardPage.jsx
+// KadusDashboardPage.tsx
 // Dashboard Kepala Dusun
 //
 // Monitoring-only.
@@ -12,7 +12,7 @@
 // Mobile  : 2 x 2
 //
 // Styling mengikuti SID Global Theme,
-// sama seperti RWDashboardPage.jsx.
+// sama seperti RWDashboardPage.tsx.
 // ==========================================
 
 import { useNavigate } from 'react-router-dom'

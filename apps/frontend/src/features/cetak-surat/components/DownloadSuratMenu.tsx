@@ -1,5 +1,5 @@
 // ==========================================
-// DownloadSuratMenu.jsx
+// DownloadSuratMenu.tsx
 // Tombol "Unduh surat" dengan dua pilihan format:
 // - digital: TTD Kepala Desa + stempel desa tercetak di surat
 // - wet: area tanda tangan kosong, untuk dicetak lalu ditandatangani

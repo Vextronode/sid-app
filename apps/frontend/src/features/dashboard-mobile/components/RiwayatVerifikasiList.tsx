@@ -1,5 +1,5 @@
 // ==========================================
-// RiwayatVerifikasiList.jsx
+// RiwayatVerifikasiList.tsx
 // Tabel ringkas riwayat verifikasi terbaru di dashboard mobile.
 // Styling menggunakan SID Global Theme.
 // ==========================================
@@ -10,9 +10,7 @@ export default function RiwayatVerifikasiList({ data }) {
       <div className="sid-riwayat-verifikasi-header">
         <h3>Riwayat Verifikasi</h3>
 
-        <button className="sid-riwayat-verifikasi-view-all">
-          Lihat Semua
-        </button>
+        <button className="sid-riwayat-verifikasi-view-all">Lihat Semua</button>
       </div>
 
       <div className="sid-riwayat-verifikasi-columns">
@@ -22,10 +20,7 @@ export default function RiwayatVerifikasiList({ data }) {
 
       <div className="sid-riwayat-verifikasi-list">
         {data.map((item) => (
-          <div
-            key={item.id}
-            className="sid-riwayat-verifikasi-item"
-          >
+          <div key={item.id} className="sid-riwayat-verifikasi-item">
             <div className="sid-riwayat-verifikasi-citizen">
               <div className="sid-riwayat-verifikasi-avatar">
                 {item.nama
@@ -36,28 +31,20 @@ export default function RiwayatVerifikasiList({ data }) {
               </div>
 
               <div className="sid-riwayat-verifikasi-citizen-info">
-                <p className="sid-riwayat-verifikasi-name">
-                  {item.nama}
-                </p>
+                <p className="sid-riwayat-verifikasi-name">{item.nama}</p>
 
-                <p className="sid-riwayat-verifikasi-nik">
-                  NIK: {item.nik}
-                </p>
+                <p className="sid-riwayat-verifikasi-nik">NIK: {item.nik}</p>
               </div>
             </div>
 
             <div className="sid-riwayat-verifikasi-letter">
-              <p className="sid-riwayat-verifikasi-letter-type">
-                {item.jenisSurat}
-              </p>
+              <p className="sid-riwayat-verifikasi-letter-type">{item.jenisSurat}</p>
 
-              <span className="sid-riwayat-verifikasi-date">
-                {item.tanggal}
-              </span>
+              <span className="sid-riwayat-verifikasi-date">{item.tanggal}</span>
             </div>
           </div>
         ))}
       </div>
     </div>
-  );
+  )
 }
