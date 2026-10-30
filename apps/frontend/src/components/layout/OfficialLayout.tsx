@@ -15,7 +15,7 @@ const OPERATOR_ROLES: UserRole[] = ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_s
 export function OfficialLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
 
-  return OPERATOR_ROLES.includes(user?.role) ? (
+  return user && OPERATOR_ROLES.includes(user.role) ? (
     <OperatorDesaLayout>{children}</OperatorDesaLayout>
   ) : (
     <AdminLayout>{children}</AdminLayout>

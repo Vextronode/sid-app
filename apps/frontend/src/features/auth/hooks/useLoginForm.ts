@@ -55,7 +55,7 @@ function getRateLimitMessage(error: LoginError) {
     const minutes = Math.ceil(retryAfter / 60)
     const wait = minutes >= 60 ? `${Math.ceil(minutes / 60)} jam` : `${minutes} menit`
 
-    return `${response.data?.message ?? 'Terlalu banyak percobaan login.'} Akses login ditangguhkan sementara hingga ${wait}.`
+    return `${response?.data?.message ?? 'Terlalu banyak percobaan login.'} Akses login ditangguhkan sementara hingga ${wait}.`
   }
 
   return `${response?.data?.message ?? 'Terlalu banyak percobaan login.'} Akses login ditangguhkan sementara hingga 1 jam.`

@@ -30,7 +30,7 @@ const ROLE_MENUS: Partial<Record<UserRole, [string, string]>> = {
 }
 
 function defaultMenuItems(role: UserRole | undefined): MenuItem[] | null {
-  const routes = ROLE_MENUS[role]
+  const routes = role ? ROLE_MENUS[role] : undefined
 
   if (!routes) return null
 

@@ -127,7 +127,7 @@ export default function FamilyManagementPanel({
   } = familyList
   const hasActions = canEdit || canViewHistory
   const columnCount = hasActions ? 6 : 5
-  const [modal, setModal] = useState(null)
+  const [modal, setModal] = useState<'family' | 'socioeconomic' | null>(null)
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
@@ -136,7 +136,7 @@ export default function FamilyManagementPanel({
   const [message, setMessage] = useState('')
   const [keyword, setKeyword] = useState('')
   // Isian saat modal dibuka (atau saat data survei selesai dimuat).
-  const [baseline, setBaseline] = useState(null)
+  const [baseline, setBaseline] = useState<typeof EMPTY_FAMILY | SocioeconomicForm | null>(null)
 
   const closeModal = () => setModal(null)
   const currentForm =
@@ -233,6 +233,7 @@ export default function FamilyManagementPanel({
 
   const handleSocioeconomicSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!selectedFamily) return
     setBusy(true)
     setMessage('')
     try {
@@ -567,16 +568,18 @@ export default function FamilyManagementPanel({
               </>
             ) : (
               <>
-                <p>
-                  KK:{' '}
-                  <strong>
-                    <RevealableValue
-                      masked={selectedFamily?.no_kk_masked}
-                      reveal={() => revealFamilyNumber(selectedFamily.id)}
-                      label="No. KK"
-                    />
-                  </strong>
-                </p>
+                {selectedFamily && (
+                  <p>
+                    KK:{' '}
+                    <strong>
+                      <RevealableValue
+                        masked={selectedFamily.no_kk_masked}
+                        reveal={() => revealFamilyNumber(selectedFamily.id)}
+                        label="No. KK"
+                      />
+                    </strong>
+                  </p>
+                )}
                 <label className="sid-form-group">
                   <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>
                   <select

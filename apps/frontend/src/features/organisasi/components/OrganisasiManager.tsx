@@ -116,7 +116,12 @@ type PhotoFieldProps = {
 function PhotoField({ file, currentSrc, onChange }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
-  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview)
+    },
+    [preview],
+  )
 
   return (
     <div className="sid-form-group">
@@ -383,6 +388,8 @@ function FillLeaderForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!target) return
+
     const isExisting = form.source === 'existing'
     // Anggota yang dipromosikan membawa fotonya sendiri.
     onSubmit(
@@ -749,7 +756,8 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
       },
     })
 
-  const handleDelete = async (position: OrgPosition, member: OrgMember, label: string) => {
+  const handleDelete = async (position: OrgPosition | null, member: OrgMember, label: string) => {
+    if (!position) return
     if (
       !(await confirmDialog({
         title: `Hapus ${label} "${member.member_name}"?`,
@@ -765,7 +773,8 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
     )
   }
 
-  const pickPhotoFor = (position: OrgPosition) => (member: OrgMember) => {
+  const pickPhotoFor = (position: OrgPosition | null) => (member: OrgMember) => {
+    if (!position) return
     photoTarget.current = { position, member }
     photoInput.current?.click()
   }
@@ -784,7 +793,8 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
     )
   }
 
-  const removePhotoOf = (position: OrgPosition) => async (member: OrgMember) => {
+  const removePhotoOf = (position: OrgPosition | null) => async (member: OrgMember) => {
+    if (!position) return
     if (
       !(await confirmDialog({
         title: `Hapus foto "${member.member_name}"?`,
@@ -874,10 +884,14 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                   position={slots[s.key]}
                   processing={processing}
                   onFill={() => openFill(s.key)}
-                  onEdit={(member) => openModal({ kind: 'member', position: slots[s.key], member })}
-                  onEnd={(member, toMember) =>
-                    openModal({ kind: 'end', position: slots[s.key], member, toMember })
-                  }
+                  onEdit={(member) => {
+                    const position = slots[s.key]
+                    if (position) openModal({ kind: 'member', position, member })
+                  }}
+                  onEnd={(member, toMember) => {
+                    const position = slots[s.key]
+                    if (position) openModal({ kind: 'end', position, member, toMember })
+                  }}
                   onDeleteHistory={(member) => handleDelete(slots[s.key], member, 'riwayat')}
                   onPickPhoto={pickPhotoFor(slots[s.key])}
                   onRemovePhoto={removePhotoOf(slots[s.key])}
@@ -893,7 +907,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                 type="button"
                 className="sid-operator-primary"
                 disabled={processing || !anggota}
-                onClick={() => openModal({ kind: 'member', position: anggota })}
+                onClick={() => anggota && openModal({ kind: 'member', position: anggota })}
               >
                 <UserPlus size={16} />
                 Tambah Anggota
@@ -958,6 +972,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                                 aria-label={`Edit ${m.member_name}`}
                                 disabled={processing}
                                 onClick={() =>
+                                  anggota &&
                                   openModal({ kind: 'member', position: anggota, member: m })
                                 }
                               >

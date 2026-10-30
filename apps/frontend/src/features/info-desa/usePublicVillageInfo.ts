@@ -106,8 +106,9 @@ function currentInfo() {
 }
 
 function publish(partial: Partial<PublicVillageInfo>) {
-  current = { ...currentInfo(), ...partial }
-  listeners.forEach((listener) => listener(current))
+  const next = { ...currentInfo(), ...partial }
+  current = next
+  listeners.forEach((listener) => listener(next))
 }
 
 function loadPublicVillageInfo() {

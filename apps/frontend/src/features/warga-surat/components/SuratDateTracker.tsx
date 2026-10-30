@@ -339,7 +339,7 @@ export default function SuratDateTracker() {
 
   const totalLetters = meta.total
 
-  const dateInputRef = useRef(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   // ==========================================
   // JAGA SLIDE INDEX

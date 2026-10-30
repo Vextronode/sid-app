@@ -30,7 +30,7 @@ export function PdfCanvasPreview({
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
-  const containerRef = useRef(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const suratId = surat?.id
 
@@ -99,6 +99,8 @@ export function PdfCanvasPreview({
 
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
+          if (!context) return
+
           const pixelRatio = window.devicePixelRatio || 1
 
           canvas.width = Math.floor(viewport.width * pixelRatio)

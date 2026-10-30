@@ -54,7 +54,7 @@ export function isWargaLetterPath(path: string | null | undefined) {
 export function letterTargetForRole(target: string, role: UserRole | null | undefined) {
   if (role === 'warga') return target
   if (!isWargaLetterPath(target)) return target
-  if (SELF_LETTER_ROLES.includes(role)) return SELF_LETTER_ROUTE
+  if (role && SELF_LETTER_ROLES.includes(role)) return SELF_LETTER_ROUTE
 
   return roleHomePath(role)
 }

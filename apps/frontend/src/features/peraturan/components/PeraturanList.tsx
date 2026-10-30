@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, ScrollText } from 'lucide-react'
 
 import { getPublicRegulations } from '@/features/peraturan/api'
+import type { Regulation } from '@/features/peraturan/api'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { errorBox, stateBox } from '@/features/beranda/publicClasses'
 
@@ -23,10 +24,10 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function PeraturanList() {
-  const [regulations, setRegulations] = useState([])
+  const [regulations, setRegulations] = useState<Regulation[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [openId, setOpenId] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true

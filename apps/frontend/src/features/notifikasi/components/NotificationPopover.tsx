@@ -34,7 +34,7 @@ const WARNA_MAP: Record<string, string> = {
 }
 
 function getDayLabel(dateString: string | null) {
-  const notifDate = new Date(dateString)
+  const notifDate = new Date(dateString ?? 0)
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -76,7 +76,7 @@ export default function NotificationPopover({
 
   // Klik notifikasi menandainya terbaca dan membuka surat yang dimaksud.
   const handleOpen = (notification: AppNotification) => {
-    if (!notification.read && !markingIds.includes(notification.id)) {
+    if (notification.id && !notification.read && !markingIds.includes(notification.id)) {
       void markAsRead(notification.id)
     }
 
@@ -217,7 +217,7 @@ function NotifItem({ data, onActivate }: { data: AppNotification; onActivate: ()
 
           <span className="sid-notification-time">
             {data.time ??
-              new Date(data.created_at).toLocaleTimeString('id-ID', {
+              new Date(data.created_at ?? 0).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}

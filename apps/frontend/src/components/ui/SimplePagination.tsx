@@ -19,9 +19,7 @@ export function SimplePagination({
   pageSize,
   onPageSizeChange,
 }: SimplePaginationProps) {
-  const withPageSize = Boolean(onPageSizeChange)
-
-  if (totalPages <= 1 && !withPageSize) {
+  if (totalPages <= 1 && !onPageSizeChange) {
     return null
   }
 
@@ -31,7 +29,9 @@ export function SimplePagination({
         <p>
           Halaman {page} dari {Math.max(1, totalPages)}
         </p>
-        {withPageSize && <PageSizeSelect value={pageSize} onChange={onPageSizeChange} />}
+        {onPageSizeChange && pageSize !== undefined && (
+          <PageSizeSelect value={pageSize} onChange={onPageSizeChange} />
+        )}
       </div>
 
       <div>

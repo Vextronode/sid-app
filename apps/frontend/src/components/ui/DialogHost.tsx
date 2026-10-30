@@ -86,7 +86,7 @@ function DialogCard({ dialog }: { dialog: DialogEntry }) {
         </span>
         <h2 id="sid-dialog-title">{title}</h2>
         {message && <p id="sid-dialog-message">{message}</p>}
-        {dialog.kind === 'confirm' && dialog.details?.length > 0 && (
+        {dialog.kind === 'confirm' && dialog.details && dialog.details.length > 0 && (
           <ChangeDetails groups={dialog.details} />
         )}
 

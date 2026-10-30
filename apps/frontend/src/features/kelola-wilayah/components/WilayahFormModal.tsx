@@ -232,7 +232,7 @@ export default function WilayahFormModal({
                   <option value="">Pilih dusun</option>
 
                   {hamlets.map((hamlet) => (
-                    <option key={hamlet.id} value={hamlet.id}>
+                    <option key={hamlet.id} value={hamlet.id ?? ''}>
                       {hamlet.name}
                     </option>
                   ))}
@@ -277,7 +277,7 @@ export default function WilayahFormModal({
                     const hamlet = hamlets.find((item) => item.id === rw.hamletId)
 
                     return (
-                      <option key={rw.id} value={rw.id}>
+                      <option key={rw.id} value={rw.id ?? ''}>
                         RW {rw.number}
                         {hamlet ? ` - ${hamlet.name}` : ''}
                       </option>

@@ -13,7 +13,7 @@ export type NewsItem = {
 
 // Respons berita mentah; beberapa nama field lama ikut dicoba.
 type RawNews = Record<string, unknown> & {
-  id?: number
+  id: number
   categories?: ({ name?: string } | null)[]
 }
 
@@ -48,7 +48,7 @@ export function mapNews(raw: RawNews): NewsItem {
   // Kategori dari API (1-2 per berita); `category` = yang pertama, untuk
   // kartu yang hanya muat satu chip.
   const categories = Array.isArray(raw.categories)
-    ? raw.categories.map((c) => c?.name).filter(Boolean)
+    ? raw.categories.map((c) => c?.name).filter((name): name is string => Boolean(name))
     : []
   return {
     id: raw.id,

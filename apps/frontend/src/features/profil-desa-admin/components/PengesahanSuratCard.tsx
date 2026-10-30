@@ -121,6 +121,8 @@ function PrivateImageField({
     setSaving(true)
     setError('')
 
+    if (!draft) return
+
     try {
       await upload(draft)
 
@@ -186,6 +188,25 @@ function PrivateImageField({
   )
 }
 
+// Tanda tangan melekat pada record Kepala Desa yang sedang menjabat.
+function KadesSignatureField({ official }: { official: Official }) {
+  const loadImage = useCallback(() => getOfficialSignatureImage(official.id), [official.id])
+  const upload = useCallback(
+    (file: File) => uploadOfficialSignature(official.id, file),
+    [official.id],
+  )
+
+  return (
+    <PrivateImageField
+      id="kades-signature-upload"
+      label={`Tanda Tangan Kepala Desa (${official.citizen?.name ?? '-'})`}
+      hasImage={Boolean(official.has_signature_img)}
+      loadImage={loadImage}
+      upload={upload}
+    />
+  )
+}
+
 /**
  * Stempel desa dan tanda tangan Kepala Desa yang dibubuhkan pada PDF surat.
  * Tanda tangan melekat pada record Kepala Desa yang sedang menjabat; setelah
@@ -230,14 +251,6 @@ export default function PengesahanSuratCard() {
     }
   }, [])
 
-  const kepalaDesaId = state.kepalaDesa?.id ?? null
-
-  const loadSignature = useCallback(() => getOfficialSignatureImage(kepalaDesaId), [kepalaDesaId])
-  const uploadSignature = useCallback(
-    (file: File) => uploadOfficialSignature(kepalaDesaId, file),
-    [kepalaDesaId],
-  )
-
   return (
     <div className="sid-profil-desa-card">
       <div className="sid-profil-desa-card-heading">
@@ -268,14 +281,7 @@ export default function PengesahanSuratCard() {
           />
 
           {state.kepalaDesa ? (
-            <PrivateImageField
-              key={kepalaDesaId}
-              id="kades-signature-upload"
-              label={`Tanda Tangan Kepala Desa (${state.kepalaDesa.citizen?.name ?? '-'})`}
-              hasImage={Boolean(state.kepalaDesa.has_signature_img)}
-              loadImage={loadSignature}
-              upload={uploadSignature}
-            />
+            <KadesSignatureField key={state.kepalaDesa.id} official={state.kepalaDesa} />
           ) : (
             <div className="sid-profil-desa-info-item">
               <span className="sid-profil-desa-info-label">Tanda Tangan Kepala Desa</span>

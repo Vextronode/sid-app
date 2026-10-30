@@ -48,7 +48,7 @@ export default function SuratStatChart({
     () =>
       (chart?.labels ?? []).map((label, index) => ({
         kategori: label,
-        jumlah: Number(chart.values?.[index] ?? 0),
+        jumlah: Number(chart?.values?.[index] ?? 0),
       })),
     [chart],
   )

@@ -57,7 +57,7 @@ export function getNotificationTarget(
 ) {
   if (!role || !context) return null
 
-  if (SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
+  if (context.status && SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_REQUESTS_ANCHOR}`
   }
 
@@ -65,7 +65,7 @@ export function getNotificationTarget(
     return role === 'staf_sid' ? SIGNATURE_RESET_REQUESTS_ROUTE : null
   }
 
-  if (SIGNATURE_RESET_DECISION_STATUSES.includes(context.status)) {
+  if (context.status && SIGNATURE_RESET_DECISION_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_CARD_ANCHOR}`
   }
 

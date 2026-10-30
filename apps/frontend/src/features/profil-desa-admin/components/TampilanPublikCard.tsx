@@ -106,6 +106,8 @@ function PublicImageField({ field, currentUrl, onUpload }: PublicImageFieldProps
     setSaving(true)
     setError('')
 
+    if (!draft) return
+
     try {
       await onUpload(field.kind, draft)
       setDraft(null)
@@ -229,7 +231,7 @@ export default function TampilanPublikCard({
           <PublicImageField
             key={field.kind}
             field={field}
-            currentUrl={profile[field.urlKey]}
+            currentUrl={profile[field.urlKey] ?? null}
             onUpload={onUpload}
           />
         ))}

@@ -95,7 +95,7 @@ export default function KategoriBeritaModal({
     e.preventDefault()
 
     const name = editingName.trim()
-    if (!name || processing) return
+    if (!name || processing || editingId === null) return
 
     if (await attempt(() => onRename(editingId, name), 'Kategori gagal diubah.')) {
       notifySuccess(`Kategori berhasil diubah menjadi "${name}".`)

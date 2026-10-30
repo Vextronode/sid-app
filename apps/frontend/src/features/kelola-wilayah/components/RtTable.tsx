@@ -90,7 +90,7 @@ export default function RtTable({
             <option value="">Semua Dusun</option>
 
             {hamlets.map((hamlet) => (
-              <option key={hamlet.id} value={hamlet.id}>
+              <option key={hamlet.id} value={hamlet.id ?? ''}>
                 {hamlet.name}
               </option>
             ))}
@@ -105,7 +105,7 @@ export default function RtTable({
             <option value="">Semua RW</option>
 
             {rwOptions.map((rw) => (
-              <option key={rw.id} value={rw.id}>
+              <option key={rw.id} value={rw.id ?? ''}>
                 RW {rw.number}
                 {!filterHamlet &&
                   ` - ${hamlets.find((hamlet) => hamlet.id === rw.hamletId)?.name ?? 'Dusun'}`}

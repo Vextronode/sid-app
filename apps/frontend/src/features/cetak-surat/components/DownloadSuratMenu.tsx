@@ -247,6 +247,8 @@ export function DownloadSuratMenu({
 
   // Muat rincian (daftar dokumen) dulu; satu pilihan langsung diunduh.
   const handleLazyOpen = async () => {
+    if (!loadDetail) return
+
     setBusy(true)
 
     try {

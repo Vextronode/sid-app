@@ -58,11 +58,11 @@ export const RELEVANT_STATUSES = [
 ]
 
 export function getStatusLabel(status: string | null | undefined) {
-  return STATUS_LABELS[status] ?? status ?? '-'
+  return (status ? STATUS_LABELS[status] : undefined) ?? status ?? '-'
 }
 
 export function getStatusClass(status: string | null | undefined) {
-  return STATUS_CLASSES[status] ?? 'bg-gray-100 text-gray-800'
+  return (status ? STATUS_CLASSES[status] : undefined) ?? 'bg-gray-100 text-gray-800'
 }
 
 export function isPendingStatus(status: string | null | undefined) {

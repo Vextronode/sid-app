@@ -10,4 +10,4 @@ export function formatAnnouncementUntil(value: string) {
 }
 
 export const isAnnouncementExpired = (announcement: Pick<PublicAnnouncement, 'expires_at'>) =>
-  new Date(announcement.expires_at).getTime() <= Date.now()
+  !announcement.expires_at || new Date(announcement.expires_at).getTime() <= Date.now()

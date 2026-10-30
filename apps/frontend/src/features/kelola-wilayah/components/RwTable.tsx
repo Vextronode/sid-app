@@ -67,7 +67,7 @@ export default function RwTable({
           >
             <option value="">Semua Dusun</option>
             {hamlets.map((hamlet) => (
-              <option key={hamlet.id} value={hamlet.id}>
+              <option key={hamlet.id} value={hamlet.id ?? ''}>
                 {hamlet.name}
               </option>
             ))}

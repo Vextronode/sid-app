@@ -28,7 +28,7 @@ export function KadesWelcome({ content, village, head }: KadesWelcomeProps) {
   const message = village?.welcome_message?.trim()
   const photoUrl = head?.photo_url
   // URL foto yang gagal dimuat; foto baru (URL lain) dicoba lagi.
-  const [failedUrl, setFailedUrl] = useState(null)
+  const [failedUrl, setFailedUrl] = useState<string | null | undefined>(null)
 
   if (!message) return null
 
@@ -44,7 +44,7 @@ export function KadesWelcome({ content, village, head }: KadesWelcomeProps) {
         <span className="-mt-21 flex aspect-5/6 w-30 items-center justify-center overflow-hidden rounded-t-full bg-pb-laut text-white/70 shadow-[0_0_0_6px_#fff,0_0_0_7px_var(--color-pb-line)] min-[721px]:col-start-2 min-[721px]:row-start-1 min-[721px]:-mt-28 min-[721px]:w-auto">
           {showPhoto ? (
             <img
-              src={photoUrl}
+              src={photoUrl ?? undefined}
               alt={headName ? `Foto ${headName}` : 'Foto Kepala Desa'}
               className="size-full object-cover"
               loading="lazy"

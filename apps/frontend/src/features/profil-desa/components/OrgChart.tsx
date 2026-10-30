@@ -18,7 +18,7 @@ function Avatar({ src, name, head }: { src?: string | null; name?: string | null
       className={`mb-3.5 flex items-center justify-center overflow-hidden rounded-t-full rounded-b-xl bg-pb-laut-tint bg-(image:--pb-contour-dark) bg-size-[200px_auto] text-pb-laut ${head ? 'h-35 w-32' : 'h-26 w-24 max-sm:h-20 max-sm:w-18'}`}
     >
       {src ? (
-        <img src={src} alt={name} className="size-full object-cover" />
+        <img src={src} alt={name ?? ''} className="size-full object-cover" />
       ) : (
         <Users size={28} strokeWidth={1.6} aria-hidden="true" />
       )}

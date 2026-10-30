@@ -238,7 +238,7 @@ const MENU_ITEMS = [
 export function OperatorDesaLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { user } = useAuth()
-  const visibleRoutes = ROLE_NAVIGATION[user?.role] ?? []
+  const visibleRoutes = (user ? ROLE_NAVIGATION[user.role] : undefined) ?? []
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)

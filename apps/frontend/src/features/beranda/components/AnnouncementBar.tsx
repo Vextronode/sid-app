@@ -14,7 +14,7 @@ function useStillShowing(announcement: PublicAnnouncement | null | undefined) {
   const [, setTick] = useState(0)
 
   useEffect(() => {
-    if (!announcement) return undefined
+    if (!announcement?.expires_at) return undefined
 
     const remaining = new Date(announcement.expires_at).getTime() - Date.now()
     if (remaining <= 0) return undefined
@@ -24,7 +24,7 @@ function useStillShowing(announcement: PublicAnnouncement | null | undefined) {
     return () => clearTimeout(timer)
   }, [announcement])
 
-  return Boolean(announcement) && !isAnnouncementExpired(announcement)
+  return announcement ? !isAnnouncementExpired(announcement) : false
 }
 
 type AnnouncementLinkProps = { href: string; labels: BerandaContent['announcementBar'] }
@@ -71,7 +71,7 @@ export function AnnouncementBar({
   const panelId = useId()
   const showing = useStillShowing(announcement)
 
-  if (!showing) return null
+  if (!showing || !announcement) return null
 
   const { title, body, link_url: linkUrl, expires_at: expiresAt } = announcement
   const hasMore = Boolean(body || linkUrl)
@@ -95,7 +95,7 @@ export function AnnouncementBar({
                   <span className="font-bold text-pb-padi">{labels.label}</span>
                   <span className="inline-flex items-center gap-1.5 text-white/80">
                     <Clock size={15} strokeWidth={2} aria-hidden="true" />
-                    {labels.until} {formatAnnouncementUntil(expiresAt)}
+                    {labels.until} {expiresAt ? formatAnnouncementUntil(expiresAt) : '-'}
                   </span>
                 </p>
                 <p className="mt-0.5 mb-0 font-display text-[clamp(18px,16px+0.4vw,21px)] leading-tight font-bold tracking-[-0.01em] text-pretty text-white">
