@@ -53,6 +53,13 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('password-reset-request', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perHour(5)->by(hash('sha256', (string) $request->input('nik'))),
+            ];
+        });
+
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         // Lazy-load di dalam koleksi (N+1) gagal keras di test dan
@@ -101,7 +108,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Rt::class, RegionPolicy::class);
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            return config('app.frontend_url')."/reset-password/$token?email={$notifiable->getEmailForPasswordReset()}";
+            return config('app.frontend_url')."/reset-password/$token?".http_build_query([
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
         });
     }
 }
