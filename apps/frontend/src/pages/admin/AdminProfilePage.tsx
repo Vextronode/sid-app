@@ -20,7 +20,7 @@ import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequ
 import { SiteFooter } from '@/components/layout/SiteFooter'
 
 export default function AdminProfilePage() {
-  const { user, setUser } = useAuth()
+  const { user, patchUser } = useAuth()
 
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -138,7 +138,7 @@ export default function AdminProfilePage() {
           <EditProfilWargaModal
             open={modalOpen}
             onClose={() => setModalOpen(false)}
-            onSaved={(updatedUser) => setUser?.(updatedUser)}
+            onSaved={patchUser}
             initialData={user}
           />
         </div>

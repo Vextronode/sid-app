@@ -16,7 +16,7 @@ import { SignatureCard } from '@/features/surat/components/SignatureCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth()
+  const { user, patchUser } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -127,7 +127,7 @@ export default function ProfilePage() {
         <EditProfilWargaModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          onSaved={(updatedUser) => setUser?.(updatedUser)}
+          onSaved={patchUser}
           initialData={user}
         />
       </div>
