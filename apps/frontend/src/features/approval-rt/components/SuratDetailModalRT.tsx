@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
 import type { DecisionResponse } from '@/features/approval/api'
 import type { Id } from '@/types'
-import { useSuratDetail } from '../hooks/useSuratDetail'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
 export default function SuratDetailModalRT({
   suratId,
@@ -20,7 +20,7 @@ export default function SuratDetailModalRT({
   readOnly?: boolean
 }) {
   const { user } = useAuth()
-  const { surat, notFound } = useSuratDetail(suratId)
+  const { surat, notFound, refresh } = useSuratDetail(suratId)
 
   // ==========================================
   // CEK ID
@@ -51,6 +51,7 @@ export default function SuratDetailModalRT({
       apiRole={currentUserRole}
       onApprove={onApprove}
       onReject={onReject}
+      onConflict={refresh}
     />
   )
 }

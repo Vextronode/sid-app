@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { officialAreaLabel } from '@/features/auth/utils/officialArea'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
@@ -121,7 +122,7 @@ export default function RWDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Kelola administrasi warga RW dengan lebih cepat.
+                Kelola administrasi warga {officialAreaLabel(user, 'RW')} dengan lebih cepat.
               </p>
             </div>
 
@@ -193,7 +194,9 @@ export default function RWDashboardPage() {
             {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
           </h1>
 
-          <p className="sid-page-description">Kelola administrasi warga RW dengan lebih cepat.</p>
+          <p className="sid-page-description">
+            Kelola administrasi warga {officialAreaLabel(user, 'RW')} dengan lebih cepat.
+          </p>
           <div className="mt-3">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
           </div>

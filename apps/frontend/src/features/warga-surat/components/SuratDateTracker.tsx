@@ -205,9 +205,7 @@ function RejectionReason({ surat }: { surat: LetterListItem }) {
     return null
   }
 
-  // Alasan penolakan tersimpan di approval (letter_approvals.notes); daftar
-  // surat (LetterListItem) belum membawanya, jadi teks cadangan yang tampil.
-  const reason = surat?.notes ?? 'Tidak ada catatan penolakan.'
+  const reason = surat?.rejection_reason || 'Tidak ada catatan penolakan.'
 
   return (
     <div className="sid-date-tracker-rejection">

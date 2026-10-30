@@ -18,8 +18,8 @@ export type AppNotification = {
 }
 
 export type NotificationContext = {
-  // Angka dari API; string bila dibaca dari URL (klik Web Push).
-  letter_id?: number | string
+  // UUID surat (dari API maupun dari URL klik Web Push).
+  letter_id?: string
   letter_no?: string | null
   applicant?: string | null
   // Status surat/tanda tangan yang memicu notifikasi (mis. 'approved').

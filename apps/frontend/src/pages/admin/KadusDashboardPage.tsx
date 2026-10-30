@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, Eye, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
+import { officialAreaLabel } from '@/features/auth/utils/officialArea'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -133,7 +134,7 @@ export default function KadusDashboardPage() {
               </h1>
 
               <p className="sid-page-description">
-                Pantau administrasi warga dusun secara digital.
+                Pantau administrasi warga {officialAreaLabel(user, 'dusun')} secara digital.
               </p>
             </div>
 
@@ -205,7 +206,9 @@ export default function KadusDashboardPage() {
             {getGreeting()}, {user?.name ?? 'Bapak/Ibu'}
           </h1>
 
-          <p className="sid-page-description">Pantau administrasi warga dusun secara digital.</p>
+          <p className="sid-page-description">
+            Pantau administrasi warga {officialAreaLabel(user, 'dusun')} secara digital.
+          </p>
           <div className="mt-3">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
           </div>

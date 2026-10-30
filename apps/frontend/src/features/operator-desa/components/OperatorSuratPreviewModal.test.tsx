@@ -30,18 +30,18 @@ describe('OperatorSuratPreviewModal', () => {
 
   it('keeps Kasi and Kaur letter detail read-only and offers download only after final approval', async () => {
     getSuratDetail.mockResolvedValueOnce({
-      data: { data: { id: 41, status: 'approved', approvals: [] } },
+      data: { data: { id: 'letter-41', status: 'approved', approvals: [] } },
     })
     const { rerender } = render(
       <OperatorSuratPreviewModal
-        surat={partialFixture<LetterListItem>({ id: 41 })}
+        surat={partialFixture<LetterListItem>({ id: 'letter-41' })}
         onClose={vi.fn()}
       />,
     )
 
     const downloadButton = await screen.findByRole('button', { name: /Unduh surat/ })
     // Pratinjau dirender sebagai canvas, bukan viewer PDF browser (iframe).
-    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('41')
+    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('letter-41')
     expect(document.querySelector('iframe')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Setuju' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Tolak' })).toBeNull()
@@ -50,23 +50,23 @@ describe('OperatorSuratPreviewModal', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /Untuk tanda tangan basah/ }))
     await waitFor(() =>
       expect(downloadSuratPDF).toHaveBeenCalledWith(
-        { id: 41, status: 'approved', approvals: [] },
+        { id: 'letter-41', status: 'approved', approvals: [] },
         'wet',
         'main',
       ),
     )
 
     getSuratDetail.mockResolvedValueOnce({
-      data: { data: { id: 42, status: 'in_progress', approvals: [] } },
+      data: { data: { id: 'letter-42', status: 'in_progress', approvals: [] } },
     })
     rerender(
       <OperatorSuratPreviewModal
-        surat={partialFixture<LetterListItem>({ id: 42 })}
+        surat={partialFixture<LetterListItem>({ id: 'letter-42' })}
         onClose={vi.fn()}
       />,
     )
 
-    await waitFor(() => expect(getSuratDetail).toHaveBeenLastCalledWith(42))
+    await waitFor(() => expect(getSuratDetail).toHaveBeenLastCalledWith('letter-42'))
     expect(screen.queryByRole('button', { name: /Unduh surat/ })).toBeNull()
     expect(screen.queryByTestId('pdf-canvas-preview')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Setuju' })).toBeNull()

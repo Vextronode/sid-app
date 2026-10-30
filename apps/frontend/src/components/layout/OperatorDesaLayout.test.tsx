@@ -15,7 +15,7 @@ vi.mock('@/features/kelola-wilayah/hooks/WilayahMasterProvider', () => ({
 vi.mock('@/features/notifikasi/hooks/useNotifications', () => ({
   default: useNotifications,
 }))
-vi.mock('@/features/notifikasi/components/NotificationPopover-Admin', () => ({
+vi.mock('@/features/notifikasi/components/NotificationPopover', () => ({
   default: ({ open }) => (open ? <div>Notification list</div> : null),
 }))
 

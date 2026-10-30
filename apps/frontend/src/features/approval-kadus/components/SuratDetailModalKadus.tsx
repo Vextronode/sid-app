@@ -1,7 +1,7 @@
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
 import type { Id } from '@/types'
 
-import { useSuratDetailKadus } from '../hooks/useSuratDetailKadus'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
 export default function SuratDetailModalKadus({
   suratId,
@@ -10,7 +10,7 @@ export default function SuratDetailModalKadus({
   suratId: Id | null
   onClose: () => void
 }) {
-  const { surat, notFound } = useSuratDetailKadus(suratId)
+  const { surat, notFound } = useSuratDetail(suratId)
 
   return (
     <SuratDetailModal

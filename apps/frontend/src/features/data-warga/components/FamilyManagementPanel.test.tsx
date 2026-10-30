@@ -6,13 +6,22 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { partialFixture } from '@/test/fixtures'
 
+import { getFamily } from '../api'
 import FamilyManagementPanel from './FamilyManagementPanel'
 import type { FamilyManagementPanelHandle } from './FamilyManagementPanel'
+
+vi.mock('../api', () => ({
+  getFamily: vi.fn(),
+  getFamilySocioeconomic: vi.fn(),
+  saveFamilySocioeconomic: vi.fn(),
+}))
+
+const mockedGetFamily = vi.mocked(getFamily, { partial: true, deep: true })
 
 const familyList = partialFixture<ComponentProps<typeof FamilyManagementPanel>['familyList']>({
   families: [
     {
-      id: 1,
+      id: 'family-1',
       no_kk_masked: '************0001',
       head_of_family: { name: 'Kepala Rumah' },
       members_count: 3,
@@ -79,6 +88,27 @@ describe('FamilyManagementPanel', () => {
     act(() => ref.current.openCreate())
 
     expect(screen.getByText('Tambah Kartu Keluarga')).toBeTruthy()
+  })
+
+  // Regresi: detail KK dulu tidak membawa members, jadi daftar ini tidak pernah tampil.
+  it('lists the family members when editing a family', async () => {
+    mockedGetFamily.mockResolvedValue({
+      data: {
+        data: {
+          id: 'family-1',
+          members: [
+            { id: 'citizen-11', name: 'Kepala Rumah', family_role: 'kepala_keluarga' },
+            { id: 'citizen-12', name: 'Asep', family_role: 'anak' },
+          ],
+        },
+      },
+    })
+    renderPanel()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit KK' }))
+
+    expect(await screen.findByText('Anggota KK')).toBeTruthy()
+    expect(screen.getByText(/Asep/)).toBeTruthy()
   })
 
   it('is read-only for Kaur TU & Umum', () => {

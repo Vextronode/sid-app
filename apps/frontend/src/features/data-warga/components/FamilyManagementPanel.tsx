@@ -27,13 +27,7 @@ import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealFamilyNumber } from '@/shared/lib/identityApi'
 import type { StatusTone } from '@/components/ui/StatusPill'
-import type { Family } from '@/types'
-
-type FamilyMember = { id: number; name: string; family_role?: string | null }
-
-// GET /api/families/{id}. FamilyResource belum mengirim `members`, jadi
-// daftar anggota di modal edit belum pernah terisi.
-type FamilyDetail = Family & { members?: FamilyMember[] }
+import type { Family, FamilyMember } from '@/types'
 
 // GET /api/families/{id}/socioeconomic.
 type FamilySocioeconomic = {
@@ -180,7 +174,7 @@ export default function FamilyManagementPanel({
     setMessage('')
     setModal('family')
     try {
-      const detail = responseData<FamilyDetail>(await getFamily(family.id))
+      const detail = responseData<Family>(await getFamily(family.id))
       setMembers(detail.members ?? [])
     } catch (err) {
       showError(err)

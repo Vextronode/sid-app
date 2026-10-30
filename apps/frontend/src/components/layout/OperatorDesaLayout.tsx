@@ -40,7 +40,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
 import { getBerandaContent } from '@/features/beranda/berandaContent'
 import { BerandaBrand } from '@/features/beranda/components/BerandaBrand'
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 import {
   getOperatorAllowedRoles,

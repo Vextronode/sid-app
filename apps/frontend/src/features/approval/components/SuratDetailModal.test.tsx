@@ -19,7 +19,7 @@ const rtStep = { approver_position: 'rt', is_final: false }
 const finalStep = { approver_position: 'kepala_desa', is_final: true }
 
 const pendingAtRt = partialFixture<Letter>({
-  id: 41,
+  id: 'letter-41',
   status: 'pending',
   current_step_order: 1,
   current_step: rtStep,
@@ -46,7 +46,13 @@ const atFinal = partialFixture<Letter>({
 
 function renderModal(props: Partial<ComponentProps<typeof SuratDetailModal>>) {
   return render(
-    <SuratDetailModal suratId={41} onClose={vi.fn()} surat={null} notFound={false} {...props} />,
+    <SuratDetailModal
+      suratId="letter-41"
+      onClose={vi.fn()}
+      surat={null}
+      notFound={false}
+      {...props}
+    />,
   )
 }
 
@@ -58,7 +64,7 @@ describe('SuratDetailModal (approver)', () => {
   it('shows the draft in the modal and the RT decision in the footer', () => {
     renderModal({ surat: pendingAtRt, viewerRole: 'rt', currentUserRole: 'rt', apiRole: 'rt' })
 
-    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('41')
+    expect(screen.getByTestId('pdf-canvas-preview')).toHaveTextContent('letter-41')
     expect(screen.getByRole('button', { name: 'Setuju' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tolak' })).toBeInTheDocument()
     expect(screen.getByText(/meneruskan ke Kepala Desa/)).toBeInTheDocument()
@@ -89,7 +95,7 @@ describe('SuratDetailModal (approver)', () => {
 
     rerender(
       <SuratDetailModal
-        suratId={41}
+        suratId="letter-41"
         onClose={vi.fn()}
         surat={{ ...atFinal, status: 'approved' }}
         notFound={false}

@@ -27,7 +27,7 @@ vi.mock('@/features/surat/components/SignatureRequestsCard', () => ({
 const mockedUseAuth = vi.mocked(useAuth, { partial: true, deep: true })
 const mockedPatch = vi.mocked(api.patch, { partial: true, deep: true })
 
-const user = partialFixture<User>({ id: 1, name: 'Siti', username: 'siti', email: null })
+const user = partialFixture<User>({ id: 'user-1', name: 'Siti', username: 'siti', email: null })
 
 describe.each([
   ['ProfilePage', ProfilePage],

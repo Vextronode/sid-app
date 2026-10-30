@@ -1,7 +1,7 @@
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
 import type { Id } from '@/types'
 
-import { useSuratDetail } from '../hooks/useSuratDetailRW'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
 export default function SuratDetailModalRW({
   suratId,

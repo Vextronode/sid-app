@@ -1,9 +1,9 @@
 // Desa dan wilayah administratif (Dusun > RW > RT).
 // Sumber: VillageResource, HamletResource, RwResource, RtResource.
-import type { IsoDateString } from './api'
+import type { IsoDateString, Uuid } from './api'
 
 export type Village = {
-  id: number
+  id: Uuid
   name: string
   code: string | null
   head_name: string | null
@@ -33,7 +33,7 @@ export type Hamlet = {
   name: string
   code: string | null
   is_active: boolean
-  village_id: number
+  village_id: Uuid
   created_at: IsoDateString | null
   updated_at: IsoDateString | null
 }

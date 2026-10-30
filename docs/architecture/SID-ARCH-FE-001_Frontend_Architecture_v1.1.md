@@ -68,8 +68,8 @@ src/
     warga-surat/, warga-help/
     profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil)
     approval/             ApprovalStepRenderer, SuratDetailModal (approver), canDecideOnLetter,
-                          api keputusan
-    approval-rt/, approval-rw/, approval-kadus/, approval-kades/
+                          api keputusan, useSuratDetail (detail surat untuk semua modal peran)
+    approval-rt/, approval-rw/, approval-kadus/, approval-kades/ (pembungkus modal per peran)
     operator-desa/        roleNavigation (kapabilitas route operator), kartu dashboard
     data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
     organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
@@ -78,7 +78,8 @@ src/
                           dari koordinat/link Google Maps, sambutan Kepala Desa)
     pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
     info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
-    peraturan/, notifikasi/ (popover, WebPushControls, deep link), dashboard-mobile/
+    peraturan/, notifikasi/ (satu popover untuk semua peran, WebPushControls, deep link),
+                          dashboard-mobile/
     beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda,
                           PublicStickyChrome (header + bar pengumuman menempel di semua halaman publik)
     profil-desa/          OrgChart (bagan Perangkat Desa, BPD, Lembaga Desa)
@@ -88,6 +89,7 @@ src/
   components/ui/          PageLoader, UserAvatar (foto akun di header, avatar default)
   lib/                    api.ts (instance Axios + getSuratDetail; memancarkan event role_forbidden;
                           keputusan surat lewat features/approval/api),
+                          downloadFile.ts (unduh/buka berkas terlindung sesi sebagai blob),
                           authEvents.ts, pdfjs.ts, constants/routes, constants/app (APP_NAME dari
                           VITE_APP_NAME, STAF_APP_LABEL)
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
@@ -219,3 +221,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.4 | 2026-10-30 | Source frontend kini TypeScript (`.ts`/`.tsx`): baris Bahasa di tech stack, nama file di struktur folder dan rujukan diselaraskan |
 | 1.5 | 2026-10-30 | Folder `src/types/` (tipe domain & API dari API Resource backend) dan tabel tipe respons di S4 |
 | 1.6 | 2026-10-30 | Komponen yang tidak dipakai dihapus (antara lain `NewsCard`, `PageWatermark`, `QuickNavButtons`, komponen statis `profil-desa`), juga `authService` dan fungsi alur lama di `statusFlow` |
+| 1.7 | 2026-10-31 | Hook `useSuratDetail` bersama (pengganti 4 hook per peran), satu `NotificationPopover`, `lib/downloadFile` untuk semua berkas terlindung; alasan penolakan, anggota KK, dan label wilayah jabatan dari API v5.4; id UUID di `src/types` |

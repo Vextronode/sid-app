@@ -1,7 +1,7 @@
 // Surat dan jenis surat.
 // Sumber: LetterListResource (daftar), LetterResource (detail),
 // LetterTypeResource, serta resource relasinya.
-import type { IsoDateString } from './api'
+import type { IsoDateString, Uuid } from './api'
 import type { Citizen } from './citizen'
 import type { User } from './user'
 
@@ -18,10 +18,10 @@ export type LetterCurrentStep = {
 
 // Satu baris di GET /api/letters.
 export type LetterListItem = {
-  id: number
+  id: Uuid
   letter_type_id: number
-  submitted_by: number | null
-  citizen_id: number | null
+  submitted_by: Uuid | null
+  citizen_id: Uuid | null
   letter_number: string | null
   applicant_name: string | null
   notes: string | null
@@ -29,6 +29,8 @@ export type LetterListItem = {
   current_step_order: number
   current_step: LetterCurrentStep | null
   rejected_at_step: number | null
+  // Catatan keputusan tolak terakhir; null bila surat tidak ditolak.
+  rejection_reason: string | null
   is_overdue: boolean
   awaiting_signatures: boolean
   needs_fulfillment: boolean
@@ -46,13 +48,13 @@ export type LetterListItem = {
     code: string
     signed_by_village_head: boolean
   } | null
-  citizen: { id: number; name: string } | null
+  citizen: { id: Uuid; name: string } | null
 }
 
 export type LetterApproval = {
   id: number
-  letter_id: number
-  approved_by: number | null
+  letter_id: Uuid
+  approved_by: Uuid | null
   approval_level: string
   flow_step_id: number | null
   action: 'approved' | 'rejected' | null
@@ -66,8 +68,8 @@ export type LetterApproval = {
 
 export type LetterStatusLog = {
   id: number
-  letter_id: number
-  actor_id: number | null
+  letter_id: Uuid
+  actor_id: Uuid | null
   actor_name?: string
   old_status: LetterStatus | null
   new_status: LetterStatus
@@ -148,12 +150,12 @@ export type LetterType = {
 
 // GET /api/letters/{id}. Field opsional hanya ada bila relasinya dimuat backend.
 export type Letter = {
-  id: number
-  village_id: number
+  id: Uuid
+  village_id: Uuid
   letter_type_id: number
-  submitted_by: number | null
-  on_behalf_of: number | null
-  citizen_id: number | null
+  submitted_by: Uuid | null
+  on_behalf_of: Uuid | null
+  citizen_id: Uuid | null
   letter_number: string | null
   applicant_name: string | null
   applicant_nik_masked: string | null
@@ -172,7 +174,7 @@ export type Letter = {
   processed_at: IsoDateString | null
   signed_by_official_id: number | null
   fulfilled_at: IsoDateString | null
-  fulfilled_by: number | null
+  fulfilled_by: Uuid | null
   needs_fulfillment?: boolean
   result_stage?: LetterResultStage | null
   result_upload_hint?: string | null

@@ -1,8 +1,6 @@
 import api from '@/lib/api'
 import type { Id, Letter, MessageResponse, ResourceResponse } from '@/types'
 
-type QueryParams = Record<string, string | number | undefined>
-
 // Nilai isian Terapkan, per nama field data warga.
 export type FulfillmentValues = Record<string, unknown>
 
@@ -24,34 +22,8 @@ export type NikLookupData = {
   family_number?: string | null
 }
 
-// Berkas surat (lampiran, dokumen pendukung) dilindungi sesi login, jadi
-// diambil sebagai blob lewat klien API lalu dibuka dari object URL.
-async function fetchBlobUrl(url: string, params?: QueryParams) {
-  const response = await api.get<Blob>(url, { params, responseType: 'blob' })
-
-  return URL.createObjectURL(response.data)
-}
-
-export async function openProtectedFile(url: string, params?: QueryParams) {
-  const blobUrl = await fetchBlobUrl(url, params)
-
-  window.open(blobUrl, '_blank', 'noopener')
-  // Beri waktu tab baru memuat berkas sebelum URL dilepas.
-  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
-}
-
-export async function downloadProtectedFile(url: string, filename: string, params?: QueryParams) {
-  const blobUrl = await fetchBlobUrl(url, params)
-  const link = document.createElement('a')
-
-  link.href = blobUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(blobUrl)
-}
-
+// Berkas surat (lampiran, dokumen pendukung) dibuka/diunduh lewat
+// openProtectedFile dan downloadFile di '@/lib/downloadFile'.
 export const supportingDocumentUrl = (letterId: Id) =>
   `/api/letters/${letterId}/supporting-document`
 

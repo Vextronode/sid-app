@@ -1,12 +1,12 @@
 // Penduduk, KK, dan pejabat desa.
 // Sumber: CitizenResource, CitizenCollection, FamilyResource, OfficialResource.
-import type { IsoDateString, LaravelPaginatedResponse } from './api'
+import type { IsoDateString, LaravelPaginatedResponse, Uuid } from './api'
 import type { Hamlet, Rt, Rw, Village } from './wilayah'
 
 // NIK dan No. KK tidak pernah dikirim utuh (UU PDP), hanya versi tersamar.
 export type Citizen = {
-  id: number
-  village_id: number
+  id: Uuid
+  village_id: Uuid
   nik_masked: string
   name: string
   date_of_birth: IsoDateString | null
@@ -17,11 +17,11 @@ export type Citizen = {
   rt_id: number | null
   rw_id: number | null
   hamlet_id: number | null
-  family_id: number | null
-  family?: { id: number; no_kk_masked: string }
+  family_id: Uuid | null
+  family?: { id: Uuid; no_kk_masked: string }
   family_role: string | null
-  father_id: number | null
-  mother_id: number | null
+  father_id: Uuid | null
+  mother_id: Uuid | null
   father_name_text: string | null
   mother_name_text: string | null
   marital_status: string | null
@@ -60,17 +60,25 @@ export type CitizenListResponse = LaravelPaginatedResponse<Citizen> & {
 // GET /api/families/options: semua KK desa untuk pilihan di form warga.
 export type FamilyOption = Pick<Family, 'id' | 'no_kk_masked' | 'family_address' | 'head_of_family'>
 
+export type FamilyMember = {
+  id: Uuid
+  name: string
+  family_role: string | null
+}
+
 export type Family = {
-  id: number
-  village_id: number
+  id: Uuid
+  village_id: Uuid
   no_kk_masked: string
   family_address: string | null
   family_status: string | null
   rt_id: number | null
   rw_id: number | null
   hamlet_id: number | null
-  head_of_family?: { id: number; name: string }
+  head_of_family?: { id: Uuid; name: string }
   members_count: number | null
+  // Hanya di detail KK (GET /api/families/{id}).
+  members?: FamilyMember[]
   village?: Village
   rt?: Rt
   rw?: Rw
@@ -81,11 +89,11 @@ export type Family = {
 
 export type Official = {
   id: number
-  citizen_id: number | null
-  user_id: number | null
+  citizen_id: Uuid | null
+  user_id: Uuid | null
   position: string
   position_label: string
-  village_id: number
+  village_id: Uuid
   rt_id: number | null
   rw_id: number | null
   hamlet_id: number | null

@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import NotificationPopover from '@/features/notifikasi/components/NotificationPopover-Admin'
+import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 import type { UserRole } from '@/types'

@@ -9,15 +9,9 @@ import { deleteOwnPhoto, uploadOwnPhoto } from '../api'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
-import type { ApiError } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
-
-const errorMessage = (error: unknown, fallback: string) => {
-  const data = (error as ApiError)?.response?.data
-  const errors = data?.errors
-  return (errors && Object.values(errors).flat()[0]) || data?.message || fallback
-}
 
 /**
  * Pratinjau foto ukuran besar. Ditutup lewat tombol X di pojok kanan atas
@@ -94,7 +88,7 @@ export function ProfilePhoto({ avatarClassName }: { avatarClassName?: string }) 
       patchUser({ photo_url: response?.data?.data?.photo_url ?? null })
       notifySuccess(successMessage)
     } catch (requestError) {
-      setError(errorMessage(requestError, fallback))
+      setError(getApiErrorMessage(requestError, fallback))
     } finally {
       setBusy(false)
     }

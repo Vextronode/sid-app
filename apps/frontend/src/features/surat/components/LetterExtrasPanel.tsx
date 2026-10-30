@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import {
-  downloadProtectedFile,
-  getLetterDetail,
-  openProtectedFile,
-  supportingDocumentUrl,
-} from '../api/letterExtrasApi'
+import { downloadFile, openProtectedFile } from '@/lib/downloadFile'
+import { getLetterDetail, supportingDocumentUrl } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
 import { LetterResultPanel } from './LetterResultPanel'
@@ -395,7 +391,7 @@ export function LetterExtrasPanel({ letterId }) {
               className="sid-btn sid-btn-secondary"
               onClick={() =>
                 openFile(() =>
-                  downloadProtectedFile(documentUrl, `dokumen-pendukung-${letter.id}.pdf`, {
+                  downloadFile(documentUrl, `dokumen-pendukung-${letter.id}.pdf`, {
                     download: 1,
                   }),
                 )

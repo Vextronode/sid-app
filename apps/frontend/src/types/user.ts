@@ -1,5 +1,5 @@
 // Akun pengguna. Sumber: UserResource, enum UserRole (backend).
-import type { IsoDateString } from './api'
+import type { IsoDateString, Uuid } from './api'
 import type { Citizen, Official } from './citizen'
 
 export type UserRole =
@@ -14,9 +14,9 @@ export type UserRole =
   | 'sekretaris_desa'
 
 export type User = {
-  id: number
-  village_id: number
-  citizen_id: number | null
+  id: Uuid
+  village_id: Uuid
+  citizen_id: Uuid | null
   name: string
   username: string | null
   role: UserRole

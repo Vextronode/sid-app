@@ -1,6 +1,6 @@
 // ==========================================
 // NotificationPopover.tsx
-// Popup notifikasi, dibuka dari ikon lonceng di navbar.
+// Popup notifikasi dari ikon lonceng navbar, untuk semua peran.
 // Styling mengikuti SID Global Theme.
 // ==========================================
 
@@ -27,10 +27,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
 }
 
 const WARNA_MAP: Record<string, string> = {
-  green: 'sid-notification-icon sid-notification-icon-green',
-  blue: 'sid-notification-icon sid-notification-icon-blue',
-  red: 'sid-notification-icon sid-notification-icon-red',
-  gray: 'sid-notification-icon sid-notification-icon-gray',
+  green: 'sid-notification-icon-green',
+  blue: 'sid-notification-icon-blue',
+  red: 'sid-notification-icon-red',
+  gray: 'sid-notification-icon-gray',
 }
 
 function getDayLabel(dateString: string | null) {
@@ -114,10 +114,12 @@ export default function NotificationPopover({
 
   return (
     <>
+      {/* Overlay */}
       <div className="sid-notification-overlay" onClick={onClose} />
 
+      {/* Popover */}
       <div className="sid-notification-popover">
-        {/* HEADER */}
+        {/* Header */}
         <div className="sid-notification-header">
           <h2 className="sid-notification-title">Notifikasi</h2>
 
@@ -133,7 +135,7 @@ export default function NotificationPopover({
 
         <WebPushControls />
 
-        {/* Tabs */}
+        {/* TABS */}
         <div className="sid-notification-tabs">
           {TABS.map((tab) => (
             <button
@@ -150,7 +152,7 @@ export default function NotificationPopover({
           ))}
         </div>
 
-        {/* CONTENT */}
+        {/* List */}
         <div className="sid-notification-content">
           {error && (
             <p role="alert" className="sid-notification-empty">
@@ -161,12 +163,16 @@ export default function NotificationPopover({
           {loading && <p className="sid-notification-empty">Memuat notifikasi...</p>}
 
           {Object.entries(groupedNotifications).map(([label, items]) => (
-            <div key={label} className="sid-notification-group">
-              <p className="sid-notification-day">{label}</p>
+            <div key={label} className="sid-notification-day">
+              <p className="sid-notification-day-label">{label}</p>
 
               <div className="sid-notification-list">
-                {items.map((n) => (
-                  <NotifItem key={n.id} data={n} onActivate={() => handleOpen(n)} />
+                {items.map((notification) => (
+                  <NotifItem
+                    key={notification.id}
+                    data={notification}
+                    onActivate={() => handleOpen(notification)}
+                  />
                 ))}
               </div>
             </div>
@@ -199,15 +205,17 @@ function NotifItem({ data, onActivate }: { data: AppNotification; onActivate: ()
         data.read ? 'sid-notification-item-read' : 'sid-notification-item-unread'
       }`}
     >
-      <div className={WARNA_MAP[data.color] ?? WARNA_MAP.gray}>
+      {/* Icon */}
+      <div className={`sid-notification-icon ${WARNA_MAP[data.color] ?? WARNA_MAP.gray}`}>
         <Icon size={16} />
       </div>
 
+      {/* Content */}
       <div className="sid-notification-item-content">
         <div className="sid-notification-item-header">
           <p className="sid-notification-item-title">{data.title}</p>
 
-          <span className="sid-notification-item-time">
+          <span className="sid-notification-time">
             {data.time ??
               new Date(data.created_at).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
@@ -217,9 +225,10 @@ function NotifItem({ data, onActivate }: { data: AppNotification; onActivate: ()
         </div>
 
         {data.context?.applicant && (
-          <p className="sid-notification-item-message">Dari: {data.context.applicant}</p>
+          <p className="sid-notification-applicant">Dari: {data.context.applicant}</p>
         )}
-        <p className="sid-notification-item-message">{data.message}</p>
+
+        <p className="sid-notification-message">{data.message}</p>
       </div>
     </div>
   )

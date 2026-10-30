@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import SuratDetailModal from '@/features/approval/components/SuratDetailModal'
 import type { DecisionResponse } from '@/features/approval/api'
 import type { Id } from '@/types'
-import { useSuratDetail } from '../hooks/useSuratDetailKades'
+import { useSuratDetail } from '@/features/approval/hooks/useSuratDetail'
 
 export default function SuratDetailModalKades({
   suratId,

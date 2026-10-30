@@ -13,7 +13,7 @@ import { MyLettersList } from './MyLettersList'
 
 const LETTERS = partialFixture<LetterListItem[]>([
   {
-    id: 1,
+    id: 'letter-1',
     status: 'in_progress',
     letter_number: null,
     created_at: '2026-10-12T08:00:00Z',
@@ -22,7 +22,7 @@ const LETTERS = partialFixture<LetterListItem[]>([
     letter_type: { name: 'Surat Keterangan Domisili' },
   },
   {
-    id: 2,
+    id: 'letter-2',
     status: 'approved',
     letter_number: '470/012/2026',
     created_at: '2026-10-01T08:00:00Z',

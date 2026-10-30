@@ -11,7 +11,8 @@ import type { FormEvent } from 'react'
 import api from '@/lib/api'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { notifySuccess } from '@/shared/lib/toast'
-import type { ApiError, User } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { User } from '@/types'
 
 type EditProfilWargaModalProps = {
   open: boolean
@@ -24,16 +25,6 @@ type EditProfilWargaModalProps = {
 type ProfileResponse = { data?: { message?: string; user?: User } }
 
 const EMPTY_PASSWORD = { current_password: '', password: '', password_confirmation: '' }
-
-function fieldErrors(error: unknown) {
-  return (error as ApiError)?.response?.data?.errors ?? {}
-}
-
-function firstMessage(error: unknown, fallback: string): string {
-  const first = Object.values(fieldErrors(error)).flat()[0]
-
-  return first ?? (error as ApiError)?.response?.data?.message ?? fallback
-}
 
 export default function EditProfilWargaModal({
   open,
@@ -86,7 +77,7 @@ export default function EditProfilWargaModal({
 
       return true
     } catch (requestError) {
-      setError(firstMessage(requestError, 'Perubahan gagal disimpan.'))
+      setError(getApiErrorMessage(requestError, 'Perubahan gagal disimpan.'))
 
       return false
     } finally {

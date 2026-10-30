@@ -4,8 +4,12 @@ import type { AxiosError } from 'axios'
 // Tanggal/waktu dari backend dikirim sebagai string ISO 8601.
 export type IsoDateString = string
 
-// Id di parameter fungsi API: angka dari data, atau string dari URL (useParams).
+// Id di parameter fungsi API. Warga, KK, akun, surat, dan desa memakai UUID
+// (string); wilayah, pejabat, jenis surat, dll. memakai angka.
 export type Id = number | string
+
+// Primary key UUID di backend (HasUuids).
+export type Uuid = string
 
 // Respons satu resource: { data }.
 export type ResourceResponse<T> = {
