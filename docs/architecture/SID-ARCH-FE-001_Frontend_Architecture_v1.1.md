@@ -16,7 +16,7 @@
 | Layer | Teknologi | Catatan |
 |---|---|---|
 | UI | React 19 (function component) | |
-| Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | Migrasi bertahap dari JS: `strict` belum aktif; cek tipe lewat `npm run typecheck` (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
+| Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | `strict` belum aktif (diaktifkan bertahap); `npm run typecheck` wajib 0 error dan dijalankan CI (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
 | Build | Vite 8 (Rolldown) | Alias `@` → `src`; `build` membuang `console.*`/`debugger`; vendor dipisah ke chunk `react`, `charts`, `pdfjs` |
 | Styling | Tailwind CSS 4 via `@tailwindcss/vite` | Token di `index.css` (`@theme static`, palet `pb-*`) dan CSS custom property `--sid-*` di `styles/sid-global.css`; font Bricolage Grotesque & Plus Jakarta Sans (`@fontsource`) |
 | Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus |
@@ -28,7 +28,7 @@
 | Ikon | `lucide-react` | |
 | PWA | `vite-plugin-pwa` (Workbox, `registerType: autoUpdate`) | Service worker mengimpor `public/push-handler.js` untuk Web Push |
 | Test | Vitest + Testing Library + jsdom; Playwright (skrip screenshot) | |
-| Kualitas | ESLint 10, Prettier, Husky + lint-staged | |
+| Kualitas | ESLint 10 + typescript-eslint, Prettier, Husky + lint-staged, `tsc --noEmit` | CI frontend: lint, typecheck, test, build |
 
 ---
 

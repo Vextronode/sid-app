@@ -58,7 +58,8 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 
 1. ESLint + Prettier wajib aktif, konfigurasi seragam (bukan preferensi individual kontributor).
 2. Pre-commit hook (Husky + lint-staged) mencegah kode yang gagal lint/format masuk ke repository.
-3. `npm run typecheck` (`tsc --noEmit`) memeriksa tipe; `npm run build` (Vite) tidak memeriksa tipe sama sekali.
+3. `npm run typecheck` (`tsc --noEmit`) memeriksa tipe; `npm run build` (Vite) tidak memeriksa tipe sama sekali. Typecheck wajib bersih dan dijalankan CI (job `frontend-ci`), tetapi tidak di pre-commit karena memeriksa seluruh proyek (sekitar 20 detik).
+4. ESLint (`typescript-eslint` recommended) menolak `any` eksplisit (`no-explicit-any`) dan `@ts-ignore`/`@ts-nocheck` (`ban-ts-comment`) sebagai error.
 
 ### A.8 TypeScript
 
@@ -69,7 +70,7 @@ Source frontend sedang dimigrasi bertahap dari JavaScript; `strict` di `tsconfig
 3. Dilarang menambah `any`, `as any`, `@ts-ignore`, atau `@ts-nocheck` baru. Bila tipe memang belum diketahui, pakai `unknown` lalu persempit; bila terpaksa mengecualikan pemeriksaan, pakai `@ts-expect-error` disertai alasan.
 4. State awal kosong diberi tipe (`useState<LetterRequest[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
 5. Parameter opsional ditandai `?` atau diberi nilai default, agar pemanggil tidak dipaksa mengisi semua argumen.
-6. Perubahan tidak boleh menambah jumlah error `npm run typecheck`.
+6. `npm run typecheck` harus 0 error; CI menolak perubahan yang menambah error tipe.
 7. Variabel tak terpakai diperiksa rule `@typescript-eslint/no-unused-vars` (bukan `no-unused-vars` bawaan, yang salah menandai nama parameter di tipe fungsi); komentar pengecualian memakai nama rule tersebut.
 8. Store tingkat modul (mis. `shared/lib/toast.ts`, `shared/lib/dialog.ts`) mengekspor tipe datanya (`Toast`, `DialogEntry`) agar komponen host dan pemanggil memakai bentuk yang sama.
 9. Test:

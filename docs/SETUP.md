@@ -286,6 +286,7 @@ php artisan test
 # Frontend
 cd apps\frontend
 npm run lint
+npm run typecheck   # tsc --noEmit; build tidak memeriksa tipe
 npm run test:run
 npm run build
 ```

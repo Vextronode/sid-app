@@ -145,9 +145,12 @@ php artisan test
 # Frontend
 cd apps\frontend
 npm run lint
+npm run typecheck
 npm run test:run
 npm run build
 ```
+
+`npm run typecheck` (`tsc --noEmit`) wajib bersih; `npm run build` tidak memeriksa tipe. CI menjalankan keempat perintah frontend ini.
 
 ## Perintah artisan khusus aplikasi
 
