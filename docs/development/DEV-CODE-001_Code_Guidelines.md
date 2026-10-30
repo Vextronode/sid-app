@@ -60,6 +60,7 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 2. Pre-commit hook (Husky + lint-staged) mencegah kode yang gagal lint/format masuk ke repository. lint-staged hanya merapikan file yang di-stage, jadi CI juga menjalankan `npm run format:check` (`prettier --check .`) untuk seluruh folder frontend; perbaiki dengan `npm run format`.
 3. `npm run typecheck` (`tsc --noEmit`) memeriksa tipe; `npm run build` (Vite) tidak memeriksa tipe sama sekali. Typecheck wajib bersih dan dijalankan CI (job `frontend-ci`), tetapi tidak di pre-commit karena memeriksa seluruh proyek (sekitar 20 detik).
 4. ESLint (`typescript-eslint` recommended) menolak `any` eksplisit (`no-explicit-any`) dan `@ts-ignore`/`@ts-nocheck` (`ban-ts-comment`) sebagai error.
+5. `console.log` (dan `console.debug`/`info`) ditolak ESLint (`no-console`) di `src/` dan `public/`; `console.error`/`console.warn` tetap boleh untuk mencatat galat. Skrip CLI di `scripts/` dikecualikan karena `console.log` adalah keluarannya.
 
 ### A.8 TypeScript
 
@@ -143,4 +144,4 @@ Alur Backend wajib mengikuti: **Controller -> Service -> Repository -> Model**.
 | 1.0 | - | Rancangan Awal |
 | 1.1 | 2026-09-12 | Menambahkan pedoman struktur Backend, Form Request, API Resource, dan Resource Collection. |
 | 1.2 | 2026-10-30 | Frontend TypeScript: konvensi ekstensi dan nama tipe, props bertipe (menggantikan JSDoc typedef), bagian A.8 TypeScript, `npm run typecheck`. |
-| 1.3 | 2026-10-31 | A.8 diperbarui untuk `strict: true` (guard null, galat `catch`, helper test); A.7: `npm run format:check` di CI. |
+| 1.3 | 2026-10-31 | A.8 diperbarui untuk `strict: true` (guard null, galat `catch`, helper test); A.7: `npm run format:check` di CI dan aturan `no-console`. |

@@ -38,4 +38,13 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'error',
     },
   },
+  // Kode aplikasi: console.log sisa debug ditolak; console.error/warn tetap
+  // boleh untuk mencatat galat. scripts/ (CLI seperti shot:beranda) memakai
+  // console.log sebagai keluarannya, jadi tidak ikut.
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx}', 'public/**/*.js'],
+    rules: {
+      'no-console': ['error', { allow: ['error', 'warn'] }],
+    },
+  },
 ])
