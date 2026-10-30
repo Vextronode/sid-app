@@ -1,5 +1,11 @@
 import api from '@/lib/api'
-import type { Id, IsoDateString, MessageResponse, ResourceResponse } from '@/types'
+import type {
+  Id,
+  IsoDateString,
+  MessageResponse,
+  PaginatedResponse,
+  ResourceResponse,
+} from '@/types'
 
 const multipart = { headers: { 'Content-Type': 'multipart/form-data' } }
 
@@ -32,6 +38,18 @@ export type SignatureRequest = {
   purpose: string | null
   requested_at: IsoDateString | null
   expires_at: IsoDateString | null
+}
+
+// GET /api/signature-reset-requests (SignatureResetRequestResource).
+export type SignatureResetRequest = {
+  id: number
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: IsoDateString | null
+  handled_at: IsoDateString | null
+  response_notes: string | null
+  handler?: { id: string; name: string } | null
+  user?: { id: string; name: string; username: string; role: string; role_label: string | null }
 }
 
 // GET /api/signature-blocks.
@@ -90,9 +108,12 @@ export const getSignatureResetRequests = async ({
   page?: number
   perPage?: number
 } = {}) => {
-  const response = await api.get('/api/signature-reset-requests', {
-    params: { page, per_page: perPage },
-  })
+  const response = await api.get<PaginatedResponse<SignatureResetRequest>>(
+    '/api/signature-reset-requests',
+    {
+      params: { page, per_page: perPage },
+    },
+  )
 
   return response.data
 }

@@ -5,8 +5,9 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApprovalFlows } from '@/features/approval/api'
 import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import type { ApprovalFlow } from '@/features/approval/api'
 
-const POSITION_LABELS = {
+const POSITION_LABELS: Record<string, string> = {
   rt: 'Ketua RT',
   kepala_desa: 'Kepala Desa / Sekretaris Desa',
   sekretaris_desa: 'Kepala Desa / Sekretaris Desa',
@@ -19,7 +20,7 @@ const POSITION_LABELS = {
  */
 export default function ApprovalFlowsPage() {
   const { user } = useAuth()
-  const [flows, setFlows] = useState([])
+  const [flows, setFlows] = useState<ApprovalFlow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   // Dinaikkan tombol Refresh agar panel jenis surat ikut memuat ulang.

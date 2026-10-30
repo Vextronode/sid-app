@@ -15,16 +15,30 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { FormEvent } from 'react'
+import type { Occupation } from '@/types'
 
-function resolveError(error, fallback) {
-  const errors = error?.response?.data?.errors
+type OccupationPayload = { name: string; sort_order: number }
 
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
+type OccupationFormModalProps = {
+  item: Occupation | null
+  processing: boolean
+  error: string
+  onClose: () => void
+  // true bila tersimpan; modal lalu ditutup.
+  onSubmit: (payload: OccupationPayload) => Promise<boolean>
 }
 
-function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
+function OccupationFormModal({
+  item,
+  processing,
+  error,
+  onClose,
+  onSubmit,
+}: OccupationFormModalProps) {
   const isEdit = Boolean(item?.id)
-  const [initialForm] = useState(() => ({
+  const [initialForm] = useState<{ name: string; sort_order: number | string }>(() => ({
     name: item?.name ?? '',
     sort_order: item?.sort_order ?? 0,
   }))
@@ -34,7 +48,7 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
     escapeClose: onClose,
   })
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const success = await onSubmit({
@@ -126,13 +140,16 @@ function OccupationFormModal({ item, processing, error, onClose, onSubmit }) {
 }
 
 export default function KelolaPekerjaanPage() {
-  const [occupations, setOccupations] = useState([])
+  const [occupations, setOccupations] = useState<Occupation[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState({ open: false, item: null })
+  const [modal, setModal] = useState<{ open: boolean; item: Occupation | null }>({
+    open: false,
+    item: null,
+  })
 
   const load = useCallback(async () => {
     try {
@@ -141,7 +158,7 @@ export default function KelolaPekerjaanPage() {
       setOccupations(response.data?.data ?? [])
       setError('')
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal memuat katalog pekerjaan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat katalog pekerjaan.'))
     } finally {
       setLoading(false)
     }
@@ -166,7 +183,7 @@ export default function KelolaPekerjaanPage() {
     setFormError('')
   }
 
-  const handleSubmit = async (payload) => {
+  const handleSubmit = async (payload: OccupationPayload) => {
     setProcessing(true)
     setFormError('')
 
@@ -181,7 +198,7 @@ export default function KelolaPekerjaanPage() {
 
       return true
     } catch (requestError) {
-      setFormError(resolveError(requestError, 'Gagal menyimpan pekerjaan.'))
+      setFormError(getApiErrorMessage(requestError, 'Gagal menyimpan pekerjaan.'))
 
       return false
     } finally {
@@ -189,7 +206,7 @@ export default function KelolaPekerjaanPage() {
     }
   }
 
-  const handleToggle = async (item) => {
+  const handleToggle = async (item: Occupation) => {
     const confirmed = await confirmDialog(
       item.is_active
         ? {
@@ -218,13 +235,13 @@ export default function KelolaPekerjaanPage() {
         `Pekerjaan "${item.name}" berhasil ${item.is_active ? 'dinonaktifkan' : 'diaktifkan'}.`,
       )
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal mengubah status pekerjaan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal mengubah status pekerjaan.'))
     } finally {
       setProcessing(false)
     }
   }
 
-  const handleDelete = async (item) => {
+  const handleDelete = async (item: Occupation) => {
     if (
       !(await confirmDialog({
         title: `Hapus pekerjaan "${item.name}"?`,
@@ -242,7 +259,7 @@ export default function KelolaPekerjaanPage() {
       notifySuccess(`Pekerjaan "${item.name}" berhasil dihapus.`)
     } catch (requestError) {
       // 409: pekerjaan masih dipakai warga; pesan backend menyarankan nonaktifkan.
-      setError(resolveError(requestError, 'Gagal menghapus pekerjaan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus pekerjaan.'))
     } finally {
       setProcessing(false)
     }

@@ -31,6 +31,7 @@ import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
 
 export default function KadusListPage() {
   const pageRefresh = useQueryRefresh(['surat'])
@@ -73,7 +74,7 @@ export default function KadusListPage() {
   // KADUS SELALU READ-ONLY.
   // ==========================================
 
-  const handleOpenDetail = (surat) => {
+  const handleOpenDetail = (surat: LetterListItem) => {
     setSelectedId(surat.id)
   }
 

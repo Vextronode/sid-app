@@ -14,14 +14,11 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { FormEvent } from 'react'
+import type { Regulation } from '@/features/peraturan/api'
 
-function resolveError(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
-
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
   if (!value) return '-'
 
   return new Date(value).toLocaleDateString('id-ID', {
@@ -31,9 +28,33 @@ function formatDate(value) {
   })
 }
 
-function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
+type RegulationForm = {
+  regulation_number: string
+  title: string
+  content: string
+  enacted_date: string
+}
+
+type RegulationPayload = Omit<RegulationForm, 'enacted_date'> & { enacted_date: string | null }
+
+type RegulationFormModalProps = {
+  item: Regulation | null
+  processing: boolean
+  error: string
+  onClose: () => void
+  // true bila tersimpan; modal lalu ditutup.
+  onSubmit: (payload: RegulationPayload) => Promise<boolean>
+}
+
+function RegulationFormModal({
+  item,
+  processing,
+  error,
+  onClose,
+  onSubmit,
+}: RegulationFormModalProps) {
   const isEdit = Boolean(item?.id)
-  const [initialForm] = useState(() => ({
+  const [initialForm] = useState<RegulationForm>(() => ({
     regulation_number: item?.regulation_number ?? '',
     title: item?.title ?? '',
     content: item?.content ?? '',
@@ -45,11 +66,11 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
     escapeClose: onClose,
   })
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: keyof RegulationForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const success = await onSubmit({
@@ -163,13 +184,16 @@ function RegulationFormModal({ item, processing, error, onClose, onSubmit }) {
 }
 
 export default function KelolaPeraturanPage() {
-  const [regulations, setRegulations] = useState([])
+  const [regulations, setRegulations] = useState<Regulation[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState({ open: false, item: null })
+  const [modal, setModal] = useState<{ open: boolean; item: Regulation | null }>({
+    open: false,
+    item: null,
+  })
 
   const load = useCallback(async () => {
     try {
@@ -178,7 +202,7 @@ export default function KelolaPeraturanPage() {
       setRegulations(response.data?.data ?? [])
       setError('')
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal memuat peraturan desa.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat peraturan desa.'))
     } finally {
       setLoading(false)
     }
@@ -207,7 +231,7 @@ export default function KelolaPeraturanPage() {
     setFormError('')
   }
 
-  const handleSubmit = async (payload) => {
+  const handleSubmit = async (payload: RegulationPayload) => {
     setProcessing(true)
     setFormError('')
 
@@ -222,7 +246,7 @@ export default function KelolaPeraturanPage() {
 
       return true
     } catch (requestError) {
-      setFormError(resolveError(requestError, 'Gagal menyimpan peraturan desa.'))
+      setFormError(getApiErrorMessage(requestError, 'Gagal menyimpan peraturan desa.'))
 
       return false
     } finally {
@@ -230,7 +254,7 @@ export default function KelolaPeraturanPage() {
     }
   }
 
-  const handleDelete = async (item) => {
+  const handleDelete = async (item: Regulation) => {
     if (
       !(await confirmDialog({
         title: `Hapus peraturan "${item.title}"?`,
@@ -247,7 +271,7 @@ export default function KelolaPeraturanPage() {
       await load()
       notifySuccess(`Peraturan "${item.title}" berhasil dihapus.`)
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal menghapus peraturan desa.'))
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus peraturan desa.'))
     } finally {
       setProcessing(false)
     }

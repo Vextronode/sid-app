@@ -12,13 +12,20 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { notifySuccess } from '@/shared/lib/toast'
+import type { ApprovalSetting } from '@/features/approval/api'
+
+// Jam batas & pengingat diketik sebagai teks sebelum disimpan.
+type SettingRow = Omit<ApprovalSetting, 'deadline_hours' | 'reminder_hours'> & {
+  deadline_hours: number | string
+  reminder_hours: number | string
+}
 
 export default function ApprovalSettingPage() {
   const { user } = useAuth()
 
-  const [settings, setSettings] = useState([])
+  const [settings, setSettings] = useState<SettingRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [savingId, setSavingId] = useState(null)
+  const [savingId, setSavingId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -44,7 +51,7 @@ export default function ApprovalSettingPage() {
     }
   }, [user?.role])
 
-  const handleChange = (id, field, value) => {
+  const handleChange = (id: number, field: 'deadline_hours' | 'reminder_hours', value: string) => {
     setSettings((current) =>
       current.map((setting) =>
         setting.id === id
@@ -58,7 +65,7 @@ export default function ApprovalSettingPage() {
     setError('')
   }
 
-  const handleSave = async (setting) => {
+  const handleSave = async (setting: SettingRow) => {
     const deadlineHours = Number(setting.deadline_hours)
     const reminderHours = Number(setting.reminder_hours)
 

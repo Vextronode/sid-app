@@ -1,12 +1,23 @@
 import api from '@/lib/api'
 import { publicVillageParams } from '@/shared/lib/api/publicVillageParams'
-import type { Id } from '@/types'
+import type { Id, ResourceResponse } from '@/types'
+
+// RegulationResource.
+export type Regulation = {
+  id: number
+  village_id: string
+  regulation_number: string
+  title: string
+  content: string | null
+  enacted_date: string | null
+  created_by: string | null
+}
 
 // Objek isian, atau FormData bila ada berkas peraturan.
 type Payload = Record<string, unknown> | FormData
 
 export function getRegulations() {
-  return api.get('/api/regulations')
+  return api.get<ResourceResponse<Regulation[]>>('/api/regulations')
 }
 
 export function createRegulation(payload: Payload) {

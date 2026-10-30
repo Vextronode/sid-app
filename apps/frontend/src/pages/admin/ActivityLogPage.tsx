@@ -26,15 +26,38 @@ import {
   POPULATION_EVENT_OPTIONS,
   POPULATION_TYPE_OPTIONS,
 } from '@/features/activity-log/labels'
+import type { LogActor, PopulationLog } from '@/features/activity-log/api'
+import type { PageMeta } from '@/types'
+
+// Filter disimpan di query string; resetPage kembali ke halaman 1.
+type SetParam = (key: string, value: string, resetPage?: boolean) => void
+
+type TabProps = {
+  params: URLSearchParams
+  setParam: SetParam
+  pageSize: number
+  onPageSizeChange: (size: number) => void
+}
 
 const TABS = [
   { value: 'penduduk', label: 'Data Warga & KK' },
   { value: 'surat', label: 'Surat' },
 ]
 
-const EMPTY_META = { current_page: 1, last_page: 1, total: 0 }
+const EMPTY_META: Pick<PageMeta, 'current_page' | 'last_page' | 'total'> = {
+  current_page: 1,
+  last_page: 1,
+  total: 0,
+}
 
-function Pagination({ meta, onChange, pageSize, onPageSizeChange }) {
+type PaginationProps = {
+  meta: Pick<PageMeta, 'current_page' | 'last_page' | 'total'>
+  onChange: (page: number) => void
+  pageSize: number
+  onPageSizeChange: (size: number) => void
+}
+
+function Pagination({ meta, onChange, pageSize, onPageSizeChange }: PaginationProps) {
   const totalPages = Math.max(1, meta.last_page ?? 1)
   const currentPage = meta.current_page ?? 1
 
@@ -63,7 +86,7 @@ function Pagination({ meta, onChange, pageSize, onPageSizeChange }) {
   )
 }
 
-function Actor({ actor }) {
+function Actor({ actor }: { actor: LogActor | null }) {
   if (!actor) return <span className="sid-activity-log-muted">Sistem</span>
 
   return (
@@ -74,15 +97,7 @@ function Actor({ actor }) {
   )
 }
 
-type ActivityLogEntry = {
-  event: string
-  // Hasil impor Excel (event 'imported').
-  summary?: { success_count: number; error_count: number; total_rows: number } | null
-  // Perubahan per field: nilai lama -> baru.
-  changes?: Record<string, { old?: unknown; new?: unknown }> | null
-}
-
-function ChangeList({ log }: { log: ActivityLogEntry }) {
+function ChangeList({ log }: { log: Pick<PopulationLog, 'event' | 'summary' | 'changes'> }) {
   if (log.event === 'imported' && log.summary) {
     return (
       <span>
@@ -108,7 +123,9 @@ function ChangeList({ log }: { log: ActivityLogEntry }) {
   )
 }
 
-function DateRangeFields({ from, to, onChange }) {
+type DateRangeFieldsProps = { from: string; to: string; onChange: SetParam }
+
+function DateRangeFields({ from, to, onChange }: DateRangeFieldsProps) {
   return (
     <>
       <div className="sid-operator-filter-field">
@@ -133,7 +150,7 @@ function DateRangeFields({ from, to, onChange }) {
   )
 }
 
-function PopulationTab({ params, setParam, pageSize, onPageSizeChange }) {
+function PopulationTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
   const filters = {
     type: params.get('type') ?? '',
     event: params.get('event') ?? '',
@@ -265,7 +282,7 @@ function PopulationTab({ params, setParam, pageSize, onPageSizeChange }) {
   )
 }
 
-function LetterTab({ params, setParam, pageSize, onPageSizeChange }) {
+function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
   const filters = {
     new_status: params.get('status') ?? '',
     from: params.get('from') ?? '',
@@ -389,7 +406,7 @@ export default function ActivityLogPage() {
   const activeTab = params.get('tab') === 'surat' ? 'surat' : 'penduduk'
 
   // Setiap perubahan filter kembali ke halaman 1.
-  const setParam = (key, value, resetPage = true) => {
+  const setParam: SetParam = (key, value, resetPage = true) => {
     setParams(
       (current) => {
         const next = new URLSearchParams(current)
@@ -403,10 +420,10 @@ export default function ActivityLogPage() {
     )
   }
 
-  const switchTab = (tab) => setParams({ tab }, { replace: true })
+  const switchTab = (tab: string) => setParams({ tab }, { replace: true })
 
   const [pageSize, setPageSizeState] = usePageSize('activity-log')
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setParam('page', '')
   }

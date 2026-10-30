@@ -7,12 +7,8 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Landmark, Lock, Eye, EyeOff, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
-
-function firstMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { FormEvent } from 'react'
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate()
@@ -27,7 +23,7 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
 
@@ -49,7 +45,7 @@ export default function ResetPasswordPage() {
       setSuccess(true)
       setTimeout(() => navigate('/login', { replace: true }), 1500)
     } catch (err) {
-      setError(firstMessage(err, 'Kata sandi gagal diatur ulang.'))
+      setError(getApiErrorMessage(err, 'Kata sandi gagal diatur ulang.'))
     } finally {
       setIsLoading(false)
     }

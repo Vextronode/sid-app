@@ -16,8 +16,16 @@ import TampilanPublikCard from '@/features/profil-desa-admin/components/Tampilan
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { notifySuccess } from '@/shared/lib/toast'
+import type { EditablePerson } from '@/features/profil-desa-admin/components/EditPerangkatDesaModal'
+import type { VillageProfileForm } from '@/features/profil-desa-admin/types'
 
-function Avatar({ src, name, size = 'medium' }) {
+type AvatarProps = {
+  src: string | null
+  name?: string
+  size?: 'tiny' | 'small' | 'medium' | 'large'
+}
+
+function Avatar({ src, name, size = 'medium' }: AvatarProps) {
   return (
     <div className={`sid-profil-desa-avatar sid-profil-desa-avatar-${size}`}>
       {src ? (
@@ -29,7 +37,7 @@ function Avatar({ src, name, size = 'medium' }) {
   )
 }
 
-function formatValue(value) {
+function formatValue(value: string | null | undefined) {
   return value?.trim() ? value : '-'
 }
 
@@ -85,7 +93,7 @@ export default function KelolaProfilDesaPage() {
   // UPDATE PROFIL DESA
   // ==========================================
 
-  const handleUpdateProfile = async (payload) => {
+  const handleUpdateProfile = async (payload: Partial<VillageProfileForm>) => {
     try {
       await updateProfile(payload)
       notifySuccess('Profil desa berhasil diperbarui.')
@@ -99,7 +107,7 @@ export default function KelolaProfilDesaPage() {
   // UPDATE VISI & MISI
   // ==========================================
 
-  const handleUpdateVisiMisi = async (payload) => {
+  const handleUpdateVisiMisi = async (payload: { vision: string; mission: string }) => {
     try {
       await updateVisiMisi(payload)
       notifySuccess('Visi dan misi berhasil diperbarui.')
@@ -113,9 +121,12 @@ export default function KelolaProfilDesaPage() {
   // UPDATE PERANGKAT DESA
   // ==========================================
 
-  const handleUpdatePerangkat = async (perangkat, kadusData) => {
+  const handleUpdatePerangkat = async (
+    perangkat: EditablePerson[],
+    kadusData: EditablePerson[],
+  ) => {
     try {
-      const updates = []
+      const updates: Promise<void>[] = []
 
       const perangkatEntries = Array.isArray(perangkat) ? perangkat : []
 

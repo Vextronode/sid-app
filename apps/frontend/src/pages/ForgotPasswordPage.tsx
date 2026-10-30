@@ -9,12 +9,8 @@ import { Link } from 'react-router-dom'
 import { Landmark, Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
-
-function firstMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { FormEvent } from 'react'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -22,7 +18,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [sent, setSent] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
@@ -32,7 +28,9 @@ export default function ForgotPasswordPage() {
       await api.post('/forgot-password', { email: email.trim() })
       setSent(true)
     } catch (err) {
-      setError(firstMessage(err, 'Tautan atur ulang kata sandi gagal dikirim. Coba lagi nanti.'))
+      setError(
+        getApiErrorMessage(err, 'Tautan atur ulang kata sandi gagal dikirim. Coba lagi nanti.'),
+      )
     } finally {
       setIsLoading(false)
     }

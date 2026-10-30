@@ -8,7 +8,7 @@ export const POPULATION_TYPE_OPTIONS = [
   { value: 'family', label: 'Kartu Keluarga' },
 ]
 
-export const POPULATION_EVENT_LABELS = {
+export const POPULATION_EVENT_LABELS: Record<string, string> = {
   created: 'Ditambahkan',
   updated: 'Diubah',
   deleted: 'Dihapus',

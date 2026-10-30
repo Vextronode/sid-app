@@ -32,22 +32,50 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { ChangeEvent, FormEvent } from 'react'
+import type {
+  AccountPositionData,
+  AreaScope,
+  OfficialCandidate,
+  OfficialPositionType,
+} from '@/features/profil-desa-admin/types'
+import type { Hamlet, Official, Rt, Rw } from '@/types'
+
+// Nomor RW per id RW, untuk RT yang relasi RW-nya tidak dimuat.
+type RwNumbers = Map<string, string>
+
+type OfficialGroup = {
+  key: string
+  title: string
+  hint?: string
+  areaLabel?: string
+  match: (official: Official) => boolean
+  compare: (first: Official, second: Official, rwNumbers: RwNumbers) => number
+}
+
+type AccountPosition = { value: string; label: string; scope?: AreaScope }
+
+type PositionOption = { value: string; label: string; scope?: AreaScope }
+
+// Peringatan saat mengakhiri jabatan, mis. surat yang kehilangan pejabat berwenang.
+type DemotionWarning = { code: string; position: string; count: number; message: string }
 
 // Tabel pejabat dipisah per tingkat. Jabatan yang bukan Kadus/RW/RT
 // (Kades, Sekdes, Kasi, Kaur, staf, Staf SIDUTama) masuk tabel pertama,
 // diurutkan sesuai DESA_ORDER lalu abjad.
 const DESA_ORDER = ['kepala_desa', 'sekretaris_desa', 'kasi_pemerintahan', 'kaur_tu_umum']
 
-const areaNumber = (value) => Number(value) || 0
+const areaNumber = (value: unknown) => Number(value) || 0
 
-const OFFICIAL_GROUPS = [
+const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     key: 'desa',
     title: 'Perangkat Desa',
     hint: 'Kepala Desa, Sekretaris Desa, Kasi, Kaur, dan staf',
     match: (official) => !['kadus', 'rw', 'rt'].includes(official.position),
     compare: (first, second) => {
-      const rank = (official) => {
+      const rank = (official: Official) => {
         const index = DESA_ORDER.indexOf(official.position)
         return index === -1 ? DESA_ORDER.length : index
       }
@@ -79,7 +107,7 @@ const OFFICIAL_GROUPS = [
     areaLabel: 'RT / RW',
     match: (official) => official.position === 'rt',
     compare: (first, second, rwNumbers) => {
-      const rwOf = (official) =>
+      const rwOf = (official: Official) =>
         areaNumber(official.rw?.number ?? rwNumbers.get(String(official.rt?.rw_id)))
 
       return (
@@ -93,21 +121,27 @@ const OFFICIAL_GROUPS = [
 // backend), beserta labelnya, dari GET /official-position-types
 // (`account_positions`). Label tidak ditulis di FE supaya sama dengan tabel
 // pejabat; label Staf SIDUTama mengikuti SID_APP_NAME di backend.
-const toAccountPositions = (response) =>
+const toAccountPositions = (response: {
+  data?: { account_positions?: AccountPositionData[] }
+}): AccountPosition[] =>
   (response?.data?.account_positions ?? []).map((position) => ({
     value: position.code,
     label: position.label,
     scope: position.scope ?? undefined,
   }))
 
-const findAccountPosition = (accountPositions, value) =>
+const findAccountPosition = (accountPositions: AccountPosition[], value: string | undefined) =>
   accountPositions.find((position) => position.value === value)
 
-const positionLabel = (official) => official.position_label ?? official.position
+const positionLabel = (official: Official) => official.position_label ?? official.position
 
 // Calon dikirim sebagai akun untuk jabatan berakun, sebagai data warga
 // untuk jabatan tanpa akun.
-const candidateTarget = (accountPositions, position, candidate) =>
+const candidateTarget = (
+  accountPositions: AccountPosition[],
+  position: string,
+  candidate: OfficialCandidate,
+) =>
   findAccountPosition(accountPositions, position)
     ? { user_id: candidate.user_id }
     : { citizen_id: candidate.citizen_id }
@@ -119,7 +153,31 @@ const WARGA_HOME = '/surat-saya'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-const EMPTY_PROMOTION = {
+type PromotionForm = {
+  candidate: OfficialCandidate | null
+  photo: File | null
+  position: string
+  rt_id: string
+  rw_id: string
+  hamlet_id: string
+  started_at: string
+  term_ends_at: string
+  phone_wa: string
+  notes: string
+}
+
+type RotationForm = {
+  official: Official
+  candidate: OfficialCandidate | null
+  photo: File | null
+  started_at: string
+  term_ends_at: string
+  notes: string
+}
+
+type DemotionForm = { official: Official; notes: string }
+
+const EMPTY_PROMOTION: PromotionForm = {
   candidate: null,
   photo: null,
   position: '',
@@ -132,27 +190,15 @@ const EMPTY_PROMOTION = {
   notes: '',
 }
 
-function unwrap(response) {
+function unwrap<T>(response: { data?: { data?: T[] } }): T[] {
   return response?.data?.data ?? []
 }
 
-function serverMessage(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  if (errors && typeof errors === 'object') {
-    const first = Object.values(errors).flat()[0]
-
-    if (first) return first
-  }
-
-  return error?.response?.data?.message ?? fallback
-}
-
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
   return value ? new Date(value).toLocaleDateString('id-ID') : '-'
 }
 
-function describeArea(official, rwNumbers) {
+function describeArea(official: Official, rwNumbers: RwNumbers) {
   if (official.position === 'rt') {
     const rwNumber = official.rw?.number ?? rwNumbers?.get(String(official.rt?.rw_id))
 
@@ -165,7 +211,7 @@ function describeArea(official, rwNumbers) {
   return 'Desa'
 }
 
-function OfficialPhoto({ src, name }) {
+function OfficialPhoto({ src, name }: { src: string | null; name?: string | null }) {
   return (
     <div className="sid-profil-desa-avatar sid-profil-desa-avatar-tiny">
       {src ? (
@@ -181,7 +227,13 @@ function OfficialPhoto({ src, name }) {
  * Foto pejabat wajib diunggah saat penetapan dan rotasi; pratinjaunya
  * tampil begitu berkas dipilih.
  */
-function PhotoField({ file, onChange, disabled }) {
+type PhotoFieldProps = {
+  file: File | null
+  onChange: (file: File | null) => void
+  disabled: boolean
+}
+
+function PhotoField({ file, onChange, disabled }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
@@ -212,7 +264,14 @@ function PhotoField({ file, onChange, disabled }) {
  * desa ini beserta akunnya, dan memberi tahu bila ia tidak dapat ditetapkan
  * pada jabatan yang dipilih.
  */
-function CandidatePicker({ candidate, position, onChange, disabled }) {
+type CandidatePickerProps = {
+  candidate: OfficialCandidate | null
+  position: string
+  onChange: (candidate: OfficialCandidate | null) => void
+  disabled: boolean
+}
+
+function CandidatePicker({ candidate, position, onChange, disabled }: CandidatePickerProps) {
   const [nik, setNik] = useState('')
   const [searching, setSearching] = useState(false)
   const [lookupError, setLookupError] = useState('')
@@ -227,7 +286,7 @@ function CandidatePicker({ candidate, position, onChange, disabled }) {
 
       onChange(response?.data?.data ?? null)
     } catch (requestError) {
-      setLookupError(serverMessage(requestError, 'Gagal mencari NIK.'))
+      setLookupError(getApiErrorMessage(requestError, 'Gagal mencari NIK.'))
     } finally {
       setSearching(false)
     }
@@ -290,23 +349,27 @@ function CandidatePicker({ candidate, position, onChange, disabled }) {
  */
 export default function PejabatDesaPage() {
   const { user } = useAuth()
-  const [officials, setOfficials] = useState([])
-  const [positionTypes, setPositionTypes] = useState([])
-  const [accountPositions, setAccountPositions] = useState([])
+  const [officials, setOfficials] = useState<Official[]>([])
+  const [positionTypes, setPositionTypes] = useState<OfficialPositionType[]>([])
+  const [accountPositions, setAccountPositions] = useState<AccountPosition[]>([])
   const [managingTypes, setManagingTypes] = useState(false)
-  const [areas, setAreas] = useState({ rts: [], rws: [], hamlets: [] })
+  const [areas, setAreas] = useState<{ rts: Rt[]; rws: Rw[]; hamlets: Hamlet[] }>({
+    rts: [],
+    rws: [],
+    hamlets: [],
+  })
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
-  const [warnings, setWarnings] = useState([])
+  const [warnings, setWarnings] = useState<DemotionWarning[]>([])
   const [statusFilter, setStatusFilter] = useState('aktif')
-  const [promotion, setPromotion] = useState(null)
-  const [rotation, setRotation] = useState(null)
-  const [demotion, setDemotion] = useState(null)
+  const [promotion, setPromotion] = useState<PromotionForm | null>(null)
+  const [rotation, setRotation] = useState<RotationForm | null>(null)
+  const [demotion, setDemotion] = useState<DemotionForm | null>(null)
   // Satu input berkas tersembunyi dipakai bersama oleh tombol "Ganti foto"
   // tiap baris; pejabat yang dituju disimpan di ref.
-  const photoInput = useRef(null)
-  const photoTarget = useRef(null)
+  const photoInput = useRef<HTMLInputElement>(null)
+  const photoTarget = useRef<Official | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -330,7 +393,7 @@ export default function PejabatDesaPage() {
         hamlets: unwrap(hamletResponse),
       })
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Gagal memuat data pejabat.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat data pejabat.'))
     } finally {
       setLoading(false)
     }
@@ -341,14 +404,14 @@ export default function PejabatDesaPage() {
   }, [loadData])
 
   const rwNumbers = useMemo(
-    () => new Map(areas.rws.map((rw) => [String(rw.id), rw.number])),
+    (): RwNumbers => new Map(areas.rws.map((rw) => [String(rw.id), rw.number])),
     [areas.rws],
   )
 
   // Jabatan dan wilayah yang sedang dijabat. Backend menolak pejabat kedua
   // (409), jadi pilihannya dibuat buram; penggantinya lewat rotasi.
   const occupied = useMemo(() => {
-    const keys = new Set()
+    const keys = new Set<string>()
     officials
       .filter((official) => official.is_active)
       .forEach((official) => {
@@ -361,7 +424,7 @@ export default function PejabatDesaPage() {
   // Pilihan jabatan: jabatan berakun, lalu jenis jabatan aktif tanpa akun.
   // Jabatan berwilayah (RT/RW/Kadus) dicek per wilayah di pilihan wilayahnya.
   const positionOptions = useMemo(() => {
-    const withStatus = (option, single) => {
+    const withStatus = (option: PositionOption, single: boolean) => {
       const taken = single && occupied.has(option.value)
       return {
         ...option,
@@ -383,7 +446,7 @@ export default function PejabatDesaPage() {
     ]
   }, [accountPositions, positionTypes, occupied])
 
-  const areaOption = (areaId, label) => {
+  const areaOption = (areaId: number, label: string) => {
     const taken = occupied.has(`${promotion?.position}:${areaId}`)
     return (
       <option key={areaId} value={areaId} disabled={taken}>
@@ -411,7 +474,7 @@ export default function PejabatDesaPage() {
 
   // afterSuccess: langkah setelah berhasil; bawaannya memuat ulang daftar.
   const run = async (
-    request: () => Promise<{ data?: { message?: string; warnings?: string[] } }>,
+    request: () => Promise<{ data?: { message?: string; warnings?: DemotionWarning[] } }>,
     successMessage: string,
     afterSuccess: () => unknown = loadData,
   ) => {
@@ -429,13 +492,13 @@ export default function PejabatDesaPage() {
       setDemotion(null)
       await afterSuccess()
     } catch (requestError) {
-      setError(serverMessage(requestError, 'Aksi pejabat gagal diproses.'))
+      setError(getApiErrorMessage(requestError, 'Aksi pejabat gagal diproses.'))
     } finally {
       setProcessing(false)
     }
   }
 
-  const handlePromote = (event) => {
+  const handlePromote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const scope = findAccountPosition(accountPositions, promotion.position)?.scope
@@ -456,7 +519,7 @@ export default function PejabatDesaPage() {
     )
   }
 
-  const handleRotate = (event) => {
+  const handleRotate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     // Staf SIDUTama yang menyerahkan jabatannya sendiri langsung menjadi
@@ -481,7 +544,7 @@ export default function PejabatDesaPage() {
     )
   }
 
-  const handlePhotoChange = (event) => {
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     const official = photoTarget.current
 
@@ -491,7 +554,7 @@ export default function PejabatDesaPage() {
     return run(() => uploadOfficialPhoto(official.id, file), 'Foto pejabat berhasil diperbarui.')
   }
 
-  const handleDeletePhoto = async (official) => {
+  const handleDeletePhoto = async (official: Official) => {
     if (
       !(await confirmDialog({
         title: `Hapus foto ${official.citizen?.name ?? 'pejabat'}?`,
@@ -504,12 +567,12 @@ export default function PejabatDesaPage() {
     return run(() => deleteOfficialPhoto(official.id), 'Foto pejabat berhasil dihapus.')
   }
 
-  const pickPhotoFor = (official) => {
+  const pickPhotoFor = (official: Official) => {
     photoTarget.current = official
     photoInput.current?.click()
   }
 
-  const handleDemote = (event) => {
+  const handleDemote = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     return run(
@@ -519,7 +582,7 @@ export default function PejabatDesaPage() {
     )
   }
 
-  const handleDelete = async (official) => {
+  const handleDelete = async (official: Official) => {
     if (
       !(await confirmDialog({
         title: `Hapus riwayat jabatan ${official.citizen?.name ?? ''}?`,
@@ -567,7 +630,7 @@ export default function PejabatDesaPage() {
     escapeClose: openCloser,
   })
 
-  const openModal = (open) => {
+  const openModal = (open: () => void) => {
     setError('')
     open()
   }

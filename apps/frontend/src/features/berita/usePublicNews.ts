@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { getPublicNews } from './publicNewsApi'
 import { mapNews } from './mapNews'
+import type { NewsItem } from './mapNews'
 
 export function usePublicNews() {
-  const [news, setNews] = useState([])
+  const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true

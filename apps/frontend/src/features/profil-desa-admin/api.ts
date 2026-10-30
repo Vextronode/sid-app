@@ -1,7 +1,9 @@
 import api from '@/lib/api'
 import type { Id, Official, ResourceResponse, Village } from '@/types'
 import type {
+  AccountPositionData,
   OfficialAssignPayload,
+  OfficialCandidate,
   OfficialPayload,
   OfficialPositionType,
   OfficialPositionTypePayload,
@@ -72,7 +74,10 @@ export function rotatePerangkatDesa(id: Id, payload: OfficialAssignPayload) {
 // Cari calon pejabat lewat NIK. Jabatan menentukan apakah calon harus
 // sudah punya akun warga.
 export function findOfficialCandidate(nik: string, position?: string) {
-  return api.post('/api/officials/candidates/lookup', position ? { nik, position } : { nik })
+  return api.post<ResourceResponse<OfficialCandidate>>(
+    '/api/officials/candidates/lookup',
+    position ? { nik, position } : { nik },
+  )
 }
 
 // Logo desa dan foto beranda untuk halaman publik.
@@ -99,7 +104,9 @@ export function deleteOfficialPhoto(officialId: Id) {
 
 // Jenis jabatan desa tanpa akun (Kasi/Kaur/Staf), dikelola Staf SIDUTama.
 export function getOfficialPositionTypes() {
-  return api.get<ResourceResponse<OfficialPositionType[]>>('/api/official-position-types')
+  return api.get<
+    ResourceResponse<OfficialPositionType[]> & { account_positions?: AccountPositionData[] }
+  >('/api/official-position-types')
 }
 
 export function createOfficialPositionType(payload: OfficialPositionTypePayload) {

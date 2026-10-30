@@ -47,6 +47,7 @@ import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import type { LetterStatus } from '@/types'
+import type { LetterListItem } from '@/types'
 
 // Surat yang masih dapat diproses RT.
 const OPEN_STATUSES: LetterStatus[] = [SURAT_STATUS.PENDING, SURAT_STATUS.IN_PROGRESS]
@@ -123,7 +124,7 @@ export default function RTListPage() {
   // BUKA DETAIL
   // ==========================================
 
-  const handleOpenDetail = (surat) => {
+  const handleOpenDetail = (surat: LetterListItem) => {
     setSelectedId(surat.id)
 
     const canProcessAtRt =

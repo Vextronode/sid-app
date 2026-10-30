@@ -6,23 +6,20 @@ import { PageLoader } from '@/components/ui/PageLoader'
 import { getInfoPages, saveInfoPage } from '@/features/info-admin/api'
 import { ListField } from '@/features/info-admin/components/ListField'
 import { notifySuccess } from '@/shared/lib/toast'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+import type { FormEvent, KeyboardEvent } from 'react'
+import type { InfoPageSection, SavedInfoPage } from '@/features/info-admin/api'
 
 // Alamat publik tiap halaman (route di App.tsx).
-const PUBLIC_PATHS = {
+const PUBLIC_PATHS: Record<string, string> = {
   ppid: '/ppid',
   'kebijakan-privasi': '/kebijakan-privasi',
   aksesibilitas: '/aksesibilitas',
 }
 
-const INPUT_TYPES = { email: 'email', date: 'date' }
+const INPUT_TYPES: Record<string, string> = { email: 'email', date: 'date' }
 
-function resolveError(error, fallback) {
-  const errors = error?.response?.data?.errors
-
-  return (errors && Object.values(errors).flat()[0]) || error?.response?.data?.message || fallback
-}
-
-function formatUpdated(value) {
+function formatUpdated(value: string | null) {
   if (!value) return 'Belum pernah disimpan'
 
   return `Terakhir disimpan ${new Date(value).toLocaleString('id-ID', {
@@ -35,18 +32,23 @@ function formatUpdated(value) {
 }
 
 // Satu halaman: field tunggal jadi input, field daftar jadi daftar dinamis.
-function InfoPageForm({ section, onSaved }) {
+type InfoPageFormProps = {
+  section: InfoPageSection
+  onSaved: (saved: SavedInfoPage) => void
+}
+
+function InfoPageForm({ section, onSaved }: InfoPageFormProps) {
   const formId = useId()
   const [values, setValues] = useState(section.fields)
   const [processing, setProcessing] = useState(false)
-  const [message, setMessage] = useState(null)
+  const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null)
 
-  const set = (key, value) => {
+  const set = (key: string, value: string | string[]) => {
     setValues((current) => ({ ...current, [key]: value }))
     setMessage(null)
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setProcessing(true)
     setMessage(null)
@@ -61,7 +63,7 @@ function InfoPageForm({ section, onSaved }) {
     } catch (requestError) {
       setMessage({
         type: 'error',
-        text: resolveError(requestError, `Gagal menyimpan ${section.title}.`),
+        text: getApiErrorMessage(requestError, `Gagal menyimpan ${section.title}.`),
       })
     } finally {
       setProcessing(false)
@@ -80,7 +82,7 @@ function InfoPageForm({ section, onSaved }) {
               id={id}
               label={field.label}
               hint={field.hint}
-              items={values[field.key] ?? []}
+              items={(values[field.key] as string[] | undefined) ?? []}
               onChange={(items) => set(field.key, items)}
               disabled={processing}
             />
@@ -151,8 +153,8 @@ function InfoPageForm({ section, onSaved }) {
 }
 
 export default function KelolaHalamanInfoPage() {
-  const [sections, setSections] = useState([])
-  const [active, setActive] = useState(null)
+  const [sections, setSections] = useState<InfoPageSection[]>([])
+  const [active, setActive] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const tabsId = useId()
@@ -166,7 +168,7 @@ export default function KelolaHalamanInfoPage() {
       setActive((current) => current ?? data[0]?.page ?? null)
       setError('')
     } catch (requestError) {
-      setError(resolveError(requestError, 'Gagal memuat halaman informasi.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat halaman informasi.'))
     } finally {
       setLoading(false)
     }
@@ -178,7 +180,7 @@ export default function KelolaHalamanInfoPage() {
     void load()
   }, [load])
 
-  const handleSaved = (saved) => {
+  const handleSaved = (saved: SavedInfoPage) => {
     setSections((current) =>
       current.map((section) =>
         section.page === saved.page
@@ -189,8 +191,8 @@ export default function KelolaHalamanInfoPage() {
   }
 
   // Panah kiri/kanan berpindah tab (pola tablist WAI-ARIA).
-  const handleTabKey = (event, index) => {
-    const offset = { ArrowRight: 1, ArrowLeft: -1 }[event.key]
+  const handleTabKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const offset = ({ ArrowRight: 1, ArrowLeft: -1 } as Record<string, number>)[event.key]
     if (!offset) return
 
     const next = sections[(index + offset + sections.length) % sections.length]

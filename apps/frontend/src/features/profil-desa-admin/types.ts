@@ -1,6 +1,22 @@
 // Profil desa dan perangkat desa di halaman admin Profil Desa.
 import type { Official, Uuid, Village } from '@/types'
 
+// Kolom wilayah yang wajib diisi saat menetapkan jabatan berwilayah.
+export type AreaScope = 'rt_id' | 'rw_id' | 'hamlet_id'
+
+// GET /api/official-position-types `account_positions`: jabatan berakun.
+export type AccountPositionData = { code: string; label: string; scope: AreaScope | null }
+
+// POST /api/officials/candidates/lookup.
+export type OfficialCandidate = {
+  citizen_id: Uuid
+  user_id: Uuid | null
+  name: string
+  username: string | null
+  eligible: boolean
+  reason: string | null
+}
+
 // OfficialPositionTypeResource: jabatan tanpa akun (Kasi/Kaur/Staf).
 export type OfficialPositionType = {
   id: number

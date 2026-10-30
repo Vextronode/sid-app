@@ -31,7 +31,7 @@ const SECTIONS = [
 export default function DataWargaReadOnlyPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
-  const switchSection = (value) =>
+  const switchSection = (value: string) =>
     setSearchParams(value === 'penduduk' ? {} : { tab: value }, { replace: true })
   const familyList = useFamilyList()
   const [citizens, setCitizens] = useState([])
@@ -75,7 +75,7 @@ export default function DataWargaReadOnlyPage() {
     setReloadKey((key) => key + 1)
   }
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setPage(1)
   }

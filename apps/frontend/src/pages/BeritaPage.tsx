@@ -69,7 +69,7 @@ export function BeritaPage() {
   // NAVIGATE DETAIL
   // ==========================================
 
-  const handleDetail = (id) => {
+  const handleDetail = (id: number) => {
     navigate(`/berita/${id}`)
   }
 

@@ -33,7 +33,7 @@ import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
 const EMPTY_EXPORT_MESSAGE = 'Tidak ada data surat untuk diunduh. Unduhan laporan gagal.'
 
-const STATUS_FILTER_PARAM = {
+const STATUS_FILTER_PARAM: Record<string, string> = {
   verification: SURAT_STATUS.IN_PROGRESS,
   completed: SURAT_STATUS.APPROVED,
   rejected: SURAT_STATUS.REJECTED,
@@ -47,7 +47,7 @@ export default function OperatorSuratListPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('surat-operator')
 
-  const setPageSize = (value) => {
+  const setPageSize = (value: number) => {
     setPageSizeState(value)
     setCurrentPage(1)
   }

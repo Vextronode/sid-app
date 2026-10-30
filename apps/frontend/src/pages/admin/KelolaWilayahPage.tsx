@@ -8,7 +8,14 @@ import DusunTable from '@/features/kelola-wilayah/components/DusunTable'
 import RtTable from '@/features/kelola-wilayah/components/RtTable'
 import RwTable from '@/features/kelola-wilayah/components/RwTable'
 import WilayahFormModal from '@/features/kelola-wilayah/components/WilayahFormModal'
-import type { WilayahType } from '@/features/kelola-wilayah/types'
+import type {
+  WilayahHamlet,
+  WilayahItem,
+  WilayahPayload,
+  WilayahRt,
+  WilayahRw,
+  WilayahType,
+} from '@/features/kelola-wilayah/types'
 import WilayahTabs from '@/features/kelola-wilayah/components/WilayahTabs'
 import { PageLoader } from '@/components/ui/PageLoader'
 import { RefreshButton } from '@/components/ui/RefreshButton'
@@ -17,6 +24,11 @@ import { notifySuccess } from '@/shared/lib/toast'
 
 // Label tombol Tambah per tab.
 const TAB_LABELS: Record<WilayahType, string> = { dusun: 'Dusun', rw: 'RW', rt: 'RT' }
+
+// Baris tabel yang dapat diaktifkan/nonaktifkan.
+type ToggleItem = { id: number | null; isActive: boolean }
+
+type ModalState = { open: boolean; type: WilayahType | null; item: WilayahItem | null }
 
 export default function KelolaWilayahPage() {
   const {
@@ -39,13 +51,13 @@ export default function KelolaWilayahPage() {
   } = useWilayahMaster()
 
   const [activeTab, setActiveTab] = useState<WilayahType>('dusun')
-  const [modal, setModal] = useState({
+  const [modal, setModal] = useState<ModalState>({
     open: false,
     type: null,
     item: null,
   })
 
-  const openCreate = (type) => {
+  const openCreate = (type: WilayahType) => {
     setModal({
       open: true,
       type,
@@ -53,7 +65,7 @@ export default function KelolaWilayahPage() {
     })
   }
 
-  const openEdit = (type, item) => {
+  const openEdit = (type: WilayahType, item: WilayahItem) => {
     setModal({
       open: true,
       type,
@@ -69,7 +81,7 @@ export default function KelolaWilayahPage() {
     })
   }
 
-  const handleSubmit = async (payload) => {
+  const handleSubmit = async (payload: WilayahPayload) => {
     if (modal.type === 'dusun') {
       if (modal.item) {
         return Boolean(await updateHamlet(modal.item.id, payload))
@@ -98,7 +110,7 @@ export default function KelolaWilayahPage() {
   }
 
   // Aktif/nonaktif langsung dari baris tabel, dengan konfirmasi.
-  const confirmToggle = (item, label) =>
+  const confirmToggle = (item: ToggleItem, label: string) =>
     confirmDialog(
       item.isActive
         ? {
@@ -114,20 +126,25 @@ export default function KelolaWilayahPage() {
           },
     )
 
-  const toggleWith = (update, labelOf) => async (item) => {
-    const label = labelOf(item)
-    if (!(await confirmToggle(item, label))) return
+  const toggleWith =
+    <T extends ToggleItem>(
+      update: (id: number, payload: WilayahPayload) => Promise<unknown>,
+      labelOf: (item: T) => string,
+    ) =>
+    async (item: T) => {
+      const label = labelOf(item)
+      if (!(await confirmToggle(item, label))) return
 
-    if (await update(item.id, { is_active: !item.isActive })) {
-      notifySuccess(`${label} berhasil ${item.isActive ? 'dinonaktifkan' : 'diaktifkan'}.`)
+      if (await update(item.id, { is_active: !item.isActive })) {
+        notifySuccess(`${label} berhasil ${item.isActive ? 'dinonaktifkan' : 'diaktifkan'}.`)
+      }
     }
-  }
 
-  const handleToggleHamlet = toggleWith(updateHamlet, (item) => `dusun ${item.name}`)
-  const handleToggleRw = toggleWith(updateRw, (item) => `RW ${item.number}`)
-  const handleToggleRt = toggleWith(updateRt, (item) => `RT ${item.number}`)
+  const handleToggleHamlet = toggleWith<WilayahHamlet>(updateHamlet, (item) => `dusun ${item.name}`)
+  const handleToggleRw = toggleWith<WilayahRw>(updateRw, (item) => `RW ${item.number}`)
+  const handleToggleRt = toggleWith<WilayahRt>(updateRt, (item) => `RT ${item.number}`)
 
-  const handleDeleteHamlet = async (item) => {
+  const handleDeleteHamlet = async (item: WilayahHamlet) => {
     const confirmed = await confirmDialog({
       title: `Hapus dusun "${item.name}"?`,
       message: 'Tindakan ini tidak dapat dibatalkan.',
@@ -139,7 +156,7 @@ export default function KelolaWilayahPage() {
     if (await deleteHamlet(item.id)) notifySuccess(`Dusun ${item.name} berhasil dihapus.`)
   }
 
-  const handleDeleteRw = async (item) => {
+  const handleDeleteRw = async (item: WilayahRw) => {
     const confirmed = await confirmDialog({
       title: `Hapus RW ${item.number}?`,
       message: 'Tindakan ini tidak dapat dibatalkan.',
@@ -151,7 +168,7 @@ export default function KelolaWilayahPage() {
     if (await deleteRw(item.id)) notifySuccess(`RW ${item.number} berhasil dihapus.`)
   }
 
-  const handleDeleteRt = async (item) => {
+  const handleDeleteRt = async (item: WilayahRt) => {
     const confirmed = await confirmDialog({
       title: `Hapus RT ${item.number}?`,
       message: 'Tindakan ini tidak dapat dibatalkan.',
