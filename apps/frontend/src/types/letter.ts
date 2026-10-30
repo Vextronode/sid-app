@@ -1,0 +1,198 @@
+// Surat dan jenis surat.
+// Sumber: LetterListResource (daftar), LetterResource (detail),
+// LetterTypeResource, serta resource relasinya.
+import type { IsoDateString } from './api'
+import type { Citizen } from './citizen'
+import type { User } from './user'
+
+export type LetterStatus = 'pending' | 'in_progress' | 'approved' | 'rejected'
+
+// Tahap unggah hasil dari instansi luar; null bila tidak berlaku.
+export type LetterResultStage = 'awaiting_upload' | 'under_review' | 'accepted'
+
+export type LetterCurrentStep = {
+  step_order: number
+  approver_position: string
+  is_final: boolean
+}
+
+// Satu baris di GET /api/letters.
+export type LetterListItem = {
+  id: number
+  letter_type_id: number
+  submitted_by: number | null
+  citizen_id: number | null
+  letter_number: string | null
+  applicant_name: string | null
+  notes: string | null
+  status: LetterStatus
+  current_step_order: number
+  current_step: LetterCurrentStep | null
+  rejected_at_step: number | null
+  is_overdue: boolean
+  awaiting_signatures: boolean
+  needs_fulfillment: boolean
+  result_stage: LetterResultStage | null
+  result_rejected: boolean
+  expires_at: IsoDateString | null
+  is_expired: boolean
+  submitted_at: IsoDateString | null
+  processed_at: IsoDateString | null
+  created_at: IsoDateString | null
+  updated_at: IsoDateString | null
+  letter_type: {
+    id: number
+    name: string
+    code: string
+    signed_by_village_head: boolean
+  } | null
+  citizen: { id: number; name: string } | null
+}
+
+export type LetterApproval = {
+  id: number
+  letter_id: number
+  approved_by: number | null
+  approval_level: string
+  flow_step_id: number | null
+  action: 'approved' | 'rejected' | null
+  notes: string | null
+  deadline_at: IsoDateString | null
+  reminded_at: IsoDateString | null
+  created_at: IsoDateString | null
+  approver_name?: string | null
+  approved_by_user?: User
+}
+
+export type LetterStatusLog = {
+  id: number
+  letter_id: number
+  actor_id: number | null
+  actor_name?: string
+  old_status: LetterStatus | null
+  new_status: LetterStatus
+  notes: string | null
+  ip_address: string | null
+  created_at: IsoDateString | null
+}
+
+export type LetterAttachmentKind = 'attachment' | 'field' | 'wet_signature' | 'result'
+
+export type LetterAttachment = {
+  id: number
+  kind: LetterAttachmentKind
+  field: string | null
+  original_name: string
+  mime_type: string
+  size: number
+  url: string
+  created_at: IsoDateString | null
+}
+
+export type LetterSignatureStatus = 'pending' | 'signed' | 'rejected' | 'expired' | 'cancelled'
+
+export type LetterSignature = {
+  slot_key: string
+  slot_label: string
+  signer_type: 'applicant' | 'other' | 'witness'
+  method: 'digital' | 'wet' | 'consent' | 'rt_check' | 'manual'
+  status: LetterSignatureStatus
+  signer_name: string | null
+  expires_at: IsoDateString | null
+  responded_at: IsoDateString | null
+}
+
+export type LetterResult = {
+  id: number
+  status: 'submitted' | 'accepted' | 'rejected'
+  submitted_at: IsoDateString | null
+  reviewed_at: IsoDateString | null
+  reviewer_name?: string | null
+  review_notes: string | null
+  attachments?: LetterAttachment[]
+}
+
+export type LetterDocument = {
+  key: string
+  title: string
+}
+
+// Definisi isian form dinamis; bentuk lengkapnya diketik di langkah fitur surat.
+export type LetterFormField = Record<string, unknown>
+
+export type LetterType = {
+  id: number
+  code: string
+  name: string
+  description: string | null
+  category: string | null
+  category_label: string | null
+  template: string | null
+  requirements_info: unknown
+  carry_documents: unknown
+  flow_id: number | null
+  flow?: { id: number; name: string }
+  assigned_role: string | null
+  validity_days: number | null
+  is_active: boolean
+  produces_letter: boolean
+  issues_letter_number: boolean
+  signed_by_village_head: boolean
+  data_action: string | null
+  form_fields: LetterFormField[]
+  data_fields: unknown[]
+  signature_slots: Record<string, unknown>[]
+  has_supporting_document: boolean
+  status_label: string
+}
+
+// GET /api/letters/{id}. Field opsional hanya ada bila relasinya dimuat backend.
+export type Letter = {
+  id: number
+  village_id: number
+  letter_type_id: number
+  submitted_by: number | null
+  on_behalf_of: number | null
+  citizen_id: number | null
+  letter_number: string | null
+  applicant_name: string | null
+  applicant_nik_masked: string | null
+  purpose: string | null
+  payload: Record<string, unknown> | null
+  notes: string | null
+  status: LetterStatus
+  flow_id: number | null
+  current_step_order: number
+  current_step?: LetterCurrentStep | null
+  rejected_at_step: number | null
+  is_overdue: boolean
+  expires_at: IsoDateString | null
+  is_expired: boolean
+  submitted_at: IsoDateString | null
+  processed_at: IsoDateString | null
+  signed_by_official_id: number | null
+  fulfilled_at: IsoDateString | null
+  fulfilled_by: number | null
+  needs_fulfillment?: boolean
+  result_stage?: LetterResultStage | null
+  result_upload_hint?: string | null
+  results?: LetterResult[]
+  can_upload_result?: boolean
+  can_fulfill?: boolean
+  can_review_result?: boolean
+  created_at: IsoDateString | null
+  updated_at: IsoDateString | null
+  citizen?: Citizen
+  letter_type?: LetterType
+  approvals?: LetterApproval[]
+  status_logs?: LetterStatusLog[]
+  attachments?: LetterAttachment[]
+  awaiting_signatures: boolean
+  signatures?: LetterSignature[]
+  documents?: LetterDocument[]
+  has_supporting_document?: boolean
+  rw_fyi_notified?: boolean
+  user?: User
+}
+
+export type LetterDecision = 'approved' | 'rejected'

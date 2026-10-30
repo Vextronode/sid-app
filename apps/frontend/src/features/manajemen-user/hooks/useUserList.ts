@@ -28,7 +28,7 @@ export function useUserList() {
       setError('')
 
       const res = await getUsers()
-      const userData = res.data?.data ?? res.data?.users ?? []
+      const userData = res.data?.data ?? []
 
       setUsers(Array.isArray(userData) ? userData : [])
     } catch (error) {

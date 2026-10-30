@@ -93,6 +93,8 @@ src/
                           villageMap (koordinat kantor → link Google Maps)
   styles/                 sid-global.css, public.css, beranda.css
   test/                   setup Vitest
+  types/                  tipe domain & API lintas fitur (api, user, citizen, wilayah, letter,
+                          notification); diimpor lewat `@/types`
 public/
   push-handler.js         handler `push` & `notificationclick` untuk service worker
   assets/                 ikon PWA dan aset seeder (logo/foto default)
@@ -109,6 +111,19 @@ Struktur berbasis fitur menjaga batas domain; halaman (`pages/`) merakit kompone
 - Interceptor respons: 403 dengan `code: password_change_required` → redirect ke `/change-password`.
 - Error lain diteruskan ke pemanggil; bentuk error backend adalah format Laravel `{ message, errors? }` (bukan `{ error: { code, message, details } }`).
 - Modul API per fitur (`features/*/api*.ts`) membungkus endpoint domainnya.
+
+**Tipe respons.** Bentuk data di `src/types/` disalin dari API Resource backend (`app/Http/Resources`), yang menjadi sumber kebenaran; field yang dikirim lewat `whenLoaded`/`when` ditandai opsional (`?`). Modul API memberi tipe lewat generic Axios, mis. `api.get<MessageResponse<Letter>>(...)`. Pembungkus yang dipakai:
+
+| Tipe | Bentuk | Contoh endpoint |
+|---|---|---|
+| `ResourceResponse<T>` | `{ data }` | `PATCH /api/rts/{id}`, `GET /api/families/{id}` |
+| `MessageResponse<T>` | `{ message, data }` | `GET /api/letters/{id}`, `POST /api/letters` |
+| `CollectionResponse<T>` | `{ data: [] }` | `GET /api/hamlets`, `GET /api/notifications` |
+| `PaginatedResponse<T>` | `{ data, meta }` (meta dibuat controller) | `GET /api/letters` |
+| `LaravelPaginatedResponse<T>` | `{ data, links, meta }` (paginator Laravel) | `GET /api/families`, `GET /api/citizens` (+ `total`) |
+| `ApiError` | `AxiosError<{ message?, errors?, code? }>` | semua error |
+
+Bila resource backend berubah, tipe di `src/types/` ikut diperbarui pada perubahan yang sama.
 
 ---
 
@@ -200,3 +215,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.2 | 2026-10-16 | Diselaraskan ke source: stack aktual (React 19, Vite 8, Tailwind 4, PWA), struktur folder aktual, API client & format error Laravel, routing berbasis layout route + `roleNavigation`, komponen form dinamis/TTD/Terapkan/Web Push, token desain `pb-*` |
 | 1.3 | 2026-10-20 | Komponen daftar berhalaman (pilihan baris per halaman, teks rentang) dan Surat Saya (`MyLettersList`, `LetterTypePicker`) |
 | 1.4 | 2026-10-30 | Source frontend kini TypeScript (`.ts`/`.tsx`): baris Bahasa di tech stack, nama file di struktur folder dan rujukan diselaraskan |
+| 1.5 | 2026-10-30 | Folder `src/types/` (tipe domain & API dari API Resource backend) dan tabel tipe respons di S4 |

@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
+import type { LetterListItem, PaginatedResponse } from '@/types'
 
 const EMPTY_LETTERS = []
 const EMPTY_META = { current_page: 1, per_page: 20, total: 0, last_page: 1 }
@@ -43,7 +44,9 @@ export function useSuratListQuery(params) {
   const { data, isPending, isFetching } = useQuery({
     queryKey: queryKeys.surat.list(query),
     queryFn: async () => {
-      const response = await api.get('/api/letters', { params: query })
+      const response = await api.get<PaginatedResponse<LetterListItem>>('/api/letters', {
+        params: query,
+      })
 
       return {
         letters: Array.isArray(response.data?.data) ? response.data.data : EMPTY_LETTERS,

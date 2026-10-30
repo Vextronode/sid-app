@@ -3,6 +3,7 @@ import axios from 'axios'
 import { ROLE_FORBIDDEN_EVENT } from '@/lib/authEvents'
 import { queryClient } from '@/shared/lib/queryClient'
 import { queryKeys } from '@/shared/lib/queryKeys'
+import type { ApiError, Id, Letter, LetterDecision, MessageResponse } from '@/types'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || window.location.origin,
@@ -22,7 +23,7 @@ const PASSWORD_CHANGE_PATH = '/change-password'
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: ApiError) => {
     if (
       error.response?.status === 403 &&
       error.response?.data?.code === 'role_forbidden' &&
@@ -50,16 +51,21 @@ api.interceptors.response.use(
 // GET /api/letters/{id}
 // Scope ditentukan backend berdasarkan user / role / wilayah
 // ======================================================
-export function getSuratDetail(id) {
-  return api.get(`/api/letters/${id}`)
+export function getSuratDetail(id: Id) {
+  return api.get<MessageResponse<Letter>>(`/api/letters/${id}`)
 }
 
 // ======================================================
 // RT / kades / sekdes
 // Endpoint : /decision
 // ======================================================
-export async function submitDecision(role, id, status, notes = null) {
-  const response = await api.patch(`/api/${role}/letters/${id}/decision`, {
+export async function submitDecision(
+  role: string,
+  id: Id,
+  status: LetterDecision,
+  notes: string | null = null,
+) {
+  const response = await api.patch<MessageResponse<Letter>>(`/api/${role}/letters/${id}/decision`, {
     status,
     notes,
   })
