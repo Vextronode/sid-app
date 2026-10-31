@@ -32,6 +32,7 @@ const EMPTY_FORM = {
   regency: '',
   province: '',
   postal_code: '',
+  area_code: '',
   email: '',
   area_ha: '' as number | string,
   history: '',
@@ -80,6 +81,7 @@ export default function EditProfilDesaModal({
       regency: initialData?.regency ?? '',
       province: initialData?.province ?? '',
       postal_code: initialData?.postal_code ?? '',
+      area_code: initialData?.area_code ?? '',
       email: initialData?.email ?? '',
       area_ha: initialData?.area_ha ?? '',
       history: initialData?.history ?? '',
@@ -172,6 +174,7 @@ export default function EditProfilDesaModal({
       regency: form.regency.trim(),
       province: form.province.trim(),
       postal_code: form.postal_code.trim(),
+      area_code: form.area_code.trim(),
       email: form.email.trim(),
       area_ha: form.area_ha,
       history: form.history.trim(),
@@ -314,6 +317,28 @@ export default function EditProfilDesaModal({
                 maxLength={10}
                 disabled={processing}
               />
+            </div>
+
+            <div className="sid-profil-desa-form-field">
+              <label htmlFor="profil-area_code">Kode Wilayah Dukcapil</label>
+
+              <input
+                id="profil-area_code"
+                name="area_code"
+                type="text"
+                inputMode="numeric"
+                value={form.area_code}
+                onChange={handleChange}
+                placeholder="Contoh: 32182008"
+                maxLength={8}
+                disabled={processing}
+                aria-describedby="profil-area-code-hint"
+              />
+
+              <p id="profil-area-code-hint" className="sid-profil-desa-location-hint">
+                8 digit dari Disdukcapil, tercetak di kolom Kode Wilayah formulir Layanan
+                Kependudukan.
+              </p>
             </div>
 
             <div className="sid-profil-desa-form-field">

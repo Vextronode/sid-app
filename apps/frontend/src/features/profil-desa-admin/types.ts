@@ -79,6 +79,7 @@ export type VillageProfileForm = {
   regency: string
   province: string
   postal_code: string
+  area_code: string
   email: string
   area_ha: number | string
   history: string

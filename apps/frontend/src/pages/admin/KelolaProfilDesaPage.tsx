@@ -291,6 +291,7 @@ export default function KelolaProfilDesaPage() {
               ['Kabupaten/Kota', profile.regency],
               ['Provinsi', profile.province],
               ['Kode Pos', profile.postal_code],
+              ['Kode Wilayah Dukcapil', profile.area_code],
             ].map(([label, value]) => (
               <div key={label} className="sid-profil-desa-info-item">
                 <span className="sid-profil-desa-info-label">{label}</span>
