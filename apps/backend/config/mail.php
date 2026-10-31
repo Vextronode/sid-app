@@ -65,6 +65,11 @@ return [
             'transport' => 'resend',
         ],
 
+        // Butuh paket railsware/mailtrap-php; kredensial di services.mailtrap-sdk.
+        'mailtrap-sdk' => [
+            'transport' => 'mailtrap-sdk',
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
