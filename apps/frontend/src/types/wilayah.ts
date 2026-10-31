@@ -13,9 +13,9 @@ export type Village = {
   regency: string | null
   province: string | null
   postal_code: string | null
+  area_code?: string | null
   email: string | null
   area_ha: number | string | null
-  has_stamp_img: boolean
   logo_url: string | null
   hero_image_url: string | null
   hero_photo_credit: string | null

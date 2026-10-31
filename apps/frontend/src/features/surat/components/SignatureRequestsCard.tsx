@@ -16,12 +16,14 @@ import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 
-const isWitness = (request: SignatureRequest) => request.signer_type === 'witness'
+// Saksi, atau pihak terkait yang diminta persetujuannya (mis. kepala KK tujuan).
+const isWitness = (request: SignatureRequest) => request.slot_label.startsWith('Saksi')
 
 /**
- * Permintaan tanda tangan dan saksi dari warga lain yang ditujukan ke akun
- * ini, beserta daftar blokir. Selalu tampil di profil, walau kosong.
- * Persetujuan berlaku per surat dan memerlukan kata sandi.
+ * Permintaan saksi (dan persetujuan pihak terkait) dari warga lain yang
+ * ditujukan ke akun ini, beserta daftar blokir. Selalu tampil di profil,
+ * walau kosong. Persetujuan berlaku per surat dan memerlukan kata sandi;
+ * tidak ada tanda tangan digital (surat ditandatangani basah).
  */
 export function SignatureRequestsCard() {
   const [requests, setRequests] = useState<SignatureRequest[]>([])
@@ -47,7 +49,7 @@ export function SignatureRequestsCard() {
       setRequests(Array.isArray(requestData) ? requestData : [])
       setBlocks(Array.isArray(blockData) ? blockData : [])
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Gagal memuat permintaan tanda tangan.'))
+      setError(getApiErrorMessage(requestError, 'Gagal memuat permintaan saksi.'))
     } finally {
       setLoading(false)
     }
@@ -58,7 +60,7 @@ export function SignatureRequestsCard() {
     void load()
   }, [load])
 
-  // Dibuka dari notifikasi permintaan tanda tangan: gulir ke bagian ini.
+  // Dibuka dari notifikasi permintaan saksi: gulir ke bagian ini.
   useEffect(() => {
     if (!loading && hash === `#${SIGNATURE_REQUESTS_ANCHOR}`) {
       sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -92,7 +94,7 @@ export function SignatureRequestsCard() {
     const confirmed = await confirmDialog({
       title: isWitness(request)
         ? `Tolak menjadi saksi untuk ${request.applicant_name}?`
-        : `Tolak permintaan tanda tangan dari ${request.applicant_name}?`,
+        : `Tolak permintaan persetujuan dari ${request.applicant_name}?`,
       message: `${blockOnReject[request.id] ? 'Pemohon juga akan diblokir. ' : ''}Surat tidak dapat diproses tanpa persetujuan Anda.`,
       confirmLabel: 'Tolak',
     })
@@ -123,7 +125,7 @@ export function SignatureRequestsCard() {
     >
       <div className="sid-sign-requests-header">
         <h2 id="signature-requests-heading" className="sid-section-title">
-          Permintaan Tanda Tangan &amp; Saksi
+          Permintaan Saksi
         </h2>
         <button
           type="button"
@@ -137,8 +139,8 @@ export function SignatureRequestsCard() {
       </div>
 
       <p className="sid-upload-description">
-        Warga lain dapat meminta tanda tangan Anda atau meminta Anda menjadi saksi pada suratnya.
-        Persetujuan hanya berlaku untuk satu surat.
+        Warga lain dapat meminta Anda menjadi saksi, atau meminta persetujuan Anda bila suratnya
+        melibatkan Anda (mis. masuk ke KK Anda). Persetujuan hanya berlaku untuk satu surat.
       </p>
 
       {error && (
@@ -151,7 +153,7 @@ export function SignatureRequestsCard() {
         <div className="sid-sign-blocks">
           <p className="sid-label">Warga yang Anda blokir</p>
           <p className="sid-upload-description">
-            Permintaan tanda tangan dan saksi dari warga ini tidak akan sampai ke akun Anda.
+            Permintaan saksi dan persetujuan dari warga ini tidak akan sampai ke akun Anda.
           </p>
 
           {blocks.length === 0 ? (
@@ -221,12 +223,12 @@ export function SignatureRequestsCard() {
           {requests.map((request) => (
             <li key={request.id} className="sid-sign-request">
               <span className={`sid-sign-request-kind${isWitness(request) ? ' witness' : ''}`}>
-                {isWitness(request) ? 'Saksi' : 'Tanda Tangan'}
+                {isWitness(request) ? 'Saksi' : 'Persetujuan'}
               </span>
               <p className="sid-sign-request-title">
                 {isWitness(request)
                   ? `${request.applicant_name} meminta Anda menjadi ${request.slot_label}`
-                  : `${request.applicant_name} meminta tanda tangan Anda sebagai ${request.slot_label}`}
+                  : `${request.applicant_name} meminta persetujuan Anda sebagai ${request.slot_label}`}
               </p>
               <p className="sid-sign-request-meta">
                 {request.letter_type ?? 'Surat'}
@@ -268,7 +270,7 @@ export function SignatureRequestsCard() {
                       () => acceptSignatureRequest(request.id, passwords[request.id]),
                       isWitness(request)
                         ? 'Permintaan disetujui. Anda tercatat sebagai saksi pada surat tersebut.'
-                        : 'Permintaan disetujui. Tanda tangan Anda dipakai pada surat tersebut.',
+                        : 'Permintaan disetujui. Persetujuan Anda tercatat pada surat tersebut.',
                     )
                   }
                 >

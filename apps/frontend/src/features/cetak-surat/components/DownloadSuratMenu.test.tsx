@@ -13,6 +13,13 @@ import { DownloadSuratMenu } from './DownloadSuratMenu'
 import { present } from '@/test/fixtures'
 
 const surat = { id: 'letter-1', letter_number: '470/001' }
+const withDocuments = {
+  ...surat,
+  documents: [
+    { key: 'main', title: 'Surat Keterangan' },
+    { key: 'pernyataan', title: 'Surat Pernyataan' },
+  ],
+}
 
 describe('DownloadSuratMenu', () => {
   beforeEach(() => {
@@ -20,95 +27,43 @@ describe('DownloadSuratMenu', () => {
     downloadSuratPDF.mockResolvedValue(undefined)
   })
 
-  it.each([
-    [/TTD & stempel digital/, 'digital'],
-    [/Untuk tanda tangan basah/, 'wet'],
-  ])('downloads the chosen format (%s)', async (option, template) => {
+  it('downloads a single-document letter directly, without a signature format choice', async () => {
     render(<DownloadSuratMenu surat={surat} />)
 
     const trigger = screen.getByRole('button', { name: /Unduh surat/ })
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(trigger).not.toHaveAttribute('aria-haspopup')
 
     fireEvent.click(trigger)
-    expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
-    fireEvent.click(screen.getByRole('menuitem', { name: option }))
-
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(surat, template, 'main'))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(surat, 'main'))
     expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.queryByText(/TTD/)).toBeNull()
   })
 
-  it.each([
-    [/TTD digital/, 'digital'],
-    [/TTD basah/, 'wet'],
-  ])(
-    'offers digital and wet signatures for a single-document form (%s)',
-    async (option, template) => {
-      const form = { id: 'letter-2', letter_type: { signed_by_village_head: false } }
-      render(<DownloadSuratMenu surat={form} />)
-
-      // Label tombol sama dengan Persuratan Desa.
-      fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-      expect(screen.getAllByRole('menuitem')).toHaveLength(2)
-      fireEvent.click(screen.getByRole('menuitem', { name: option }))
-
-      await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, template, 'main'))
-    },
-  )
-
-  it('lists every issued document of a form under the chosen signature format', async () => {
-    const form = {
-      id: 'letter-3',
-      letter_type: { signed_by_village_head: false },
-      documents: [
-        { key: 'main', title: 'Formulir Pindah' },
-        { key: 'pendaftaran', title: 'Formulir Pendaftaran' },
-      ],
-    }
+  it('downloads a single-document form directly as well', async () => {
+    const form = { id: 'letter-2', letter_type: { signed_by_village_head: false } }
     render(<DownloadSuratMenu surat={form} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      expect.stringContaining('Formulir Pindah'),
-      expect.stringContaining('Formulir Pendaftaran'),
-    ])
-    expect(screen.getByRole('menuitemradio', { name: /TTD digital/ })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
 
-    fireEvent.click(screen.getByRole('menuitem', { name: /Formulir Pendaftaran/ }))
-    await waitFor(() =>
-      expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'digital', 'pendaftaran'),
-    )
-
-    // TTD basah: pilih formatnya dulu, menu tetap terbuka.
-    fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /TTD basah/ }))
-    expect(screen.getByRole('menuitemradio', { name: /TTD basah/ })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
-    fireEvent.click(screen.getByRole('menuitem', { name: /Formulir Pindah/ }))
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'wet', 'main'))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(form, 'main'))
   })
 
-  it('adds documents issued together after the two formats of a signed letter', () => {
-    render(
-      <DownloadSuratMenu
-        surat={{
-          ...surat,
-          documents: [
-            { key: 'main', title: 'Surat Keterangan' },
-            { key: 'pernyataan', title: 'Surat Pernyataan' },
-          ],
-        }}
-      />,
-    )
+  it('lists every issued document and downloads the chosen one', async () => {
+    render(<DownloadSuratMenu surat={withDocuments} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    expect(screen.getAllByRole('menuitem')).toHaveLength(3)
-    expect(screen.getByRole('menuitem', { name: /Surat Pernyataan/ })).toBeTruthy()
+    const trigger = screen.getByRole('button', { name: /Unduh surat/ })
+    fireEvent.click(trigger)
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Surat Keterangan'),
+      expect.stringContaining('Surat Pernyataan'),
+    ])
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /Surat Pernyataan/ }))
+
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(withDocuments, 'pernyataan'))
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   it('focuses the first option, moves with arrow keys and closes on Escape without bubbling', () => {
@@ -118,14 +73,14 @@ describe('DownloadSuratMenu', () => {
       if (event.key === 'Escape' && !event.defaultPrevented) outerEscape(event)
     }
     document.addEventListener('keydown', onKeyDown)
-    render(<DownloadSuratMenu surat={surat} />)
+    render(<DownloadSuratMenu surat={withDocuments} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    const [digital, wet] = screen.getAllByRole('menuitem')
-    expect(digital).toHaveFocus()
+    const [main, statement] = screen.getAllByRole('menuitem')
+    expect(main).toHaveFocus()
 
     fireEvent.keyDown(present(document.activeElement), { key: 'ArrowDown' })
-    expect(wet).toHaveFocus()
+    expect(statement).toHaveFocus()
 
     fireEvent.keyDown(present(document.activeElement), { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
@@ -141,7 +96,6 @@ describe('DownloadSuratMenu', () => {
     render(<DownloadSuratMenu surat={surat} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /TTD & stempel digital/ }))
 
     await waitFor(() =>
       expect(alertDialog).toHaveBeenCalledWith(expect.objectContaining({ title: 'Unduhan gagal' })),
@@ -165,18 +119,18 @@ describe('DownloadSuratMenu', () => {
     await waitFor(() => expect(loadDetail).toHaveBeenCalledWith('letter-2'))
     fireEvent.click(await screen.findByRole('menuitem', { name: /F-1.01/ }))
 
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'digital', 'f1_01'))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'f1_01'))
   })
 
-  it('offers both signature formats when the loaded row has a single document', async () => {
+  it('downloads right away when the loaded row has a single document', async () => {
     const row = { id: 'letter-3', letter_type: { signed_by_village_head: false } }
     const detail = { ...row, documents: [{ key: 'main', title: 'Formulir (F-1.04)' }] }
     render(<DownloadSuratMenu surat={row} loadDetail={vi.fn().mockResolvedValue(detail)} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Unduh surat/ }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: /TTD basah/ }))
 
-    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'wet', 'main'))
+    await waitFor(() => expect(downloadSuratPDF).toHaveBeenCalledWith(detail, 'main'))
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   it('stays disabled when the letter cannot be downloaded', () => {

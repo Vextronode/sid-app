@@ -23,21 +23,20 @@ end note
 :Buka "Ajukan Surat";
 :Pilih jenis surat aktif ber-template;
 :Isi form dinamis (isian sesuai jenis surat),\nunggah berkas isian bila diminta;
-if (Jenis surat punya slot tanda tangan?) then (ya)
-  :Slot pemohon memakai TTD pribadi\n(buat sekali di profil);
-  :Slot pihak lain: isi NIK penanda tangan\natau unggah foto dokumen ber-TTD basah;
+if (Jenis surat meminta saksi?) then (ya)
+  :Isi NIK saksi\n(tanpa TTD digital);
 else (tidak)
 endif
 :Submit;
 
 |#LightYellow|Sistem|
 :Simpan surat pending (snapshot flow_id),\nsimpan berkas di penyimpanan privat;
-if (Semua slot tanda tangan terisi?) then (belum)
-  :Kirim permintaan TTD ke pemilik NIK;
+if (Semua saksi sudah menyetujui?) then (belum)
+  :Kirim permintaan saksi ke pemilik NIK\n(tanpa akun: diverifikasi RT);
   |#LightCyan|Pemilik NIK|
   :Setujui (kata sandi) / Tolak (opsional blokir);
   |#LightBlue|Warga|
-  :Bila ditolak/kedaluwarsa:\nminta ke NIK lain atau TTD basah;
+  :Bila ditolak/kedaluwarsa:\nganti saksi dengan NIK lain;
   |#LightYellow|Sistem|
 else (sudah)
 endif

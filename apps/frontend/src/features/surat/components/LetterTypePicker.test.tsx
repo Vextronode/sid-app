@@ -14,7 +14,7 @@ const TYPES = partialFixture<LetterType[]>([
     requirements_info: 'Fotokopi KTP.',
     validity_days: 30,
   },
-  { id: 2, code: 'SKU', name: 'Surat Keterangan Usaha', signature_slots: [{ key: 'saksi' }] },
+  { id: 2, code: 'SKU', name: 'Surat Keterangan Usaha' },
 ])
 
 function renderPicker(props = {}) {
@@ -35,11 +35,11 @@ function renderPicker(props = {}) {
 }
 
 describe('LetterTypePicker', () => {
-  it('lists letter types as choices with their validity and signature needs', () => {
+  it('lists letter types as choices with their validity', () => {
     const onSelect = renderPicker()
 
     expect(screen.getByText('Berlaku 30 hari')).toBeTruthy()
-    expect(screen.getByText('Perlu tanda tangan')).toBeTruthy()
+    expect(screen.queryByText('Perlu tanda tangan')).toBeNull()
 
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
 

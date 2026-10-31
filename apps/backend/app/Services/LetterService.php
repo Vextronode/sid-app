@@ -24,7 +24,7 @@ class LetterService
 {
     public const DEFAULT_PER_PAGE = 20;
 
-    /** current_step_order saat surat masih menunggu tanda tangan. */
+    /** current_step_order saat surat masih menunggu persetujuan saksi. */
     public const AWAITING_SIGNATURES_STEP = 0;
 
     public function __construct(
@@ -137,12 +137,6 @@ class LetterService
             $data['files'] ?? [],
         );
 
-        $this->letterSignatureService->openForSubmission(
-            $letter,
-            $user,
-            $data['signers'] ?? [],
-            $data['signature_files'] ?? [],
-        );
         $this->letterSignatureService->openWitnesses($letter, $user);
 
         if (! $this->letterSignatureService->isComplete($letter)) {
@@ -153,9 +147,9 @@ class LetterService
     }
 
     /**
-     * Dipanggil setelah sebuah slot tanda tangan terisi (disetujui pemilik
-     * NIK atau diganti TTD basah). Begitu semua slot terisi, surat yang
-     * tertahan masuk ke tahap approval pertama.
+     * Dipanggil setelah saksi terisi (disetujui pemilik NIK atau diganti
+     * saksi lain). Begitu semua saksi terisi, surat yang tertahan masuk ke
+     * tahap approval pertama.
      */
     public function beginApprovalIfSigned(Letter $letter, User $actor): Letter
     {
@@ -176,10 +170,10 @@ class LetterService
     }
 
     /**
-     * Surat belum boleh masuk ke approver selama masih ada slot tanda
-     * tangan yang kosong: current_step_order 0 berarti "menunggu tanda
-     * tangan", sehingga tidak ada step flow yang cocok dan tidak ada
-     * approver yang dapat memprosesnya.
+     * Surat belum boleh masuk ke approver selama masih ada saksi yang
+     * belum menyetujui: current_step_order 0 berarti "menunggu saksi",
+     * sehingga tidak ada step flow yang cocok dan tidak ada approver yang
+     * dapat memprosesnya.
      */
     private function holdForSignatures(Letter $letter, User $actor): Letter
     {

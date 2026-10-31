@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('regency', 100)->nullable();
             $table->string('province', 100)->nullable();
             $table->string('postal_code', 10)->nullable();
+            $table->string('area_code', 10)->nullable();
             $table->string('email', 150)->nullable();
         });
     }
@@ -25,7 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('villages', function (Blueprint $table) {
-            $table->dropColumn(['district', 'regency', 'province', 'postal_code', 'email']);
+            $table->dropColumn(['district', 'regency', 'province', 'postal_code', 'area_code', 'email']);
         });
     }
 };

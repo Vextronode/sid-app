@@ -49,7 +49,7 @@ group DB::transaction
     SVC -> SNAP : captureOnFinalApproval(letter)
     SNAP -> DB : Kepala Desa aktif + citizen
     alt ada Kades aktif
-      SNAP -> DB : UPDATE snapshot (template, form_fields,\nkop desa, stempel, nama & TTD Kades),\nsigned_by_official_id
+      SNAP -> DB : UPDATE snapshot (template, form_fields,\nkop desa, nama Kades),\nsigned_by_official_id
     else jabatan kosong
       SNAP -> SNAP : tunda (dibuat saat unduhan pertama)
     end
@@ -66,4 +66,9 @@ else rejected
   SVC -> P : kepala_desa_rejected
 end
 CTRL --> FE : 200 {message}
+note over SNAP
+  Surat terbit tanpa TTD dan stempel: petugas desa
+  mencetaknya, lalu TTD & stempel basah; pemohon
+  mengambilnya di kantor desa.
+end note
 @enduml

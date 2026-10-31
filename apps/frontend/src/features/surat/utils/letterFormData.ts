@@ -1,8 +1,4 @@
-import {
-  OTHER_OCCUPATION,
-  otherOccupationFieldName,
-  signerFieldNames,
-} from '../validation/suratSchema'
+import { OTHER_OCCUPATION, otherOccupationFieldName } from '../validation/suratSchema'
 import type { SuratFormConfig, SuratFormValues } from '../types'
 import { visibleFields } from './fieldCondition'
 
@@ -12,11 +8,10 @@ const formValue = (value: unknown): string | Blob => (value instanceof Blob ? va
 
 /**
  * Menyusun FormData untuk POST /api/letters dari nilai form.
- * Isian definisi jenis surat -> payload[...] atau files[...]; slot tanda tangan pihak lain ->
- * signers[...] (+ signature_files[...] untuk tanda tangan basah).
+ * Isian definisi jenis surat -> payload[...] atau files[...].
  */
 export function buildLetterFormData(
-  config: Pick<SuratFormConfig, 'fields' | 'signatureSlots'>,
+  config: Pick<SuratFormConfig, 'fields'>,
   letterTypeId: number | string,
   formData: SuratFormValues,
 ) {
@@ -78,25 +73,6 @@ export function buildLetterFormData(
       payload.append(`payload[${otherName}]`, formValue(formData[otherName] ?? ''))
     }
   })
-
-  ;(config.signatureSlots ?? [])
-    .filter((slot) => slot.signer === 'other')
-    .forEach((slot) => {
-      const names = signerFieldNames(slot.key)
-
-      if (formData[names.mode] === 'wet') {
-        payload.append(`signers[${slot.key}][name]`, formValue(formData[names.name] ?? ''))
-
-        const files = formData[names.file] as File[] | undefined
-        if (files?.[0]) {
-          payload.append(`signature_files[${slot.key}]`, files[0])
-        }
-
-        return
-      }
-
-      payload.append(`signers[${slot.key}][nik]`, formValue(formData[names.nik] ?? ''))
-    })
 
   return payload
 }

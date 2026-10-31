@@ -79,6 +79,7 @@ export type VillageProfileForm = {
   regency: string
   province: string
   postal_code: string
+  area_code: string
   email: string
   area_ha: number | string
   history: string
@@ -94,9 +95,7 @@ export type VillageProfileForm = {
 }
 
 // PATCH /api/villages/profile.
-export type VillageProfilePayload = Partial<
-  Omit<Village, 'id' | 'has_stamp_img' | 'logo_url' | 'hero_image_url'>
->
+export type VillageProfilePayload = Partial<Omit<Village, 'id' | 'logo_url' | 'hero_image_url'>>
 
 // Perangkat desa yang sudah dinormalkan untuk tampilan profil.
 export type ProfileOfficial = {

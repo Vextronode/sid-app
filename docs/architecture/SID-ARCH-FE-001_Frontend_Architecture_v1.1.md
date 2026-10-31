@@ -58,8 +58,8 @@ src/
   features/
     auth/                 AuthContext (patchUser, pemeriksaan role_forbidden), form login/register,
                           loginRedirect, userPhoto (foto akun vs foto jabatan)
-    surat/                API surat/tipe/tanda tangan, DynamicSuratForm, FileUploader,
-                          SignatureCard, SignatureRequestsCard, FulfillmentPanel,
+    surat/                API surat/tipe/saksi, DynamicSuratForm, FileUploader,
+                          SignatureRequestsCard, FulfillmentPanel,
                           LetterTypeSettingsPanel, DetailSuratModal (pemohon), LetterTable,
                           LetterRowActions, dossier/ (LetterDossierModal, FlowTimeline,
                           DossierParts), util letterTypeConfig
@@ -74,7 +74,7 @@ src/
     data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
     organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
     kelola-berita/        berita + kategori berita
-    profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, stempel, titik kantor
+    profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, titik kantor
                           dari koordinat/link Google Maps, sambutan Kepala Desa)
     pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
     info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
@@ -163,10 +163,10 @@ Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat war
 Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan (`pending` atau `in_progress`, termasuk surat RT yang tahap RT-nya dilewati), dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
-Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.ts`) dan slot tanda tangan (`signature_slots`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`, `signers[...]`, `signature_files[...]`). Validasi akhir tetap di backend.
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.ts`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`). Tidak ada slot tanda tangan: surat ditandatangani basah setelah terbit. Validasi akhir tetap di backend.
 
-### 6.3 Tanda tangan & Terapkan
-`SignatureCard` (buat/lihat TTD pribadi), `SignatureRequestsCard` (setujui dengan kata sandi/tolak/blokir permintaan TTD), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, kategori Persuratan Desa / Layanan Kependudukan dengan petugas yang mengikutinya, status aktif).
+### 6.3 Saksi & Terapkan
+`SignatureRequestsCard` ("Permintaan Saksi": setujui dengan kata sandi/tolak/blokir permintaan saksi dan persetujuan; profil warga & pejabat), `LetterExtrasPanel` (status saksi, ganti saksi yang menolak/kedaluwarsa), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, kategori Persuratan Desa / Layanan Kependudukan dengan petugas yang mengikutinya, status aktif).
 
 ### 6.4 Web Push
 `useWebPushSubscription` + `WebPushControls`: meminta izin, `PushManager.subscribe()` dengan `VITE_VAPID_PUBLIC_KEY`, lalu `POST /api/push-subscriptions`; menonaktifkan memanggil `DELETE`. `push-handler.js` menampilkan notifikasi dan membuka URL same-origin saat diklik.
@@ -178,8 +178,8 @@ Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis
 - `LetterTable` dipakai semua daftar surat pejabat (RT, RW, Kadus, Kades/Sekdes, Kasi/Kaur/Petugas). Header dan sel memakai perataan yang sama; di ≤767px baris menjadi kartu. Halaman tabel selebar kontainer navbar (1200px), Kasi/Kaur selebar area konten di samping sidebar.
 - `LetterRowActions` mengisi kolom Aksi sesuai peran: **Proses** (primer) bila giliran pengguna memutus (RT di tahap RT, Kades/Sekdes di tahap final), selain itu **Detail**; **Unduh** hanya bagi yang lolos LetterPolicy::download (pemohon, Kades/Sekdes, Kasi/Kaur, Petugas) untuk surat final; pemohon juga mendapat **Hapus** untuk surat yang belum terbit.
 - `LetterDossierModal` adalah kerangka popup "meja dokumen": surat di kiri (`PdfCanvasPreview`), panel berkas di kanan, aksi di footer. Isinya per peran: pemohon (`DetailSuratModal`) melihat progres generik tanpa nama pejabat, alasan penolakan, masa berlaku, dan keadaan kosong bila surat belum terbit/kedaluwarsa; approver dan pemantau (`SuratDetailModal`) melihat pratinjau draf, tahapan lengkap dengan pemutus dan catatan, serta Setuju/Tolak bila berwenang; Kasi/Kaur (`OperatorSuratPreviewModal`) melihat riwayat persetujuan dan menu unduh.
-- Pratinjau selalu dirender sebagai canvas pdf.js di dalam halaman (klik kanan diblok), tidak pernah di tab/iframe viewer PDF browser yang punya tombol unduh. TTD dan stempel hanya muncul bila backend mengizinkan (lihat `GET /letters/{letter}/preview`).
-- `DownloadSuratMenu`: **TTD & stempel digital** atau **Untuk tanda tangan basah** (area tanda tangan kosong, nama file berakhiran `-ttd-basah`).
+- Pratinjau selalu dirender sebagai canvas pdf.js di dalam halaman (klik kanan diblok), tidak pernah di tab/iframe viewer PDF browser yang punya tombol unduh. Pemohon hanya melihat pratinjau setelah surat terbit; pejabat yang memutus melihatnya selama proses (lihat `GET /letters/{letter}/preview`).
+- `DownloadSuratMenu`: tanpa pilihan format (surat terbit tanpa TTD dan stempel, dibubuhkan basah di kantor desa). Satu dokumen langsung terunduh; beberapa dokumen (`surat.documents`) dipilih dari menu. Petunjuk di detail surat (`LETTER_PICKUP_HINT`, `FORM_DOWNLOAD_HINT`) mengarahkan pemohon mengambil surat/formulir bertanda tangan di kantor desa.
 
 ### 6.7 Surat Saya
 `MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.ts` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`.
@@ -230,3 +230,4 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.11 | 2026-10-31 | `noImplicitAny: true` di `tsconfig.json` (kode aplikasi dan test bebas `any` implisit); `DeepPartial` diekspor dari `src/test/fixtures.ts` |
 | 1.12 | 2026-10-31 | `strictNullChecks: true` di `tsconfig.json`; helper test `present()` di `src/test/fixtures.ts`; `FamilyNumberValue` untuk No. KK di Data Warga; relasi wilayah pejabat (`rt`/`rw`/`hamlet`) boleh `null` |
 | 1.13 | 2026-10-31 | `strict: true` di `tsconfig.json`, migrasi TypeScript selesai; galat `catch` dibaca lewat `getApiErrorMessage`, `apiErrorStatus`, dan `apiErrorBody` (`shared/lib/apiError.ts`) |
+| 1.14 | 2026-10-31 | TTD digital dihapus: `SignatureCard`, `PengesahanSuratCard`, slot TTD di form pengajuan, setter TTD Kades & stempel (Kelola Profil Desa), reset TTD (Manajemen User, Pengajuan Reset jadi reset kata sandi saja); `SignatureRequestsCard` jadi "Permintaan Saksi" (anchor `#permintaan-saksi`) |

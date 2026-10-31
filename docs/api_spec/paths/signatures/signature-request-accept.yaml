@@ -1,11 +1,11 @@
 post:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Setujui permintaan tanda tangan
+  summary: Setujui permintaan saksi/persetujuan
   description: |
     Hanya pemilik NIK yang dituju dan selama permintaan masih pending.
-    Kata sandi diminta ulang. TTD pribadi akun (wajib sudah dibuat)
-    dibubuhkan ke slot; pemohon menerima notifikasi `signature_accepted`.
-    Bila semua slot surat lengkap, surat otomatis masuk step approval pertama.
+    Kata sandi diminta ulang. Tidak ada TTD digital: persetujuan dicatat dan
+    pemohon menerima notifikasi `signature_accepted`. Bila semua saksi surat
+    lengkap, surat otomatis masuk step approval pertama.
   operationId: acceptSignatureRequest
   security:
     - sanctumCookie: []
@@ -35,7 +35,7 @@ post:
           schema:
             $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
           example:
-            message: "Permintaan tanda tangan disetujui."
+            message: "Permintaan saksi disetujui."
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '404':
@@ -43,4 +43,4 @@ post:
     '409':
       description: Permintaan sudah tidak aktif
     '422':
-      description: Kata sandi salah, atau akun belum memiliki tanda tangan
+      description: Kata sandi salah

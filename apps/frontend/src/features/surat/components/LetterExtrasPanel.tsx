@@ -7,7 +7,6 @@ import { getLetterDetail, supportingDocumentUrl } from '../api/letterExtrasApi'
 import { refillLetterSignature } from '../api/signatureApi'
 import { FulfillmentPanel } from './FulfillmentPanel'
 import { LetterResultPanel } from './LetterResultPanel'
-import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 
@@ -15,22 +14,17 @@ import { getApiErrorMessage } from '@/shared/lib/apiError'
 // data lewat Data Penduduk.
 const FULFILLMENT_ROLES = ['kasi_pemerintahan', 'kaur_tu_umum']
 
-// Cara saksi tercatat (signer_type witness).
+// Cara saksi tercatat.
 const WITNESS_METHOD_LABELS: Record<string, string> = {
   consent: 'disetujui lewat akun',
   rt_check: 'warga tanpa akun, perlu verifikasi RT',
   manual: 'di luar data penduduk, diisi pemohon',
 }
 
-// Saksi tidak menandatangani: status menyesuaikan.
+// Saksi tidak menandatangani di sistem (surat ditandatangani basah).
 const WITNESS_STATUS_LABELS: Record<string, string> = {
   signed: 'Tercatat',
   pending: 'Menunggu persetujuan saksi',
-}
-
-const SIGNATURE_STATUS_LABELS: Record<string, string> = {
-  signed: 'Sudah ditandatangani',
-  pending: 'Menunggu persetujuan pemilik NIK',
   rejected: 'Ditolak',
   expired: 'Kedaluwarsa',
   cancelled: 'Dibatalkan',
@@ -91,123 +85,6 @@ function WitnessRefill({ letterId, slot, onDone }: RefillProps) {
 
       <button type="submit" className="sid-primary-button" disabled={saving || nik.length !== 16}>
         {saving ? 'Mengirim...' : 'Ganti saksi'}
-      </button>
-    </form>
-  )
-}
-
-function SignatureRefill({ letterId, slot, onDone }: RefillProps) {
-  const [mode, setMode] = useState('digital')
-  const [nik, setNik] = useState('')
-  const [name, setName] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    const confirmed = await confirmDialog(
-      mode === 'wet'
-        ? {
-            title: 'Unggah tanda tangan basah?',
-            message: `Dokumen tanda tangan atas nama ${name || 'penanda tangan'} akan dipakai pada surat ini.`,
-            confirmLabel: 'Unggah',
-            tone: 'primary',
-          }
-        : {
-            title: 'Kirim permintaan tanda tangan?',
-            message: `Permintaan dikirim ke warga ber-NIK ${nik}. Surat diproses setelah ia menyetujuinya.`,
-            confirmLabel: 'Kirim',
-            tone: 'primary',
-          },
-    )
-
-    if (!confirmed) return
-
-    setSaving(true)
-    setError('')
-
-    try {
-      await refillLetterSignature(
-        letterId,
-        slot.slot_key,
-        mode === 'wet' ? { name, file } : { nik },
-      )
-      notifySuccess(
-        mode === 'wet'
-          ? 'Tanda tangan basah berhasil diunggah.'
-          : 'Permintaan tanda tangan berhasil dikirim.',
-      )
-      onDone()
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Gagal memperbarui tanda tangan.'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <label className="flex items-center gap-2">
-        <input
-          type="radio"
-          checked={mode === 'digital'}
-          onChange={() => setMode('digital')}
-          name={`refill-${slot.slot_key}`}
-        />
-        <span>Minta lewat NIK</span>
-      </label>
-      <label className="flex items-center gap-2">
-        <input
-          type="radio"
-          checked={mode === 'wet'}
-          onChange={() => setMode('wet')}
-          name={`refill-${slot.slot_key}`}
-        />
-        <span>Unggah dokumen ber-tanda tangan basah</span>
-      </label>
-
-      {mode === 'digital' ? (
-        <input
-          className="sid-input"
-          inputMode="numeric"
-          maxLength={16}
-          aria-label={`NIK ${slot.slot_label}`}
-          placeholder="NIK (16 digit)"
-          value={nik}
-          onChange={(event) => setNik(event.target.value)}
-        />
-      ) : (
-        <>
-          <input
-            className="sid-input"
-            aria-label={`Nama ${slot.slot_label}`}
-            placeholder="Nama lengkap penanda tangan"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            aria-label={`Dokumen ${slot.slot_label}`}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-        </>
-      )}
-
-      {error && (
-        <p role="alert" className="sid-admin-alert sid-admin-alert-error">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        className="sid-primary-button"
-        disabled={saving || (mode === 'digital' ? nik.length !== 16 : !name || !file)}
-      >
-        {saving ? 'Mengirim...' : 'Kirim'}
       </button>
     </form>
   )
@@ -328,33 +205,25 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
 
       {letter.awaiting_signatures && (
         <p className="sid-warning-box" role="status">
-          Surat ini belum diproses karena masih menunggu tanda tangan atau persetujuan saksi.
+          Surat ini belum diproses karena masih menunggu persetujuan saksi.
         </p>
       )}
 
       {signatures.length > 0 && (
-        <section className="sid-modal-note" aria-label="Tanda tangan">
-          <p className="sid-modal-note-label">Tanda Tangan &amp; Saksi</p>
+        <section className="sid-modal-note" aria-label="Saksi">
+          <p className="sid-modal-note-label">Saksi</p>
           <ul className="sid-modal-note-text">
             {signatures.map((slot) => (
               <li key={slot.slot_key}>
                 <strong>{slot.slot_label}</strong> -{' '}
-                {(slot.signer_type === 'witness' && WITNESS_STATUS_LABELS[slot.status]) ||
-                  SIGNATURE_STATUS_LABELS[slot.status] ||
-                  slot.status}
+                {WITNESS_STATUS_LABELS[slot.status] ?? slot.status}
                 {slot.signer_name ? ` (${slot.signer_name})` : ''}
-                {slot.method === 'wet' && slot.status === 'signed' ? ', tanda tangan basah' : ''}
-                {slot.signer_type === 'witness' && slot.status === 'signed'
+                {slot.status === 'signed'
                   ? `, ${WITNESS_METHOD_LABELS[slot.method] ?? slot.method}`
                   : ''}
-                {canRefill && slot.signer_type === 'other' && slot.status !== 'signed' && (
-                  <SignatureRefill letterId={letter.id} slot={slot} onDone={load} />
+                {canRefill && ['rejected', 'expired', 'cancelled'].includes(slot.status) && (
+                  <WitnessRefill letterId={letter.id} slot={slot} onDone={load} />
                 )}
-                {canRefill &&
-                  slot.signer_type === 'witness' &&
-                  ['rejected', 'expired', 'cancelled'].includes(slot.status) && (
-                    <WitnessRefill letterId={letter.id} slot={slot} onDone={load} />
-                  )}
               </li>
             ))}
           </ul>
@@ -416,7 +285,6 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
                   {(attachment.field ? fieldLabels[attachment.field] : undefined) ??
                     attachment.original_name}
                 </button>
-                {attachment.kind === 'wet_signature' && ' (dokumen ber-tanda tangan basah)'}
               </li>
             ))}
           </ul>

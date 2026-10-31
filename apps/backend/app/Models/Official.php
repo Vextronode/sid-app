@@ -19,8 +19,6 @@ class Official extends Model
         'rt_id',
         'rw_id',
         'hamlet_id',
-        'signature_img',
-        'stamp_img',
         'photo_img',
         'phone_wa',
         'started_at',

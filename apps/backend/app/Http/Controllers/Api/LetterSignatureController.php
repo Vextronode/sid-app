@@ -11,9 +11,8 @@ use App\Services\LetterSignatureService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Sisi pemohon: mengisi ulang slot tanda tangan pihak lain pada surat
- * yang masih menunggu tanda tangan (ajukan ke NIK lain, atau unggah
- * dokumen ber-TTD basah).
+ * Sisi pemohon: mengganti saksi yang menolak atau kedaluwarsa pada surat
+ * yang masih menunggu persetujuan saksi.
  */
 class LetterSignatureController extends Controller
 {
@@ -27,14 +26,14 @@ class LetterSignatureController extends Controller
         $user = $request->user();
 
         if (! $letter->isSubmittedBy($user)) {
-            abort(403, 'Hanya pemohon yang dapat mengatur tanda tangan surat ini.');
+            abort(403, 'Hanya pemohon yang dapat mengganti saksi surat ini.');
         }
 
         if (
             $letter->status->value !== 'pending'
             || $letter->current_step_order !== LetterService::AWAITING_SIGNATURES_STEP
         ) {
-            abort(409, 'Surat ini tidak sedang menunggu tanda tangan.');
+            abort(409, 'Surat ini tidak sedang menunggu persetujuan saksi.');
         }
 
         $signature = $this->letterSignatureService->refillSlot(
@@ -42,13 +41,12 @@ class LetterSignatureController extends Controller
             $user,
             $slot,
             $request->safe()->only(['nik', 'name', 'family_number']),
-            $request->file('file'),
         );
 
         $this->letterService->beginApprovalIfSigned($letter, $user);
 
         return response()->json([
-            'message' => 'Tanda tangan untuk slot ini diperbarui.',
+            'message' => 'Saksi diperbarui.',
             'data' => new LetterSignatureResource($signature),
         ]);
     }

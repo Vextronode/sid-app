@@ -180,7 +180,7 @@ class PowerOfAttorneyTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -188,7 +188,7 @@ class PowerOfAttorneyTest extends TestCase
             ->andReturn($pdf);
 
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital&document={$document}")
+            ->get("/api/letters/{$letterId}/download?document={$document}")
             ->assertOk();
 
         return (string) $rendered;

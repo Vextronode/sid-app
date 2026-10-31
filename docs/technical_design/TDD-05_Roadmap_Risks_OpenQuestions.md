@@ -23,7 +23,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 |---|---|---|---|
 | Tahap 1 — Core System (MVP) | Register NIK + tanggal lahir + password, login username; surat dengan isian dinamis, lampiran, tanda tangan pihak terkait; flow RT → Kades/Sekdes final (RW/Kadus FYI); snapshot & nomor surat per kode klasifikasi; Kasi/Kaur unduh & Terapkan perubahan data; PDF on-demand + dokumen pendukung; deadline & overdue; data kependudukan; jabatan berakun & tanpa akun; CMS (profil desa, berita berkategori, peraturan, organisasi); dashboard; notifikasi in-app + Web Push; cache halaman publik; Docker stack expo | Fitur MVP aktif termasuk pengingat approval terjadwal; notifikasi email dan audit akses data sensitif belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
 | Tahap 2 — Penguatan Integritas & Keamanan | Aset & Keuangan Desa; Kelayakan Bantuan Sosial; Redis + Laravel Horizon; backup terjadwal; hardening (force HTTPS, cookie SameSite ketat, audit akses data sensitif); benchmarking & load test | Backup terjadwal tidak diverifikasi terhadap source backend; hasil benchmarking terdokumentasi (hash chain & dynamic form **tidak** termasuk — lihat Next Dev di `TDD-06_Appendix.md`) | Tahap 1 stabil |
-| Next Dev — Paket 1 | Dynamic Tipe Surat oleh Staf SIDUTama: create tipe surat baru, WYSIWYG template editor, CRUD isian form/slot TTD/aksi data dari UI (infrastruktur data `form_fields` dsb. sudah ada, tetapi hanya diisi developer lewat seeder) | Staf SIDUTama mandiri kelola tipe surat tanpa developer | Tahap 1 stabil — lihat detail di Appendix |
+| Next Dev — Paket 1 | Dynamic Tipe Surat oleh Staf SIDUTama: create tipe surat baru, WYSIWYG template editor, CRUD isian form/aksi data dari UI (infrastruktur data `form_fields` dsb. sudah ada, tetapi hanya diisi developer lewat seeder) | Staf SIDUTama mandiri kelola tipe surat tanpa developer | Tahap 1 stabil — lihat detail di Appendix |
 | Next Dev — Paket 2 | Blockchain-inspired hashing | Validasi integritas data surat | Tahap 1 stabil — lihat detail di Appendix |
 | Tahap 3 — Pengembangan Lanjutan | WA Chatbot; cetak surat mandiri untuk Warga; integrasi API eksternal (Dukcapil); AI (opsional) | Multi-channel access, integrasi eksternal | Tahap 2 stabil, validasi kebutuhan client |
 
@@ -88,7 +88,7 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Bagaimana data sosio-ekonomi untuk warga tanpa KK? | Belum diputuskan | Perilaku saat ini tidak menyediakan record sosio-ekonomi pada tingkat individu. |
 | Apakah `family_socioeconomics` perlu dienkripsi? | Belum diputuskan | Belum menggunakan cast enkripsi. |
 | Apa isi lengkap daftar pekerjaan awal dan bagaimana import memetakan nama pekerjaan ke ID? | Belum diputuskan / ditunda | Seeder awal berisi tiga pekerjaan; pemetaan nama saat import belum dilakukan. |
-| Apakah kolom legacy `officials.stamp_img` akan dihapus? | Belum diputuskan | Kolom masih ada, tetapi PDF mengambil stempel dari `villages.stamp_img`. |
+| Apakah kolom legacy `officials.stamp_img` akan dihapus? | Diputuskan (2026-10-31) | Dihapus bersama `villages.stamp_img` dan `officials.signature_img`; stempel & TTD dibubuhkan basah. |
 | Apakah kolom legacy `letters.purpose` dan `letters.notes` dihapus? | Belum diputuskan | Pengajuan baru selalu NULL; kolom dipertahankan untuk data lama |
 | Bagaimana daftar pekerjaan per desa dan sumber stempel PDF ditentukan? | Terjawab | Pekerjaan baku disimpan per desa di `occupations`; PDF memakai stempel pada profil desa. |
 | Apakah sosio-ekonomi dicatat pada individu atau keluarga? | Terjawab | Dicatat per KK di `family_socioeconomics`; tidak ada penghasilan individu. |
@@ -109,7 +109,7 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |
 | Redis belum dipakai | Queue, cache, dan session di database | Cukup untuk traffic desa; switch lewat `.env` |
 | Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan `docs/EXPO_RUNBOOK.md` |
-| Struktur jenis surat (template, isian, slot TTD, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, penugasan, status aktif (UC-21) |
+| Struktur jenis surat (template, isian, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, penugasan, status aktif (UC-21) |
 | Snapshot/PDF membutuhkan Kepala Desa aktif | Surat approved lama tanpa snapshot tidak dapat diunduh (404) selama jabatan Kades kosong | Pastikan Kades selalu ditetapkan; snapshot dibuat saat final approve bila Kades ada |
 | Surat ditahan bila RT di wilayah pemohon kosong | Surat menunggu sampai RT ditetapkan | Staf SIDUTama dinotifikasi; RT baru langsung diberi tahu |
 | Web Push butuh VAPID di backend & `VITE_VAPID_PUBLIC_KEY` di build frontend | Tanpa keduanya push nonaktif | Image web expo saat ini dibangun tanpa VAPID |
@@ -127,5 +127,6 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | ID pekerjaan berbeda antar desa | Analisis lintas desa tidak dapat membandingkan ID langsung | Bandingkan nama/normalisasi, atau buat pemetaan lintas desa jika kelak dibutuhkan. |
 | Warga pindah desa dengan `occupation_id` terisi | Pekerjaan dapat menunjuk ke katalog desa lama | Kosongkan atau ganti `occupation_id` sesuai katalog desa tujuan saat pindah. |
 | Nama pekerjaan/stempel dapat berubah | Surat approved memakai snapshot (stempel & TTD dibekukan), sedangkan data pemohon (nama, NIK, alamat) tetap dari kolom surat | Snapshot tidak membekukan pekerjaan warga |
-| Stempel, TTD jabatan, TTD akun, lampiran bersifat private | FE tidak dapat menautkan path langsung | Gunakan endpoint preview terproteksi; upload TTD Kades dilakukan ulang setelah rotasi |
+| Lampiran & hasil instansi bersifat private | FE tidak dapat menautkan path langsung | Gunakan endpoint terproteksi |
+| Surat terbit tanpa TTD/stempel digital | Pemohon tetap harus datang ke kantor desa untuk surat sah | Notifikasi & Surat Saya menjelaskan bahwa surat ber-TTD & stempel basah diambil di kantor desa |
 | ~~`approval_settings.approval_level` ENUM belum diselaraskan dengan `letter_approvals.approval_level`~~ | — | **Sudah tidak berlaku** — ENUM sudah diselaraskan. Lihat Section 3.2 dan `TDD-06_Appendix.md` |

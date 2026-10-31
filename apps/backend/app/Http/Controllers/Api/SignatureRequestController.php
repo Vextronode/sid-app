@@ -39,7 +39,7 @@ class SignatureRequestController extends Controller
         $this->letterService->beginApprovalIfSigned($signed->letter, $request->user());
 
         return response()->json([
-            'message' => 'Permintaan tanda tangan disetujui.',
+            'message' => 'Permintaan saksi disetujui.',
         ]);
     }
 
@@ -53,7 +53,7 @@ class SignatureRequestController extends Controller
         );
 
         return response()->json([
-            'message' => 'Permintaan tanda tangan ditolak.',
+            'message' => 'Permintaan saksi ditolak.',
         ]);
     }
 

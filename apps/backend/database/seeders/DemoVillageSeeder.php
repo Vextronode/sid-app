@@ -47,6 +47,7 @@ class DemoVillageSeeder extends Seeder
                 'regency' => 'Pangandaran',
                 'province' => 'Jawa Barat',
                 'postal_code' => '46393',
+                'area_code' => '32182008',
                 'email' => 'kantordesacibenda@gmail.com',
                 'area_ha' => 759.319,
                 // Tampilan halaman publik; Staf SIDUTama dapat menggantinya

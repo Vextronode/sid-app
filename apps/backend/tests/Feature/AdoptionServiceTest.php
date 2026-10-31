@@ -64,7 +64,7 @@ class AdoptionServiceTest extends TestCase
         Storage::fake('private_uploads');
         $this->travelTo(now()->setDate(2026, 10, 12)->setTime(9, 0));
 
-        $this->village = Village::factory()->create(['name' => 'Desa Cibenda', 'district' => 'Parigi', 'regency' => 'Pangandaran', 'code' => '3218032001']);
+        $this->village = Village::factory()->create(['name' => 'Desa Cibenda', 'district' => 'Parigi', 'regency' => 'Pangandaran', 'code' => '3218032001', 'area_code' => '32182008']);
         $this->seed([ApprovalFlowSeeder::class, ServiceLetterTypeSeeder::class]);
         $this->rt = $this->makeNamedArea($this->village, 'Budiasih', '19', '2');
 
@@ -128,7 +128,7 @@ class AdoptionServiceTest extends TestCase
         // F-2.01: jenis Pengangkatan Anak dan bagiannya terisi.
         $report = $this->render($letterId, null);
         $this->assertSame(1, substr_count($report, '>X</td>'));
-        foreach (['RINA', '3207245505150007', 'ROHAETI', 'DEDI', 'ASEP', 'NENENG', '123/PDT.P', 'PENGADILAN', '32180301'] as $value) {
+        foreach (['RINA', '3207245505150007', 'ROHAETI', 'DEDI', 'ASEP', 'NENENG', '123/PDT.P', 'PENGADILAN', '32182008'] as $value) {
             $this->assertMatchesRegularExpression($this->boxes($value), $report);
         }
 
@@ -310,7 +310,7 @@ class AdoptionServiceTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -319,7 +319,7 @@ class AdoptionServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital{$query}")
+            ->get("/api/letters/{$letterId}/download?{$query}")
             ->assertOk();
 
         return (string) $rendered;

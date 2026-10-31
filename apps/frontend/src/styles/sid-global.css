@@ -22839,64 +22839,6 @@ button.sid-operator-profile {
   line-height: 1.4;
 }
 
-/* =========================================================
-   TANDA TANGAN AKUN (Profil)
-   ========================================================= */
-
-.sid-signature-body {
-  display: flex;
-  flex-direction: column;
-
-  gap: 0.75rem;
-}
-
-.sid-signature-body > p {
-  margin: 0;
-}
-
-.sid-signature-body > .sid-image-picker {
-  margin-top: 0;
-}
-
-.sid-signature-pad {
-  display: block;
-
-  width: 100%;
-  height: auto;
-  box-sizing: border-box;
-
-  border: 1px dashed var(--sid-border);
-  border-radius: var(--radius-sm);
-
-  background: #fff;
-
-  touch-action: none;
-  cursor: crosshair;
-}
-
-.sid-signature-divider {
-  display: flex;
-  align-items: center;
-
-  gap: 0.75rem;
-
-  color: var(--sid-text-muted);
-
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
-
-.sid-signature-divider::before,
-.sid-signature-divider::after {
-  content: '';
-
-  flex: 1;
-
-  height: 1px;
-
-  background: var(--sid-border);
-}
-
 /* ==========================================
    ORGANISASI (BPD / LPM / Karang Taruna / PKK)
    Slot Ketua & Wakil Ketua + daftar Anggota

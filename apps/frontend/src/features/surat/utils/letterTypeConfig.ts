@@ -1,5 +1,5 @@
-import type { LetterFormField, LetterSignatureSlot, LetterType, User } from '@/types'
-import type { SuratField, SuratFormConfig, SuratSignatureSlot } from '../types'
+import type { LetterFormField, LetterType, User } from '@/types'
+import type { SuratField, SuratFormConfig } from '../types'
 
 // `accept: 'image'` pada definisi membatasi unggahan ke gambar.
 function fileAccept(field: LetterFormField) {
@@ -74,14 +74,6 @@ function normalizeField(field: LetterFormField): SuratField {
   }
 }
 
-function normalizeSlot(slot: LetterSignatureSlot): SuratSignatureSlot {
-  return {
-    key: slot.key,
-    label: slot.label ?? slot.key,
-    signer: slot.signer === 'applicant' ? 'applicant' : 'other',
-  }
-}
-
 // Kolom data warga pemohon, disebut lewat nama dari definisi jenis surat.
 function citizenColumn(user: User | null | undefined, column: string | null): unknown {
   return column ? (user?.citizen as Record<string, unknown> | undefined)?.[column] : undefined
@@ -126,7 +118,7 @@ export function applicantPrefill(fields: SuratField[], user: User | null | undef
 
 /**
  * Definisi form sebuah jenis surat sepenuhnya berasal dari backend
- * (letter_types.form_fields dan signature_slots), sehingga form, validasi
+ * (letter_types.form_fields), sehingga form, validasi
  * server, dan template PDF memakai satu sumber yang sama.
  */
 // Bagian jenis surat yang dibaca; selain identitas, semuanya boleh kosong.
@@ -139,7 +131,6 @@ type FormConfigSource = Pick<LetterType, 'id' | 'code' | 'name'> &
       | 'data_action'
       | 'has_supporting_document'
       | 'form_fields'
-      | 'signature_slots'
     >
   >
 
@@ -153,7 +144,6 @@ export function getLetterTypeFormConfig(
   const definitionFields = (
     Array.isArray(letterType.form_fields) ? letterType.form_fields : []
   ).filter((field) => !field.same_value && !field.family_head_of)
-  const signatureSlots = Array.isArray(letterType.signature_slots) ? letterType.signature_slots : []
 
   return {
     id: letterType.id,
@@ -169,7 +159,6 @@ export function getLetterTypeFormConfig(
     fields: definitionFields
       .filter((field) => field?.name && field.type !== 'family_roster')
       .map(normalizeField),
-    signatureSlots: signatureSlots.filter((slot) => slot?.key).map(normalizeSlot),
   }
 }
 

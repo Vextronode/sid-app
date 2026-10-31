@@ -50,12 +50,6 @@ export type SuratField = {
   scope: 'definition'
 }
 
-export type SuratSignatureSlot = {
-  key: string
-  label: string
-  signer: 'applicant' | 'other'
-}
-
 export type SuratFormConfig = {
   id: number
   code: string
@@ -65,7 +59,6 @@ export type SuratFormConfig = {
   dataAction: string
   hasSupportingDocument: boolean
   fields: SuratField[]
-  signatureSlots: SuratSignatureSlot[]
 }
 
 // Nilai isian form surat, per nama isian.

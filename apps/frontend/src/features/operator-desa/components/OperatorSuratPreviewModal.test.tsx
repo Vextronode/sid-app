@@ -48,12 +48,11 @@ describe('OperatorSuratPreviewModal', () => {
     expect(screen.queryByRole('button', { name: 'Setuju' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Tolak' })).toBeNull()
 
+    // Satu dokumen: tombol langsung mengunduh (tanpa pilihan format TTD).
     fireEvent.click(downloadButton)
-    fireEvent.click(screen.getByRole('menuitem', { name: /Untuk tanda tangan basah/ }))
     await waitFor(() =>
       expect(downloadSuratPDF).toHaveBeenCalledWith(
         { id: 'letter-41', status: 'approved', approvals: [] },
-        'wet',
         'main',
       ),
     )

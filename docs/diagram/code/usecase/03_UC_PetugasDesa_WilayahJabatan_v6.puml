@@ -4,7 +4,8 @@
 ' JUDUL: Use Case - Staf SIDUTama (2/3: Wilayah, Akun, Jabatan, Organisasi)
 ' SUMBER: TDD-02 v5.3 (UC-14/20/22/23) + routes (2026-10-16)
 ' CATATAN: Menggantikan 03_UC_PetugasDesa_WilayahJabatan_v5.puml. Tambah: jenis
-'          jabatan tanpa akun, cari calon via NIK, foto pejabat, reset TTD akun.
+'          jabatan tanpa akun, cari calon via NIK, foto pejabat. Revisi 2026-10-31:
+'          upload TTD Kades & reset TTD akun dihapus (TTD basah).
 '==================================================================================
 @startuml UC_PetugasDesa_Jabatan_v6
 left to right direction
@@ -32,13 +33,11 @@ rectangle "SIDUTama" {
   rectangle "UC-14: Akun & Jabatan" #E8F5E9 {
     usecase "Kelola akun\n(ubah, aktif/nonaktif)" as UC_USER
     usecase "Reset Password Sementara" as UC_RESETPW
-    usecase "Reset Tanda Tangan Akun" as UC_RESETSIG
     usecase "Cari Calon Pejabat via NIK" as UC_CAND
     usecase "Tetapkan Pejabat (promote)\nberakun / tanpa akun + foto" as UC_PROMOTE
     usecase "Turunkan (demote)" as UC_DEMOTE
     usecase "Rotasi Pejabat" as UC_ROTATE
     usecase "Ganti Foto Pejabat" as UC_PHOTO
-    usecase "Upload/Preview TTD\nKepala Desa" as UC_KADESSIG
     usecase "Kelola Jenis Jabatan\nTanpa Akun" as UC_POSTYPE
     usecase "Buat Petugas Pertama\n(petugas:first)" as UC_FIRST
   }
@@ -53,20 +52,17 @@ rectangle "SIDUTama" {
 PD -- UC_REGION
 PD -- UC_USER
 PD -- UC_RESETPW
-PD -- UC_RESETSIG
 PD -- UC_CAND
 PD -- UC_PROMOTE
 PD -- UC_DEMOTE
 PD -- UC_ROTATE
 PD -- UC_PHOTO
-PD -- UC_KADESSIG
 PD -- UC_POSTYPE
 PD -- UC_DEADLINE
 PD -- UC_ORG
 DEV -- UC_FIRST
 UC_PROMOTE ..> UC_CAND : <<include>>
 UC_ROTATE ..> UC_CAND : <<include>>
-UC_ROTATE ..> UC_KADESSIG : <<extend>>\n(rotasi Kades)
 
 note bottom of UC_PROMOTE
   Jabatan berakun mengubah users.role;

@@ -28,10 +28,10 @@ Di halaman Ajukan Surat, kartu jenis surat dikelompokkan menjadi dua:
 | Isinya | Surat keterangan yang dikeluarkan desa | Formulir kependudukan (format Disdukcapil) |
 | Dipakai untuk | Bank, sekolah, kantor, BPJS, KPR, bantuan sosial, dll. | Diurus lanjut ke **Disdukcapil** (akta, KK, KTP-el, surat pindah) |
 | Nomor surat desa | Ada | Tidak ada |
-| TTD Kepala Desa | Ada, sebagai pengesahan surat (TTD + stempel desa) | Tidak ada pengesahan Kepala Desa; persetujuan RT dan Kepala Desa tetap tercatat di sistem. Kepala Desa hanya bertanda tangan sebagai "mengetahui" di Formulir Pelaporan Pencatatan Sipil (F-2.01) |
-| Format unduhan | **TTD & stempel digital** atau **Untuk tanda tangan basah** (kosong, dicetak lalu ditandatangani dan distempel) | **TTD digital** (TTD pemohon dari akun dan TTD pejabat terkait ditempel otomatis) atau **TTD basah** (semua kolom tanda tangan kosong) |
-| Petugas desa yang menangani | Kaur TU & Umum | Kasi Pemerintahan |
-| Setelah terbit | Surat langsung dipakai | Warga mengurus ke Disdukcapil, lalu **mengunggah hasilnya** kembali di web |
+| TTD Kepala Desa | Ada, sebagai pengesahan surat (TTD + stempel desa), **dibubuhkan basah** di kantor desa | Tidak ada pengesahan Kepala Desa; persetujuan RT dan Kepala Desa tetap tercatat di sistem. Kepala Desa hanya bertanda tangan sebagai "mengetahui" di Formulir Pelaporan Pencatatan Sipil (F-2.01) |
+| Hasil terbit di web | PDF **tanpa TTD dan stempel** (nama Kepala Desa tercetak) | PDF formulir **tanpa tanda tangan** (nama pejabat tercetak) |
+| Petugas desa yang menangani | Kaur TU & Umum: mencetak, memintakan TTD dan stempel basah | Kasi Pemerintahan: mencetak dan menandatangani formulir |
+| Setelah terbit | Warga **mengambil surat bertanda tangan dan berstempel di kantor desa** | Warga mengambil formulir bertanda tangan di kantor desa, mengurus ke Disdukcapil, lalu **mengunggah hasilnya** kembali di web |
 | Masa berlaku | Tertulis di kartu ("Berlaku N hari") | Tidak ada |
 
 Pengecualian: **Surat Keterangan Ahli Waris** tampil di Layanan Kependudukan dan ditangani Kasi Pemerintahan, tetapi tetap berupa surat keterangan desa: bernomor, ditandatangani Kepala Desa, langsung dipakai tanpa unggah hasil, dan tanpa masa berlaku.
@@ -74,10 +74,11 @@ Warga                      RT                 Kepala Desa / Sekdes        Kaur T
   │ pilih surat & isi form  │                        │                            │
   ├────── Kirim ───────────►│ setujui / tolak        │                            │
   │   status: Menunggu      ├───────────────────────►│ setujui / tolak            │
-  │                         │ (RW & Kadus dapat      ├───────────────────────────►│ menerima surat final;
-  │                         │  pemberitahuan)        │  surat bernomor + TTD      │ Terapkan bila surat
-  │◄──────────── status: Disetujui, surat bisa diunduh ─────────────────────────│ mengubah data warga
-  │ unduh PDF → bawa ke pihak yang meminta
+  │                         │ (RW & Kadus dapat      ├───────────────────────────►│ surat terbit bernomor,
+  │                         │  pemberitahuan)        │  surat terbit (tanpa TTD)  │ tanpa TTD: cetak, TTD
+  │                         │                        │◄─── TTD & stempel basah ───┤ & stempel basah;
+  │◄──────────── status: Disetujui, ambil surat di kantor desa ─────────────────│ Terapkan bila surat
+  │ ambil surat bertanda tangan → bawa ke pihak yang meminta                       │ mengubah data warga
 ```
 
 Langkah dari sisi warga:
@@ -87,10 +88,9 @@ Langkah dari sisi warga:
 3. Data diri pemohon (nama, NIK, tempat/tanggal lahir, jenis kelamin, alamat) **terisi otomatis dari akun**. Warga hanya mengisi isian tambahan khusus surat itu.
 4. Kirim. Status surat: **Menunggu** → **Sedang Diproses** → **Disetujui** (atau **Ditolak** beserta alasannya).
 5. Persetujuan dua tahap: **Ketua RT**, lalu **Kepala Desa** (Sekretaris Desa dapat menggantikan bila Kepala Desa berhalangan). RW dan Kepala Dusun hanya mendapat pemberitahuan setelah RT menyetujui. Secara default tiap tahap punya tenggat 24 jam dengan pengingat 12 jam sebelum tenggat; Staf SIDUTama dapat mengubah angka ini.
-6. Setelah disetujui, surat terbit dengan **nomor surat dan tanda tangan Kepala Desa**. Warga mengunduh PDF dari daftar surat dalam salah satu format:
-   - **TTD & stempel digital**: TTD Kepala Desa dan stempel desa sudah tercetak, siap diserahkan;
-   - **Untuk tanda tangan basah**: tanpa TTD dan stempel, untuk dicetak lalu ditandatangani dan distempel basah di kantor desa.
-7. Surat yang sudah final diteruskan ke **Kaur TU & Umum**. Untuk surat yang mengubah data penduduk (Penguburan, Kelahiran), hanya Kaur TU & Umum yang dapat menekan **Terapkan**; surat lain tidak memerlukan tindakan lanjutan.
+6. Setelah disetujui, surat terbit dengan **nomor surat**, tetapi **tanpa tanda tangan dan stempel** di PDF (nama Kepala Desa tetap tercetak). Pratinjau surat baru dapat dilihat pemohon setelah tahap ini.
+7. Surat yang sudah final diteruskan ke **Kaur TU & Umum**, yang mencetak surat lalu memintakan **tanda tangan dan stempel basah**. Warga **mengambil surat di kantor desa**. Warga tetap dapat mengunduh PDF dari daftar surat, tetapi isinya salinan tanpa tanda tangan.
+8. Untuk surat yang mengubah data penduduk (Penguburan, Kelahiran), hanya Kaur TU & Umum yang dapat menekan **Terapkan**; surat lain tidak memerlukan tindakan lanjutan.
 
 ---
 
@@ -102,7 +102,7 @@ Warga                 Saksi/Pihak lain      RT → Kepala Desa      Disdukcapil 
   │ isi form, isi NIK saksi│                      │                    │                      │
   ├──── Kirim ────────────►│ setujui permintaan   │                    │                      │
   │                        ├─────────────────────►│ setujui            │                      │
-  │◄──────── formulir terbit (cetak) ─────────────┤                    │                      │
+  │◄─ formulir terbit (tanpa TTD); ambil cetakan bertanda tangan di desa ──────────────────────┤ cetak & TTD petugas
   │ tanda tangan / materai, bawa formulir + lampiran ─────────────────►│ terbitkan KK/akta    │
   │◄────────────────────────────────────────────── dokumen hasil ──────┤                      │
   │ Unggah hasil di surat yang sama ─────────────────────────────────────────────────────────►│ terima / tolak
@@ -119,7 +119,7 @@ Langkah dari sisi warga:
    Gunakan daftar ini sebagai checklist sebelum berangkat.
 3. Isi form. Anggota keluarga dipilih langsung dari **daftar anggota KK** pemohon, jadi datanya tidak perlu diketik ulang.
 4. **Saksi**: banyak layanan meminta dua saksi. Warga cukup mengisi NIK saksi.
-   - Saksi yang punya akun SIDUTama menerima **Permintaan Tanda Tangan & Saksi** di halaman Profil dan harus menyetujuinya.
+   - Saksi yang punya akun SIDUTama menerima **Permintaan Saksi** di halaman Profil dan harus menyetujuinya.
    - Saksi warga desa tanpa akun akan diverifikasi oleh RT.
    - Saksi dari luar desa dicatat sebagai isian manual.
    Surat baru masuk tahap persetujuan setelah semua saksi terisi.
@@ -127,11 +127,9 @@ Langkah dari sisi warga:
    - *Saya sendiri*, atau
    - *Diwakilkan kepada orang lain*. Isi NIK penerima kuasa; Surat Kuasa ikut terbit.
 6. Persetujuan RT → Kepala Desa, sama seperti Persuratan Desa.
-7. Formulir terbit **tanpa nomor surat desa dan tanpa pengesahan Kepala Desa**. Bila ada beberapa formulir, warga memilih format unduhan lalu mengunduh tiap formulir:
-   - **TTD digital**: TTD pemohon dari akunnya dan TTD pejabat terkait ditempel otomatis (Kasi Pemerintahan di F-1.02, Kepala Desa sebagai "mengetahui" di F-2.01, Ketua RT/RW di surat pernyataan pendatang). Penanda tangan yang belum punya TTD di akunnya dibiarkan kosong.
-   - **TTD basah**: semua kolom tanda tangan kosong, untuk ditandatangani langsung.
+7. Formulir terbit **tanpa nomor surat desa, tanpa pengesahan Kepala Desa, dan tanpa tanda tangan** (nama pejabat seperti Kasi Pemerintahan di F-1.02, Kepala Desa sebagai "mengetahui" di F-2.01, atau Ketua RT/RW di surat pernyataan pendatang tetap tercetak). Kasi Pemerintahan mencetak formulir dan pejabat terkait menandatanganinya basah; warga mengambilnya di kantor desa. Bila ada beberapa formulir, semuanya juga dapat diunduh satu per satu sebagai salinan tanpa tanda tangan.
 
-   Kolom materai dan tanda tangan pihak di luar akun (saksi, pemilik rumah, dsb.) tetap ditandatangani langsung di kertas. Formulir dibawa ke Disdukcapil bersama lampiran.
+   Kolom tanda tangan pemohon, materai, dan pihak lain (saksi, pemilik rumah, dsb.) ditandatangani langsung di kertas. Formulir dibawa ke Disdukcapil bersama lampiran.
 8. Setelah Disdukcapil menerbitkan dokumen (KK baru, akta, surat pindah, dsb.), warga **membuka surat yang sama di web** dan menekan **Unggah hasil**. Kotak *Yang perlu diunggah* menjelaskan dokumen yang dimaksud.
 9. **Kasi Pemerintahan** (hanya pejabat yang ditugaskan pada jenis surat itu) memeriksa unggahan:
    - *Diterima*: Kasi menekan **Terapkan**, dan data penduduk/KK di desa ikut diperbarui.
@@ -184,7 +182,7 @@ Joni baru membuka warung kopi di depan rumahnya. Ia ingin mengajukan pinjaman mo
   - Jenis Usaha: `Warung kopi`
   - Foto Usaha Terkini: foto warung Joni
 - **Proses:** Ketua RT melihat foto warung sebagai bahan pertimbangan, lalu menyetujui. Kepala Desa ikut menyetujui. Foto tidak dicetak di surat.
-- **Hasil:** Surat keterangan bahwa Joni menjalankan usaha "Warung kopi" di wilayah desa. Joni mengunduh PDF dan membawanya ke bank.
+- **Hasil:** Surat keterangan bahwa Joni menjalankan usaha "Warung kopi" di wilayah desa. Joni mengambil surat yang sudah ditandatangani dan distempel di kantor desa, lalu membawanya ke bank.
 
 **Skenario lain:** Siti, penjahit rumahan, butuh SKU untuk mendaftar UMKM binaan dinas koperasi. Alurnya sama, Jenis Usaha diisi `Jasa jahit pakaian`.
 
@@ -434,7 +432,7 @@ Tono, adik Bu Sri, pindah dari Bandung untuk bekerja di desa dan akan masuk ke K
   - Data kepala keluarga yang ditumpangi: nama, NIK, No. KK, **Hubungan Pendatang dengan Kepala Keluarga** (*Famili Lain*), pekerjaan, alamat
 - **Formulir yang terbit:** Formulir Pendaftaran Peristiwa Kependudukan dan **Surat Pernyataan Tidak Keberatan Numpang KK**.
 - **Dibawa ke Disdukcapil:**
-  - Formulir-formulir di atas, ditandatangani di atas materai dan diketahui Ketua RT dan RW (pada unduhan TTD digital, TTD Ketua RT/RW wilayah alamat Tono sudah tertempel)
+  - Formulir-formulir di atas, ditandatangani di atas materai dan diketahui Ketua RT dan RW (nama Ketua RT/RW wilayah alamat Tono sudah tercetak; tanda tangannya dibubuhkan basah)
   - SKPWNI dari Bandung
   - KTP-el dan KK lama Tono
   - KK asli Bu Sri
@@ -632,7 +630,7 @@ Bagian ini menunjukkan bagaimana satu kejadian hidup dapat memerlukan lebih dari
 
 - Data pemohon (Bambang) terisi dari akun. Isi data pasangan (Ratih) dan data anak (Aditya). NIK Aditya dikosongkan karena belum terbit.
 - RT → Kepala Desa menyetujui, dan surat bernomor dengan TTD Kepala Desa terbit.
-- Bambang mengunduh PDF dan menyerahkannya ke bagian SDM kantor.
+- Bambang mengambil surat bertanda tangan dan berstempel di kantor desa, lalu menyerahkannya ke bagian SDM kantor.
 
 **Pengajuan 2: Pelaporan Kelahiran**
 
@@ -645,7 +643,7 @@ Bagian ini menunjukkan bagaimana satu kejadian hidup dapat memerlukan lebih dari
    - Ada surat keterangan lahir?: `Ada`
    - Perkawinan ayah dan ibu: `Tercatat` (buku nikah ikut dilampirkan)
    - Siapa yang mengurus?: `Saya sendiri`
-3. **Saksi menyetujui:** Bu Neni membuka **Permintaan Tanda Tangan & Saksi** di akunnya dan menyetujui. Saksi lainnya, yang tidak punya akun, diverifikasi RT.
+3. **Saksi menyetujui:** Bu Neni membuka **Permintaan Saksi** di akunnya dan menyetujui. Saksi lainnya, yang tidak punya akun, diverifikasi RT.
 4. **Persetujuan:** RT → Kepala Desa. Terbit tiga formulir:
    - **Pelaporan Pencatatan Sipil (F-2.01)** bagian kelahiran, untuk akta kelahiran;
    - **Pendaftaran Peristiwa Kependudukan (F-1.02)** dicentang "Perubahan KK: Peristiwa Penting", untuk KK baru;

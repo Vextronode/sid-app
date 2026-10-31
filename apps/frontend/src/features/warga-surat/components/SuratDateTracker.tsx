@@ -24,7 +24,6 @@ import type { ChangeEvent, ReactNode } from 'react'
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
 import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
-import type { PdfTemplate } from '@/features/cetak-surat/utils/letterDocuments'
 import { LetterValidityNote } from '@/features/surat/components/LetterValidityNote'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
@@ -229,18 +228,6 @@ function RejectionReason({ surat }: { surat: LetterListItem }) {
 const canPreviewSurat = (status: string) => status === SURAT_STATUS.APPROVED
 
 // ==========================================
-// TEMPLATE PDF
-// ==========================================
-
-function getPreviewTemplate(status: string): PdfTemplate | null {
-  if (status === SURAT_STATUS.APPROVED) {
-    return 'digital'
-  }
-
-  return null
-}
-
-// ==========================================
 // PREVIEW PDF
 // ==========================================
 
@@ -258,7 +245,6 @@ function SuratPreview({
   // Surat kedaluwarsa tinggal riwayat: tombol tetap tampil tetapi nonaktif.
   const expired = canPreviewSurat(status) && isExpired
   const canPreview = canPreviewSurat(status) && !expired
-  const template = getPreviewTemplate(status)
 
   useEffect(() => {
     setShowPreview(false)
@@ -293,9 +279,7 @@ function SuratPreview({
       </button>
 
       {/* Canvas, bukan <img>: tidak ada gambar yang bisa disimpan lewat klik kanan. */}
-      {showPreview && canPreview && template && (
-        <PdfCanvasPreview surat={{ id: suratId }} template={template} />
-      )}
+      {showPreview && canPreview && <PdfCanvasPreview surat={{ id: suratId }} />}
     </div>
   )
 }

@@ -16,7 +16,6 @@ use App\Repositories\UserRepository;
 use App\Services\Auth\UsernameGenerator;
 use App\Services\OfficialAssignmentService;
 use App\Services\OfficialService;
-use App\Services\UserSignatureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -36,7 +35,6 @@ class OfficialAssignmentServiceTest extends TestCase
             new LetterRepository,
             new OfficialService($officialRepository, $userRepository, new LetterRepository),
             new UsernameGenerator($userRepository),
-            new UserSignatureService,
         );
     }
 

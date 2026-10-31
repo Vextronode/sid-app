@@ -5,7 +5,7 @@ import {
   applicantValues,
   getLetterTypeFormConfig,
 } from './letterTypeConfig'
-import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
+import { getSuratSchema, todayDate } from '../validation/suratSchema'
 import { buildLetterFormData } from './letterFormData'
 import { partialFixture, present } from '@/test/fixtures'
 import type { LetterType, User } from '@/types'
@@ -29,10 +29,6 @@ const letterType = {
     { name: 'nik_pelapor', label: 'NIK Pelapor', type: 'nik', required: false },
     { name: 'surat_dokter', label: 'Surat Dokter', type: 'file', required: false },
   ],
-  signature_slots: [
-    { key: 'pemohon', label: 'Pemohon', signer: 'applicant' },
-    { key: 'saksi', label: 'Saksi', signer: 'other' },
-  ],
 }
 
 describe('getLetterTypeFormConfig', () => {
@@ -53,10 +49,6 @@ describe('getLetterTypeFormConfig', () => {
       'nik_pelapor',
       'surat_dokter',
     ])
-    expect(config.signatureSlots).toEqual([
-      { key: 'pemohon', label: 'Pemohon', signer: 'applicant' },
-      { key: 'saksi', label: 'Saksi', signer: 'other' },
-    ])
   })
 
   it('has no fields at all for a type whose physical template has no blanks', () => {
@@ -68,7 +60,6 @@ describe('getLetterTypeFormConfig', () => {
     })
 
     expect(config.fields).toEqual([])
-    expect(config.signatureSlots).toEqual([])
   })
 
   it('limits a file field to images when the definition says so', () => {
@@ -153,13 +144,10 @@ describe('getLetterTypeFormConfig', () => {
 
 describe('getSuratSchema', () => {
   const config = formConfig(letterType)
-  const names = signerFieldNames('saksi')
   const valid = {
     nama_almarhum: 'Fulan',
     tanggal_meninggal: '2026-10-01',
     nik_pelapor: '',
-    [names.mode]: 'digital',
-    [names.nik]: '3207010101900001',
   }
 
   it('accepts values that follow the definition', () => {
@@ -172,19 +160,17 @@ describe('getSuratSchema', () => {
       nama_almarhum: '',
       tanggal_meninggal: 'kemarin',
       nik_pelapor: '123',
-      [names.nik]: '12',
     })
 
     expect(result.success).toBe(false)
     expect(present(result.error).issues.map((issue) => issue.path[0])).toEqual(
-      expect.arrayContaining(['nama_almarhum', 'tanggal_meninggal', 'nik_pelapor', names.nik]),
+      expect.arrayContaining(['nama_almarhum', 'tanggal_meninggal', 'nik_pelapor']),
     )
   })
 
   it('requires a chosen family member, and asks for the typed father only when none is chosen', () => {
     const birth = formConfig({
       ...letterType,
-      signature_slots: [],
       form_fields: [
         { name: 'ibu', label: 'Ibu', type: 'family_member', required: true },
         { name: 'ayah', label: 'Ayah', type: 'family_member', required: false },
@@ -207,7 +193,6 @@ describe('getSuratSchema', () => {
   it('accepts only an HH:MM value from the time input', () => {
     const timed = formConfig({
       ...letterType,
-      signature_slots: [],
       form_fields: [{ name: 'pukul_lahir', label: 'Pukul Lahir', type: 'time', required: true }],
     })
     const schema = getSuratSchema(timed)
@@ -216,26 +201,12 @@ describe('getSuratSchema', () => {
     expect(schema.safeParse({ pukul_lahir: '' }).success).toBe(false)
     expect(schema.safeParse({ pukul_lahir: '25:00' }).success).toBe(false)
   })
-
-  it('requires a name and a file when the other party signs on paper', () => {
-    const result = getSuratSchema(config).safeParse({
-      ...valid,
-      [names.mode]: 'wet',
-      [names.nik]: '',
-    })
-
-    expect(result.success).toBe(false)
-    expect(present(result.error).issues.map((issue) => issue.path[0])).toEqual(
-      expect.arrayContaining([names.name, names.file]),
-    )
-  })
 })
 
 describe('buildLetterFormData', () => {
   const config = formConfig(letterType)
-  const names = signerFieldNames('saksi')
 
-  it('maps common fields, definition fields, files, and digital signers', () => {
+  it('maps definition fields and files, with no signature data', () => {
     const attachment = new File(['a'], 'ktp.pdf', { type: 'application/pdf' })
     const doctorLetter = new File(['b'], 'dokter.jpg', { type: 'image/jpeg' })
     const formData = buildLetterFormData(config, 12, {
@@ -247,8 +218,6 @@ describe('buildLetterFormData', () => {
       keperluan: 'Pengurusan akta',
       catatan: 'Segera',
       dokumen: [attachment],
-      [names.mode]: 'digital',
-      [names.nik]: '3207010101900001',
     })
 
     expect(formData.get('letter_type_id')).toBe('12')
@@ -262,22 +231,8 @@ describe('buildLetterFormData', () => {
     // Tidak ada lagi lampiran bebas; hanya berkas isian jenis surat.
     expect(formData.has('attachments[]')).toBe(false)
     expect((formData.get('files[surat_dokter]') as File).name).toBe('dokter.jpg')
-    expect(formData.get('signers[saksi][nik]')).toBe('3207010101900001')
-    expect(formData.has('signers[pemohon][nik]')).toBe(false)
-  })
-
-  it('sends the name and scanned document for a paper signature', () => {
-    const scan = new File(['c'], 'pernyataan.jpg', { type: 'image/jpeg' })
-    const formData = buildLetterFormData(config, 12, {
-      keperluan: 'Pengurusan akta',
-      [names.mode]: 'wet',
-      [names.name]: 'Pak Saksi',
-      [names.file]: [scan],
-    })
-
-    expect(formData.get('signers[saksi][name]')).toBe('Pak Saksi')
-    expect((formData.get('signature_files[saksi]') as File).name).toBe('pernyataan.jpg')
-    expect(formData.has('signers[saksi][nik]')).toBe(false)
+    // Tidak ada TTD digital: tidak ada data penanda tangan yang dikirim.
+    expect([...formData.keys()].some((key) => key.startsWith('signers'))).toBe(false)
   })
 })
 

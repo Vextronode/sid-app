@@ -42,7 +42,8 @@ const RESULT_PROGRESS: Record<
   awaiting_upload: {
     tone: 'pending',
     current: 4,
-    message: 'Formulir terbit. Bawa ke instansi yang dituju, lalu unggah hasilnya di detail surat.',
+    message:
+      'Formulir terbit. Ambil formulir yang sudah ditandatangani di kantor desa, bawa ke instansi yang dituju, lalu unggah hasilnya di detail surat.',
   },
   under_review: {
     tone: 'progress',
@@ -107,7 +108,7 @@ export function getLetterProgress(letter: ProgressLetter | null | undefined): Le
       rejected: false,
       message: letter?.is_expired
         ? 'Surat sudah terbit, tetapi masa berlakunya sudah habis.'
-        : 'Surat sudah terbit. Buka detail untuk mengunduh.',
+        : 'Surat sudah terbit. Ambil surat bertanda tangan dan berstempel di kantor desa.',
     }
   }
 
@@ -129,7 +130,7 @@ export function getLetterProgress(letter: ProgressLetter | null | undefined): Le
       tone: 'pending',
       current: 0,
       rejected: false,
-      message: 'Menunggu tanda tangan sebelum diteruskan ke RT.',
+      message: 'Menunggu persetujuan saksi sebelum diteruskan ke RT.',
     }
   }
 

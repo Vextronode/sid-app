@@ -5,7 +5,7 @@
 //
 // Isi menyesuaikan peran:
 // - pratinjau draf untuk semua status (backend hanya memasang TTD &
-//   stempel pada surat final bagi pihak yang berhak mengunduh);
+//   surat final tanpa TTD dan stempel, dibubuhkan basah di kantor desa);
 // - Setuju/Tolak di footer hanya bila pengguna berwenang di tahap aktif;
 // - menu Unduh hanya bila `canDownload` (Kades/Sekdes) dan surat final.
 // ==========================================
@@ -31,6 +31,7 @@ import ApprovalStepRenderer from './ApprovalStepRenderer'
 import { canDecideOnLetter } from '../utils/canDecide'
 import {
   FORM_DOWNLOAD_HINT,
+  LETTER_PICKUP_HINT,
   isSignedByVillageHead,
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
@@ -65,7 +66,7 @@ function getHint({
     }
 
     return isSignedByVillageHead(surat)
-      ? 'Persetujuan Anda menerbitkan surat dengan tanda tangan dan stempel desa.'
+      ? 'Persetujuan Anda menerbitkan surat tanpa tanda tangan; desa mencetaknya lalu menandatangani dan menstempel basah.'
       : 'Persetujuan Anda menerbitkan formulir untuk instansi luar, tanpa nomor surat dan tanpa tanda tangan Kepala Desa.'
   }
 
@@ -73,7 +74,7 @@ function getHint({
     if (!canDownload) return 'Surat sudah terbit.'
 
     return isSignedByVillageHead(surat)
-      ? 'Surat sudah terbit. Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
+      ? `Surat sudah terbit. ${LETTER_PICKUP_HINT}`
       : `Formulir sudah terbit. ${FORM_DOWNLOAD_HINT}`
   }
 

@@ -189,7 +189,7 @@ class RepeatingFormFieldsTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.wet', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;

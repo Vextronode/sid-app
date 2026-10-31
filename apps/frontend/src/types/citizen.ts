@@ -106,8 +106,6 @@ export type Official = {
   rt_id: number | null
   rw_id: number | null
   hamlet_id: number | null
-  has_signature_img: boolean
-  stamp_img: string | null
   photo_img: string | null
   phone_wa: string | null
   started_at: IsoDateString | null

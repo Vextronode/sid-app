@@ -12,7 +12,8 @@ const MAX_FILES = 5
 type ResultDecision = 'accepted' | 'rejected'
 
 const STAGE_TEXT: Record<LetterResultStage, string> = {
-  awaiting_upload: 'Unduh formulir, bawa ke instansi yang dituju, lalu unggah hasilnya di sini.',
+  awaiting_upload:
+    'Ambil formulir yang sudah ditandatangani di kantor desa, bawa ke instansi yang dituju, lalu unggah hasilnya di sini.',
   under_review: 'Hasil sudah diunggah dan menunggu verifikasi desa.',
   accepted: 'Hasil dari instansi sudah diverifikasi desa.',
 }

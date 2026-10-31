@@ -60,7 +60,7 @@ class UnsignedFormLetterTest extends TestCase
         // Tetap dapat diunduh walau Kepala Desa sudah tidak menjabat.
         $this->kades['official']->update(['is_active' => false]);
 
-        $html = $this->download($letterId, 'digital');
+        $html = $this->download($letterId);
         $this->assertStringContainsString('FORMULIR Pemohon Formulir', $html);
         $this->assertStringNotContainsString('<img', $html);
 
@@ -113,14 +113,14 @@ class UnsignedFormLetterTest extends TestCase
         return $letterId;
     }
 
-    private function download(string $letterId, string $template): string
+    private function download(string $letterId): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with("pdf.templates.{$template}", Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -128,7 +128,7 @@ class UnsignedFormLetterTest extends TestCase
             ->andReturn($pdf);
 
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template={$template}")
+            ->get("/api/letters/{$letterId}/download")
             ->assertOk();
 
         return (string) $rendered;

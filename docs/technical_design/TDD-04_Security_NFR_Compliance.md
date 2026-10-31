@@ -36,8 +36,7 @@
 
 - Password: Argon2id (`HASH_DRIVER=argon2id`).
 - Field terenkripsi (`$casts encrypted`, AES-256-CBC): `citizens.nik`, `families.no_kk`, `families.family_address`, `letters.applicant_nik`, `letters.applicant_address`. `citizens.address` tidak dienkripsi.
-- Berkas TTD pribadi akun dienkripsi (`Crypt::encryptString`) sebelum disimpan.
-- Berkas privat di disk `private_uploads` (stempel desa, TTD jabatan Kades, TTD akun, lampiran surat) hanya dilayani lewat endpoint terautentikasi dengan cek path folder, `Cache-Control: private, no-store` (TTD/stempel) dan `X-Content-Type-Options: nosniff`.
+- Berkas privat di disk `private_uploads` (lampiran surat, hasil dari instansi) hanya dilayani lewat endpoint terautentikasi dengan cek path folder dan `X-Content-Type-Options: nosniff`. Tidak ada TTD digital maupun stempel digital yang disimpan.
 - Berkas publik (disk `public`): logo & foto beranda desa, foto pejabat, foto anggota organisasi desa, foto profil akun warga, thumbnail berita — sengaja publik untuk halaman publik dan avatar header. Halaman publik organisasi hanya mengirim nama dan foto (tanpa WA/catatan).
 - `family_socioeconomics` belum dienkripsi (keputusan terbuka).
 - `APP_KEY` di `.env`; entrypoint Docker gagal bila kosong dan tidak pernah membuat ulang key.
@@ -45,9 +44,9 @@
 **Backend Security (Aktif)**
 
 - CSRF via Sanctum; semua input divalidasi Form Request (isian surat divalidasi terhadap definisi jenis surat; isian tak dikenal ditolak).
-- Upload: tipe & ukuran dibatasi (lampiran/TTD basah PDF/JPG/PNG ≤ 2 MB; TTD akun PNG/JPG ≤ 512 KB; stempel/TTD jabatan/foto pejabat/foto anggota organisasi/foto profil akun ≤ 5 MB; logo ≤ 2 MB; foto beranda ≤ 5 MB; thumbnail berita ≤ 2 MB).
+- Upload: tipe & ukuran dibatasi (lampiran PDF/JPG/PNG ≤ 2 MB; foto pejabat/foto anggota organisasi/foto profil akun ≤ 5 MB; logo ≤ 2 MB; foto beranda ≤ 5 MB; thumbnail berita ≤ 2 MB).
 - Template PDF dirender mentah, sehingga semua nilai dari data warga/isian di-escape (`e()`); hanya HTML buatan sistem (logo, TTD, stempel) yang tidak di-escape.
-- Permintaan tanda tangan tahan enumerasi: jawaban sama apakah NIK punya akun atau tidak; pembatasan 3 penolakan per pasangan pemohon–NIK dalam 24 jam; pemilik NIK dapat memblokir pemohon; identitas penolak tidak diberitahukan.
+- Permintaan saksi tahan enumerasi: jawaban sama apakah NIK punya akun atau tidak; pembatasan 3 penolakan per pasangan pemohon–NIK dalam 24 jam; pemilik NIK dapat memblokir pemohon; identitas penolak tidak diberitahukan.
 - Keputusan approval dan Terapkan memakai row lock (`lockForUpdate`) + cek ulang status di dalam transaksi.
 - Hanya Eloquent/Query Builder dengan binding; pencarian `LIKE` meng-escape `%` dan `_`.
 - Akun yang dinonaktifkan lewat Terapkan (warga meninggal) dicabut token-nya.
@@ -112,7 +111,7 @@
 | Credential bocor | Login dengan kredensial bocor | Throttle login, register butuh NIK + tanggal lahir |
 | Database bocor | Akses DB langsung | Enkripsi field & berkas TTD |
 | Penyalahgunaan permintaan TTD | Spam/enumerasi NIK | Jawaban seragam, rate limit penolakan, blokir, kata sandi saat setuju |
-| Tanda tangan dipalsukan | TTD diganti setelah surat terbit | TTD akun tidak dapat diubah sendiri; snapshot membekukan TTD Kades; reset tercatat |
+| Tanda tangan dipalsukan | PDF unduhan dicetak lalu diberi TTD palsu | PDF unduhan sengaja tanpa TTD/stempel; surat sah hanya cetakan ber-TTD & stempel basah dari kantor desa, nomor surat dapat dicek ke desa |
 | XSS lewat isian surat | Isian berisi HTML/skrip masuk PDF | Escape semua nilai isian sebelum disisipkan template |
 | SQL Injection | Input berbahaya | Eloquent + binding, escape wildcard LIKE |
 | Race condition approval / Terapkan | Dua aktor bersamaan | Row lock + cek ulang; 409 |

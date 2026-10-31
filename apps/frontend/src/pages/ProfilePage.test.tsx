@@ -22,7 +22,6 @@ vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null 
 vi.mock('@/features/profil-warga/components/ProfilePhoto', () => ({
   ProfilePhoto: (): null => null,
 }))
-vi.mock('@/features/surat/components/SignatureCard', () => ({ SignatureCard: (): null => null }))
 vi.mock('@/features/surat/components/SignatureRequestsCard', () => ({
   SignatureRequestsCard: (): null => null,
 }))

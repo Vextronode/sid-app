@@ -19,7 +19,7 @@ if (Aktivitas?) then (Kependudukan)
   :CRUD warga & KK, impor Excel,\nsurvei sosio-ekonomi KK,\nkatalog pekerjaan;
   stop
 elseif (CMS) then
-  :Profil desa (identitas, kop surat,\nlogo, foto beranda, stempel);
+  :Profil desa (identitas, kop surat,\nlogo, foto beranda);
   :Berita (1-2 kategori) & kategori berita;
   :Peraturan desa; organisasi non-struktural;
   |#LightYellow|Sistem|
@@ -28,7 +28,7 @@ elseif (CMS) then
 elseif (Jabatan & Akun) then
   :Cari calon via NIK; tetapkan/rotasi/turunkan\npejabat (foto wajib);
   :Kelola jenis jabatan tanpa akun;
-  :Reset password / reset TTD akun;
+  :Reset password akun;
   :Unggah TTD Kepala Desa aktif;
   stop
 elseif (Konfigurasi Surat) then
@@ -60,7 +60,7 @@ if (Keputusan?) then (Tolak)
 else (Setuju)
   |#LightYellow|Sistem|
   :approved; nomor surat per kode klasifikasi;
-  :Bekukan snapshot (TTD & stempel Kades saat ini);
+  :Bekukan snapshot (nama Kades saat ini;\ntanpa TTD/stempel, dibubuhkan basah);
   :Notifikasi pemohon & Kasi/Kaur;
   stop
 endif

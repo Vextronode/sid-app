@@ -31,7 +31,7 @@ describe('downloadSuratPDF', () => {
     await downloadSuratPDF({ id: 7, letter_number: 'SURAT/2026/007' })
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/letters/7/download?template=wet'),
+      expect.stringMatching(/\/api\/letters\/7\/download$/),
       expect.objectContaining({
         credentials: 'include',
         headers: { Accept: 'application/pdf' },

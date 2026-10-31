@@ -77,7 +77,7 @@ class VillageProfileEndpointTest extends TestCase
             ->assertJsonPath('data.name', 'Desa Cibenda Baru')
             ->assertJsonPath('data.vision', 'Menjadi desa mandiri, maju, dan sejahtera')
             ->assertJsonPath('data.area_ha', 759.319)
-            ->assertJsonPath('data.has_stamp_img', false);
+            ->assertJsonMissingPath('data.has_stamp_img');
     }
 
     #[Test]
@@ -101,82 +101,38 @@ class VillageProfileEndpointTest extends TestCase
     }
 
     #[Test]
-    public function petugas_can_upload_and_preview_private_village_stamp(): void
+    public function dukcapil_area_code_is_optional_and_must_be_eight_digits(): void
     {
-        Storage::fake('private_uploads');
         [$village, $user] = $this->villageWithUser();
+        $payload = ['name' => 'Desa Cibenda', 'head_name' => 'H. Ridwan Saepudin'];
 
-        $upload = $this->actingAs($user)->post('/api/villages/profile/stamp', [
-            'stamp' => UploadedFile::fake()->image('stamp.png'),
-        ]);
+        foreach (['3218200', '321820081', '3218200A'] as $invalid) {
+            $this->actingAs($user)
+                ->patchJson('/api/villages/profile', [...$payload, 'area_code' => $invalid])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['area_code']);
+        }
 
-        $upload->assertOk()
-            ->assertJsonPath('message', 'Stempel desa berhasil diperbarui.')
-            ->assertJsonPath('data.has_stamp_img', true)
-            ->assertJsonMissingPath('data.stamp_img');
-
-        $path = $village->fresh()->stamp_img;
-        $this->assertStringStartsWith("village-stamps/{$village->id}/", $path);
-        Storage::disk('private_uploads')->assertExists($path);
-
-        $this->actingAs($user)->get('/api/villages/profile/stamp')
+        $this->actingAs($user)
+            ->patchJson('/api/villages/profile', [...$payload, 'area_code' => '32182008'])
             ->assertOk()
-            ->assertHeader('Content-Type', 'image/png')
-            ->assertHeader('Cache-Control', 'no-store, private');
+            ->assertJsonPath('data.area_code', '32182008');
+        $this->assertSame('32182008', $village->fresh()->area_code);
     }
 
     #[Test]
-    public function replacing_stamp_removes_previous_private_file(): void
+    public function village_stamp_is_no_longer_managed_because_letters_are_stamped_by_hand(): void
     {
-        Storage::fake('private_uploads');
-        [$village, $user] = $this->villageWithUser();
-
-        $this->actingAs($user)->post('/api/villages/profile/stamp', [
-            'stamp' => UploadedFile::fake()->image('first.png'),
-        ])->assertOk();
-        $firstPath = $village->fresh()->stamp_img;
-
-        $this->actingAs($user)->post('/api/villages/profile/stamp', [
-            'stamp' => UploadedFile::fake()->image('second.png'),
-        ])->assertOk();
-
-        // File lama dipertahankan untuk snapshot surat yang sudah terbit.
-        Storage::disk('private_uploads')->assertExists($firstPath);
-        Storage::disk('private_uploads')->assertExists($village->fresh()->stamp_img);
-    }
-
-    #[Test]
-    public function guest_and_non_petugas_cannot_upload_or_preview_stamp(): void
-    {
-        Storage::fake('private_uploads');
         [, $user] = $this->villageWithUser();
 
-        $this->post('/api/villages/profile/stamp', [
+        // Surat terbit tanpa stempel digital; stempel dibubuhkan basah di kantor desa.
+        $this->actingAs($user)->post('/api/villages/profile/stamp', [
             'stamp' => UploadedFile::fake()->image('stamp.png'),
-        ])->assertUnauthorized();
-        $this->get('/api/villages/profile/stamp')->assertUnauthorized();
-
-        $otherUser = User::factory()->create(['village_id' => $user->village_id, 'role' => 'warga']);
-        $this->actingAs($otherUser)->post('/api/villages/profile/stamp', [
-            'stamp' => UploadedFile::fake()->image('stamp.png'),
-        ])->assertForbidden();
-        $this->actingAs($otherUser)->get('/api/villages/profile/stamp')->assertForbidden();
-    }
-
-    #[Test]
-    public function profile_update_does_not_accept_stamp_path_and_missing_stamp_preview_is_404(): void
-    {
-        Storage::fake('private_uploads');
-        [$village, $user] = $this->villageWithUser();
-
-        $this->actingAs($user)->patchJson('/api/villages/profile', [
-            'name' => 'Desa Cibenda',
-            'head_name' => 'Kepala Desa',
-            'stamp_img' => 'outside/path.png',
-        ])->assertOk()->assertJsonPath('data.has_stamp_img', false);
-
-        $this->assertNull($village->fresh()->stamp_img);
+        ])->assertNotFound();
         $this->actingAs($user)->get('/api/villages/profile/stamp')->assertNotFound();
+        $this->actingAs($user)->getJson('/api/villages/profile')
+            ->assertOk()
+            ->assertJsonMissingPath('data.has_stamp_img');
     }
 
     #[Test]

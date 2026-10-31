@@ -306,13 +306,6 @@ Official:
     hamlet_id:
       type: integer
       nullable: true
-    has_signature_img:
-      type: boolean
-      description: "Indikator TTD jabatan (private); preview melalui endpoint terproteksi."
-    stamp_img:
-      type: string
-      nullable: true
-      description: "Kolom legacy; tidak dipakai PDF."
     photo_img:
       type: string
       nullable: true

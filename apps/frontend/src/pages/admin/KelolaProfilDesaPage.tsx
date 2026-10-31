@@ -11,7 +11,6 @@ import { useProfilDesa } from '@/features/profil-desa-admin/hooks/useProfilDesa'
 import EditProfilDesaModal from '@/features/profil-desa-admin/components/EditProfilDesaModal'
 import EditVisiMisiModal from '@/features/profil-desa-admin/components/EditVisiMisiModal'
 import EditPerangkatDesaModal from '@/features/profil-desa-admin/components/EditPerangkatDesaModal'
-import PengesahanSuratCard from '@/features/profil-desa-admin/components/PengesahanSuratCard'
 import TampilanPublikCard from '@/features/profil-desa-admin/components/TampilanPublikCard'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
@@ -292,6 +291,7 @@ export default function KelolaProfilDesaPage() {
               ['Kabupaten/Kota', profile.regency],
               ['Provinsi', profile.province],
               ['Kode Pos', profile.postal_code],
+              ['Kode Wilayah Dukcapil', profile.area_code],
             ].map(([label, value]) => (
               <div key={label} className="sid-profil-desa-info-item">
                 <span className="sid-profil-desa-info-label">{label}</span>
@@ -343,12 +343,6 @@ export default function KelolaProfilDesaPage() {
           onEditText={() => setModalProfil(true)}
           disabled={processing}
         />
-
-        {/* ==========================================
-            STEMPEL & TANDA TANGAN KEPALA DESA
-            ========================================== */}
-
-        <PengesahanSuratCard />
 
         {/* ==========================================
             VISI & MISI

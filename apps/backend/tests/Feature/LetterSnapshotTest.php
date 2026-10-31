@@ -82,12 +82,12 @@ class LetterSnapshotTest extends TestCase
         $this->assertSame($kades['official']->id, $letter->signed_by_official_id);
     }
 
-    public function test_preview_before_approval_uses_live_data_and_stores_no_snapshot(): void
+    public function test_preview_before_approval_is_for_approvers_only_and_stores_no_snapshot(): void
     {
         $village = Village::factory()->create();
         ['rt' => $rt] = $this->makeArea($village);
         $this->makeOfficialUser('kepala_desa', $village);
-        $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $rtApprover = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
         $applicant = $this->makeCitizenAccount($village, $rt);
         $letterType = LetterType::factory()->create([
             'flow_id' => $this->makeDefaultFlow()->id,
@@ -98,7 +98,13 @@ class LetterSnapshotTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
+        // Pemohon baru dapat melihat suratnya setelah terbit.
         $this->actingAs($applicant['user'])
+            ->get("/api/letters/{$letterId}/preview")
+            ->assertForbidden();
+
+        // RT yang memutus melihat surat dari data hidup.
+        $this->actingAs($rtApprover['user'])
             ->get("/api/letters/{$letterId}/preview")
             ->assertOk();
 
@@ -149,7 +155,7 @@ class LetterSnapshotTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.wet', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;

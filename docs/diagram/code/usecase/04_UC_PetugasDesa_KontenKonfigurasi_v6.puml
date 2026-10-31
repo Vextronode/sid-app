@@ -5,6 +5,7 @@
 ' SUMBER: TDD-02 v5.3 (UC-18/19/21/24/27/28) + routes (2026-10-18)
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml. Tambah: kop
 '          surat, logo, foto beranda, kategori berita, lihat flow (read-only).
+'          Revisi 2026-10-31: upload stempel dihapus (stempel basah).
 '==================================================================================
 @startuml UC_PetugasDesa_Konten_v6
 left to right direction
@@ -29,7 +30,6 @@ rectangle "SIDUTama" {
     usecase "Edit identitas, kop surat,\nluas, jam layanan, sejarah,\nvisi misi, sambutan Kades" as UC_DESA
     usecase "Atur titik kantor\n(koordinat / link Google Maps)" as UC_LOC
     usecase "Upload logo / foto beranda\n(dioptimasi WebP)" as UC_IMG
-    usecase "Upload / preview stempel" as UC_STAMP
   }
   rectangle "UC-19: Berita" #E8F5E9 {
     usecase "Kelola Berita\n(draft/publish, 1-2 kategori)" as UC_NEWS
@@ -53,7 +53,6 @@ rectangle "SIDUTama" {
 PD -- UC_DESA
 PD -- UC_LOC
 PD -- UC_IMG
-PD -- UC_STAMP
 PD -- UC_NEWS
 PD -- UC_NEWSCAT
 PD -- UC_REG
@@ -64,7 +63,7 @@ PD -- UC_FLOW
 UC_NEWS ..> UC_NEWSCAT : <<include>>
 
 note bottom of UC_LT
-  Template, isian form, slot TTD, aksi data,
+  Template, isian form, aksi data,
   flow, dan kode klasifikasi diset developer
   lewat seeder (tidak ada endpoint).
 end note

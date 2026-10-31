@@ -40,7 +40,7 @@
 
 ### A.4 Form Handling
 
-1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.ts`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
+1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.ts`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
 2. Validasi menggunakan **React Hook Form + Zod**.
 3. Pesan kesalahan validasi ditampilkan dengan pola konsisten (posisi, warna) mengikuti design token status.
 
