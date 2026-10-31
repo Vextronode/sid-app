@@ -12,6 +12,7 @@ use App\Models\Official;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
+use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
@@ -175,6 +176,34 @@ class OfficialService
             ->filter(fn (Official $official) => $assignedRole === null || $official->position === $assignedRole)
             ->load('user')
             ->values();
+    }
+
+    /**
+     * Notifikasi ke Kasi/Kaur yang ditugaskan pada jenis surat. Bila
+     * jabatannya kosong, Staf SIDUTama diberi tahu untuk mengisinya
+     * (Staf tidak menjalankan Terapkan/verifikasi sendiri).
+     */
+    public function notifyLetterHandlers(Letter $letter, LetterStatusNotification $notification): void
+    {
+        $handlers = $this->resolveKasiKaurForLetter($letter)->filter(fn (Official $official) => $official->user !== null);
+
+        if ($handlers->isNotEmpty()) {
+            $handlers->each(fn (Official $official) => $official->user->notify($notification));
+
+            return;
+        }
+
+        $role = $letter->letterType->assigned_role;
+        $label = $role === null ? 'Kasi Pemerintahan/Kaur TU & Umum' : (UserRole::tryFrom($role)?->label() ?? $role);
+
+        foreach ($this->resolveStafSidUsers($letter->village_id) as $petugas) {
+            $petugas->notify(new LetterStatusNotification(
+                $letter,
+                "Surat Tertahan: {$label} Kosong",
+                "Ada surat yang menunggu diproses {$label}, tetapi jabatan tersebut belum memiliki pejabat aktif berakun. Tetapkan pejabatnya agar surat dapat diproses.",
+                'handler_vacant',
+            ));
+        }
     }
 
     public function getAllWithRelations(User $user): Collection

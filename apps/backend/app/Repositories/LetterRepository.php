@@ -48,21 +48,20 @@ class LetterRepository
             ->first();
     }
 
+    // Wilayah pemohon saat mengajukan (letters.rt_id/rw_id/hamlet_id).
     public function findCitizenRtId(Letter $letter): ?int
     {
-        return $letter->citizen()->value('rt_id');
+        return $letter->rt_id;
     }
 
     public function findCitizenRwId(Letter $letter): ?int
     {
-        return $letter->citizen()
-            ->join('rts', 'rts.id', '=', 'citizens.rt_id')
-            ->value('rts.rw_id');
+        return $letter->rw_id;
     }
 
     public function findCitizenHamletId(Letter $letter): ?int
     {
-        return $letter->citizen()->value('hamlet_id');
+        return $letter->hamlet_id;
     }
 
     public function loadForPdf(Letter $letter): Letter
@@ -174,7 +173,7 @@ class LetterRepository
             });
 
         if ($rtId !== null) {
-            $query->whereHas('citizen', fn (Builder $citizenQuery) => $citizenQuery->where('rt_id', $rtId));
+            $query->where('letters.rt_id', $rtId);
         }
 
         return $query->count();
@@ -270,7 +269,7 @@ class LetterRepository
     public function queryByCitizenHamlet(int $hamletId): Builder
     {
         return Letter::query()
-            ->whereHas('citizen', fn (Builder $q) => $q->where('hamlet_id', $hamletId))
+            ->where('letters.hamlet_id', $hamletId)
             ->whereHas('approvals', fn (Builder $q) => $q
                 ->where('approval_level', 'rt')
                 ->where('action', 'approved'))
@@ -333,7 +332,7 @@ class LetterRepository
     public function queryByCitizenRw(int $rwId): Builder
     {
         return Letter::query()
-            ->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId))
+            ->where('letters.rw_id', $rwId)
             ->whereHas('approvals', fn (Builder $q) => $q
                 ->where('approval_level', 'rt')
                 ->where('action', 'approved'))
@@ -347,7 +346,7 @@ class LetterRepository
     public function queryByCitizenRt(int $rtId): Builder
     {
         return Letter::query()
-            ->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId))
+            ->where('letters.rt_id', $rtId)
             ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
 
@@ -429,6 +428,9 @@ class LetterRepository
                 'letters.letter_type_id',
                 'letters.submitted_by',
                 'letters.citizen_id',
+                'letters.rt_id',
+                'letters.rw_id',
+                'letters.hamlet_id',
                 'letters.letter_number',
                 'letters.applicant_name',
                 'letters.notes',
@@ -448,6 +450,7 @@ class LetterRepository
                 'letterType:id,name,code,data_action,signed_by_village_head,requires_result_upload',
                 'citizen:id,name',
                 'latestResult',
+                'latestRejection',
                 'flow:id',
                 'flow.steps:id,flow_id,step_order,approver_position,is_final',
                 'approvals:id,letter_id,flow_step_id,approved_by,deadline_at',
@@ -541,12 +544,12 @@ class LetterRepository
 
     public function whereCitizenRtId(Builder $query, int $rtId): Builder
     {
-        return $query->whereHas('citizen', fn (Builder $q) => $q->where('rt_id', $rtId));
+        return $query->where('letters.rt_id', $rtId);
     }
 
     public function whereCitizenRwId(Builder $query, int $rwId): Builder
     {
-        return $query->whereHas('citizen.rt', fn (Builder $q) => $q->where('rw_id', $rwId));
+        return $query->where('letters.rw_id', $rwId);
     }
 
     public function countSubmittedOnDate(Builder $query, Carbon $date): int

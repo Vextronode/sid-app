@@ -9321,7 +9321,7 @@
 /* ==========================================
    STATUS BADGE
    Satu-satunya gaya badge status di dashboard; dipakai lewat
-   components/ui/StatusPill.jsx.
+   components/ui/StatusPill.tsx.
    ========================================== */
 
 .sid-operator-status {
@@ -21721,6 +21721,17 @@ button.sid-operator-profile {
 
 .sid-wilayah-btn-secondary:hover:not(:disabled) {
   background: var(--sid-surface-page);
+}
+
+/* Ikon RefreshButton selama data dimuat ulang. */
+.sid-refresh-icon-spinning {
+  animation: sid-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-refresh-icon-spinning {
+    animation: none;
+  }
 }
 
 @media (max-width: 900px) {

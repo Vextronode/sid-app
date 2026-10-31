@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LetterResultStage;
 use App\Enums\LetterStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,9 @@ class Letter extends Model
         'submitted_by',
         'on_behalf_of',
         'citizen_id',
+        'rt_id',
+        'rw_id',
+        'hamlet_id',
         'letter_number',
         'applicant_name',
         'applicant_nik',
@@ -68,6 +72,17 @@ class Letter extends Model
 
     protected static function booted(): void
     {
+        // Wilayah pemohon dibekukan saat pemohon ditautkan ke surat, bukan
+        // dibaca dari alamat warga yang sekarang.
+        static::saving(function (Letter $letter) {
+            if ($letter->citizen_id !== null && $letter->isDirty('citizen_id') && ! $letter->isDirty('rt_id')) {
+                $citizen = Citizen::query()->with('rt:id,rw_id')->find($letter->citizen_id);
+                $letter->rt_id = $citizen?->rt_id;
+                $letter->rw_id = $citizen?->rt?->rw_id;
+                $letter->hamlet_id = $citizen?->hamlet_id;
+            }
+        });
+
         static::saving(function (Letter $letter) {
             if ($letter->isDirty('applicant_nik')) {
                 $letter->applicant_nik_hash = hash('sha256', $letter->applicant_nik);
@@ -97,6 +112,19 @@ class Letter extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(LetterApproval::class);
+    }
+
+    /**
+     * Keputusan tolak terakhir; notes-nya alasan penolakan untuk daftar surat.
+     *
+     * @return HasOne<LetterApproval, $this>
+     */
+    public function latestRejection(): HasOne
+    {
+        return $this->hasOne(LetterApproval::class)->ofMany(
+            ['id' => 'max'],
+            fn (Builder $query) => $query->where('action', 'rejected'),
+        );
     }
 
     /** @return HasMany<LetterAttachment, $this> */
@@ -175,6 +203,23 @@ class Letter extends Model
     public function citizen(): BelongsTo
     {
         return $this->belongsTo(Citizen::class);
+    }
+
+    public function rt(): BelongsTo
+    {
+        return $this->belongsTo(Rt::class);
+    }
+
+    public function rw(): BelongsTo
+    {
+        return $this->belongsTo(Rw::class);
+    }
+
+    /** Akun pengaju atau warga pemohon surat (akun lain milik orang yang sama). */
+    public function isApplicant(User $user): bool
+    {
+        return $this->isSubmittedBy($user)
+            || ($this->citizen_id !== null && (string) $this->citizen_id === (string) $user->citizen_id);
     }
 
     public function isSubmittedBy(User $user): bool

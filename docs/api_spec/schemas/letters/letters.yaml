@@ -191,9 +191,12 @@ Letter:
     can_upload_result:
       type: boolean
       description: "Pengguna saat ini boleh mengunggah hasil (LetterPolicy::uploadResult)."
+    can_fulfill:
+      type: boolean
+      description: "Pengguna saat ini boleh menjalankan Terapkan (LetterPolicy::fulfill): Kasi/Kaur sesuai assigned_role, termasuk surat sendiri."
     can_review_result:
       type: boolean
-      description: "Pengguna saat ini boleh memverifikasi hasil (LetterPolicy::reviewResult)."
+      description: "Pengguna saat ini boleh memverifikasi hasil (LetterPolicy::reviewResult): Kasi/Kaur sesuai assigned_role, termasuk surat sendiri."
     has_supporting_document:
       type: boolean
       example: false
@@ -305,6 +308,13 @@ LetterListItem:
     rejected_at_step:
       type: integer
       nullable: true
+    rejection_reason:
+      type: string
+      nullable: true
+      example: "Fotokopi KK tidak terbaca."
+      description: |
+        Catatan keputusan tolak terakhir (`letter_approvals.notes`, relasi
+        `latestRejection`). `null` bila status bukan `rejected`.
     is_overdue:
       type: boolean
     awaiting_signatures:
@@ -513,7 +523,9 @@ LetterStatusLog:
         Dipetakan dari kolom `reason`. Nilai sistem yang dipakai antara lain:
         "Permohonan surat dibuat", "Menunggu tanda tangan pihak terkait",
         "Surat ditahan: tahap RT belum memiliki pejabat aktif",
+        "Surat ditahan: tahap Kepala Desa/Sekretaris Desa belum memiliki pejabat yang berwenang",
         "Tahap RT dilewati: pemohon adalah pejabat pada tahap tersebut",
+        "Tahap RT dilewati: pemohon adalah Kepala Desa/Sekretaris Desa",
         "Perubahan data kependudukan diterapkan".
     ip_address:
       type: string

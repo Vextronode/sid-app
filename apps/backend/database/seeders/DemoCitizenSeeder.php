@@ -154,7 +154,7 @@ class DemoCitizenSeeder extends Seeder
                 'marital_status' => $young ? 'belum_kawin' : 'cerai_mati',
             ]);
 
-            return $this->finishFamily($family, $head);
+            return $head;
         }
 
         // Sebagian kecil KK dikepalai ibu tunggal; sisanya pasangan suami-istri.
@@ -192,13 +192,6 @@ class DemoCitizenSeeder extends Seeder
                 'mother_name_text' => $mother->name,
             ]);
         }
-
-        return $this->finishFamily($family, $head);
-    }
-
-    private function finishFamily(Family $family, Citizen $head): Citizen
-    {
-        $family->update(['head_of_family_id' => $head->id]);
 
         return $head;
     }

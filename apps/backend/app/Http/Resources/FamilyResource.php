@@ -23,17 +23,21 @@ class FamilyResource extends JsonResource
             'rt_id' => $this->rt_id,
             'rw_id' => $this->rw_id,
             'hamlet_id' => $this->hamlet_id,
-            'head_of_family_id' => $this->head_of_family_id,
             'head_of_family' => $this->when(
-                ($this->relationLoaded('headOfFamily') && $this->headOfFamily)
-                    || ($this->relationLoaded('headMember') && $this->headMember),
+                $this->relationLoaded('headMember') && $this->headMember,
                 fn () => [
-                    'id' => ($this->headOfFamily ?? $this->headMember)->id,
-                    'name' => ($this->headOfFamily ?? $this->headMember)->name,
+                    'id' => $this->headMember->id,
+                    'name' => $this->headMember->name,
                 ]
             ),
             'members_count' => $this->members_count
                 ?? ($this->relationLoaded('members') ? $this->members->count() : null),
+            // Hanya di detail KK (findById memuat members); daftar memakai members_count.
+            'members' => $this->whenLoaded('members', fn () => $this->members->map(fn ($member) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'family_role' => $member->family_role,
+            ])->values()),
             'village' => new VillageResource($this->whenLoaded('village')),
             'rt' => new RtResource($this->whenLoaded('rt')),
             'rw' => new RwResource($this->whenLoaded('rw')),

@@ -283,9 +283,10 @@ class LetterFulfillmentService
                 'actor_id' => $actor->id,
                 'old_status' => LetterStatus::Approved->value,
                 'new_status' => LetterStatus::Approved->value,
-                'reason' => $touched === []
+                'reason' => ($touched === []
                     ? 'Perubahan data kependudukan ditandai selesai (dikerjakan manual)'
-                    : 'Perubahan data kependudukan diterapkan',
+                    : 'Perubahan data kependudukan diterapkan')
+                    .($locked->isApplicant($actor) ? ' oleh pemohon sendiri' : ''),
             ]);
 
             // Perubahan manual tercatat sendiri saat Kasi/Kaur mengedit data warga.
@@ -1115,7 +1116,8 @@ class LetterFulfillmentService
             }
 
             if ($this->formsMarriedFamily($letter)) {
-                $lines[] = 'Status perkawinan kepala keluarga dan suami/istri menjadi Kawin (bila belum).';
+                $status = CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $this->newFamilyMaritalStatus($letter));
+                $lines[] = "Status perkawinan kepala keluarga dan suami/istri menjadi {$status} (bila belum).";
             }
         } elseif ($kind === 'change_head') {
             $change = $config['change_head'];
@@ -1188,7 +1190,7 @@ class LetterFulfillmentService
                 $married = $this->formsMarriedFamily($letter);
                 $marriage = $new['married'] ?? [];
                 $marital = $married ? array_filter([
-                    'marital_status' => 'kawin',
+                    'marital_status' => $this->newFamilyMaritalStatus($letter),
                     'marriage_certificate_number' => $payload[$marriage['certificate'] ?? ''] ?? null,
                     'marriage_date' => $payload[$marriage['date'] ?? ''] ?? null,
                 ], fn (mixed $value): bool => $value !== null && $value !== '') : [];
@@ -1318,6 +1320,19 @@ class LetterFulfillmentService
 
         return is_array($married) && $this->restructureKind($letter) === 'new_family'
             && ($letter->payload[$married['field']] ?? null) === $married['equals'];
+    }
+
+    /**
+     * Status kawin keluarga baru F09: Kawin Belum Tercatat bila perkawinannya
+     * belum tercatat (nikah siri/adat, dengan SPTJM F-1.05), selain itu Kawin.
+     */
+    private function newFamilyMaritalStatus(Letter $letter): string
+    {
+        $unrecorded = $letter->letterType?->data_options['restructure']['new_family']['married']['unrecorded'] ?? null;
+
+        return is_array($unrecorded) && FieldCondition::matches($unrecorded, is_array($letter->payload) ? $letter->payload : [])
+            ? 'kawin_belum_tercatat'
+            : 'kawin';
     }
 
     /**
@@ -1475,9 +1490,12 @@ class LetterFulfillmentService
             ? $this->createRules()
             : $this->updateRules();
 
+        // `when`: kolom hanya diusulkan bila syaratnya cocok dengan jawaban form
+        // (mis. status Kawin atau Kawin Belum Tercatat).
         return array_values(array_filter(
             $letter->letterType?->data_fields ?? [],
-            fn (array $field): bool => isset($field['column']) && array_key_exists($field['column'], $rules),
+            fn (array $field): bool => isset($field['column']) && array_key_exists($field['column'], $rules)
+                && FieldCondition::matches($field['when'] ?? null, is_array($letter->payload) ? $letter->payload : []),
         ));
     }
 

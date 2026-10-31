@@ -57,6 +57,7 @@ class LetterTypeSeeder extends Seeder
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
                         'category' => LetterTypeCategory::Persuratan->value,
+                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'requirement_info' => null,
                         'documents' => null,
                         'classification_code' => '470',
@@ -67,7 +68,6 @@ class LetterTypeSeeder extends Seeder
                     ], $type, [
                         'village_id' => $village->id,
                         'template' => $this->page($type['name'], $sections, $opening),
-                        'assigned_role' => AssignedRole::KaurTuUmum->value,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -198,10 +198,10 @@ class LetterTypeSeeder extends Seeder
                 'form_fields' => [
                     // Identitas di surat ini milik almarhum, bukan pemohon.
                     ...$this->deceasedFields('Almarhum/Almarhumah'),
-                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', order: [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_meninggal', 'Tempat Meninggal', true, 'Tuliskan tempat meninggal'),
                     $this->text('sebab', 'Sebab Meninggal', false, 'Contoh: sakit / kecelakaan'),
-                    $this->pastDate('tanggal_pemakaman', 'Tanggal Pemakaman', [['after' => 'tanggal_meninggal', 'label' => 'tanggal meninggal']]),
+                    $this->pastDate('tanggal_pemakaman', 'Tanggal Pemakaman', order: [['after' => 'tanggal_meninggal', 'label' => 'tanggal meninggal']]),
                     $this->text('tempat_pemakaman', 'Tempat Pemakaman', true, 'Tuliskan tempat pemakaman'),
                 ],
                 // Setelah final approve, Kasi/Kaur menonaktifkan data warga
@@ -310,13 +310,17 @@ class LetterTypeSeeder extends Seeder
                 'code' => 'A11',
                 'name' => 'Surat Keterangan Ahli Waris',
                 'description' => 'Keterangan bahwa pemohon adalah ahli waris dari warga yang telah meninggal dunia.',
+                // Tampil di Layanan Kependudukan dan ditangani Kasi Pemerintahan,
+                // tetap surat keterangan desa (bernomor, TTD Kepala Desa, tanpa unggah hasil).
+                'category' => LetterTypeCategory::Pelayanan->value,
+                'assigned_role' => AssignedRole::KasiPemerintahan->value,
                 // Status ahli waris tidak kedaluwarsa.
                 'validity_days' => null,
                 'form_fields' => [
                     // Pemohon adalah ahli waris; datanya diambil dari akun.
                     ...$this->deceasedFields('Almarhum/Almarhumah'),
                     [...$this->occupation('pekerjaan_almarhum', 'Pekerjaan Almarhum/Almarhumah'), 'from_nik' => 'nik_almarhum', 'from_nik_value' => 'occupation'],
-                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', [self::AFTER_DECEASED_BORN]),
+                    $this->pastDate('tanggal_meninggal', 'Tanggal Meninggal', order: [self::AFTER_DECEASED_BORN]),
                     $this->text('tempat_pemakaman', 'Nama TPU', true, 'Contoh: Cibenda'),
                 ],
                 // Template fisik tidak memakai blok Nama/Jabatan penanda tangan.
@@ -414,18 +418,6 @@ class LetterTypeSeeder extends Seeder
             'typed_when_empty' => true,
             'help' => 'Bila terdaftar di desa ini, data almarhum/almarhumah diambil dari data penduduk. Kosongkan bila tidak diketahui.',
         ]);
-    }
-
-    /**
-     * Tanggal peristiwa yang sudah terjadi (tidak sesudah hari ini), dengan
-     * urutan terhadap tanggal lain (`date_order`) bila ada.
-     *
-     * @param  array<int, array<string, string>>  $order
-     * @return array<string, mixed>
-     */
-    private function pastDate(string $name, string $label, array $order = []): array
-    {
-        return [...$this->date($name, $label), 'past' => true, ...($order === [] ? [] : ['date_order' => $order])];
     }
 
     /**

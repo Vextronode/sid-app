@@ -126,7 +126,10 @@ use Illuminate\Validation\Rule;
  * susunan KK pemohon tanpa anggota di isian `exclude`, dengan anggota di
  * isian `head` sebagai kepala keluarga (urutan pertama). Disimpan sebagai
  * `<nama>_<n>_<kolom>` (n = 1..10, kolom MEMBER_KEYS) dan `<nama>_jumlah`,
- * mis. untuk F-1.01 setelah kepala keluarga meninggal.
+ * mis. untuk F-1.01 setelah kepala keluarga meninggal. `append` ({nik, role
+ * | role_value, typed, fixed}) menambah satu orang di akhir susunan (anak
+ * angkat F10, bayi F05); sumber `typed` boleh `a|b` (isian pertama yang
+ * terisi).
  *
  * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
  * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
@@ -420,7 +423,22 @@ class LetterFormSchema
      */
     private function typedMember(array $map, array $payload, string $role): array
     {
-        $value = fn (string $key): string => trim((string) ($payload[$map[$key] ?? ''] ?? ''));
+        // Sumber `a|b`: isian pertama yang terisi (mis. ayah anggota KK, atau
+        // yang diketik). Isian pilihan dicetak dengan labelnya (mis. pendidikan).
+        $options = array_column(array_filter($this->fields ?? [], fn (array $field): bool => ($field['type'] ?? null) === 'select'), 'options', 'name');
+        $value = function (string $key) use ($map, $payload, $options): string {
+            foreach (explode('|', (string) ($map[$key] ?? '')) as $source) {
+                $text = trim((string) ($payload[$source] ?? ''));
+
+                if ($text !== '') {
+                    return $key === 'jenis_kelamin' || ! isset($options[$source])
+                        ? $text
+                        : (string) (array_column($options[$source], 'label', 'value')[$text] ?? $text);
+                }
+            }
+
+            return '';
+        };
         $birth = $value('tanggal_lahir');
         $values = [];
 
@@ -504,9 +522,10 @@ class LetterFormSchema
 
         $number = trim((string) ($payload[$married['certificate'] ?? ''] ?? ''));
         $date = $payload[$married['date'] ?? ''] ?? null;
+        $unrecorded = isset($married['unrecorded']) && FieldCondition::matches($married['unrecorded'], $payload);
 
         return [
-            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, 'kawin'),
+            'status_kawin' => CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $unrecorded ? 'kawin_belum_tercatat' : 'kawin'),
             'akta_kawin' => $number !== '' ? 'Ada' : '',
             'no_akta_kawin' => $number,
             'tanggal_kawin' => is_string($date) && $date !== '' ? Carbon::parse($date)->locale('id')->translatedFormat('j F Y') : '',
@@ -546,10 +565,12 @@ class LetterFormSchema
                 continue;
             }
 
-            $excluded = (string) ($payload[$field['exclude'] ?? ''] ?? '');
+            // `exclude`: satu anggota (family_member, mis. almarhum) atau banyak
+            // (family_members, mis. anggota yang pindah).
+            $excluded = self::memberIdsOf($payload[$field['exclude'] ?? ''] ?? null);
             $head = (string) ($payload[$field['head'] ?? ''] ?? '');
             $members = $this->familyMembers()->loadMissing(self::MEMBER_RELATIONS)
-                ->reject(fn (Citizen $member): bool => (string) $member->id === $excluded)
+                ->reject(fn (Citizen $member): bool => in_array((string) $member->id, $excluded, true))
                 ->sortBy(fn (Citizen $member): int => (string) $member->id === $head ? 0 : 1)
                 ->take(self::ROSTER_ROWS)
                 ->values();
@@ -570,14 +591,18 @@ class LetterFormSchema
 
             $count = $members->count();
 
-            // `append`: orang yang masuk KK ini (mis. anak angkat F10), dari
-            // data penduduk bila NIK-nya terdaftar, selain itu dari isian.
+            // `append`: orang yang masuk KK ini (mis. anak angkat F10, bayi
+            // F05), dari data penduduk bila NIK-nya terdaftar, selain itu dari
+            // isian `typed` ditambah nilai tetap `fixed` (mis. status kawin
+            // bayi). SHDK dari isian `role`, atau tetap `role_value`.
             if (isset($field['append']) && $count < self::ROSTER_ROWS) {
                 $append = $field['append'];
-                $role = self::familyRoleLabel($payload[$append['role']] ?? null);
-                $citizen = $this->citizenByNik($payload[$append['nik']] ?? null)?->loadMissing(self::MEMBER_RELATIONS);
+                $role = self::familyRoleLabel($append['role_value'] ?? $payload[$append['role'] ?? ''] ?? null);
+                $citizen = $this->citizenByNik($payload[$append['nik'] ?? ''] ?? null)?->loadMissing(self::MEMBER_RELATIONS);
                 $index = $citizen === null ? false : $members->search(fn (Citizen $member): bool => $member->id === $citizen->id);
-                $values = $citizen !== null ? [...self::memberValues($citizen), 'shdk' => $role] : $this->typedMember($append['typed'] ?? [], $payload, $role);
+                $values = $citizen !== null
+                    ? [...self::memberValues($citizen), 'shdk' => $role]
+                    : [...$this->typedMember($append['typed'] ?? [], $payload, $role), ...($append['fixed'] ?? [])];
 
                 foreach ($values as $key => $value) {
                     $payload[$field['name'].'_'.(($index === false ? $count : $index) + 1).'_'.$key] = $value;

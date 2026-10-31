@@ -21,14 +21,7 @@ return new class extends Migration
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
-            $table->uuid('head_of_family_id')->nullable();
             $table->timestamps();
-        });
-
-        Schema::table('families', function (Blueprint $table) {
-            $table->foreign('head_of_family_id')
-                ->references('id')->on('citizens')
-                ->nullOnDelete();
         });
     }
 

@@ -141,7 +141,7 @@ Kolom `nik` dienkripsi dengan cast Laravel `encrypted`; `address` disimpan sebag
 | address | TEXT | NOT NULL | Alamat domisili (tidak memakai cast enkripsi pada model) |
 | rt_id | BIGINT | FK → rts.id, NULL | |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | |
-| marital_status | ENUM | NULL | `belum_kawin` \| `kawin` \| `cerai_hidup` \| `cerai_mati` |
+| marital_status | ENUM | NULL | `belum_kawin` \| `kawin` \| `kawin_belum_tercatat` \| `cerai_hidup` \| `cerai_hidup_belum_tercatat` \| `cerai_mati` (belum tercatat: nikah siri/adat atau cerai tanpa putusan, dengan SPTJM F-1.05; pilihan SIAK Disdukcapil) |
 | occupation_id | BIGINT | FK → occupations.id, NULL, ON DELETE RESTRICT | Pekerjaan baku desa; NULL = belum diisi. Kesamaan desa divalidasi di aplikasi, bukan FK |
 | religion | ENUM | NULL | `islam` \| `kristen` \| `katolik` \| `hindu` \| `buddha` \| `konghucu` |
 | last_education | ENUM | NULL | `tidak_sekolah` \| `sd` \| `smp` \| `sma` \| `diploma` \| `s1` \| `s2` \| `s3` |
@@ -188,10 +188,9 @@ Sengaja dibuat tipis — hanya berisi data yang sama untuk semua anggota keluarg
 | rt_id | BIGINT | FK → rts.id, NULL | |
 | rw_id | BIGINT | FK → rws.id, NULL | |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | |
-| head_of_family_id | UUID | FK → citizens.id, NULL | Denormalisasi opsional untuk performa query |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
-`head_of_family_id` pada prinsipnya bisa diturunkan dari `citizens.family_role = 'kepala_keluarga'`. Jika dipakai untuk mempercepat query, aplikasi wajib menjaga konsistensi manual antara kedua sumber data ini.
+Kepala keluarga tidak disimpan sebagai kolom di `families`; ia diturunkan dari anggota aktif dengan `citizens.family_role = 'kepala_keluarga'`, sehingga selalu ikut berubah saat susunan KK diubah (Data Penduduk maupun Terapkan pisah KK/ganti kepala).
 
 **Tabel: occupations**
 
@@ -330,7 +329,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 |---|---|---|---|
 | id | BIGINT | PK, AUTO INCREMENT | Primary key |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik jenis surat |
-| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (Persuratan Desa, `LetterTypeSeeder`), F01–F10 (Layanan Kependudukan, `ServiceLetterTypeSeeder`) |
+| code | VARCHAR(20) | NOT NULL, `UNIQUE(village_id, code)` | Seed: A01–A11 (surat keterangan desa, `LetterTypeSeeder`; A11 Ahli Waris berkategori Layanan Kependudukan untuk Kasi Pemerintahan), F01–F10 (Layanan Kependudukan, `ServiceLetterTypeSeeder`) |
 | name | VARCHAR(255) | NOT NULL | |
 | description | TEXT | NULL | |
 | category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Layanan Kependudukan); pengelompokan pilihan jenis surat, diset seeder |
@@ -377,6 +376,9 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | submitted_by | UUID | FK → users.id, NOT NULL | User yang mengajukan; dapat berperan sebagai warga atau pejabat |
 | on_behalf_of | UUID | FK → citizens.id, NULL | Selalu NULL di MVP; dipersiapkan untuk future use case petugas input atas nama warga lain |
 | citizen_id | UUID | FK → citizens.id, NULL | Diisi dari `auth()->user()->citizen_id` saat user submit untuk dirinya |
+| rt_id | BIGINT | FK → rts.id, NULL, ON DELETE SET NULL | RT pemohon saat mengajukan (diisi otomatis dari `citizens.rt_id`); dasar scope & approver RT |
+| rw_id | BIGINT | FK → rws.id, NULL, ON DELETE SET NULL | RW pemohon saat mengajukan (`rts.rw_id`); dasar scope RW |
+| hamlet_id | BIGINT | FK → hamlets.id, NULL, ON DELETE SET NULL | Dusun pemohon saat mengajukan (`citizens.hamlet_id`); dasar scope Kadus |
 | letter_number | VARCHAR(50) | UNIQUE, NULL | Diisi otomatis saat `status = 'approved'` (step `is_final=true`), kecuali jenis surat `issues_letter_number = false` (tetap NULL) |
 | applicant_name | VARCHAR(100) | NOT NULL | |
 | applicant_nik | TEXT | NOT NULL | AES-256 encrypted |
@@ -430,7 +432,7 @@ JOIN flow_steps fs ON fs.flow_id = l.flow_id AND fs.step_order = l.current_step_
 WHERE fs.approver_position = ? AND l.status IN ('pending','in_progress')
 ```
 
-Untuk RT (berbasis wilayah), tetap perlu JOIN tambahan ke `citizens.rt_id`. Tahap final berbasis posisi hanya untuk Kades/Sekdes. Kasi/Kaur tidak menjalankan keputusan flow.
+Untuk RT (berbasis wilayah), filter tambahan `letters.rt_id` (wilayah pemohon saat mengajukan, bukan alamat warga sekarang, sehingga riwayat tetap di RT/RW/dusun lama walau pemohon pindah, mis. pisah KK). Tahap final berbasis posisi hanya untuk Kades/Sekdes. Kasi/Kaur tidak menjalankan keputusan flow.
 
 **Catatan `on_behalf_of` vs `citizen_id`:**
 - `citizen_id`: referensi citizen pemohon yang diambil dari akun login, baik akun warga maupun pejabat
@@ -786,7 +788,8 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | (auto) | applicant_nik_hash | ✅ Aktif | Pencarian NIK pemohon |
 | (auto unique) | letter_number | ✅ Aktif | Nomor surat unik |
 | idx_letters_submitter_created | (submitted_by, created_at) | ✅ Aktif (performa) | Daftar "surat saya" terbaru |
-| idx_letters_citizen | citizen_id | ✅ Aktif (performa) | Join ke citizens (scope wilayah) |
+| idx_letters_citizen | citizen_id | ✅ Aktif (performa) | Join ke citizens |
+| idx_letters_rt / idx_letters_rw / idx_letters_hamlet | rt_id / rw_id / hamlet_id | ✅ Aktif | Scope wilayah RT/RW/Kadus |
 | idx_letters_type | letter_type_id | ✅ Aktif (performa) | Filter/agregasi per jenis surat |
 | idx_letters_village_submitted | (village_id, submitted_at) | ✅ Aktif (performa) | Laporan & ringkasan per periode |
 | idx_letters_village_created | (village_id, created_at) | ✅ Aktif (performa) | Daftar terbaru per desa |

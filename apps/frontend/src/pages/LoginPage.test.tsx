@@ -1,0 +1,180 @@
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const auth = vi.hoisted(() => ({ login: vi.fn() }))
+const form = vi.hoisted(() => ({ user: null as { id: number; role: string } | null }))
+const villageInfo = vi.hoisted(() => ({ village: null as Record<string, unknown> | null }))
+
+vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
+  usePublicVillageInfo: () => villageInfo,
+}))
+
+vi.mock('@/features/auth/contexts/AuthContext', () => ({
+  useAuth: () => ({ login: auth.login }),
+}))
+
+// Form login diganti stub: submit langsung memanggil callback sukses
+// dengan user dari test, tanpa API.
+vi.mock('@/features/auth/hooks/useLoginForm', () => ({
+  useLoginForm: () => ({
+    formData: { username: '', password: '' },
+    errors: { username: '', password: '', general: '' },
+    isLoading: false,
+    handleChange: vi.fn(),
+    handleSubmit: async (
+      event: { preventDefault: () => void } | undefined,
+      onSuccess: (user: unknown) => Promise<void>,
+    ) => {
+      event?.preventDefault()
+      await onSuccess(form.user)
+    },
+  }),
+}))
+
+import LoginPage from './LoginPage'
+import { present } from '@/test/fixtures'
+
+function CurrentPath() {
+  const location = useLocation()
+  return <p data-testid="current-path">{location.pathname + location.search}</p>
+}
+
+async function loginAs(role: string, entry = '/login') {
+  form.user = { id: 1, role }
+
+  const { container } = render(
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<CurrentPath />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  fireEvent.submit(present(container.querySelector('form')))
+
+  return screen.findByTestId('current-path')
+}
+
+describe('LoginPage redirect after login', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([
+    ['rt', '/admin/rt'],
+    ['rw', '/admin/rw'],
+    ['kadus', '/admin/kadus'],
+    ['kepala_desa', '/admin/kades'],
+    ['kasi_pemerintahan', '/admin/operator-desa'],
+    ['kaur_tu_umum', '/admin/operator-desa'],
+    ['staf_sid', '/admin/operator-desa'],
+    ['warga', '/surat-saya'],
+    ['sekretaris_desa', '/surat-saya'],
+  ])('without ?redirect=, role %s goes to %s as before', async (role, expected) => {
+    expect(await loginAs(role)).toHaveTextContent(expected)
+    expect(auth.login).toHaveBeenCalledWith({ id: 1, role })
+  })
+
+  it('sends warga back to an allowed redirect target', async () => {
+    const path = await loginAs('warga', '/login?redirect=%2Fjenis-surat')
+    expect(path.textContent).toBe('/jenis-surat')
+  })
+
+  it('keeps the query string of an allowed redirect target', async () => {
+    const path = await loginAs('warga', '/login?redirect=%2Fpengajuan-surat%2FSKD%3Fdraft%3D1')
+    expect(path.textContent).toBe('/pengajuan-surat/SKD?draft=1')
+  })
+
+  it.each([
+    ['%2F%2Fevil.com'],
+    ['https%3A%2F%2Fevil.com'],
+    ['javascript%3Aalert(1)'],
+    ['%2F%5Cevil.com'],
+    ['%2Fadmin%2Frt'],
+  ])('ignores unsafe or non-warga redirect %s for warga', async (redirect) => {
+    const path = await loginAs('warga', `/login?redirect=${redirect}`)
+    expect(path.textContent).toBe('/surat-saya')
+  })
+
+  it('maps a warga letter redirect to the official letter page for other roles', async () => {
+    const path = await loginAs('rt', '/login?redirect=%2Fjenis-surat')
+    expect(path.textContent).toBe('/admin/surat-saya')
+  })
+
+  it('ignores a non-letter warga redirect for other roles', async () => {
+    const path = await loginAs('rt', '/login?redirect=%2Fprofil')
+    expect(path.textContent).toBe('/admin/rt')
+  })
+})
+
+describe('LoginPage links (D4)', () => {
+  function renderLogin() {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<CurrentPath />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+  }
+
+  it('"Kembali ke Beranda" is a link to the home page', () => {
+    renderLogin()
+
+    expect(screen.getByRole('link', { name: 'Kembali ke Beranda' })).toHaveAttribute('href', '/')
+  })
+
+  it('"Daftar sekarang" is a link to /register', () => {
+    renderLogin()
+
+    const link = screen.getByRole('link', { name: 'Daftar sekarang' })
+    expect(link).toHaveAttribute('href', '/register')
+
+    fireEvent.click(link)
+
+    expect(screen.getByTestId('current-path').textContent).toBe('/register')
+    expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
+  })
+
+  it('"Lupa password?" stays a button that opens the unavailable-feature modal', () => {
+    renderLogin()
+
+    const button = screen.getByRole('button', { name: 'Lupa password?' })
+    expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
+
+    fireEvent.click(button)
+
+    expect(screen.getByRole('heading', { name: 'Fitur Belum Tersedia' })).toBeInTheDocument()
+    expect(screen.getByText(/Reset password masih dalam tahap pengembangan/)).toBeInTheDocument()
+  })
+})
+
+describe('LoginPage background', () => {
+  const renderLogin = () =>
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+
+  it('uses the village hero photo set by the app staff', () => {
+    villageInfo.village = { hero_image_url: '/storage/hero/sawah.jpg' }
+    const { container } = renderLogin()
+
+    const root = container.querySelector<HTMLElement>('.sid-login')
+    expect(root).toHaveClass('sid-login--photo')
+    expect(present(root).style.getPropertyValue('--sid-login-bg')).toBe(
+      'url("/storage/hero/sawah.jpg")',
+    )
+  })
+
+  it('falls back to the plain background without a hero photo', () => {
+    villageInfo.village = null
+    const { container } = renderLogin()
+
+    expect(container.querySelector('.sid-login')).not.toHaveClass('sid-login--photo')
+  })
+})

@@ -37,7 +37,7 @@ return new class extends Migration
             $table->string('father_name_text')->nullable();
             $table->string('mother_name_text')->nullable();
 
-            $table->enum('marital_status', ['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati'])->nullable();
+            $table->enum('marital_status', ['belum_kawin', 'kawin', 'kawin_belum_tercatat', 'cerai_hidup', 'cerai_hidup_belum_tercatat', 'cerai_mati'])->nullable();
             $table->foreignId('occupation_id')->nullable()->constrained('occupations')->restrictOnDelete();
             $table->enum('religion', ['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'])->nullable();
             $table->enum('last_education', ['tidak_sekolah', 'sd', 'smp', 'sma', 'diploma', 's1', 's2', 's3'])->nullable();

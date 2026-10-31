@@ -16,8 +16,10 @@
 
 | Konteks | Konvensi | Contoh |
 |---|---|---|
-| Nama file & komponen | `PascalCase`, nama file = nama komponen | `ApprovalStepRenderer.jsx` |
-| Nama hook kustom | `camelCase`, diawali `use` | `usePipelineSteps.js` |
+| Nama file & komponen | `PascalCase`, nama file = nama komponen | `ApprovalStepRenderer.tsx` |
+| Nama hook kustom | `camelCase`, diawali `use` | `usePipelineSteps.ts` |
+| Ekstensi file | `.tsx` bila berisi JSX, selain itu `.ts`; file `.js`/`.jsx` baru tidak diterima di `src/` | `LetterTable.tsx`, `statusFlow.ts` |
+| Tipe & interface | `PascalCase`; tipe props komponen bernama `{Komponen}Props` | `LetterTableProps`, `LetterRequest` |
 | Nama variabel & fungsi | `camelCase` | `resolveApproverLabel()` |
 | Nama constant | `UPPER_SNAKE_CASE` | `REJECT_CAPABLE` |
 | Endpoint API (konsumsi di FE) | Mengikuti kontrak Backend, `kebab-case` plural | `/api/letter-requests` |
@@ -27,7 +29,7 @@
 1. Function component murni - tidak menggunakan class component pada kode baru.
 2. **Batas ukuran:** komponen yang melebihi kurang lebih 150-200 baris menjadi sinyal wajib untuk dipecah - ekstrak logic ke custom hook, atau pecah menjadi sub-komponen dengan tanggung jawab lebih sempit.
 3. **Larangan komponen per-role:** dilarang membuat komponen approval terpisah per role (`RTApprovalCard`, `RWApprovalCard`, dst.). Wajib menggunakan `ApprovalStepRenderer` generik (lihat `SID-ARCH-FE-001` S6).
-4. Props didokumentasikan menggunakan **JSDoc typedef** di atas definisi komponen - bukan dibiarkan tanpa dokumentasi tipe.
+4. Props diberi tipe TypeScript (`type {Komponen}Props`) di atas definisi komponen - bukan dibiarkan tanpa tipe (lihat A.8).
 5. Satu komponen = satu tanggung jawab. Komponen presentational (menampilkan) dipisah dari komponen yang mengambil data (biasanya lewat custom hook `use{Feature}Data`).
 
 ### A.3 Konvensi Styling
@@ -38,7 +40,7 @@
 
 ### A.4 Form Handling
 
-1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.js`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
+1. Form pengajuan surat bersifat **schema-driven**, dibangun dari `letter_type.form_fields` dan `signature_slots` yang dikirim Backend (`DynamicSuratForm`, `features/surat/utils/letterFormData.ts`) - bukan satu komponen form React per jenis surat. Validasi akhir tetap di Backend (`LetterFormSchema`).
 2. Validasi menggunakan **React Hook Form + Zod**.
 3. Pesan kesalahan validasi ditampilkan dengan pola konsisten (posisi, warna) mengikuti design token status.
 
@@ -55,7 +57,36 @@ Urutan import: (1) pustaka eksternal, (2) modul internal lewat alias `@/` (`@/li
 ### A.7 Linting, Formatting & Automasi
 
 1. ESLint + Prettier wajib aktif, konfigurasi seragam (bukan preferensi individual kontributor).
-2. Pre-commit hook (Husky + lint-staged) mencegah kode yang gagal lint/format masuk ke repository.
+2. Pre-commit hook (Husky + lint-staged) mencegah kode yang gagal lint/format masuk ke repository. lint-staged hanya merapikan file yang di-stage, jadi CI juga menjalankan `npm run format:check` (`prettier --check .`) untuk seluruh folder frontend; perbaiki dengan `npm run format`.
+3. `npm run typecheck` (`tsc --noEmit`) memeriksa tipe; `npm run build` (Vite) tidak memeriksa tipe sama sekali. Typecheck wajib bersih dan dijalankan CI (job `frontend-ci`), tetapi tidak di pre-commit karena memeriksa seluruh proyek (sekitar 20 detik).
+4. ESLint (`typescript-eslint` recommended) menolak `any` eksplisit (`no-explicit-any`) dan `@ts-ignore`/`@ts-nocheck` (`ban-ts-comment`) sebagai error.
+5. `console.log` (dan `console.debug`/`info`) ditolak ESLint (`no-console`) di `src/` dan `public/`; `console.error`/`console.warn` tetap boleh untuk mencatat galat. Skrip CLI di `scripts/` dikecualikan karena `console.log` adalah keluarannya.
+
+### A.8 TypeScript
+
+Source frontend ditulis dalam TypeScript dengan `strict: true` di `tsconfig.json`: parameter, props, dan state tanpa tipe ditolak typecheck, dan nilai yang mungkin `null`/`undefined` harus diperiksa sebelum dipakai. Aturan berikut berlaku untuk kode baru dan kode yang sedang diubah:
+
+1. Props komponen, parameter fungsi yang diekspor, dan nilai balik hook diberi tipe eksplisit.
+2. Tipe data domain/API yang dipakai lintas fitur (user, surat, penduduk, wilayah, profil desa) disimpan di `src/types/`; tipe yang hanya dipakai satu fitur di `features/<fitur>/types.ts`. Bentuk tipe mengikuti kontrak di `docs/api_spec`.
+3. Dilarang menambah `any`, `as any`, `@ts-ignore`, atau `@ts-nocheck` baru. Bila tipe memang belum diketahui, pakai `unknown` lalu persempit; bila terpaksa mengecualikan pemeriksaan, pakai `@ts-expect-error` disertai alasan.
+4. State awal kosong diberi tipe (`useState<LetterRequest[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
+5. Parameter opsional ditandai `?` atau diberi nilai default, agar pemanggil tidak dipaksa mengisi semua argumen.
+6. `npm run typecheck` harus 0 error; CI menolak perubahan yang menambah error tipe.
+7. Variabel tak terpakai diperiksa rule `@typescript-eslint/no-unused-vars` (bukan `no-unused-vars` bawaan, yang salah menandai nama parameter di tipe fungsi); komentar pengecualian memakai nama rule tersebut.
+8. Store tingkat modul (mis. `shared/lib/toast.ts`, `shared/lib/dialog.ts`) mengekspor tipe datanya (`Toast`, `DialogEntry`) agar komponen host dan pemanggil memakai bentuk yang sama.
+9. Test:
+   - Fungsi hasil impor yang di-mock lewat `vi.mock` diakses dengan `vi.mocked(fn, { partial: true, deep: true })`, bukan `fn.mockReturnValue(...)` langsung.
+   - Data uji yang hanya berisi sebagian field dibungkus `partialFixture<T>(...)` dari `src/test/fixtures.ts`; jangan menambah cast `as` di tiap test.
+   - Helper test yang menerima data sebagian diberi tipe `DeepPartial<T>` (dari `src/test/fixtures.ts`) lalu meneruskannya lewat `partialFixture<T>(...)`.
+   - Mock komponen yang tidak merender apa pun ditulis `(): null => null`.
+   - Nilai yang wajib ada di test (elemen hasil `querySelector`/`closest`, hasil fungsi yang bisa `null`) dibungkus `present(...)` dari `src/test/fixtures.ts`, bukan non-null assertion `!`.
+   - Elemen form diambil dengan tipe elemennya, mis. `getByRole<HTMLSelectElement>('combobox')`, `querySelector<HTMLElement>(...)`.
+   - Properti yang memang tidak boleh ada diperiksa dengan `expect(obj).not.toHaveProperty('x')`.
+10. Pesan galat API untuk pengguna diambil dengan `getApiErrorMessage(error, fallback)` dari `shared/lib/apiError.ts`; jangan menyalin helper serupa di tiap komponen.
+11. Objek konstanta berisi nilai tetap ditulis `as const satisfies Record<string, T>` (mis. `SURAT_STATUS` terhadap `LetterStatus`) agar nilainya bertipe literal dan tetap diperiksa terhadap tipe domainnya.
+12. Helper dan komponen yang menerima surat dari baris daftar maupun dari detail memakai tipe sempit berisi field yang dibaca saja, mis. `Partial<Pick<Letter, 'status' | 'expires_at'>>`, bukan `Letter` utuh.
+13. Nilai yang mungkin `null` diperiksa dengan guard atau `?.`/`??`, tidak dengan non-null assertion `!`. Kunci peta yang mungkin kosong diperiksa dulu: `(key ? LABELS[key] : undefined) ?? fallback`.
+14. Variabel `catch` bertipe `unknown`. Pesan untuk pengguna diambil dengan `getApiErrorMessage(error, fallback)`, status HTTP dengan `apiErrorStatus(error)`, dan isi respons (`errors`, `message`) dengan `apiErrorBody(error)` dari `shared/lib/apiError.ts`. Log debug cukup `console.error(label, error)`.
 
 ---
 
@@ -112,3 +143,5 @@ Alur Backend wajib mengikuti: **Controller -> Service -> Repository -> Model**.
 |---|---|---|
 | 1.0 | - | Rancangan Awal |
 | 1.1 | 2026-09-12 | Menambahkan pedoman struktur Backend, Form Request, API Resource, dan Resource Collection. |
+| 1.2 | 2026-10-30 | Frontend TypeScript: konvensi ekstensi dan nama tipe, props bertipe (menggantikan JSDoc typedef), bagian A.8 TypeScript, `npm run typecheck`. |
+| 1.3 | 2026-10-31 | A.8 diperbarui untuk `strict: true` (guard null, galat `catch`, helper test); A.7: `npm run format:check` di CI dan aturan `no-console`. |

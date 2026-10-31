@@ -5,7 +5,8 @@
 
 FROM composer:2.10.3 AS composer
 
-FROM php:8.3.35-fpm-trixie
+# 8.3.36: patch PHP2Shell (CVE-2026-109618, CVE-2026-109619).
+FROM php:8.3.36-fpm-trixie
 
 # Ekstensi tambahan (sisanya bawaan image resmi): pdo_pgsql, gd, zip, opcache.
 # gd dengan WebP: logo dan foto hero desa disimpan sebagai WebP

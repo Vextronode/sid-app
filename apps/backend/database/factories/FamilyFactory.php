@@ -29,7 +29,6 @@ class FamilyFactory extends Factory
             'rt_id' => Rt::factory(),
             'rw_id' => Rw::query()->value('id') ?? Rw::factory(),
             'hamlet_id' => Hamlet::query()->value('id') ?? Hamlet::factory(),
-            'head_of_family_id' => null,
         ];
     }
 }

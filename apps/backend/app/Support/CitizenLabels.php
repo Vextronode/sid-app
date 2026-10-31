@@ -31,7 +31,10 @@ class CitizenLabels
     public const MARITAL_STATUS = [
         'belum_kawin' => 'Belum Kawin',
         'kawin' => 'Kawin',
+        // Nikah siri/adat atau cerai tanpa putusan, dengan SPTJM F-1.05.
+        'kawin_belum_tercatat' => 'Kawin Belum Tercatat',
         'cerai_hidup' => 'Cerai Hidup',
+        'cerai_hidup_belum_tercatat' => 'Cerai Hidup Belum Tercatat',
         'cerai_mati' => 'Cerai Mati',
     ];
 

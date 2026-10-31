@@ -78,6 +78,10 @@ class LetterResource extends JsonResource
                 $this->relationLoaded('letterType') && $this->letterType && $request->user() !== null,
                 fn () => $request->user()->can('uploadResult', $this->resource)
             ),
+            'can_fulfill' => $this->when(
+                $this->relationLoaded('letterType') && $this->letterType && $request->user() !== null,
+                fn () => $request->user()->can('fulfill', $this->resource)
+            ),
             'can_review_result' => $this->when(
                 $this->relationLoaded('letterType') && $this->letterType && $request->user() !== null,
                 fn () => $request->user()->can('reviewResult', $this->resource)

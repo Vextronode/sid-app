@@ -42,14 +42,29 @@ class LetterTypeControllerTest extends TestCase
             ->assertJsonPath('data.1.category_label', 'Layanan Kependudukan');
     }
 
-    public function test_update_cannot_change_the_category(): void
+    public function test_staf_changes_the_category_and_the_handler_follows_it(): void
     {
-        $letterType = LetterType::factory()->create(['template' => 'tpl']);
+        $letterType = LetterType::factory()->create(['template' => 'tpl', 'assigned_role' => 'kaur_tu_umum']);
+        $staf = User::factory()->create(['role' => 'staf_sid']);
 
-        $this->actingAs(User::factory()->create(['role' => 'staf_sid']))
-            ->putJson("/api/letter-types/{$letterType->id}", ['category' => 'pelayanan', 'validity_days' => 60])
+        $this->actingAs($staf)
+            ->putJson("/api/letter-types/{$letterType->id}", ['category' => 'pelayanan'])
             ->assertOk()
-            ->assertJsonPath('data.category', 'persuratan');
+            ->assertJsonPath('data.category', 'pelayanan')
+            ->assertJsonPath('data.assigned_role', 'kasi_pemerintahan');
+
+        // Pilihan jenis surat ikut berpindah kelompok.
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/letter-types')
+            ->assertJsonPath('data.0.category_label', 'Layanan Kependudukan');
+
+        $this->actingAs($staf)
+            ->putJson("/api/letter-types/{$letterType->id}", ['category' => 'persuratan'])
+            ->assertJsonPath('data.assigned_role', 'kaur_tu_umum');
+        $this->actingAs($staf)
+            ->putJson("/api/letter-types/{$letterType->id}", ['category' => 'lainnya'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('category');
     }
 
     public function test_index_with_include_inactive_returns_all_types_for_staf_sid(): void
@@ -132,20 +147,15 @@ class LetterTypeControllerTest extends TestCase
         $this->assertDatabaseHas('letter_types', ['id' => $letterType->id, 'validity_days' => 180, 'is_active' => false]);
     }
 
-    public function test_update_accepts_null_assigned_role_for_letters_available_to_both_roles(): void
+    public function test_handler_cannot_be_set_apart_from_the_category(): void
     {
         $admin = User::factory()->create(['role' => 'staf_sid']);
         $letterType = LetterType::factory()->create(['assigned_role' => 'kasi_pemerintahan']);
 
         $this->actingAs($admin)
-            ->putJson("/api/letter-types/{$letterType->id}", ['assigned_role' => null])
+            ->putJson("/api/letter-types/{$letterType->id}", ['assigned_role' => 'kaur_tu_umum'])
             ->assertOk()
-            ->assertJsonPath('data.assigned_role', null);
-
-        $this->assertDatabaseHas('letter_types', [
-            'id' => $letterType->id,
-            'assigned_role' => null,
-        ]);
+            ->assertJsonPath('data.assigned_role', 'kasi_pemerintahan');
     }
 
     public function test_update_rejects_non_positive_validity_days(): void
