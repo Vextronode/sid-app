@@ -40,6 +40,11 @@ Village:
     postal_code:
       type: string
       nullable: true
+    area_code:
+      type: string
+      nullable: true
+      example: "32182008"
+      description: "Kode wilayah Dukcapil 8 digit; tercetak di kolom Kode Wilayah formulir Layanan Kependudukan (F-2.01)."
     email:
       type: string
       nullable: true
@@ -120,6 +125,12 @@ VillageUpdateRequest:
       type: string
       maxLength: 10
       nullable: true
+    area_code:
+      type: string
+      pattern: '^[0-9]{8}$'
+      nullable: true
+      example: "32182008"
+      description: "Kode wilayah Dukcapil 8 digit (formulir Layanan Kependudukan)."
     email:
       type: string
       format: email

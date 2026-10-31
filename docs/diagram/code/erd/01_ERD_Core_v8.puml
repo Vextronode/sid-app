@@ -46,6 +46,7 @@ entity "villages" as VIL {
   history / vision / mission : TEXT
   district / regency / province : VARCHAR(100)
   postal_code : VARCHAR(10)
+  area_code : VARCHAR(8) (kode wilayah Dukcapil)
   email : VARCHAR(150)
   created_at, updated_at
 }

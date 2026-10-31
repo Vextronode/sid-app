@@ -53,6 +53,7 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | regency | VARCHAR(100) | NULL | Kabupaten (kop surat) |
 | province | VARCHAR(100) | NULL | Provinsi (kop surat) |
 | postal_code | VARCHAR(10) | NULL | Kode pos |
+| area_code | VARCHAR(8) | NULL | Kode wilayah Dukcapil (mis. 32182008), tercetak di formulir Layanan Kependudukan (F-2.01); berbeda dengan `code` (kode desa Kemendagri) |
 | email | VARCHAR(150) | NULL | Email kantor desa |
 | created_at | TIMESTAMP | NULL | Waktu dibuat |
 | updated_at | TIMESTAMP | NULL | Waktu diperbarui |
@@ -393,7 +394,7 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | rejected_at_step | INT | NULL | Step tempat surat direject, untuk histori/laporan |
 | submitted_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | |
 | processed_at | TIMESTAMP | NULL | Waktu terakhir diproses (approver manapun di step manapun) |
-| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, code, address, phone, district, regency, province, postal_code, email, kasi_pemerintahan_name}`, `service_officials{kepala_desa, areas}` (nama/NIK pejabat formulir Layanan Kependudukan), `signer{official_id, village_id, name}`; tanpa gambar TTD/stempel |
+| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, code, address, phone, district, regency, province, postal_code, area_code, email, kasi_pemerintahan_name}`, `service_officials{kepala_desa, areas}` (nama/NIK pejabat formulir Layanan Kependudukan), `signer{official_id, village_id, name}`; tanpa gambar TTD/stempel |
 | signed_by_official_id | BIGINT | FK → officials.id, NULL, ON DELETE SET NULL | Kepala Desa yang namanya dibekukan (juga bila Sekdes yang menyetujui); TTD dibubuhkan basah |
 | fulfilled_at | TIMESTAMP | NULL | Waktu perubahan data kependudukan diterapkan |
 | fulfilled_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Aktor Terapkan |
