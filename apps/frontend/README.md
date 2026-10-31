@@ -20,8 +20,8 @@ React 19 + TypeScript, Vite 8, React Router, TanStack Query, Axios (cookie Sanct
 
 ```powershell
 npm install
-copy .env.example .env   # VITE_API_URL, VITE_API_BASE_URL, VITE_APP_NAME, VITE_VAPID_PUBLIC_KEY
-npm run dev              # http://localhost:5173
+copy .env.example .env   # VITE_APP_NAME, VITE_API_URL, VITE_VAPID_PUBLIC_KEY
+npm run dev              # http://127.0.0.1:5173
 npm run lint
 npm run typecheck        # tsc --noEmit (sekitar 20 detik); build Vite tidak memeriksa tipe
 npm run test:run

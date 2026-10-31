@@ -55,23 +55,50 @@ sid-app/
 - Node.js 20.19+ atau 22.12+ (syarat Vite 8)
 - PostgreSQL
 
-## Menjalankan secara lokal
+## Fitur opsional: email dan Web Push
 
-Langkah lengkap ada di [`docs/SETUP.md`](docs/SETUP.md). Ringkasnya:
+Aplikasi tetap jalan tanpa dua fitur ini; isi env-nya hanya bila fiturnya dipakai.
 
-### 1. Backend
+| Fitur | Dipakai untuk | Bila tidak dikonfigurasi |
+| --- | --- | --- |
+| Email (Mailtrap) | Tautan **Lupa Kata Sandi** lewat email, perintah `php artisan mail:test` | Pakai `MAIL_MAILER=log`: email tidak terkirim, isinya (termasuk tautan reset) ditulis ke `storage/logs/laravel.log` |
+| Web Push (VAPID) | Notifikasi push browser (status surat, permintaan reset kata sandi/TTD, dll.) | Push nonaktif; notifikasi in-app (lonceng) tetap masuk |
+
+Email dikirim lewat API Mailtrap (paket `railsware/mailtrap-php`, mailer `mailtrap-sdk`) secara langsung, tanpa `queue:work`. Web Push selalu diantrekan, jadi butuh `queue:work` (atau `QUEUE_CONNECTION=sync` di lokal). Browser hanya mengizinkan push di HTTPS, `localhost`, atau `127.0.0.1`.
+
+Jangan commit token Mailtrap, `VAPID_PRIVATE_KEY`, `APP_KEY`, atau password database. Kunci publik VAPID memang tertanam di bundle frontend dan aman diketahui publik.
+
+## A. Dev lokal (testing)
+
+Langkah lebih rinci (akun demo lengkap, troubleshooting) ada di [`docs/SETUP.md`](docs/SETUP.md).
+
+### A1. Install
 
 ```powershell
 cd apps\backend
 composer install
 copy .env.example .env
 php artisan key:generate
+
+cd ..\frontend
+npm install
+copy .env.example .env
 ```
 
-Buat database PostgreSQL, lalu sesuaikan `apps/backend/.env`:
+`.env.example` backend dan frontend adalah template dev lokal: strukturnya sama dengan `.env` tim, nilai non-rahasia sudah terisi, rahasia dikosongkan. Buat database PostgreSQL kosong (mis. `sidutama`) sebelum lanjut.
+
+### A2. Env backend (`apps/backend/.env`)
+
+**Minimal** (cukup untuk login, surat, dan notifikasi in-app):
 
 ```env
-SID_APP_NAME=SIDUTama
+# Sudah terisi oleh key:generate
+APP_KEY=base64:...
+
+# Default npm run dev (port 5173). Jangan campur localhost dan 127.0.0.1.
+APP_URL=http://127.0.0.1:8000
+FRONTEND_URL=http://127.0.0.1:5173
+SANCTUM_STATEFUL_DOMAINS=127.0.0.1:5173,localhost:5173
 
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
@@ -80,17 +107,63 @@ DB_DATABASE=sidutama
 DB_USERNAME=postgres
 DB_PASSWORD=isi_password_postgresql_anda
 
-FRONTEND_URL=http://localhost:5173
-SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
-
-QUEUE_CONNECTION=database
+# Tanpa Mailtrap: email ditulis ke storage/logs/laravel.log.
+MAIL_MAILER=log
 ```
 
-> `.env.example` default-nya menunjuk ke `vite preview` (port 4173). Untuk `npm run dev`, pakai port 5173 seperti di atas (versi yang di-comment di `.env.example`).
+**Semua fitur** (tambahan di atas minimal; ganti `MAIL_MAILER=log` dengan blok email ini):
 
-Isi database. Untuk database lokal yang boleh di-reset, pakai seeder demo:
+```env
+# Email lupa kata sandi -> Mailtrap Sandbox (email tertahan di inbox uji,
+# tidak pernah sampai ke penerima sungguhan).
+MAIL_MAILER=mailtrap-sdk
+MAILTRAP_HOST=sandbox.api.mailtrap.io
+MAILTRAP_API_KEY=<token_api_mailtrap>
+MAILTRAP_INBOX_ID=<id_inbox_sandbox>
+MAIL_FROM_ADDRESS="noreply@sidutama.test"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# Web Push. VAPID_PUBLIC_KEY & VAPID_PRIVATE_KEY diisi otomatis oleh
+# php artisan webpush:vapid.
+VAPID_SUBJECT="mailto:admin@example.com"
+VAPID_PUBLIC_KEY=<public_key>
+VAPID_PRIVATE_KEY=<private_key>
+
+# Opsional: push dikirim langsung tanpa queue:work (tombol sedikit lebih lambat).
+# QUEUE_CONNECTION=sync
+```
+
+Cara mendapatkan nilainya:
+
+- **Mailtrap Sandbox:** masuk ke [mailtrap.io](https://mailtrap.io), buka **Sandboxes** → inbox (atau buat baru). ID inbox ada di URL: `https://mailtrap.io/inboxes/<INBOX_ID>/messages`. Buat token di [Settings → API Tokens](https://mailtrap.io/settings/api-tokens) dengan akses ke inbox itu. Di sandbox, `MAIL_FROM_ADDRESS` boleh alamat apa saja.
+- **VAPID:** jalankan `php artisan webpush:vapid` di `apps\backend`; kuncinya langsung ditulis ke `.env`.
+
+Setelah mengubah `.env`, jalankan `php artisan config:clear`.
+
+### A3. Env frontend (`apps/frontend/.env`)
+
+**Minimal:**
+
+```env
+VITE_APP_NAME=SIDUTama
+VITE_API_URL=http://127.0.0.1:8000
+```
+
+**Semua fitur** (tambahan):
+
+```env
+# Sama persis dengan VAPID_PUBLIC_KEY di apps/backend/.env.
+VITE_VAPID_PUBLIC_KEY=<public_key>
+```
+
+Samakan `VITE_APP_NAME` dengan `SID_APP_NAME` backend, dan host `VITE_API_URL` dengan `APP_URL`. Variabel `VITE_*` dibaca saat start, jadi restart `npm run dev` setelah mengubahnya.
+
+### A4. Isi database
+
+Untuk database lokal yang boleh di-reset, pakai seeder demo:
 
 ```powershell
+cd apps\backend
 php artisan migrate:fresh --seed
 php artisan storage:link
 ```
@@ -99,42 +172,118 @@ Seeder membuat Desa Cibenda lengkap dengan wilayah, perangkat desa, warga, berit
 
 Untuk database tanpa data demo, buat Staf SIDUTama pertama dengan `php artisan staf-sid:first` (lihat SETUP).
 
-### 2. Proses backend yang dijalankan
+### A5. Jalankan
 
-Jalankan di `apps\backend`, masing-masing di terminal terpisah dan biarkan terbuka:
+Masing-masing di terminal terpisah dan biarkan terbuka:
 
-| Terminal | Perintah | Fungsi | Wajib? |
-| --- | --- | --- | --- |
-| 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
-| 2 | `php artisan schedule:work` | Scheduler: pengingat approval tiap 5 menit, pembersihan log aktivitas harian | Untuk fitur pengingat |
-| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser |
+| Terminal | Folder | Perintah | Fungsi | Wajib? |
+| --- | --- | --- | --- | --- |
+| 1 | `apps\backend` | `php artisan serve` | API di `http://127.0.0.1:8000` | Ya |
+| 2 | `apps\backend` | `php artisan schedule:work` | Scheduler: pengingat approval tiap 5 menit, pembersihan log aktivitas harian | Untuk fitur pengingat |
+| 3 | `apps\backend` | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (kecuali `QUEUE_CONNECTION=sync`) |
+| 4 | `apps\frontend` | `npm run dev` | Frontend di `http://127.0.0.1:5173` | Ya |
 
-- Notifikasi in-app (lonceng) selalu masuk tanpa worker. Dengan `QUEUE_CONNECTION=database`, Web Push diantrekan dan baru terkirim saat `queue:work` jalan; yang tertunda langsung terkirim begitu worker dinyalakan.
-- Alternatif lokal paling ringkas: set `QUEUE_CONNECTION=sync` agar push dikirim langsung tanpa worker (tombol submit/approve sedikit lebih lambat).
+- Notifikasi in-app (lonceng) selalu masuk tanpa worker. Push yang tertunda langsung terkirim begitu `queue:work` dinyalakan.
 - Setelah mengubah kode backend atau `.env`, restart `queue:work` dan `schedule:work` (Ctrl+C lalu jalankan lagi).
 - Script `composer dev` / `composer setup` bawaan template Laravel menjalankan `npm` di folder backend yang tidak punya `package.json`; jangan dipakai, jalankan perintah di atas secara manual.
 
-### 3. Frontend
+### A6. Uji email dan push
 
-```powershell
-cd apps\frontend
-npm install
-copy .env.example .env
-npm run dev
-```
+- **Email:** `php artisan mail:test alamat@contoh.com` → email muncul di inbox sandbox Mailtrap. Untuk alur penuh, akun seeder belum punya email: login (mis. `demo_warga`), isi email di halaman Profil, logout, lalu pakai **Lupa Kata Sandi** dan buka tautan reset dari inbox sandbox.
+- **Push:** buka `http://127.0.0.1:5173` (bukan IP LAN), login, aktifkan push dari popover lonceng, izinkan notifikasi, lalu ajukan/setujui surat.
 
-`apps/frontend/.env`:
+## B. Produksi
+
+Stack produksi/expo memakai Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`) dengan image yang dibangun CI dan dijalankan lewat skrip di `deploy/scripts/`. Di Docker, `QUEUE_CONNECTION=database`: push dikirim service `sid_worker` dan scheduler berjalan di `sid_scheduler`, jadi tidak perlu menjalankan worker/scheduler manual. Env runtime ada di `deploy/sid.env` (template `deploy/sid.env.example`, atau `deploy/sid.neon.env.example` untuk DB Neon). Panduan operasional lengkap ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+
+### B1. Env backend (`deploy/sid.env` atau `.env` server)
+
+**Minimal:**
 
 ```env
-VITE_API_URL=http://localhost:8000
-VITE_API_BASE_URL=http://localhost:8000/api
-VITE_APP_NAME=SIDUTama
-VITE_VAPID_PUBLIC_KEY=
+APP_NAME=SIDUTama
+SID_APP_NAME=SIDUTama
+APP_ENV=production
+APP_DEBUG=false
+# Dibuat SEKALI: echo "base64:$(openssl rand -base64 32)". Jangan diganti setelah
+# dipakai: semua sesi/cookie terenkripsi jadi tidak valid.
+APP_KEY=<APP_KEY>
+
+# URL publik HTTPS tanpa garis miring akhir. SPA dan API satu origin.
+APP_URL=https://<hostname_publik>
+FRONTEND_URL=https://<hostname_publik>
+SANCTUM_STATEFUL_DOMAINS=<hostname_publik>
+SESSION_DRIVER=database
+SESSION_SECURE_COOKIE=true
+
+CACHE_STORE=database
+QUEUE_CONNECTION=database
+LOG_CHANNEL=stderr
+LOG_LEVEL=warning
+
+DB_CONNECTION=pgsql
+DB_HOST=sid_db
+DB_PORT=5432
+DB_DATABASE=sid
+DB_USERNAME=sid
+DB_PASSWORD=<DB_PASSWORD>
+
+MAIL_MAILER=log
 ```
 
-Samakan `VITE_APP_NAME` dengan `SID_APP_NAME`, dan `VITE_VAPID_PUBLIC_KEY` dengan `VAPID_PUBLIC_KEY` backend bila Web Push dipakai. Gunakan host yang sama dengan `SANCTUM_STATEFUL_DOMAINS` (jangan campur `localhost` dan `127.0.0.1`). Frontend tersedia di `http://localhost:5173`.
+**Semua fitur** (tambahan; ganti `MAIL_MAILER=log` dengan blok email ini):
 
-### 4. Test dan pemeriksaan kode
+```env
+# Email -> Mailtrap Sending (terkirim sungguhan).
+MAIL_MAILER=mailtrap-sdk
+MAILTRAP_HOST=send.api.mailtrap.io
+MAILTRAP_API_KEY=<token_sending_produksi>
+# Kosong: hanya dipakai untuk sandbox.
+MAILTRAP_INBOX_ID=
+# WAJIB di domain yang sudah terverifikasi di Mailtrap.
+MAIL_FROM_ADDRESS="no-reply@<domain_desa>"
+MAIL_FROM_NAME="SIDUTama Desa Cibenda"
+
+# Web Push: kunci khusus produksi (php artisan webpush:vapid --show).
+VAPID_SUBJECT="mailto:<email_admin_desa>"
+VAPID_PUBLIC_KEY=<public_key_produksi>
+VAPID_PRIVATE_KEY=<private_key_produksi>
+```
+
+Cara mendapatkan nilainya:
+
+- **Mailtrap Sending:** buka **Sending Domains**, tambahkan domain desa, pasang record DNS (SPF, DKIM, DMARC) sampai terverifikasi, lalu buat API token khusus produksi dengan akses **Sending** ke domain itu. Jangan pakai token dev. `FRONTEND_URL` harus URL publik HTTPS karena dipakai untuk tautan di email reset.
+- **VAPID:** buat **sekali** dengan `php artisan webpush:vapid --show` (boleh di mesin lokal; `--show` hanya menampilkan, tidak menulis `.env`) dan simpan di secret manager. Jangan pakai ulang kunci dev, dan jangan ganti setelah rilis: semua langganan push lama jadi tidak berlaku dan pengguna harus mengaktifkan push ulang.
+
+### B2. Env frontend (saat build)
+
+Nilai `VITE_*` ditanam saat `npm run build`, bukan dibaca saat runtime; mengubahnya berarti build ulang.
+
+**Minimal:**
+
+```env
+VITE_APP_NAME=SIDUTama
+# Kosongkan bila SPA dan API satu origin (stack Docker): API memakai window.location.origin.
+VITE_API_URL=
+```
+
+**Semua fitur** (tambahan):
+
+```env
+# Sama persis dengan VAPID_PUBLIC_KEY produksi.
+VITE_VAPID_PUBLIC_KEY=<public_key_produksi>
+```
+
+> Image `sid-web` dari `apps/frontend/Dockerfile` saat ini dibangun tanpa `VITE_VAPID_PUBLIC_KEY`, sehingga push nonaktif di stack Docker walaupun `VAPID_*` diisi di `deploy/sid.env`. Untuk mengaktifkannya, Dockerfile dan workflow rilis perlu menerima kunci publik tersebut sebagai build argument.
+
+### B3. Deploy dan verifikasi
+
+1. Deploy dengan skrip di `deploy/scripts/` (menjalankan `migrate --force`; entrypoint container menjalankan `config:cache`, jadi perubahan env butuh restart container). Detail di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+2. Data awal: stack **expo/demo** memakai golden DB dari seed demo (`make-golden.sh`, lihat runbook). Untuk desa **sungguhan**, jangan pakai data demo (seeder demo menolak `APP_ENV=production`); buat Staf SIDUTama pertama dengan `php artisan staf-sid:first`.
+3. Uji email: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan mail:test <email_admin>`, lalu pantau **Email Logs** Mailtrap.
+4. Pastikan `sid_worker` berjalan (push) dan situs disajikan lewat HTTPS.
+
+## Test dan pemeriksaan kode
 
 ```powershell
 # Backend (memakai SQLite in-memory, tidak menyentuh database .env)
@@ -161,10 +310,7 @@ npm run build
 | `php artisan staf-sid:recover --username=... [--force]` | Pemulihan darurat bila Staf SIDUTama lupa kata sandi: kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat |
 | `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
 | `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |
-
-## Deploy (stack expo Docker)
-
-Stack Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`) dijalankan lewat skrip di `deploy/scripts/` dengan image yang dibangun CI. Di Docker, `QUEUE_CONNECTION=database`: push diantrekan dan dikirim service `sid_worker`, sedangkan scheduler berjalan di service `sid_scheduler`, jadi tidak perlu menjalankan worker atau scheduler manual. Panduan operasional ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+| `php artisan mail:test <email>` | Kirim email uji lewat mailer aktif (`MAIL_MAILER`), jalur yang sama dengan email reset kata sandi |
 
 ## Konvensi penting
 

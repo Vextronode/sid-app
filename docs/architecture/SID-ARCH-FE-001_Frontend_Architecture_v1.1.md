@@ -194,7 +194,7 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 
 ## 8. Build, PWA & Environment
 
-- `.env`: `VITE_API_URL`, `VITE_API_BASE_URL`, `VITE_VAPID_PUBLIC_KEY` (harus sama dengan backend).
+- `.env`: `VITE_APP_NAME`, `VITE_API_URL`, `VITE_VAPID_PUBLIC_KEY` (harus sama dengan backend).
 - Dev server `127.0.0.1:5173` mem-proxy `/api` dan `/sanctum` ke `127.0.0.1:8000`.
 - PWA manifest (nama "SIDUTama Cibenda", ikon 192/512/maskable), `navigateFallback` ke `index.html` kecuali `/api`, `/sanctum`, `/storage`, `/up`; gambar di-cache `StaleWhileRevalidate` 7 hari; chunk pdfjs tidak di-precache.
 - Image Docker `sid-web` menyajikan hasil build lewat Nginx bersama proxy ke PHP-FPM (lihat `deploy/`).

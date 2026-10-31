@@ -66,7 +66,7 @@ apps/frontend/
 │   ├── styles/              # sid-global.css, public.css, beranda.css
 │   ├── test/                # setup Vitest, fixtures.ts (partialFixture)
 │   └── types/               # tipe domain & API lintas fitur (import dari @/types)
-├── .env.example             # VITE_API_URL, VITE_API_BASE_URL, VITE_VAPID_PUBLIC_KEY
+├── .env.example             # VITE_APP_NAME, VITE_API_URL, VITE_VAPID_PUBLIC_KEY
 ├── Dockerfile
 ├── index.html
 ├── package.json
