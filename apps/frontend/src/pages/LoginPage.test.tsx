@@ -139,16 +139,15 @@ describe('LoginPage links (D4)', () => {
     expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
   })
 
-  it('"Lupa password?" stays a button that opens the unavailable-feature modal', () => {
+  it('"Lupa password?" is a link to /forgot-password', () => {
     renderLogin()
 
-    const button = screen.getByRole('button', { name: 'Lupa password?' })
-    expect(screen.queryByText('Fitur Belum Tersedia')).not.toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Lupa password?' })
+    expect(link).toHaveAttribute('href', '/forgot-password')
 
-    fireEvent.click(button)
+    fireEvent.click(link)
 
-    expect(screen.getByRole('heading', { name: 'Fitur Belum Tersedia' })).toBeInTheDocument()
-    expect(screen.getByText(/Reset password masih dalam tahap pengembangan/)).toBeInTheDocument()
+    expect(screen.getByTestId('current-path').textContent).toBe('/forgot-password')
   })
 })
 

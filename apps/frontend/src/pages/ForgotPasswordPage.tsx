@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Landmark, Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
-import { STAF_APP_LABEL } from '@/lib/constants/app'
+import { HAL_LUPA_PASSWORD_NIK } from '@/lib/constants/routes'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { FormEvent } from 'react'
 
@@ -109,8 +109,11 @@ export default function ForgotPasswordPage() {
         )}
 
         <p className="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2 mt-5">
-          Tidak punya email atau belum mendaftarkannya? Datang ke kantor desa dan minta{' '}
-          {STAF_APP_LABEL} mengatur ulang kata sandi Anda.
+          Tidak punya email atau belum mendaftarkannya?{' '}
+          <Link to={HAL_LUPA_PASSWORD_NIK} className="text-[#163e6b] font-medium hover:underline">
+            Ajukan atur ulang dengan NIK
+          </Link>
+          .
         </p>
 
         <div className="border-t mt-6 pt-4 text-center">

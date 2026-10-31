@@ -8,7 +8,7 @@ import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
-import { HAL_BERANDA, HAL_DAFTAR } from '@/lib/constants/routes'
+import { HAL_BERANDA, HAL_DAFTAR, HAL_LUPA_PASSWORD } from '@/lib/constants/routes'
 
 import { ArrowLeft, Landmark, User, Lock, Eye, EyeOff, LogIn } from 'lucide-react'
 import { APP_NAME } from '@/lib/constants/app'
@@ -32,8 +32,6 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-
-  const [showForgotModal, setShowForgotModal] = useState(false)
 
   // ==========================================
   // LOGIN SUCCESS
@@ -173,13 +171,9 @@ export default function LoginPage() {
             <div className="sid-login-password-header">
               <label className="sid-login-label">Kata Sandi</label>
 
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(true)}
-                className="sid-login-forgot"
-              >
+              <Link to={HAL_LUPA_PASSWORD} className="sid-login-forgot">
                 Lupa password?
-              </button>
+              </Link>
             </div>
 
             <div className="sid-login-input-wrapper">
@@ -253,38 +247,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-
-      {/* ==========================================
-          FORGOT PASSWORD MODAL
-          ========================================== */}
-
-      {showForgotModal && (
-        <div className="sid-login-modal">
-          <div className="sid-login-modal-overlay" onClick={() => setShowForgotModal(false)} />
-
-          <div className="sid-login-modal-dialog">
-            <div className="sid-login-modal-icon sid-login-modal-icon-forgot">
-              <Lock size={26} />
-            </div>
-
-            <h2 className="sid-login-modal-title">Fitur Belum Tersedia</h2>
-
-            <p className="sid-login-modal-description">
-              Reset password masih dalam tahap pengembangan.
-              <br />
-              Silakan hubungi perangkat desa apabila mengalami kendala saat masuk ke akun.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setShowForgotModal(false)}
-              className="sid-login-modal-button"
-            >
-              Mengerti
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
