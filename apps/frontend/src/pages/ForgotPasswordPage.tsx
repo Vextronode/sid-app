@@ -6,13 +6,19 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Landmark, Mail, KeyRound, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { KeyRound, Landmark, Mail, MailCheck, RotateCcw } from 'lucide-react'
+
 import api from '@/lib/api'
+import { AuthBackToLogin } from '@/features/auth/components/AuthBackToLogin'
+import { AuthCopyright } from '@/features/auth/components/AuthCopyright'
+import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
 import { HAL_LUPA_PASSWORD_NIK } from '@/lib/constants/routes'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { FormEvent } from 'react'
 
 export default function ForgotPasswordPage() {
+  const background = useAuthBackground()
+
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -37,53 +43,61 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6">
-        <div className="w-11 h-11 rounded-xl bg-[#163e6b] flex items-center justify-center mb-3">
-          <Landmark size={22} className="text-white" />
-        </div>
-        <p className="font-bold text-gray-800">Cibenda</p>
-        <h1 className="text-xl font-bold text-gray-800 mt-1">Lupa Kata Sandi</h1>
-
+    <div className={background.className} style={background.style}>
+      <div className="sid-login-card">
         {sent ? (
-          <div className="mt-4" role="status">
-            <div className="w-14 h-14 rounded-full bg-[#e8eef5] flex items-center justify-center mb-4">
-              <CheckCircle2 size={28} className="text-[#163e6b]" />
+          <>
+            <div className="sid-login-logo">
+              <MailCheck size={24} />
             </div>
-            <p className="text-sm text-gray-600">
-              Tautan untuk membuat kata sandi baru sudah dikirim ke <strong>{email}</strong>. Buka
-              email tersebut lalu ikuti tautannya.
-            </p>
-          </div>
+
+            {/* Backend menjawab sama untuk email terdaftar maupun tidak, jadi
+                kalimatnya tidak memastikan email benar-benar terkirim. */}
+            <div className="sid-login-header" role="status">
+              <h1 className="sid-login-title">Periksa Email Anda</h1>
+
+              <p className="sid-login-description">
+                Jika <strong>{email.trim()}</strong> terdaftar pada akun aktif, tautan untuk membuat
+                kata sandi baru sudah dikirim. Periksa kotak masuk atau folder spam.
+              </p>
+            </div>
+
+            <button type="button" onClick={() => setSent(false)} className="sid-login-submit">
+              <span>Gunakan Email Lain</span>
+
+              <RotateCcw size={16} />
+            </button>
+          </>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-6">
-              Masukkan email yang terdaftar pada akun Anda. Kami akan mengirim tautan untuk membuat
-              kata sandi baru.
-            </p>
+            <div className="sid-login-logo">
+              <Landmark size={24} />
+            </div>
+
+            <div className="sid-login-header">
+              <h1 className="sid-login-title">Lupa Kata Sandi</h1>
+
+              <p className="sid-login-description">
+                Masukkan email yang terdaftar pada akun Anda. Kami akan mengirim tautan untuk
+                membuat kata sandi baru.
+              </p>
+            </div>
 
             {error && (
-              <div
-                className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 mb-4"
-                role="alert"
-              >
+              <div className="sid-login-error" role="alert">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
-              <div className="mb-6">
-                <label
-                  htmlFor="forgot-email"
-                  className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide"
-                >
+            <form onSubmit={handleSubmit} className="sid-login-form">
+              <div className="sid-login-field">
+                <label htmlFor="forgot-email" className="sid-login-label">
                   Email
                 </label>
-                <div className="relative mt-1">
-                  <Mail
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
+
+                <div className="sid-login-input-wrapper">
+                  <Mail size={16} className="sid-login-input-icon" />
+
                   <input
                     id="forgot-email"
                     required
@@ -92,37 +106,31 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="w-full border rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none focus:border-[#163e6b] bg-gray-50"
+                    className="sid-login-input sid-login-input-with-left-icon"
                   />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#163e6b] text-white rounded-lg py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isLoading ? 'Mengirim...' : 'Kirim Tautan Atur Ulang'} <KeyRound size={16} />
+              <button type="submit" disabled={isLoading} className="sid-login-submit">
+                <span>{isLoading ? 'Mengirim...' : 'Kirim Tautan Atur Ulang'}</span>
+
+                <KeyRound size={16} />
               </button>
             </form>
           </>
         )}
 
-        <p className="text-xs text-gray-500 bg-gray-50 border rounded-lg px-3 py-2 mt-5">
-          Tidak punya email atau belum mendaftarkannya?{' '}
-          <Link to={HAL_LUPA_PASSWORD_NIK} className="text-[#163e6b] font-medium hover:underline">
-            Ajukan atur ulang dengan NIK
-          </Link>
-          .
-        </p>
+        <div className="sid-login-footer">
+          <p className="sid-login-register-text">
+            Tidak punya email atau belum mendaftarkannya?
+            <Link to={HAL_LUPA_PASSWORD_NIK} className="sid-login-register-button">
+              Ajukan dengan NIK
+            </Link>
+          </p>
 
-        <div className="border-t mt-6 pt-4 text-center">
-          <Link
-            to="/login"
-            className="text-sm text-[#163e6b] font-medium hover:underline flex items-center justify-center gap-1"
-          >
-            <ArrowLeft size={14} /> Kembali ke Login
-          </Link>
+          <AuthBackToLogin />
+
+          <AuthCopyright />
         </div>
       </div>
     </div>

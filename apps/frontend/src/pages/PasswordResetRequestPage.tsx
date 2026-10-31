@@ -8,7 +8,6 @@ import { Link } from 'react-router-dom'
 
 import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -17,6 +16,7 @@ import {
   EyeOff,
   KeyRound,
   Landmark,
+  Lock,
   RotateCcw,
   ShieldAlert,
   XCircle,
@@ -27,7 +27,9 @@ import {
   type PasswordResetClaimStatus,
 } from '@/features/auth/hooks/usePasswordResetRequestForm'
 import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
-import { HAL_BERANDA, HAL_LOGIN } from '@/lib/constants/routes'
+import { AuthBackToLogin } from '@/features/auth/components/AuthBackToLogin'
+import { AuthCopyright } from '@/features/auth/components/AuthCopyright'
+import { HAL_LOGIN, HAL_LUPA_PASSWORD } from '@/lib/constants/routes'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
 
 type StatusInfo = { icon: LucideIcon; title: string; description: string }
@@ -37,7 +39,7 @@ const STATUS_INFO: Record<Exclude<PasswordResetClaimStatus, 'approved'>, StatusI
   pending: {
     icon: Clock,
     title: 'Menunggu Persetujuan',
-    description: `Permintaan Anda sedang ditinjau ${STAF_APP_LABEL}. Halaman ini akan memperbarui diri setelah diproses.`,
+    description: `Permintaan Anda sedang ditinjau ${STAF_APP_LABEL}. Buka lagi halaman ini nanti dari perangkat yang sama, lalu tekan Periksa Status Terbaru.`,
   },
   rejected: {
     icon: XCircle,
@@ -111,9 +113,7 @@ export default function PasswordResetRequestPage() {
           </Link>
 
           <div className="sid-login-footer">
-            <p className="sid-login-copyright">
-              Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-            </p>
+            <AuthCopyright />
           </div>
         </div>
       </div>
@@ -164,16 +164,19 @@ export default function PasswordResetRequestPage() {
             <RotateCcw size={16} />
           </button>
 
-          {canStartOver && (
-            <button type="button" onClick={startOver} className="sid-login-back">
-              <ArrowLeft size={14} aria-hidden="true" /> Ajukan Permintaan Baru
-            </button>
-          )}
-
           <div className="sid-login-footer">
-            <p className="sid-login-copyright">
-              Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-            </p>
+            {canStartOver && (
+              <p className="sid-login-register-text">
+                Perlu mengajukan lagi?
+                <button type="button" onClick={startOver} className="sid-login-register-button">
+                  Ajukan permintaan baru
+                </button>
+              </p>
+            )}
+
+            <AuthBackToLogin />
+
+            <AuthCopyright />
           </div>
         </div>
       </div>
@@ -202,12 +205,15 @@ export default function PasswordResetRequestPage() {
 
           <form onSubmit={completeReset} className="sid-login-form">
             <div className="sid-login-field">
-              <label className="sid-login-label">Kata Sandi Baru</label>
+              <label htmlFor="reset-password" className="sid-login-label">
+                Kata Sandi Baru
+              </label>
 
               <div className="sid-login-input-wrapper">
-                <KeyRound size={16} className="sid-login-input-icon" />
+                <Lock size={16} className="sid-login-input-icon" />
 
                 <input
+                  id="reset-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={passwordForm.password}
@@ -235,12 +241,15 @@ export default function PasswordResetRequestPage() {
             </div>
 
             <div className="sid-login-field">
-              <label className="sid-login-label">Konfirmasi Kata Sandi</label>
+              <label htmlFor="reset-password-confirmation" className="sid-login-label">
+                Konfirmasi Kata Sandi
+              </label>
 
               <div className="sid-login-input-wrapper">
-                <KeyRound size={16} className="sid-login-input-icon" />
+                <Lock size={16} className="sid-login-input-icon" />
 
                 <input
+                  id="reset-password-confirmation"
                   type={showPasswordConfirmation ? 'text' : 'password'}
                   name="password_confirmation"
                   value={passwordForm.password_confirmation}
@@ -281,9 +290,9 @@ export default function PasswordResetRequestPage() {
           </form>
 
           <div className="sid-login-footer">
-            <p className="sid-login-copyright">
-              Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-            </p>
+            <AuthBackToLogin />
+
+            <AuthCopyright />
           </div>
         </div>
       </div>
@@ -301,8 +310,8 @@ export default function PasswordResetRequestPage() {
           <h1 className="sid-login-title">Lupa Kata Sandi</h1>
 
           <p className="sid-login-description">
-            Tidak punya email terdaftar? Masukkan NIK dan tanggal lahir Anda. {STAF_APP_LABEL} akan
-            meninjau permintaan ini.
+            Masukkan NIK dan tanggal lahir Anda. Setelah {STAF_APP_LABEL} menyetujui, buat kata
+            sandi baru dari perangkat ini.
           </p>
         </div>
 
@@ -310,12 +319,15 @@ export default function PasswordResetRequestPage() {
 
         <form onSubmit={submitRequest} className="sid-login-form">
           <div className="sid-login-field">
-            <label className="sid-login-label">Nomor Induk Kependudukan (NIK)</label>
+            <label htmlFor="reset-nik" className="sid-login-label">
+              Nomor Induk Kependudukan (NIK)
+            </label>
 
             <div className="sid-login-input-wrapper">
               <CreditCard size={16} className="sid-login-input-icon" />
 
               <input
+                id="reset-nik"
                 type="text"
                 name="nik"
                 value={formData.nik}
@@ -367,17 +379,16 @@ export default function PasswordResetRequestPage() {
         </form>
 
         <div className="sid-login-footer">
-          <Link to={HAL_LOGIN} className="sid-login-back">
-            <ArrowLeft size={14} aria-hidden="true" /> Kembali ke Login
-          </Link>
-
-          <Link to={HAL_BERANDA} className="sid-login-back">
-            Kembali ke Beranda
-          </Link>
-
-          <p className="sid-login-copyright">
-            Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
+          <p className="sid-login-register-text">
+            Punya email terdaftar?
+            <Link to={HAL_LUPA_PASSWORD} className="sid-login-register-button">
+              Atur ulang lewat email
+            </Link>
           </p>
+
+          <AuthBackToLogin />
+
+          <AuthCopyright />
         </div>
       </div>
     </div>
