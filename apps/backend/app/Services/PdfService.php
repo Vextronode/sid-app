@@ -293,7 +293,7 @@ class PdfService
             '{{ village_address }}' => (string) ($village['address'] ?? ''),
             '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
             '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
-            '{{ village_area_code }}' => self::areaCode((string) ($village['code'] ?? '')),
+            '{{ village_area_code }}' => (string) ($village['area_code'] ?? ''),
             '{{ village_email }}' => (string) ($village['email'] ?? ''),
             '{{ village_head_name }}' => $signer['name'] ?? '________________________________________',
         ];
@@ -353,18 +353,6 @@ class PdfService
             '{{ issued_bln }}' => $date?->format('m') ?? '',
             '{{ issued_thn }}' => $date?->format('Y') ?? '',
         ];
-    }
-
-    /**
-     * Kode wilayah 8 kotak formulir Disdukcapil (2 digit provinsi,
-     * kabupaten, kecamatan, desa) dari kode desa Kemendagri 10 digit
-     * (mis. 3218032001 -> 32180301). Kode lain dipakai apa adanya.
-     */
-    private static function areaCode(string $code): string
-    {
-        $digits = preg_replace('/\D/', '', $code) ?? '';
-
-        return strlen($digits) === 10 ? substr($digits, 0, 6).substr($digits, -2) : $digits;
     }
 
     /**

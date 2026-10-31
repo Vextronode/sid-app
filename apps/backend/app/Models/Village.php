@@ -22,6 +22,7 @@ class Village extends Model
         'regency',
         'province',
         'postal_code',
+        'area_code',
         'email',
         'area_ha',
         'logo',

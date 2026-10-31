@@ -116,7 +116,7 @@ class DeathReportServiceTest extends TestCase
 
     public function test_village_code_and_linked_parents_of_the_deceased_fill_the_forms(): void
     {
-        $this->village->update(['code' => '3218032001']);
+        $this->village->update(['code' => '3218032001', 'area_code' => '32182008']);
         $this->father['citizen']->update(['place_of_birth' => 'Ciamis']);
         $child = Citizen::factory()->create([
             'village_id' => $this->village->id, 'rt_id' => $this->applicant['citizen']->rt_id, 'family_id' => $this->applicant['citizen']->family_id,
@@ -124,10 +124,10 @@ class DeathReportServiceTest extends TestCase
             'father_id' => $this->father['citizen']->id, 'mother_id' => $this->mother->id,
         ]);
 
-        // F-2.01: kode wilayah 8 kotak (provinsi, kabupaten, kecamatan, desa)
-        // dan data orang tua almarhum yang tertaut di data penduduk.
+        // F-2.01: kode wilayah Dukcapil 8 kotak dari profil desa (bukan kode
+        // desa Kemendagri) dan data orang tua almarhum yang tertaut di data penduduk.
         $form = $this->render($this->approve([...$this->payload(), 'almarhum' => $child->id]), null);
-        $this->assertMatchesRegularExpression($this->boxes('32180301'), $form);
+        $this->assertMatchesRegularExpression($this->boxes('32182008'), $form);
         $this->assertMatchesRegularExpression($this->boxes('TATANG'), $form);
         $this->assertMatchesRegularExpression($this->boxes('3207240101600001'), $form);
         $this->assertMatchesRegularExpression($this->boxes('CIAMIS'), $form);

@@ -149,6 +149,7 @@ class LetterSnapshotService
                 'regency' => $letter->village?->regency,
                 'province' => $letter->village?->province,
                 'postal_code' => $letter->village?->postal_code,
+                'area_code' => $letter->village?->area_code,
                 'email' => $letter->village?->email,
                 // Petugas pada formulir F-1.02.
                 'kasi_pemerintahan_name' => $this->officialRepository

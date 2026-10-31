@@ -39,6 +39,8 @@ class UpdateVillageProfileRequest extends FormRequest
             'regency' => ['nullable', 'string', 'max:100'],
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:10'],
+            // Kode wilayah Dukcapil di formulir pelayanan (mis. F-2.01).
+            'area_code' => ['nullable', 'digits:8'],
             'email' => ['nullable', 'email', 'max:150'],
             // Luas wilayah (hektare); kolomnya decimal(10, 3).
             'area_ha' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
@@ -61,6 +63,7 @@ class UpdateVillageProfileRequest extends FormRequest
         return [
             'name.required' => 'Nama desa wajib diisi',
             'head_name.required' => 'Nama Kepala Desa wajib diisi',
+            'area_code.digits' => 'Kode wilayah Dukcapil harus 8 digit angka',
             'area_ha.numeric' => 'Luas wilayah harus berupa angka',
             'area_ha.min' => 'Luas wilayah tidak boleh negatif',
             'area_ha.max' => 'Luas wilayah terlalu besar',

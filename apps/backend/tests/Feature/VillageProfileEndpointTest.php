@@ -101,6 +101,26 @@ class VillageProfileEndpointTest extends TestCase
     }
 
     #[Test]
+    public function dukcapil_area_code_is_optional_and_must_be_eight_digits(): void
+    {
+        [$village, $user] = $this->villageWithUser();
+        $payload = ['name' => 'Desa Cibenda', 'head_name' => 'H. Ridwan Saepudin'];
+
+        foreach (['3218200', '321820081', '3218200A'] as $invalid) {
+            $this->actingAs($user)
+                ->patchJson('/api/villages/profile', [...$payload, 'area_code' => $invalid])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['area_code']);
+        }
+
+        $this->actingAs($user)
+            ->patchJson('/api/villages/profile', [...$payload, 'area_code' => '32182008'])
+            ->assertOk()
+            ->assertJsonPath('data.area_code', '32182008');
+        $this->assertSame('32182008', $village->fresh()->area_code);
+    }
+
+    #[Test]
     public function village_stamp_is_no_longer_managed_because_letters_are_stamped_by_hand(): void
     {
         [, $user] = $this->villageWithUser();

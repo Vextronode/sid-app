@@ -26,6 +26,7 @@ class VillageResource extends JsonResource
             'regency' => $this->regency,
             'province' => $this->province,
             'postal_code' => $this->postal_code,
+            'area_code' => $this->area_code,
             'email' => $this->email,
             'area_ha' => $this->area_ha,
             'logo_url' => Village::mediaUrl($this->logo),
