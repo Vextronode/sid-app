@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Origin SPA. Dipakai untuk tautan di email (reset kata sandi,
+    // verifikasi email) yang harus membuka halaman frontend.
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
