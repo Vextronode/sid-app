@@ -53,7 +53,7 @@ apps/frontend/
 │   ├── constants/           # suratStatus
 │   ├── features/            # kode per domain, mis.:
 │   │   ├── auth/            # contexts/AuthContext, hooks, schemas, services, utils
-│   │   ├── surat/           # api/, components/ (DynamicSuratForm, SignatureCard, FulfillmentPanel, ...), hooks/, utils/
+│   │   ├── surat/           # api/, components/ (DynamicSuratForm, SignatureRequestsCard, FulfillmentPanel, ...), hooks/, utils/
 │   │   ├── approval/        # ApprovalStepRenderer, api keputusan
 │   │   ├── notifikasi/      # popover, WebPushControls, hooks push & deep link
 │   │   ├── operator-desa/   # constants/roleNavigation.ts (kapabilitas route operator)

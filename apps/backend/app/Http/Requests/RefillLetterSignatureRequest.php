@@ -12,17 +12,15 @@ class RefillLetterSignatureRequest extends FormRequest
     }
 
     /**
-     * Salah satu: `nik` (minta tanda tangan digital pemilik NIK), atau
-     * `file` + `name` (foto dokumen ber-TTD basah dan nama penanda tangan).
+     * NIK saksi pengganti; nama (dan No. KK) bila NIK di luar data penduduk.
      *
      * @return array<string, array<int, string>>
      */
     public function rules(): array
     {
         return [
-            'nik' => ['required_without:file', 'nullable', 'digits:16'],
-            'file' => ['required_without:nik', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
-            'name' => ['required_with:file', 'nullable', 'string', 'max:100'],
+            'nik' => ['required', 'digits:16'],
+            'name' => ['nullable', 'string', 'max:100'],
             // Saksi di luar data penduduk: No. KK opsional.
             'family_number' => ['nullable', 'digits:16'],
         ];

@@ -12,6 +12,8 @@
 
 > **v5.3:** `letter_categories` di-drop beserta `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type`. Jenis surat kini membawa definisi isian, aksi data, slot tanda tangan, dokumen pendukung, dan kode klasifikasi. Tabel baru: `letter_attachments`, `user_signatures`, `letter_signatures`, `signature_blocks`, `official_position_types`, `news_categories`, `news_category_news`, `push_subscriptions`. `letters` mendapat snapshot & kolom fulfillment; `villages` mendapat kolom kop surat & tampilan publik; `officials.position` menjadi VARCHAR.
 
+> **2026-10-31:** TTD digital dihapus: tabel `user_signatures` dan `signature_reset_requests` di-drop; kolom `villages.stamp_img`, `officials.signature_img`, `officials.stamp_img`, `letter_types.signature_slots`, `letter_signatures.user_signature_id`/`attachment_id` dihapus; `letter_signatures` kini hanya saksi (`signer_type = witness`, method `consent`/`rt_check`/`manual`); kind `wet_signature` di `letter_attachments` tidak dipakai lagi.
+
 ---
 
 ## 1. Entity Relationship Diagram (ERD)
@@ -37,7 +39,6 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | address | VARCHAR(255) | NULL | Alamat kantor desa |
 | phone | VARCHAR(20) | NULL | Nomor telepon |
 | area_ha | DECIMAL(10,3) | NULL | Luas wilayah (hektare), diisi Staf SIDUTama |
-| stamp_img | VARCHAR(255) | NULL | Path stempel desa pada private storage; satu desa memiliki satu stempel |
 | logo | VARCHAR(255) | NULL | Path aset frontend (`/assets/...`, dari seeder) atau path unggahan di disk public (`village-media/{id}/...`) |
 | hero_image | VARCHAR(255) | NULL | Foto beranda; aturan nilai sama dengan `logo` |
 | hero_photo_credit | VARCHAR(100) | NULL | Kredit foto beranda |
@@ -241,8 +242,6 @@ Rekam jejak jabatan struktural desa per periode. Digunakan untuk resolusi wilaya
 | rt_id | BIGINT | FK → rts.id, NULL | Diisi untuk jabatan RT |
 | rw_id | BIGINT | FK → rws.id, NULL | Diisi untuk jabatan RW |
 | hamlet_id | BIGINT | FK → hamlets.id, NULL | Diisi untuk jabatan Kadus |
-| signature_img | VARCHAR(255) | NULL | Path TTD jabatan pada private storage (`official-signatures/{village_id}/{official_id}/`). Kepala Desa: diunggah Staf SIDUTama. Jabatan berakun lain: salinan TTD akun pejabatnya (`user_signatures`) saat dipromote, diganti/dikosongkan mengikuti TTD akun selama menjabat; tidak disentuh lagi setelah jabatan berakhir. Jabatan tanpa akun: NULL |
-| stamp_img | VARCHAR(255) | NULL | Kolom legacy; tidak dipakai PDF. Stempel PDF berasal dari `villages.stamp_img`; nasib kolom belum diputuskan |
 | photo_img | VARCHAR(255) | NULL | Path foto di disk public (`official-photos/{village_id}/...`); wajib diunggah saat promote/rotate/store, tampil di Profil Desa publik |
 | phone_wa | VARCHAR(255) | NULL | Untuk fitur Hubungi Kami |
 | started_at | DATE | NOT NULL | |
@@ -323,7 +322,7 @@ Constraint: `UNIQUE(flow_id, step_order)`
 
 **Tabel: letter_types**
 
-Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Staf SIDUTama hanya mengubah `validity_days`, `assigned_role`, `is_active`.
+Master data jenis surat. Struktur (template, isian, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Staf SIDUTama hanya mengubah `validity_days`, `assigned_role`, `is_active`.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
@@ -343,7 +342,7 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | is_active | BOOLEAN | NOT NULL | Tanpa default di migration |
 | produces_letter | BOOLEAN | DEFAULT true | Penanda menerbitkan surat; belum dipakai logika backend |
 | issues_letter_number | BOOLEAN | DEFAULT true | false = tidak diberi `letter_number` saat final approve (formulir Layanan Kependudukan) |
-| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa pengesahan TTD/stempel Kepala Desa; snapshot tanpa penanda tangan pengesah dan render tidak butuh Kepala Desa aktif. Snapshot menyimpan `service_signatures` (TTD pemohon, Kepala Desa, Kasi Pemerintahan, Ketua RT/RW wilayah) untuk ditempel di formulir final |
+| signed_by_village_head | BOOLEAN | DEFAULT true | false = tanpa pengesahan Kepala Desa (formulir Layanan Kependudukan); snapshot tanpa penanda tangan pengesah dan render tidak butuh Kepala Desa aktif. Snapshot menyimpan `service_signatures` (TTD pemohon, Kepala Desa, Kasi Pemerintahan, Ketua RT/RW wilayah) untuk ditempel di formulir final |
 | requires_result_upload | BOOLEAN | DEFAULT false | true = setelah terbit, pemohon mengunggah hasil dari instansi luar untuk diverifikasi (`letter_results`); Terapkan baru setelah diterima |
 | data_instructions | TEXT | NULL | Petunjuk bagi Kasi/Kaur untuk `data_action = manual` |
 | data_options | JSON | NULL | Opsi aksi data: `family` (`create_citizen`: `join` {when, no_kk_field} = masuk KK yang ada, `create` {when} = KK baru) `subjects` (`update_citizens`: {isian NIK: label}), `new_head` (isian family_member yang menjadi kepala keluarga baru KK lama; satu nama atau daftar), `member_details` (nama isian repeater data tambahan anggota F-1.01, disimpan ke data warga setelah aksi utama), `adopt` (`adopt_child` F10: {nik, role} = isian NIK anak angkat dan SHDK-nya), dan `restructure` (`restructure_family` F09: nama isian jenis perubahan, KK baru (+ `married` {field, equals, certificate, date}: alasan keluarga baru, kepala keluarga dan suami/istri menjadi Kawin dengan No. buku nikah & tanggal perkawinan), ganti kepala, numpang) |
@@ -352,7 +351,6 @@ Master data jenis surat. Struktur (template, isian, slot TTD, aksi data, flow) d
 | form_fields | JSON | NULL | Daftar isian `{name, label, type, required, placeholder?, options?, accept?, visible_when?, fields?, min?, max?, item_label?}` (`visible_when` = syarat tampil dari jawaban isian lain, bentuk sama dengan `documents.when`; isian tersembunyi tidak wajib dan nilainya dibuang). `repeater` = baris berulang dengan sub-isian `fields` (payload: array baris); `family_members` = anggota KK pemohon yang dicentang, disimpan di payload sebagai baris siap cetak; type: text, textarea, date, time (HH:MM), number, nik, select, file, occupation (id katalog `occupations` atau `lainnya` + `<name>_lainnya`; disimpan sebagai nama pekerjaan siap cetak), village_area (id RT desa ini lewat pilihan Dusun -> RW -> RT; ditambah `<name>_dusun`, `<name>_rw`, `<name>_rt` siap cetak), family_member (satu anggota KK pemohon; ditambah `<name>_nama`, `_nik`, `_tempat_lahir`, `_tanggal_lahir`, `_pekerjaan`, `_alamat`, dst.), family_roster (disusun sistem: susunan KK tanpa anggota `exclude`, kepala keluarga `head`; `<name>_<n>_<kolom>`). NULL = isian bebas (teks); array = hanya isian terdaftar |
 | data_fields | JSON | NULL | Kolom `citizens` yang boleh diubah lewat Terapkan: `{column, label, source?, value?, value_label?}` |
 | data_subject_field | VARCHAR(100) | NULL | Nama isian NIK subjek bila yang diubah bukan pemohon (seed A07: `nik_almarhum`) |
-| signature_slots | JSON | NULL | `{key, label, signer: applicant\|other}`; belum dipakai jenis surat seed |
 | supporting_template | TEXT | NULL | Template dokumen pendukung; belum dipakai jenis surat seed |
 | classification_code | VARCHAR(10) | DEFAULT '470' | Kode klasifikasi pada nomor surat (seed A03: `510`) |
 | created_at, updated_at | TIMESTAMP | NULL | |
@@ -395,8 +393,8 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | rejected_at_step | INT | NULL | Step tempat surat direject, untuk histori/laporan |
 | submitted_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | |
 | processed_at | TIMESTAMP | NULL | Waktu terakhir diproses (approver manapun di step manapun) |
-| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, address, phone, district, regency, province, postal_code, email, stamp_img}`, `signer{official_id, village_id, name, signature_img}` |
-| signed_by_official_id | BIGINT | FK → officials.id, NULL, ON DELETE SET NULL | Kepala Desa yang TTD-nya dibekukan (juga bila Sekdes yang menyetujui) |
+| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, code, address, phone, district, regency, province, postal_code, email, kasi_pemerintahan_name}`, `service_officials{kepala_desa, areas}` (nama/NIK pejabat formulir Layanan Kependudukan), `signer{official_id, village_id, name}`; tanpa gambar TTD/stempel |
+| signed_by_official_id | BIGINT | FK → officials.id, NULL, ON DELETE SET NULL | Kepala Desa yang namanya dibekukan (juga bila Sekdes yang menyetujui); TTD dibubuhkan basah |
 | fulfilled_at | TIMESTAMP | NULL | Waktu perubahan data kependudukan diterapkan |
 | fulfilled_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Aktor Terapkan |
 | fulfillment | JSON | NULL | Hasil Terapkan `{action, citizen_id, changes{kolom:{old,new}}}`; NIK disamarkan |
@@ -481,7 +479,7 @@ Berkas surat di disk privat `private_uploads` (`letter-attachments/{village_id}/
 |---|---|---|---|
 | id | BIGINT | PK | |
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
-| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `wet_signature` (foto dokumen ber-TTD basah), `result` (hasil dari instansi luar), `attachment` (lampiran umum) |
+| kind | VARCHAR(30) | DEFAULT 'attachment' | `field` (isian bertipe file), `result` (hasil dari instansi luar), `attachment` (lampiran umum) |
 | letter_result_id | BIGINT | FK → letter_results.id, NULL, ON DELETE CASCADE | Unggahan hasil pemilik berkas (`kind = result`) |
 | field | VARCHAR(100) | NULL | Nama isian atau `slot_key` |
 | original_name | VARCHAR(255) | NOT NULL | |
@@ -510,42 +508,23 @@ Unggahan hasil dari instansi luar (mis. KK baru dari Disdukcapil) untuk jenis su
 
 Index `idx_letter_results_letter (letter_id, id)`. Tahap surat diturunkan dari unggahan terakhir (`Letter::resultStage()`): tidak ada / `rejected` → `awaiting_upload`, `submitted` → `under_review`, `accepted` → `accepted`.
 
-**Tabel: user_signatures**
-
-Tanda tangan pribadi per akun (warga maupun pejabat), terpisah dari TTD jabatan di `officials.signature_img`. Berkas dienkripsi di disk privat `user-signatures/{user_id}/{uuid}.enc`.
-
-| Kolom | Tipe | Constraint | Keterangan |
-|---|---|---|---|
-| id | BIGINT | PK | |
-| user_id | UUID | FK → users.id, ON DELETE CASCADE | |
-| path | VARCHAR(255) | NOT NULL | |
-| mime_type | VARCHAR(50) | NOT NULL | |
-| revoked_at | TIMESTAMP | NULL | Diisi saat Staf SIDUTama mereset; NULL = aktif |
-| revoked_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
-| revoke_reason | TEXT | NULL | |
-| created_at, updated_at | TIMESTAMP | NULL | |
-
-Index `idx_user_signatures_active (user_id, revoked_at)`. Hanya satu TTD aktif per akun (dijaga service); baris lama dipertahankan agar dokumen lama tetap dapat dirender.
-
 **Tabel: letter_signatures**
 
-Satu baris per percobaan mengisi slot tanda tangan surat; baris terbaru per `(letter_id, slot_key)` adalah keadaan slot.
+Satu baris per percobaan mencatat saksi/persetujuan pada surat (tidak ada TTD digital); baris terbaru per `(letter_id, slot_key)` adalah keadaan slot.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
 | id | BIGINT | PK | |
 | letter_id | UUID | FK → letters.id, ON DELETE CASCADE | |
-| slot_key | VARCHAR(50) | NOT NULL | Sesuai `letter_types.signature_slots[].key` |
+| slot_key | VARCHAR(50) | NOT NULL | Nama isian NIK ber-`witness` di `form_fields` |
 | slot_label | VARCHAR(100) | NOT NULL | |
-| signer_type | VARCHAR(20) | NOT NULL | `applicant` \| `other` \| `witness` (saksi isian form; slot_key = nama isian NIK) |
-| method | VARCHAR(20) | NOT NULL | `digital` \| `wet` \| saksi: `consent` \| `rt_check` \| `manual` |
+| signer_type | VARCHAR(20) | NOT NULL | `witness` (saksi/persetujuan isian form) |
+| method | VARCHAR(20) | NOT NULL | `consent` (warga ber-akun) \| `rt_check` (tanpa akun, diverifikasi RT) \| `manual` (di luar data penduduk) |
 | status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `signed` \| `rejected` \| `expired` \| `cancelled` |
 | requested_by | UUID | FK → users.id, ON DELETE CASCADE | Pemohon |
-| target_nik_hash | VARCHAR(64) | NULL | SHA-256 NIK yang diminta (TTD digital pihak lain) |
+| target_nik_hash | VARCHAR(64) | NULL | SHA-256 NIK saksi yang diminta |
 | signer_user_id | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
 | signer_name | VARCHAR(100) | NULL | |
-| user_signature_id | BIGINT | FK → user_signatures.id, NULL, ON DELETE SET NULL | TTD digital yang dibubuhkan |
-| attachment_id | BIGINT | FK → letter_attachments.id, NULL, ON DELETE SET NULL | Foto TTD basah |
 | expires_at | TIMESTAMP | NULL | Batas permintaan (`LETTER_SIGNATURE_REQUEST_TTL_DAYS`, default 3 hari) |
 | responded_at | TIMESTAMP | NULL | |
 | response_notes | TEXT | NULL | Catatan penolakan |
@@ -746,7 +725,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **32 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **35 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -756,17 +735,17 @@ Organisasi Non-Struktural (2): village_org_positions, village_org_members
 Alur Approval (2): approval_flows, flow_steps
 Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
-Tanda Tangan Akun (2): user_signatures, signature_blocks
+Saksi (1): signature_blocks
 Konfigurasi (1): approval_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 2 + 1 + 7 + 1 = 32 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 7 + 1 = 31 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 32 tabel
-Di-drop: letter_categories (v5.3)
+Total aplikasi non-framework: 34 tabel
+Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 
 Tabel yang di-hold (detail di `TDD-06_Appendix.md`): `village_assets`, `village_finances`, `letter_hashes`, `letter_type_fields`, `letter_field_values`, `citizen_aid_eligibility`, `citizen_aid_history`, `aid_programs`. Kebutuhan "isian form dinamis" kini dipenuhi kolom JSON `letter_types.form_fields` + `letters.payload`, bukan tabel `letter_type_fields`/`letter_field_values`.
@@ -819,7 +798,6 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | letter_signatures | idx_letter_signatures_slot | (letter_id, slot_key) | ✅ Aktif |
 | letter_signatures | idx_letter_signatures_target | (target_nik_hash, status) | ✅ Aktif |
 | letter_signatures | idx_letter_signatures_pair | (requested_by, target_nik_hash, status) | ✅ Aktif |
-| user_signatures | idx_user_signatures_active | (user_id, revoked_at) | ✅ Aktif |
 | signature_blocks | uq_signature_blocks_pair | (user_id, blocked_user_id) UNIQUE | ✅ Aktif |
 | letter_number_counters | uq_letter_counters_classification | (village_id, classification_code, year) UNIQUE | ✅ Aktif |
 
@@ -908,10 +886,9 @@ Sistem mengelola data kependudukan warga (NIK, alamat) yang termasuk kategori da
 | letters | applicant_nik | NIK pemohon dalam permohonan surat |
 | letters | applicant_address | Alamat pemohon dalam permohonan surat |
 | users | password | Hash Argon2id (one-way hash, bukan enkripsi) |
-| (berkas) user_signatures | isi file TTD | `Crypt::encryptString` sebelum ditulis ke disk privat (`.enc`) |
-| letter_signatures | target_nik_hash | SHA-256 NIK target permintaan TTD (NIK plaintext tidak disimpan) |
+| letter_signatures | target_nik_hash | SHA-256 NIK target permintaan saksi (NIK plaintext tidak disimpan) |
 
-Berkas privat lain (stempel desa, TTD jabatan Kades, lampiran surat) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan path gambar dan nama, bukan NIK.
+Berkas privat (lampiran surat, hasil dari instansi) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan nama pejabat (dan NIK pejabat formulir Layanan Kependudukan yang memang tercetak), tanpa gambar TTD/stempel.
 
 **Strategi Dual-Column**
 

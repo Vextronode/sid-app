@@ -8,7 +8,6 @@ use App\Enums\ResidencyType;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
-use App\Models\UserSignature;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Support\CitizenLabels;
@@ -17,8 +16,8 @@ use App\Support\LetterFormSchema;
 /**
  * Membekukan data yang dipakai untuk merender surat pada saat final
  * approve. Tanpa ini PDF dirender ulang dari data hidup setiap kali
- * diunduh, sehingga surat lama ikut berubah ketika Kades berganti, TTD
- * diganti, template diedit, atau data warga diperbarui.
+ * diunduh, sehingga surat lama ikut berubah ketika Kades berganti,
+ * template diedit, atau data warga diperbarui.
  */
 class LetterSnapshotService
 {
@@ -80,24 +79,6 @@ class LetterSnapshotService
         if ($kades !== null) {
             $this->capture($letter, $kades);
         }
-    }
-
-    /**
-     * Null untuk jenis surat yang tidak ditandatangani Kepala Desa.
-     */
-    public function signerFor(Letter $letter, array $context): ?Official
-    {
-        if (($context['signer']['official_id'] ?? null) === null) {
-            return null;
-        }
-
-        $official = $this->officialRepository->find((int) $context['signer']['official_id']);
-
-        if ($official === null) {
-            abort(500, 'Data penanda tangan surat tidak ditemukan. Hubungi administrator.');
-        }
-
-        return $official->loadMissing('citizen.occupation');
     }
 
     /**
@@ -169,31 +150,28 @@ class LetterSnapshotService
                 'province' => $letter->village?->province,
                 'postal_code' => $letter->village?->postal_code,
                 'email' => $letter->village?->email,
-                'stamp_img' => $letter->village?->stamp_img,
                 // Petugas pada formulir F-1.02.
                 'kasi_pemerintahan_name' => $this->officialRepository
                     ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)
                     ?->citizen?->name,
             ],
-            'service_signatures' => $this->serviceSignatures($letter),
+            'service_officials' => $this->serviceOfficials($letter),
             'signer' => [
                 'official_id' => $kades?->id,
                 'village_id' => $kades?->village_id,
                 'name' => $kades?->citizen?->name,
-                'signature_img' => $kades?->signature_img,
             ],
         ];
     }
 
     /**
-     * TTD yang ditempel pada formulir pelayanan (Fxx): TTD akun pemohon,
-     * Kepala Desa, Kasi Pemerintahan, serta Ketua RT/RW wilayah tiap isian
-     * village_area. Dibekukan bersama snapshot saat final approve; pejabat
-     * yang belum punya TTD tetap tercatat (nama/NIK) tanpa gambar.
+     * Pejabat yang namanya tercetak pada formulir pelayanan (Fxx): Kepala
+     * Desa serta Ketua RT/RW wilayah tiap isian village_area. Dibekukan
+     * bersama snapshot saat final approve; TTD-nya dibubuhkan basah.
      *
      * @return array<string, mixed>
      */
-    private function serviceSignatures(Letter $letter): array
+    private function serviceOfficials(Letter $letter): array
     {
         if ($this->signedByVillageHead($letter)) {
             return [];
@@ -207,36 +185,27 @@ class LetterSnapshotService
 
             if ($rt !== null) {
                 $areas[$field['name']] = [
-                    'rt' => $this->signatureOf($this->officialRepository->findActiveRtByRtId($rt->id)),
-                    'rw' => $this->signatureOf($rt->rw_id ? $this->officialRepository->findActiveRwByRwId($rt->rw_id) : null),
+                    'rt' => $this->officialOf($this->officialRepository->findActiveRtByRtId($rt->id)),
+                    'rw' => $this->officialOf($rt->rw_id ? $this->officialRepository->findActiveRwByRwId($rt->rw_id) : null),
                 ];
             }
         }
 
         return [
-            'applicant_signature_id' => UserSignature::query()
-                ->where('user_id', $letter->submitted_by)
-                ->whereNull('revoked_at')
-                ->latest('id')
-                ->value('id'),
-            'kepala_desa' => $this->signatureOf($this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id)),
-            'kasi_pemerintahan' => $this->signatureOf($this->officialRepository
-                ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)),
+            'kepala_desa' => $this->officialOf($this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id)),
             'areas' => $areas,
         ];
     }
 
     /**
-     * @return array{official_id: int, village_id: string, name: ?string, nik: ?string, signature_img: ?string}|null
+     * @return array{official_id: int, name: ?string, nik: ?string}|null
      */
-    private function signatureOf(?Official $official): ?array
+    private function officialOf(?Official $official): ?array
     {
         return $official === null ? null : [
             'official_id' => $official->id,
-            'village_id' => $official->village_id,
             'name' => $official->citizen?->name,
             'nik' => $official->citizen?->nik,
-            'signature_img' => $official->signature_img,
         ];
     }
 

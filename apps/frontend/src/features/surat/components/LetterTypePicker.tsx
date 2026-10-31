@@ -9,14 +9,11 @@ import type { LetterType } from '@/types'
 const SEARCH_THRESHOLD = 6
 
 function LetterTypeMeta({ type }: { type: LetterType }) {
-  const needsSignature = (type.signature_slots ?? []).length > 0
-
-  if (!type.validity_days && !needsSignature) return null
+  if (!type.validity_days) return null
 
   return (
     <span className="sid-letter-type-meta">
-      {type.validity_days ? <span>Berlaku {type.validity_days} hari</span> : null}
-      {needsSignature && <span>Perlu tanda tangan</span>}
+      <span>Berlaku {type.validity_days} hari</span>
     </span>
   )
 }

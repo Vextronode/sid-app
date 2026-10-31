@@ -10,7 +10,6 @@ use App\Support\VillageImageOptimizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VillageProfileService
@@ -36,26 +35,6 @@ class VillageProfileService
         $village = $this->getProfile($user);
 
         return $this->repository->update($village, $data);
-    }
-
-    public function replaceStamp(User $user, UploadedFile $stamp): Village
-    {
-        $this->assertActivePetugas($user);
-        $village = $this->getProfile($user);
-        $directory = "village-stamps/{$village->id}";
-        $newPath = $stamp->store($directory, 'private_uploads');
-
-        try {
-            $village = $this->repository->update($village, ['stamp_img' => $newPath]);
-        } catch (\Throwable $exception) {
-            Storage::disk('private_uploads')->delete($newPath);
-            throw $exception;
-        }
-
-        // File lama sengaja tidak dihapus: snapshot surat yang sudah
-        // terbit masih merujuknya.
-
-        return $village;
     }
 
     /**
@@ -86,30 +65,6 @@ class VillageProfileService
         }
 
         return $village;
-    }
-
-    public function stampPreview(User $user): BinaryFileResponse
-    {
-        $this->assertActivePetugas($user);
-        $village = $this->getProfile($user);
-
-        $directory = "village-stamps/{$village->id}";
-        if (
-            ! $village->stamp_img
-            || ! str_starts_with($village->stamp_img, $directory.'/')
-            || ! Storage::disk('private_uploads')->exists($village->stamp_img)
-        ) {
-            throw new HttpException(404, 'Stempel desa belum tersedia.');
-        }
-
-        $response = response()->file(Storage::disk('private_uploads')->path($village->stamp_img), [
-            'Cache-Control' => 'private, no-store',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
-        $response->setPrivate();
-        $response->headers->set('Cache-Control', 'private, no-store');
-
-        return $response;
     }
 
     private function assertActivePetugas(User $user): void

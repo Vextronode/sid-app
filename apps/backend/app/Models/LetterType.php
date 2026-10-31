@@ -31,7 +31,6 @@ class LetterType extends Model
         'form_fields',
         'data_fields',
         'data_subject_field',
-        'signature_slots',
         'supporting_template',
         'issues_letter_number',
         'signed_by_village_head',
@@ -61,7 +60,6 @@ class LetterType extends Model
         'data_fields' => 'array',
         'carry_documents' => 'array',
         'data_options' => 'array',
-        'signature_slots' => 'array',
         'documents' => 'array',
     ];
 

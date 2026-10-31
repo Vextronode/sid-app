@@ -5,7 +5,8 @@
 //
 // Pemohon hanya melihat status generik: progres tanpa nama pejabat,
 // alasan penolakan, masa berlaku, dan pratinjau setelah surat terbit.
-// Unduhan lewat menu "Unduh surat" (digital / tanda tangan basah).
+// Surat bertanda tangan dan berstempel diambil di kantor desa; unduhan
+// lewat tombol "Unduh surat" berisi salinan tanpa tanda tangan.
 // ==========================================
 
 import { useQuery } from '@tanstack/react-query'
@@ -26,6 +27,7 @@ import { getLetterDetail } from '../api/letterExtrasApi'
 import { getApplicantAddress, getApplicantNik } from '../utils/letterDetails'
 import {
   FORM_DOWNLOAD_HINT,
+  LETTER_PICKUP_HINT,
   isSignedByVillageHead,
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
@@ -48,7 +50,7 @@ function getLetterState(surat: Partial<Pick<Letter, 'status' | 'is_expired'>>): 
 }
 
 const HINTS: Record<LetterState, string> = {
-  approved: 'Pilih format saat mengunduh: digital (siap dipakai) atau untuk tanda tangan basah.',
+  approved: LETTER_PICKUP_HINT,
   expired: 'Masa berlaku surat sudah habis, jadi surat tidak dapat diunduh lagi.',
   rejected: 'Perbaiki permohonan sesuai alasan penolakan, lalu ajukan ulang.',
   processing: 'Anda akan mendapat notifikasi setiap kali status surat berubah.',

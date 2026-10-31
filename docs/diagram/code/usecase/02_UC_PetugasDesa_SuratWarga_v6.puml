@@ -31,7 +31,7 @@ rectangle "SIDUTama" {
   rectangle "Monitoring Surat (seluruh surat desa)" #E8F0FF {
     usecase "UC-05: Daftar Surat\n(semua status, paginasi, pencarian)" as UC_LIST
     usecase "Ringkasan Surat\n(GET /letters/summary)" as UC_SUM
-    usecase "UC-06: Detail Surat\n(lampiran, TTD, dokumen pendukung)" as UC_DETAIL
+    usecase "UC-06: Detail Surat\n(lampiran, saksi, dokumen pendukung)" as UC_DETAIL
     usecase "UC-08: Unduh PDF" as UC_DL
     usecase "Hapus Surat" as UC_DEL
     usecase "Terima notifikasi surat tertahan\n(RT / Kades-Sekdes / Kasi-Kaur kosong)" as UC_VACANT

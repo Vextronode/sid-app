@@ -28,7 +28,6 @@ class VillageResource extends JsonResource
             'postal_code' => $this->postal_code,
             'email' => $this->email,
             'area_ha' => $this->area_ha,
-            'has_stamp_img' => $this->stamp_img !== null,
             'logo_url' => Village::mediaUrl($this->logo),
             'hero_image_url' => Village::mediaUrl($this->hero_image),
             'hero_photo_credit' => $this->hero_photo_credit,

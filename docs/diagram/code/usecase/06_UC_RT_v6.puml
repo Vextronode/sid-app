@@ -26,7 +26,7 @@ actor "RT" as RT
 rectangle "SIDUTama" {
   usecase "UC-01/02: Login / Logout" as UC_AUTH
   usecase "UC-05: Daftar Surat Wilayah RT\n(semua status)" as UC_LIST
-  usecase "UC-06: Detail Surat\n(isian, lampiran, TTD,\ndokumen pendukung)" as UC_DETAIL
+  usecase "UC-06: Detail Surat\n(isian, lampiran, saksi,\ndokumen pendukung)" as UC_DETAIL
   usecase "UC-04a: Approve / Reject\n(step rt, wilayah sama)" as UC_DECIDE
   usecase "UC-15: Dashboard RT\n(menunggu, diproses, overdue)" as UC_DASH
   usecase "Notifikasi in-app & Web Push\n(surat baru, termasuk yang\nsempat tertahan)" as UC_NOTIF

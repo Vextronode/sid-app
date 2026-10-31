@@ -32,7 +32,7 @@ title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekde
 
 |#D6E4F7|Pemohon|
 |#D5F5E3|Sistem|
-|#E3F2FD|Pemilik NIK (penanda tangan)|
+|#E3F2FD|Pemilik NIK (saksi)|
 |#E8F5E9|RT|
 |#FFF3E0|RW / Kadus (FYI)|
 |#FDEBD0|Kepala Desa / Sekdes|
@@ -41,7 +41,7 @@ title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekde
 |Pemohon|
 start
 :Login; pilih jenis surat aktif ber-template;
-:Isi form dinamis (form_fields),\nunggah berkas isian,\ntentukan penanda tangan per slot\n(NIK atau TTD basah);
+:Isi form dinamis (form_fields),\nunggah berkas isian,\nisi NIK saksi (bila diminta);
 
 |Sistem|
 :Validasi isian terhadap definisi jenis surat;
@@ -51,18 +51,18 @@ if (Valid?) then (tidak)
 endif
 :Simpan surat **pending**\n(snapshot flow_id, NIK terenkripsi);
 :Simpan berkas isian (disk privat);
-:Isi slot TTD: pemohon = TTD akun;\npihak lain = permintaan ke NIK / TTD basah;
+:Catat saksi: ber-akun = permintaan persetujuan;\ntanpa akun = cek RT; luar desa = manual;
 
-while (Masih ada slot belum signed?) is (ya)
-  :current_step_order = 0\nlog "Menunggu tanda tangan pihak terkait";
-  |Pemilik NIK (penanda tangan)|
+while (Masih ada saksi yang menunggu?) is (ya)
+  :current_step_order = 0\nlog "Menunggu persetujuan saksi";
+  |Pemilik NIK (saksi)|
   :Menerima notifikasi signature_requested;
   if (Tanggapan?) then (setujui + kata sandi)
-    :Slot = signed (TTD pribadi dibubuhkan);
+    :Saksi = signed (persetujuan dicatat);
   else (tolak / kedaluwarsa)
     :Slot = rejected/expired\n(opsional blokir pemohon);
     |Pemohon|
-    :Isi ulang slot: NIK lain\natau unggah TTD basah;
+    :Ganti saksi dengan NIK lain;
   endif
   |Sistem|
 endwhile (tidak)
@@ -113,8 +113,9 @@ endif
 |Sistem|
 :approved; letter_number =\n{kode klasifikasi}/{NNN}/Des/{bulan Romawi}/{tahun};
 :expires_at dari validity_days;
-:Bekukan snapshot render\n(TTD & stempel Kades saat ini);
-:Notifikasi letter_approved_final ke pemohon;
+:Bekukan snapshot render\n(nama Kades saat ini; tanpa TTD/stempel);
+:Notifikasi letter_approved_final ke pemohon\n(ambil surat di kantor desa);
+:Petugas desa mencetak surat,\nTTD & stempel basah;
 if (data_action != none?) then (ya)
   :Notifikasi letter_needs_fulfillment\nke Kasi/Kaur sesuai assigned_role;
   |Kasi / Kaur / Staf SIDUTama|

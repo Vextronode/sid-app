@@ -24,7 +24,6 @@ class Village extends Model
         'postal_code',
         'email',
         'area_ha',
-        'stamp_img',
         'logo',
         'hero_image',
         'hero_photo_credit',

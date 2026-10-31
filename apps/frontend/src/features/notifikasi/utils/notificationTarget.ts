@@ -29,19 +29,11 @@ export const SELF_LETTER_ROLES: UserRole[] = [
   'staf_sid',
 ]
 
-// Permintaan tanda tangan diputuskan di halaman profil, bukan di surat:
-// pemilik NIK belum tentu berhak membuka surat orang lain.
+// Permintaan saksi diputuskan di halaman profil, bukan di surat: pemilik
+// NIK belum tentu berhak membuka surat orang lain.
 const SIGNATURE_REQUEST_STATUSES = ['signature_requested']
 
-export const SIGNATURE_REQUESTS_ANCHOR = 'permintaan-tanda-tangan'
-
-// Pengajuan reset TTD: masuk ke Staf SIDUTama, keputusannya ke pemilik
-// akun di kartu tanda tangan profilnya.
-export const SIGNATURE_RESET_REQUESTS_ROUTE = '/admin/pengajuan-reset'
-
-const SIGNATURE_RESET_DECISION_STATUSES = ['signature_reset_approved', 'signature_reset_rejected']
-
-export const SIGNATURE_CARD_ANCHOR = 'tanda-tangan'
+export const SIGNATURE_REQUESTS_ANCHOR = 'permintaan-saksi'
 
 function profileRoute(role: UserRole) {
   return role === 'warga' ? '/profil' : '/admin/profil'
@@ -59,14 +51,6 @@ export function getNotificationTarget(
 
   if (context.status && SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_REQUESTS_ANCHOR}`
-  }
-
-  if (context.status === 'signature_reset_requested') {
-    return role === 'staf_sid' ? SIGNATURE_RESET_REQUESTS_ROUTE : null
-  }
-
-  if (context.status && SIGNATURE_RESET_DECISION_STATUSES.includes(context.status)) {
-    return `${profileRoute(role)}#${SIGNATURE_CARD_ANCHOR}`
   }
 
   // Pejabat yang menjadi pemohon surat itu: buka di "Surat Saya", bukan

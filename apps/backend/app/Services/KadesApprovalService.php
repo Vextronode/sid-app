@@ -206,13 +206,15 @@ class KadesApprovalService
     {
         $citizenUser = $this->officialService->resolveCitizenUser($letter);
 
+        // Surat terbit tanpa tanda tangan dan stempel: desa mencetak lalu
+        // menandatanganinya basah, warga mengambilnya di kantor desa.
         // Formulir pelayanan: Kasi/Kaur diberi tahu formulir sudah terbit;
         // verifikasi menunggu hasil dari instansi diunggah (LetterResultService).
         if ($letter->letterType?->requires_result_upload) {
             $citizenUser?->notify(new LetterStatusNotification(
                 $letter,
                 'Formulir Disetujui',
-                'Formulir Anda telah disetujui. Unduh formulir, bawa ke instansi yang dituju, lalu unggah hasilnya di surat ini.',
+                'Formulir Anda telah disetujui. Ambil formulir yang sudah ditandatangani petugas di kantor desa, lengkapi tanda tangan yang diperlukan, bawa ke instansi yang dituju, lalu unggah hasilnya di surat ini.',
                 'letter_approved_final',
             ));
 
@@ -220,7 +222,7 @@ class KadesApprovalService
                 $official->user?->notify(new LetterStatusNotification(
                     $letter,
                     'Formulir pelayanan terbit',
-                    'Formulir telah disetujui Kepala Desa dan dibawa pemohon ke instansi. Hasilnya akan diunggah pemohon untuk Anda verifikasi.',
+                    'Formulir telah disetujui Kepala Desa. Cetak dan tandatangani formulir untuk diambil pemohon; hasil dari instansi akan diunggah pemohon untuk Anda verifikasi.',
                     'letter_awaiting_result',
                 ));
             }
@@ -231,7 +233,7 @@ class KadesApprovalService
         $citizenUser?->notify(new LetterStatusNotification(
             $letter,
             'Permohonan Disetujui',
-            'Permohonan surat Anda telah disetujui. Silakan unduh surat atau ambil di kantor desa.',
+            'Permohonan surat Anda telah disetujui. Surat yang sudah ditandatangani dan distempel dapat diambil di kantor desa; salinan tanpa tanda tangan dapat diunduh.',
             'letter_approved_final',
         ));
 
@@ -246,8 +248,8 @@ class KadesApprovalService
             )
             : new LetterStatusNotification(
                 $letter,
-                'Surat siap diunduh/dicetak untuk warga',
-                'Surat telah disetujui dan siap diunduh atau dicetak untuk warga.',
+                'Surat siap dicetak, ditandatangani, dan distempel',
+                'Surat telah disetujui. Cetak surat, mintakan tanda tangan dan stempel basah, lalu serahkan kepada pemohon di kantor desa.',
                 'letter_ready_for_print',
             ));
     }

@@ -2,22 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApiErrorMessage, apiErrorBody } from '@/shared/lib/apiError'
 import type { LetterType, Occupation } from '@/types'
 import type { ApplicantFamilyMember, SuratFormConfig, SuratFormValues, VillageArea } from '../types'
 import type { NikLookupResult } from './NikLookupHint'
 
-import { getSuratSchema, signerFieldNames, todayDate } from '../validation/suratSchema'
+import { getSuratSchema, todayDate } from '../validation/suratSchema'
 import { reportDeadlineWarning } from '../utils/reportDeadline'
 import { buildLetterFormData } from '../utils/letterFormData'
 import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
-import { getMySignature } from '../api/signatureApi'
 import { getFamilyMembers, getVillageAreas } from '../api/letterExtrasApi'
 import { getOccupations } from '@/features/pekerjaan/api'
-
-import { CheckCircle2 } from 'lucide-react'
 
 import { useSubmitSurat } from '../hooks/useSubmitSurat'
 
@@ -32,11 +28,8 @@ import { headTakenBy, memberChoices, newHeadChoice, roleOptions } from '../utils
 import { witnessConflict } from '../utils/witness'
 import { applicantPrefill, applicantValue, applicantValues } from '../utils/letterTypeConfig'
 
-const WET_FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png'
-
 const DEFAULT_HEADINGS = {
   fields: 'Langkah 2 - Isi Form',
-  signatures: 'Langkah 3 - Tanda Tangan',
 }
 
 type DynamicSuratFormProps = {
@@ -48,7 +41,7 @@ type DynamicSuratFormProps = {
   // Pengganti pengiriman bawaan (POST /api/letters), mis. untuk pengajuan pejabat.
   onSubmitAPI?: ((payload: FormData) => Promise<unknown>) | null
   letterTypes?: LetterType[]
-  headings?: { fields: string; signatures: string }
+  headings?: { fields: string }
   className?: string
 }
 
@@ -64,15 +57,10 @@ export function DynamicSuratForm({
 }: DynamicSuratFormProps) {
   const { user } = useAuth()
   const [submitError, setSubmitError] = useState('')
-  const [hasSignature, setHasSignature] = useState<boolean | null>(null)
   // Ref = guard sinkron (double tap / Enter + klik); state hanya untuk tampilan tombol.
   const submittingRef = useRef(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const signatureSlots = config.signatureSlots ?? []
-  const applicantSlots = signatureSlots.filter((slot) => slot.signer === 'applicant')
-  const otherSlots = signatureSlots.filter((slot) => slot.signer === 'other')
-  const needsOwnSignature = applicantSlots.length > 0
   // Sub-isian baris repeater juga dapat memakai katalog pekerjaan / anggota KK.
   const usesType = (type: string) =>
     config.fields.some(
@@ -110,7 +98,6 @@ export function DynamicSuratForm({
   } = useForm<Record<string, unknown>>({
     resolver: zodResolver(getSuratSchema(config)),
     defaultValues: {
-      ...Object.fromEntries(otherSlots.map((slot) => [signerFieldNames(slot.key).mode, 'digital'])),
       // Isian berulang langsung menampilkan jumlah baris minimalnya.
       ...Object.fromEntries(
         config.fields
@@ -144,24 +131,6 @@ export function DynamicSuratForm({
   const filesOf = (name: string) => (watchedFormData?.[name] as File[] | undefined) || []
 
   const { handleSubmit: submitSurat } = useSubmitSurat()
-
-  useEffect(() => {
-    if (!needsOwnSignature) return undefined
-
-    let active = true
-
-    getMySignature()
-      .then((signature) => {
-        if (active) setHasSignature(Boolean(signature?.has_signature))
-      })
-      .catch(() => {
-        if (active) setHasSignature(null)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [needsOwnSignature])
 
   useEffect(() => {
     if (!needsOccupations) return undefined
@@ -607,93 +576,6 @@ export function DynamicSuratForm({
         </div>
       </section>
 
-      {signatureSlots.length > 0 && (
-        <section className="sid-section">
-          <h3 className="sid-section-title">{headings.signatures}</h3>
-
-          <div className="flex flex-col gap-4">
-            {applicantSlots.map((slot) => (
-              <div key={slot.key} className="sid-form-group">
-                <span className="sid-label">{slot.label}</span>
-
-                {hasSignature === false ? (
-                  <p className="sid-admin-alert sid-admin-alert-error" role="alert">
-                    Anda belum memiliki tanda tangan. <Link to="/profil">Buat tanda tangan</Link>{' '}
-                    terlebih dahulu sebelum mengajukan surat ini.
-                  </p>
-                ) : (
-                  <p className="sid-info">
-                    <CheckCircle2 size={16} />
-                    <span>Memakai tanda tangan yang tersimpan di akun Anda.</span>
-                  </p>
-                )}
-              </div>
-            ))}
-
-            {otherSlots.map((slot) => {
-              const names = signerFieldNames(slot.key)
-              const mode = watchedFormData?.[names.mode] ?? 'digital'
-
-              return (
-                <fieldset key={slot.key} className="sid-form-group">
-                  <legend className="sid-label">
-                    {slot.label} <span className="sid-required">*</span>
-                  </legend>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2">
-                      <input type="radio" value="digital" {...register(names.mode)} />
-                      <span>Minta tanda tangan digital lewat NIK</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="radio" value="wet" {...register(names.mode)} />
-                      <span>Unggah dokumen ber-tanda tangan basah (tidak punya akun)</span>
-                    </label>
-                  </div>
-
-                  {mode === 'digital' ? (
-                    <>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={16}
-                        aria-label={`NIK ${slot.label}`}
-                        {...register(names.nik)}
-                        placeholder={`NIK ${slot.label} (16 digit)`}
-                        className={`sid-input ${errors[names.nik] ? 'sid-input-error' : ''}`}
-                      />
-                      <p className="sid-upload-description">
-                        Pemilik NIK akan menerima permintaan dan dapat menyetujui atau menolaknya.
-                        Surat baru diproses setelah disetujui.
-                      </p>
-                      {renderError(names.nik)}
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        aria-label={`Nama ${slot.label}`}
-                        {...register(names.name)}
-                        placeholder={`Nama lengkap ${slot.label}`}
-                        className={`sid-input ${errors[names.name] ? 'sid-input-error' : ''}`}
-                      />
-                      {renderError(names.name)}
-                      <FileUploader
-                        field={{ name: names.file, accept: WET_FILE_ACCEPT, multiple: false }}
-                        files={filesOf(names.file)}
-                        onFileChange={(e, name) => handleFileChange(e, name, false)}
-                        onRemoveFile={handleRemoveFile}
-                      />
-                      {renderError(names.file)}
-                    </>
-                  )}
-                </fieldset>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
       {submitError && (
         <p className="sid-admin-alert sid-admin-alert-error" role="alert">
           {submitError}
@@ -712,7 +594,7 @@ export function DynamicSuratForm({
 
         <button
           type="submit"
-          disabled={isSubmitting || (needsOwnSignature && hasSignature === false)}
+          disabled={isSubmitting}
           aria-busy={isSubmitting}
           className="sid-btn sid-btn-primary"
         >

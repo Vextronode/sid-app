@@ -23,20 +23,13 @@ describe('getNotificationTarget', () => {
   it('sends signature requests to the profile page instead of the letter', () => {
     const request = { letter_id: 'abc-123', status: 'signature_requested' }
 
-    expect(getNotificationTarget('warga', request)).toBe('/profil#permintaan-tanda-tangan')
-    expect(getNotificationTarget('rt', request)).toBe('/admin/profil#permintaan-tanda-tangan')
+    expect(getNotificationTarget('warga', request)).toBe('/profil#permintaan-saksi')
+    expect(getNotificationTarget('rt', request)).toBe('/admin/profil#permintaan-saksi')
   })
 
-  it('sends signature reset requests to Staf SIDUTama and decisions to the profile card', () => {
-    expect(getNotificationTarget('staf_sid', { status: 'signature_reset_requested' })).toBe(
-      '/admin/pengajuan-reset',
-    )
-    expect(getNotificationTarget('warga', { status: 'signature_reset_approved' })).toBe(
-      '/profil#tanda-tangan',
-    )
-    expect(getNotificationTarget('rt', { status: 'signature_reset_rejected' })).toBe(
-      '/admin/profil#tanda-tangan',
-    )
+  it('no longer routes signature reset notifications (feature removed)', () => {
+    expect(getNotificationTarget('staf_sid', { status: 'signature_reset_requested' })).toBeNull()
+    expect(getNotificationTarget('warga', { status: 'signature_reset_approved' })).toBeNull()
   })
 
   it("opens an official's own letter in Surat Saya, but never for warga", () => {

@@ -2,8 +2,8 @@ Village:
   type: object
   description: |
     Bentuk `VillageResource`. Identitas desa (nama, kontak, logo, foto,
-    kop surat) diambil dari DB, bukan di-hardcode di frontend. Path private
-    stempel tidak pernah dikirim; hanya indikator `has_stamp_img`.
+    kop surat) diambil dari DB, bukan di-hardcode di frontend. Tidak ada
+    stempel digital: surat distempel basah di kantor desa.
   properties:
     id:
       type: string
@@ -48,8 +48,6 @@ Village:
       format: float
       nullable: true
       description: "Luas wilayah (hektare), diisi Staf SIDUTama."
-    has_stamp_img:
-      type: boolean
     logo_url:
       type: string
       nullable: true

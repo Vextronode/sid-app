@@ -19,7 +19,7 @@ import type { LetterListItem } from '@/types'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 // Nomor langkah ditambahkan CSS (.sid-apply), jadi judul cukup isinya.
-const APPLY_HEADINGS = { fields: 'Isi data surat', signatures: 'Tanda tangan' }
+const APPLY_HEADINGS = { fields: 'Isi data surat' }
 
 /**
  * Pengajuan surat untuk diri sendiri oleh pejabat (sebagai warga), terpisah

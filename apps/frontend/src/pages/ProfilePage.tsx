@@ -12,7 +12,6 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
 import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
-import { SignatureCard } from '@/features/surat/components/SignatureCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
 export default function ProfilePage() {
@@ -117,8 +116,6 @@ export default function ProfilePage() {
         </div>
 
         <SignatureRequestsCard />
-
-        <SignatureCard />
 
         {/* ======================================
             EDIT MODAL

@@ -11,7 +11,6 @@ import {
   SquarePen,
   Eye,
   EyeOff,
-  Eraser,
   KeyRound,
   Camera,
   ImageOff,
@@ -20,14 +19,13 @@ import {
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
 import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/manajemen-user/api'
-import { resetUserSignature } from '@/features/surat/api/signatureApi'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
-import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
+import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import type { ChangeEvent, FormEvent } from 'react'
@@ -58,34 +56,7 @@ export default function ManajemenUserPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState('')
-  const [signatureNotice, setSignatureNotice] = useState<{ type: 'error'; text: string } | null>(
-    null,
-  )
-
-  // Reset darurat tanda tangan akun. Tanda tangan lama tetap tersimpan
-  // untuk dokumen yang sudah terbit; pemilik akun dapat mengisi yang baru.
-  const handleResetSignature = async (user: User) => {
-    const reason = await promptDialog({
-      title: `Atur ulang tanda tangan ${user.name}?`,
-      message: 'Tanda tangan lama tetap tersimpan untuk dokumen yang sudah terbit.',
-      label: 'Alasan atur ulang (minimal 5 karakter)',
-      minLength: 5,
-      confirmLabel: 'Atur ulang tanda tangan',
-    })
-
-    if (reason === null) return
-
-    try {
-      const response = await resetUserSignature(user.id, reason.trim())
-
-      setSignatureNotice(null)
-      notifySuccess(response.data?.message ?? 'Tanda tangan berhasil diatur ulang.')
-    } catch (requestError) {
-      const text = getApiErrorMessage(requestError, 'Gagal mengatur ulang tanda tangan.')
-
-      setSignatureNotice({ type: 'error', text })
-    }
-  }
+  const [notice, setNotice] = useState<{ type: 'error'; text: string } | null>(null)
 
   const handleToggleStatus = async (user: User) => {
     const deactivating = user.is_active
@@ -131,7 +102,7 @@ export default function ManajemenUserPage() {
       setCopied(false)
       setPasswordReset({ user, password: response.data?.temporary_password ?? '' })
     } catch (requestError) {
-      setSignatureNotice({
+      setNotice({
         type: 'error',
         text: getApiErrorMessage(requestError, 'Gagal mengatur ulang kata sandi.'),
       })
@@ -165,12 +136,12 @@ export default function ManajemenUserPage() {
       const response = await request()
 
       patchUser(user.id, { photo_url: response.data?.data?.photo_url ?? null })
-      setSignatureNotice(null)
+      setNotice(null)
       notifySuccess(successText)
     } catch (requestError) {
       const text = getApiErrorMessage(requestError, fallback)
 
-      setSignatureNotice({ type: 'error', text })
+      setNotice({ type: 'error', text })
     }
   }
 
@@ -303,14 +274,14 @@ export default function ManajemenUserPage() {
         </div>
 
         {/* Table */}
-        {signatureNotice && (
+        {notice && (
           <p
             className={`sid-admin-alert ${
-              signatureNotice.type === 'error' ? 'sid-admin-alert-error' : 'sid-admin-alert-success'
+              notice.type === 'error' ? 'sid-admin-alert-error' : 'sid-admin-alert-success'
             }`}
-            role={signatureNotice.type === 'error' ? 'alert' : 'status'}
+            role={notice.type === 'error' ? 'alert' : 'status'}
           >
-            {signatureNotice.text}
+            {notice.text}
           </p>
         )}
 
@@ -435,16 +406,6 @@ export default function ManajemenUserPage() {
                             title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                           >
                             {user.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleResetSignature(user)}
-                            className="sid-operator-action edit"
-                            title="Atur ulang tanda tangan"
-                            aria-label={`Atur ulang tanda tangan ${user.name}`}
-                          >
-                            <Eraser size={16} />
                           </button>
 
                           {/* Backend menolak reset kata sandi sesama Staf SIDUTama. */}

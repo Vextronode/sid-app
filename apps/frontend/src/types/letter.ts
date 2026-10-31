@@ -78,7 +78,7 @@ export type LetterStatusLog = {
   created_at: IsoDateString | null
 }
 
-export type LetterAttachmentKind = 'attachment' | 'field' | 'wet_signature' | 'result'
+export type LetterAttachmentKind = 'attachment' | 'field' | 'result'
 
 export type LetterAttachment = {
   id: number
@@ -96,7 +96,7 @@ export type LetterSignatureStatus = 'pending' | 'signed' | 'rejected' | 'expired
 export type LetterSignature = {
   slot_key: string
   slot_label: string
-  signer_type: 'applicant' | 'other' | 'witness'
+  signer_type: 'witness'
   method: 'digital' | 'wet' | 'consent' | 'rt_check' | 'manual'
   status: LetterSignatureStatus
   signer_name: string | null
@@ -177,14 +177,6 @@ export type LetterFormField = {
   family_head_of?: string | null
 }
 
-// Slot tanda tangan dari letter_types.signature_slots.
-export type LetterSignatureSlot = {
-  key: string
-  label?: string
-  // 'applicant' = pemohon; selain itu pihak lain.
-  signer?: string
-}
-
 export type LetterType = {
   id: number
   code: string
@@ -207,7 +199,6 @@ export type LetterType = {
   data_action: string | null
   form_fields: LetterFormField[]
   data_fields: unknown[]
-  signature_slots: LetterSignatureSlot[]
   has_supporting_document: boolean
   status_label: string
 }

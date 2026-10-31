@@ -1,8 +1,8 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Daftar permintaan tanda tangan untuk akun ini
+  summary: Daftar permintaan saksi/persetujuan untuk akun ini
   description: |
-    Lintas-role. Permintaan TTD digital berstatus pending yang belum
+    Lintas-role. Permintaan saksi/persetujuan berstatus pending yang belum
     kedaluwarsa dan ditujukan ke NIK citizen akun login
     (`letter_signatures.target_nik_hash`). Akun tanpa citizen → daftar kosong.
   operationId: listSignatureRequests

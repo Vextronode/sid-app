@@ -1,19 +1,18 @@
 post:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Isi ulang slot tanda tangan pihak lain (pemohon)
+  summary: Ganti saksi yang menolak/kedaluwarsa (pemohon)
   description: |
     Hanya pemohon surat. Surat harus `pending` dengan `current_step_order = 0`
-    (menunggu tanda tangan). Dipakai setelah permintaan ditolak/kedaluwarsa,
-    atau untuk beralih ke TTD basah. Permintaan yang masih menunggu pada slot
-    itu dibatalkan (`cancelled`).
-    - `nik`: minta TTD digital ke pemilik NIK (berlaku `config/letters.php`
-      `request_ttl_days`, default 3 hari). Jawaban sengaja seragam walau NIK
-      tidak punya akun. Ditolak bila NIK milik pemohon, pemohon diblokir oleh
-      pemilik NIK, atau sudah ditolak `max_rejections` kali (default 3) dalam
-      `rejection_window_hours` (default 24 jam).
-    - `file` + `name`: unggah foto dokumen ber-TTD basah; slot langsung `signed`.
-    Setelah slot terisi dan semua slot lengkap, surat otomatis masuk step
-    approval pertama.
+    (menunggu persetujuan saksi). Permintaan yang masih menunggu pada slot itu
+    dibatalkan (`cancelled`), lalu NIK baru dicatat ulang:
+    - warga desa ber-akun: permintaan persetujuan baru (berlaku
+      `config/letters.php` `request_ttl_days`, default 3 hari); ditolak bila NIK
+      milik pemohon, pemohon diblokir pemilik NIK, atau sudah ditolak
+      `max_rejections` kali (default 3) dalam `rejection_window_hours`;
+    - warga desa tanpa akun: tercatat untuk diverifikasi RT;
+    - di luar data penduduk: wajib `name` (dan opsional `family_number`).
+    Setelah semua saksi terisi, surat otomatis masuk step approval pertama.
+    Tidak ada tanda tangan digital maupun unggah TTD basah.
   operationId: refillLetterSignatureSlot
   security:
     - sanctumCookie: []
@@ -27,15 +26,12 @@ post:
     - name: slot
       in: path
       required: true
-      description: "`key` slot pada `letter_types.signature_slots` dengan signer=other."
+      description: "Nama isian NIK saksi (isian ber-`witness` di `form_fields`)."
       schema:
         type: string
   requestBody:
     required: true
     content:
-      multipart/form-data:
-        schema:
-          $ref: '../../schemas/letters/letters.yaml#/SignatureRefillRequest'
       application/json:
         schema:
           $ref: '../../schemas/letters/letters.yaml#/SignatureRefillRequest'
@@ -49,7 +45,7 @@ post:
             properties:
               message:
                 type: string
-                example: "Tanda tangan untuk slot ini diperbarui."
+                example: "Saksi diperbarui."
               data:
                 $ref: '../../schemas/letters/letters.yaml#/LetterSignature'
     '401':
@@ -57,8 +53,8 @@ post:
     '403':
       description: Bukan pemohon surat
     '404':
-      description: Slot tidak ditemukan / bukan slot pihak lain
+      description: Saksi tidak ditemukan
     '409':
-      description: Surat tidak sedang menunggu tanda tangan, atau slot sudah ditandatangani
+      description: Surat tidak sedang menunggu persetujuan saksi, atau saksi sudah menyetujui
     '422':
       $ref: '../../responses/common.yaml#/ValidationError'

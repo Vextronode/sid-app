@@ -52,7 +52,6 @@ get:
                 form_fields:
                   - { name: "nama_usaha", label: "Nama Usaha", type: "text", required: true }
                 data_fields: []
-                signature_slots: []
                 has_supporting_document: false
                 status_label: "aktif"
     '401':

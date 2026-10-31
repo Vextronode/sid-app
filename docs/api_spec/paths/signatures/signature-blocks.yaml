@@ -1,6 +1,6 @@
 get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Daftar akun yang diblokir dari meminta tanda tangan
+  summary: Daftar akun yang diblokir dari meminta persetujuan saksi
   operationId: listSignatureBlocks
   security:
     - sanctumCookie: []
@@ -22,7 +22,7 @@ post:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
   summary: Blokir warga desa berdasarkan NIK
   description: |
-    Permintaan tanda tangan dan saksi dari warga ber-NIK ini (yang punya
+    Permintaan saksi/persetujuan dari warga ber-NIK ini (yang punya
     akun di desa yang sama) tidak lagi sampai ke akun login. Tidak dapat
     memblokir diri sendiri.
   operationId: createSignatureBlock

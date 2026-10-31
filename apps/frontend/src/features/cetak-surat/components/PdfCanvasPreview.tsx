@@ -11,21 +11,16 @@ import { useEffect, useRef, useState } from 'react'
 import { FileText } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
-import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist/types/src/display/api'
 import { loadPdfjs } from '@/lib/pdfjs'
 
 type PdfCanvasPreviewProps = {
   surat: Pick<PrintableLetter, 'id'> | null | undefined
-  template?: PdfTemplate
   documentKey?: string
 }
 
-export function PdfCanvasPreview({
-  surat,
-  template = 'digital',
-  documentKey = 'main',
-}: PdfCanvasPreviewProps) {
+export function PdfCanvasPreview({ surat, documentKey = 'main' }: PdfCanvasPreviewProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -49,7 +44,7 @@ export function PdfCanvasPreview({
 
       try {
         const [blobUrl, pdfjsLib] = await Promise.all([
-          previewSuratPDF({ id: suratId }, template, documentKey),
+          previewSuratPDF({ id: suratId }, documentKey),
           loadPdfjs(),
         ])
 
@@ -148,7 +143,7 @@ export function PdfCanvasPreview({
 
       loadingTask?.destroy().catch(() => {})
     }
-  }, [suratId, template, documentKey, attempt])
+  }, [suratId, documentKey, attempt])
 
   return (
     <div className="sid-preview-container" onContextMenu={(event) => event.preventDefault()}>

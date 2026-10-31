@@ -27,6 +27,7 @@ import { getApplicantAddress, getApplicantNik } from '@/features/surat/utils/let
 import { SURAT_STATUS } from '@/constants/suratStatus'
 import {
   FORM_DOWNLOAD_HINT,
+  LETTER_PICKUP_HINT,
   isSignedByVillageHead,
 } from '@/features/cetak-surat/utils/letterSigning'
 import { RevealableValue } from '@/components/ui/RevealableValue'
@@ -99,7 +100,7 @@ export default function OperatorSuratPreviewModal({
         !isApproved
           ? 'Surat dapat diunduh setelah disetujui.'
           : isSignedByVillageHead(surat)
-            ? 'Pilih format saat mengunduh: digital atau untuk tanda tangan basah.'
+            ? LETTER_PICKUP_HINT
             : FORM_DOWNLOAD_HINT
       }
       actions={

@@ -4,7 +4,8 @@
 ' JUDUL: Sequence - Input Permohonan Surat (UC-03)
 ' SUMBER: LetterController::store, StoreLetterRequest + LetterFormSchema,
 '         LetterService::createLetter, LetterAttachmentService,
-'         LetterSignatureService::openForSubmission, LetterFlowService (2026-10-16)
+'         LetterSignatureService::openWitnesses, LetterFlowService (2026-10-31:
+'         tanpa TTD digital, hanya saksi)
 ' CATATAN: Menggantikan 01_Sequence_InputSurat_v5.puml.
 '==================================================================================
 @startuml Sequence_InputSurat_v6
@@ -22,7 +23,7 @@ skinparam sequence {
   NoteBackgroundColor #FFF9C4
   NoteBorderColor #F9A825
 }
-title Sequence - Input Permohonan Surat [v6]\n(form dinamis, berkas, tanda tangan, penentuan step awal)
+title Sequence - Input Permohonan Surat [v6]\n(form dinamis, berkas, saksi, penentuan step awal)
 
 actor "Pemohon" as P
 participant "React\n(DynamicSuratForm)" as FE
@@ -36,13 +37,13 @@ participant "LetterFlowService" as FLOW
 participant "OfficialService" as OFF
 database "PostgreSQL" as DB
 collections "Disk private_uploads" as DISK
-actor "Pemilik NIK" as NIK
+actor "Pemilik NIK (saksi)" as NIK
 actor "RT / Staf SIDUTama" as APR
 
 P -> FE : pilih jenis surat (GET /api/letter-types)
-FE -> FE : render isian dari form_fields\n+ slot dari signature_slots
-P -> FE : isi form, unggah berkas, tentukan penanda tangan
-FE -> CTRL : POST /api/letters (multipart:\nletter_type_id, payload[...], files[...],\nsigners[slot][nik|name], signature_files[slot])
+FE -> FE : render isian dari form_fields
+P -> FE : isi form (termasuk NIK saksi), unggah berkas
+FE -> CTRL : POST /api/letters (multipart:\nletter_type_id, payload[...], files[...])
 CTRL -> REQ : validate
 REQ -> DB : ambil letter_type (desa pemohon)
 REQ -> REQ : payloadRules() — isian tak dikenal → 422,\ntipe & wajib per isian, aturan berkas
@@ -55,22 +56,22 @@ group DB::transaction
   SVC -> ATT : storeSubmission(files)
   ATT -> DISK : simpan letter-attachments/{village}/{letter}/...
   ATT -> DB : INSERT letter_attachments (kind=field)
-  SVC -> SIG : openForSubmission(signers, signature_files)
-  loop tiap slot
-    alt signer = applicant
-      SIG -> DB : INSERT letter_signatures (digital, signed,\nuser_signature_id = TTD akun aktif)
-    else NIK diisi
-      SIG -> SIG : cek NIK != pemohon, rate limit penolakan,\nblokir (jawaban seragam)
-      SIG -> DB : INSERT letter_signatures (pending, expires_at +3 hari)
-      SIG -> NIK : notifikasi signature_requested (bila punya akun)
-    else TTD basah
-      SIG -> ATT : store(kind=wet_signature)
-      SIG -> DB : INSERT letter_signatures (wet, signed)
+  SVC -> SIG : openWitnesses(letter, applicant)
+  loop tiap isian NIK ber-witness yang terisi
+    SIG -> SIG : cek NIK != pemohon, rate limit penolakan,\nblokir (jawaban seragam)
+    alt warga desa ber-akun
+      SIG -> DB : INSERT letter_signatures (witness, consent,\npending, expires_at +3 hari)
+      SIG -> NIK : notifikasi signature_requested
+    else warga desa tanpa akun
+      SIG -> DB : INSERT letter_signatures (witness, rt_check, signed)
+    else di luar data penduduk
+      SIG -> DB : INSERT letter_signatures (witness, manual, signed)
     end
   end
+  note right of SIG : Tidak ada TTD digital; surat ditandatangani\ndan distempel basah setelah terbit.
   SVC -> SIG : isComplete(letter)?
   alt belum lengkap
-    SVC -> DB : UPDATE current_step_order = 0;\nlog "Menunggu tanda tangan pihak terkait"
+    SVC -> DB : UPDATE current_step_order = 0;\nlog "Menunggu persetujuan saksi"
   else lengkap
     SVC -> FLOW : resolveStartStep(letter)
     FLOW -> OFF : resolveOfficialsForStep(step, letter)

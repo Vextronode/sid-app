@@ -219,12 +219,12 @@ class ChildAcknowledgementServiceTest extends TestCase
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
-        Pdf::shouldReceive('loadView')->once()->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+        Pdf::shouldReceive('loadView')->once()->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
             $rendered = $data['template'];
 
             return true;
         }))->andReturn($pdf);
-        $this->actingAs($father['user'])->get("/api/letters/{$letterId}/download?template=digital&document=f2_10")->assertOk();
+        $this->actingAs($father['user'])->get("/api/letters/{$letterId}/download?document=f2_10")->assertOk();
 
         $this->assertStringContainsString('>Asep Kurnia<', $rendered);
         $this->assertStringContainsString('Tasikmalaya, 02 Februari 1994', $rendered);
@@ -337,7 +337,7 @@ class ChildAcknowledgementServiceTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -346,7 +346,7 @@ class ChildAcknowledgementServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->mother['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital{$query}")
+            ->get("/api/letters/{$letterId}/download?{$query}")
             ->assertOk();
 
         return (string) $rendered;

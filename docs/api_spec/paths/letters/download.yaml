@@ -10,9 +10,14 @@ get:
     PDF dirender on-demand (dompdf) dan tidak disimpan. Surat approved
     dirender dari **snapshot** yang dibekukan saat final approve
     (`letters.snapshot`: template, definisi isian, kop/identitas desa,
-    stempel, nama & TTD Kepala Desa yang menjabat saat itu, tanggal terbit).
-    Surat approved lama tanpa snapshot dibekukan saat unduhan pertama
-    (memerlukan Kepala Desa aktif). TTD/stempel dibaca dari private storage.
+    nama Kepala Desa yang menjabat saat itu, nama pejabat pada formulir,
+    tanggal terbit). Surat approved lama tanpa snapshot dibekukan saat
+    unduhan pertama (memerlukan Kepala Desa aktif).
+
+    PDF **tidak memuat gambar tanda tangan maupun stempel**: ruang tanda
+    tangan dibiarkan kosong (nama penanda tangan tetap tercetak). Desa
+    mencetak surat lalu menandatangani dan menstempel basah; pemohon
+    mengambilnya di kantor desa. Unduhan pemohon adalah salinan tanpa TTD.
   operationId: downloadLetterPdf
   security:
     - sanctumCookie: []
@@ -23,14 +28,6 @@ get:
       schema:
         type: string
         format: uuid
-    - name: template
-      in: query
-      required: false
-      description: "`digital` menempelkan TTD Kepala Desa dan stempel desa; selain itu (default `wet`) area tanda tangan dikosongkan (tanpa TTD dan stempel) untuk dicetak lalu ditandatangani dan distempel basah."
-      schema:
-        type: string
-        enum: [wet, digital]
-        default: wet
     - name: document
       in: query
       required: false

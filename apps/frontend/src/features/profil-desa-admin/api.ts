@@ -120,36 +120,3 @@ export function updateOfficialPositionType(id: Id, payload: OfficialPositionType
 export function deleteOfficialPositionType(id: Id) {
   return api.delete(`/api/official-position-types/${id}`)
 }
-
-// Stempel desa dan tanda tangan Kepala Desa disimpan privat: tidak ada URL
-// publik, pratinjau diambil sebagai blob lewat sesi login.
-
-export function uploadVillageStamp(file: File) {
-  const formData = new FormData()
-
-  formData.append('stamp', file)
-
-  return api.post('/api/villages/profile/stamp', formData, multipart)
-}
-
-export async function getVillageStampImage() {
-  const response = await api.get<Blob>('/api/villages/profile/stamp', { responseType: 'blob' })
-
-  return response.data
-}
-
-export function uploadOfficialSignature(officialId: Id, file: File) {
-  const formData = new FormData()
-
-  formData.append('signature', file)
-
-  return api.post(`/api/officials/${officialId}/signature`, formData, multipart)
-}
-
-export async function getOfficialSignatureImage(officialId: Id) {
-  const response = await api.get<Blob>(`/api/officials/${officialId}/signature`, {
-    responseType: 'blob',
-  })
-
-  return response.data
-}

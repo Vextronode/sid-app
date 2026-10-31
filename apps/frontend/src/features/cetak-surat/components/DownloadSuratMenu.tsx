@@ -1,26 +1,20 @@
 // ==========================================
 // DownloadSuratMenu.tsx
-// Tombol "Unduh surat" dengan dua pilihan format:
-// - digital: TTD Kepala Desa + stempel desa tercetak di surat
-// - wet: area tanda tangan kosong, untuk dicetak lalu ditandatangani
-//   dan distempel basah
-// Formulir pelayanan (tanpa TTD Kepala Desa) juga punya dua format: TTD
-// digital (TTD pemohon dan pihak terkait dari akun tercetak) atau TTD basah
-// (dikosongkan). Satu dokumen: kedua format langsung menjadi pilihan;
-// beberapa dokumen (surat.documents): format dipilih di atas daftar
-// dokumen. Dokumen yang terbit bersama surat desa ikut menjadi pilihan menu.
-// Baris tabel tidak membawa daftar dokumen, jadi `loadDetail` memuat
-// rincian surat saat tombol ditekan.
+// Tombol "Unduh surat". Surat terbit tanpa TTD dan stempel (dibubuhkan basah
+// di kantor desa), jadi tidak ada pilihan format. Satu dokumen: tombol
+// langsung mengunduh; beberapa dokumen (surat.documents, mis. formulir yang
+// terbit bersama): pilih dokumen dari menu. Baris tabel tidak membawa daftar
+// dokumen, jadi `loadDetail` memuat rincian surat saat tombol ditekan.
 // ==========================================
 
 import '@/styles/surat-dokumen.css'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import { ChevronDown, Download, FileText, PenLine, Stamp } from 'lucide-react'
+import { ChevronDown, Download, FileText } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { downloadSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
-import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { isSignedByVillageHead } from '@/features/cetak-surat/utils/letterSigning'
 import { alertDialog } from '@/shared/lib/dialog'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
@@ -28,7 +22,6 @@ import type { Id, LetterDocument } from '@/types'
 
 type DownloadOption = {
   key: string
-  template: PdfTemplate
   documentKey: string
   icon: LucideIcon
   label: string
@@ -46,98 +39,28 @@ type DownloadSuratMenuProps = {
   loadDetail?: (id: Id) => Promise<PrintableLetter>
 }
 
-const FORMAT_OPTIONS: DownloadOption[] = [
-  {
-    key: 'digital',
-    template: 'digital',
-    documentKey: MAIN_DOCUMENT,
-    icon: Stamp,
-    label: 'TTD & stempel digital',
-    hint: 'Siap diserahkan ke pemohon',
-  },
-  {
-    key: 'wet',
-    template: 'wet',
-    documentKey: MAIN_DOCUMENT,
-    icon: PenLine,
-    label: 'Untuk tanda tangan basah',
-    hint: 'Tanpa TTD dan stempel, dicetak lalu ditandatangani',
-  },
-]
-
-// Format formulir pelayanan.
-const FORM_FORMATS: (Omit<DownloadOption, 'key' | 'template' | 'documentKey'> & {
-  key: PdfTemplate
-})[] = [
-  {
-    key: 'digital',
-    icon: Stamp,
-    label: 'TTD digital',
-    hint: 'TTD pemohon dan pihak terkait dari akun tercetak',
-  },
-  {
-    key: 'wet',
-    icon: PenLine,
-    label: 'TTD basah',
-    hint: 'Tanpa TTD, dicetak lalu ditandatangani',
-  },
-]
-
-function documentOption(
-  document: LetterDocument,
-  hint: string,
-  template: PdfTemplate = 'digital',
-): DownloadOption {
-  return {
-    key: `document-${document.key}`,
-    template,
-    documentKey: document.key,
-    icon: FileText,
-    label: document.title,
-    hint,
-  }
-}
-
-function formDocuments(surat: PrintableLetter | null | undefined): LetterDocument[] {
+// Satu pilihan per dokumen yang terbit; dokumen utama lebih dulu.
+function downloadOptions(surat: PrintableLetter | null | undefined): DownloadOption[] {
+  const villageLetter = isSignedByVillageHead(surat)
   const documents = surat?.documents ?? []
   const main = documents.find((document) => document.key === MAIN_DOCUMENT) ?? {
     key: MAIN_DOCUMENT,
-    title: 'Formulir',
+    title: villageLetter ? 'Surat' : 'Formulir',
   }
 
-  return [main, ...documents.filter((document) => document.key !== MAIN_DOCUMENT)]
-}
-
-// Formulir pelayanan berisi beberapa dokumen: format dipilih terpisah.
-function hasFormatChoice(surat: PrintableLetter | null | undefined) {
-  return !isSignedByVillageHead(surat) && formDocuments(surat).length > 1
-}
-
-function downloadOptions(
-  surat: PrintableLetter | null | undefined,
-  format: PdfTemplate = 'digital',
-): DownloadOption[] {
-  const documents = surat?.documents ?? []
-  const extras = documents.filter((document) => document.key !== MAIN_DOCUMENT)
-
-  if (!isSignedByVillageHead(surat)) {
-    const forms = formDocuments(surat)
-
-    if (forms.length === 1) {
-      return FORM_FORMATS.map((option) => ({
-        ...option,
-        template: option.key,
-        documentKey: forms[0].key,
-      }))
-    }
-
-    return forms.map((document) => documentOption(document, 'Formulir untuk instansi', format))
-  }
-
-  return [
-    ...FORMAT_OPTIONS,
-    ...extras.map((document) => documentOption(document, 'Terbit bersama surat ini')),
-  ]
+  return [main, ...documents.filter((document) => document.key !== MAIN_DOCUMENT)].map(
+    (document: LetterDocument) => ({
+      key: `document-${document.key}`,
+      documentKey: document.key,
+      icon: FileText,
+      label: document.title,
+      hint: !villageLetter
+        ? 'Formulir untuk instansi'
+        : document.key === MAIN_DOCUMENT
+          ? 'Surat utama'
+          : 'Terbit bersama surat ini',
+    }),
+  )
 }
 
 const MENU_WIDTH = 288
@@ -156,7 +79,6 @@ export function DownloadSuratMenu({
   const [detail, setDetail] = useState<PrintableLetter | null>(null)
   const current = detail ?? surat
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
-  const [format, setFormat] = useState<PdfTemplate>('digital')
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -226,7 +148,7 @@ export function DownloadSuratMenu({
     }
   }, [open])
 
-  const options = downloadOptions(current, format)
+  const options = downloadOptions(current)
   const triggerLabel = label
 
   const handleSelect = async (option: DownloadOption, target: PrintableLetter = current) => {
@@ -234,7 +156,7 @@ export function DownloadSuratMenu({
     setBusy(true)
 
     try {
-      await downloadSuratPDF(target, option.template, option.documentKey)
+      await downloadSuratPDF(target, option.documentKey)
     } catch (error) {
       alertDialog({
         title: 'Unduhan gagal',
@@ -332,7 +254,7 @@ export function DownloadSuratMenu({
           ref={menuRef}
           id={menuId}
           role="menu"
-          aria-label="Pilih format surat"
+          aria-label="Pilih dokumen"
           className="sid-download-menu"
           style={{
             width: MENU_WIDTH,
@@ -341,25 +263,6 @@ export function DownloadSuratMenu({
             visibility: position ? 'visible' : 'hidden',
           }}
         >
-          {hasFormatChoice(current) && (
-            <div className="sid-download-format" role="group" aria-label="Format tanda tangan">
-              {FORM_FORMATS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={format === option.key}
-                  title={option.hint}
-                  className="sid-download-format-option"
-                  onClick={() => setFormat(option.key)}
-                >
-                  <option.icon size={14} aria-hidden="true" />
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
-
           {options.map((option) => {
             const { icon: Icon, label: optionLabel, hint } = option
 

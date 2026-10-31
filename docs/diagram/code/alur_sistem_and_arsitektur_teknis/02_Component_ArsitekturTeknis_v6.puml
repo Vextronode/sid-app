@@ -59,7 +59,7 @@ rectangle "API - Laravel 13 (sid-api, PHP-FPM)" #D5EAD0 {
     [API Resources] as ARES
   }
   rectangle "Business" #A5D6A7 {
-    [Surat: LetterService, LetterFlowService,\nRt/KadesApprovalService, LetterNumberGenerator,\nLetterSnapshotService, PdfService,\nLetterAttachmentService, LetterSignatureService,\nUserSignatureService, LetterFulfillmentService] as SVC_LETTER
+    [Surat: LetterService, LetterFlowService,\nRt/KadesApprovalService, LetterNumberGenerator,\nLetterSnapshotService, PdfService,\nLetterAttachmentService, LetterSignatureService,\nLetterFulfillmentService] as SVC_LETTER
     [Kependudukan & Jabatan: Citizen/Family/Occupation,\nOfficial, OfficialAssignment,\nOfficialPositionType Service] as SVC_POP
     [CMS & Publik: VillageProfile, News,\nNewsCategory, Regulation, PublicPageService] as SVC_CMS
     [Policies: LetterPolicy, OfficialPolicy,\nRegionPolicy] as POL
@@ -85,7 +85,7 @@ database "PostgreSQL" as DB {
 
 rectangle "STORAGE LAYER" #FDE8D8 {
   [disk public: logo, foto beranda,\nfoto pejabat, thumbnail berita] as PUB
-  [disk private_uploads: stempel, TTD Kades,\nTTD akun (.enc), lampiran surat] as PRIV
+  [disk private_uploads: lampiran surat,\nhasil instansi] as PRIV
 }
 
 cloud "EXTERNAL SERVICES" #FEF9E7 {

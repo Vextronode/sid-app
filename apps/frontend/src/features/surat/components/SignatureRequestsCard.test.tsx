@@ -34,7 +34,7 @@ describe('SignatureRequestsCard', () => {
   it('stays visible even without any request', async () => {
     renderCard()
 
-    expect(screen.getByRole('heading', { name: /Permintaan Tanda Tangan & Saksi/ })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /Permintaan Saksi/ })).toBeTruthy()
     expect(await screen.findByText(/Tidak ada permintaan yang menunggu/)).toBeTruthy()
   })
 

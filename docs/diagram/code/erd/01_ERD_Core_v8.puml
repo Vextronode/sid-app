@@ -37,7 +37,6 @@ entity "villages" as VIL {
   address : VARCHAR(255)
   phone : VARCHAR(20)
   area_ha : DECIMAL(10,3)
-  stamp_img : VARCHAR(255) (private)
   logo : VARCHAR(255)
   hero_image : VARCHAR(255)
   hero_photo_credit : VARCHAR(100)
@@ -104,8 +103,6 @@ entity "officials" as OFF {
   * position : VARCHAR(50)
   village_id : UUID <<FK>>
   rt_id / rw_id / hamlet_id : BIGINT <<FK>>
-  signature_img : VARCHAR(255) (private)
-  stamp_img : VARCHAR(255) (legacy)
   photo_img : VARCHAR(255) (public)
   phone_wa : VARCHAR(255)
   * started_at : DATE
@@ -239,7 +236,7 @@ entity "letter_types" as LT {
   * is_active : BOOLEAN
   produces_letter : BOOLEAN = true
   data_action : VARCHAR(30) = none
-  form_fields / data_fields / signature_slots : JSON
+  form_fields / data_fields : JSON
   data_subject_field : VARCHAR(100)
   supporting_template : TEXT
   classification_code : VARCHAR(10) = '470'
@@ -301,7 +298,7 @@ entity "letter_attachments" as LAT {
   * id : BIGINT <<PK>>
   --
   * letter_id : UUID <<FK CASCADE>>
-  kind : VARCHAR(30) (field | wet_signature | attachment)
+  kind : VARCHAR(30) (field | result | attachment)
   field : VARCHAR(100)
   * original_name / path : VARCHAR(255)
   * mime_type : VARCHAR(100)
@@ -315,28 +312,15 @@ entity "letter_signatures" as LSG {
   * letter_id : UUID <<FK CASCADE>>
   * slot_key : VARCHAR(50)
   * slot_label : VARCHAR(100)
-  * signer_type : applicant | other
-  * method : digital | wet
+  * signer_type : witness
+  * method : consent | rt_check | manual
   status : pending|signed|rejected|expired|cancelled
   * requested_by : UUID <<FK users>>
   target_nik_hash : VARCHAR(64)
   signer_user_id : UUID <<FK users>>
   signer_name : VARCHAR(100)
-  user_signature_id : BIGINT <<FK>>
-  attachment_id : BIGINT <<FK letter_attachments>>
   expires_at / responded_at : TIMESTAMP
   response_notes : TEXT
-}
-
-entity "user_signatures" as USG {
-  * id : BIGINT <<PK>>
-  --
-  * user_id : UUID <<FK CASCADE>>
-  * path : VARCHAR(255) (.enc)
-  * mime_type : VARCHAR(50)
-  revoked_at : TIMESTAMP
-  revoked_by : UUID <<FK users>>
-  revoke_reason : TEXT
 }
 
 entity "signature_blocks" as SBL {
@@ -402,9 +386,6 @@ FST |o--o{ LA
 LET ||--o{ LSL
 LET ||--o{ LAT
 LET ||--o{ LSG
-LAT |o--o| LSG : "TTD basah"
-USR ||--o{ USG
-USG |o--o{ LSG : "TTD digital"
 USR ||--o{ SBL
 
 ' ==================================================================================
@@ -423,5 +404,11 @@ USR ||--o{ SBL
 '   district, regency, province, postal_code, email.
 ' - letter_number_counters: classification_code; letter_type_id nullable.
 ' - Ukuran kolom wilayah dikoreksi ke migration (VARCHAR(255)).
+'
+' REVISI 2026-10-31 (TTD digital dihapus)
+' - Tabel user_signatures & signature_reset_requests di-drop.
+' - villages.stamp_img, officials.signature_img/stamp_img, letter_types.signature_slots,
+'   letter_signatures.user_signature_id/attachment_id dihapus.
+' - letter_signatures hanya saksi (signer_type witness; method consent|rt_check|manual).
 ' ==================================================================================
 @enduml

@@ -318,7 +318,7 @@ class EndToEndApprovalFlowTest extends TestCase
         );
     }
 
-    public function test_sekdes_can_approve_kepala_desa_final_step_and_pdf_keeps_kades_signature(): void
+    public function test_sekdes_can_approve_kepala_desa_final_step_and_pdf_keeps_kades_name(): void
     {
         $village = Village::factory()->create();
         $applicant = $this->makeCitizenAccount($village, null, 'warga');
@@ -329,7 +329,7 @@ class EndToEndApprovalFlowTest extends TestCase
         ]);
         $letterType = LetterType::factory()->create([
             'flow_id' => $flow->id,
-            'template' => 'Surat {{ applicant_name }}',
+            'template' => 'Surat {{ applicant_name }}, Kepala Desa {{ village_head_name }}',
         ]);
 
         $submission = $this->actingAs($applicant['user'])
@@ -535,8 +535,10 @@ class EndToEndApprovalFlowTest extends TestCase
             ->andReturn(new Response('', 200, ['Content-Type' => 'application/pdf']));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.wet', Mockery::on(
-                fn (array $data): bool => $data['kades']->is($kades),
+            ->with('pdf.templates.letter', Mockery::on(
+                // Nama Kepala Desa tercetak; TTD dan stempel dibubuhkan basah.
+                fn (array $data): bool => str_contains($data['template'], (string) $kades->citizen->name)
+                    && ! str_contains($data['template'], '<img'),
             ))
             ->andReturn($pdf);
 

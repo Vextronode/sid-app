@@ -64,7 +64,7 @@ export default function ApprovalStepRenderer({
         ? {
             title: 'Setujui dan terbitkan surat?',
             message:
-              'Surat akan diterbitkan dengan tanda tangan dan stempel desa, dan tidak dapat dibatalkan.',
+              'Surat akan diterbitkan (tanda tangan dan stempel dibubuhkan basah saat dicetak di kantor desa), dan tidak dapat dibatalkan.',
             confirmLabel: 'Setujui & terbitkan',
             tone: 'primary',
           }

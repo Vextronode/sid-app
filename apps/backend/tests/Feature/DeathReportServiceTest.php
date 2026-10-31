@@ -6,7 +6,6 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\LetterType;
-use App\Models\User;
 use App\Models\Village;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -163,44 +162,25 @@ class DeathReportServiceTest extends TestCase
             ->assertJsonValidationErrors(['payload.tanggal_kematian' => 'Tanggal Kematian tidak boleh sebelum tanggal lahir almarhum.']);
     }
 
-    public function test_signatures_of_the_applicant_and_village_officials_are_pasted_when_final(): void
+    public function test_forms_are_issued_without_signature_images_for_wet_signing(): void
     {
-        $this->uploadSignature($this->applicant['user']);
-        // TTD akun Kasi Pemerintahan disalin ke jabatannya; TTD Kades diunggah Staf SID.
-        $this->uploadSignature($this->kasi['user']);
-        $kadesPath = "official-signatures/{$this->village->id}/{$this->kades['official']->id}/ttd.png";
-        Storage::disk('private_uploads')->put($kadesPath, UploadedFile::fake()->image('ttd.png', 200, 80)->getContent());
-        $this->kades['official']->update(['signature_img' => $kadesPath]);
-
         $letterId = $this->approve([...$this->payload(), 'almarhum' => $this->father['citizen']->id, 'kepala_baru' => $this->mother->id]);
-        // TTD dibekukan saat final approve: Kasi yang mengganti TTD tidak mengubah formulir.
-        $this->kasi['official']->update(['signature_img' => null]);
 
-        // F-2.01: pelapor (pemohon) dan Kepala Desa yang mengetahui.
+        // F-2.01: ruang TTD pelapor dan Kepala Desa kosong, nama Kepala Desa tercetak.
         $report = $this->render($letterId, null);
-        $this->assertSame(2, substr_count($report, '<img'));
-        $this->assertStringContainsString('data:image/png;base64,', $report);
-        $this->assertStringContainsString($kadesPath, $report);
+        $this->assertStringNotContainsString('<img', $report);
         $this->assertStringContainsString('( '.$this->kades['citizen']->name.' )', $report);
 
-        // F-1.02: petugas Kasi Pemerintahan dan pemohon.
+        // F-1.02: tanpa TTD petugas dan pemohon.
         $registration = $this->render($letterId, 'f1_02');
-        $this->assertSame(2, substr_count($registration, '<img'));
+        $this->assertStringNotContainsString('<img', $registration);
         // KK baru karena ganti kepala: induk I.A BARU dan IV.A KK ikut tercentang.
         foreach (['BARU <b>V</b>', 'Penggantian Kepala Keluarga <b>V</b>', 'KK <b>V</b>'] as $mark) {
             $this->assertStringContainsString($mark, $registration);
         }
         $this->assertStringNotContainsString('Peristiwa Penting <b>V</b>', $registration);
-        $this->assertStringContainsString("official-signatures/{$this->village->id}/{$this->kasi['official']->id}/", $registration);
 
-        // F-1.01: kepala keluarga baru (ibu, tanpa akun) tidak ditempeli TTD.
         $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_01', landscape: true));
-
-        // Versi TTD basah: dicetak lalu ditandatangani, tanpa gambar TTD.
-        $wetReport = $this->render($letterId, null, template: 'wet');
-        $this->assertStringNotContainsString('<img', $wetReport);
-        $this->assertStringContainsString('( '.$this->kades['citizen']->name.' )', $wetReport);
-        $this->assertStringNotContainsString('<img', $this->render($letterId, 'f1_02', template: 'wet'));
     }
 
     public function test_death_of_the_family_head_requires_a_new_head_and_issues_the_new_family_forms(): void
@@ -344,13 +324,6 @@ class DeathReportServiceTest extends TestCase
         $this->assertSame('S.T.', $log->properties['changes']['title_back']['new']);
     }
 
-    private function uploadSignature(User $user): void
-    {
-        $this->actingAs($user)
-            ->post('/api/profile/signature', ['signature' => UploadedFile::fake()->image('ttd.png', 200, 80)], ['Accept' => 'application/json'])
-            ->assertCreated();
-    }
-
     private function boxes(string $value): string
     {
         return '/'.implode('<\/td><td class=x\d+>', array_map(fn (string $char): string => preg_quote($char, '/'), str_split($value))).'/';
@@ -396,7 +369,7 @@ class DeathReportServiceTest extends TestCase
         return $letterId;
     }
 
-    private function render(string $letterId, ?string $document, bool $landscape = false, string $template = 'digital'): string
+    private function render(string $letterId, ?string $document, bool $landscape = false): string
     {
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
@@ -408,7 +381,7 @@ class DeathReportServiceTest extends TestCase
 
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with("pdf.templates.{$template}", Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -417,7 +390,7 @@ class DeathReportServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template={$template}{$query}")
+            ->get("/api/letters/{$letterId}/download?{$query}")
             ->assertOk();
 
         return (string) $rendered;

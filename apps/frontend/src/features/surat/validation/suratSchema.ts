@@ -170,25 +170,11 @@ function validateRows(field: SuratField, rows: unknown, context: z.RefinementCtx
 }
 
 /**
- * Nama isian form untuk sebuah slot tanda tangan pihak lain.
- */
-export function signerFieldNames(slotKey: string) {
-  return {
-    mode: `signer_${slotKey}_mode`,
-    nik: `signer_${slotKey}_nik`,
-    name: `signer_${slotKey}_name`,
-    file: `signer_${slotKey}_file`,
-  }
-}
-
-/**
  * Schema validasi form diturunkan dari definisi jenis surat yang dikirim
- * backend (config.fields dan config.signatureSlots). Backend memvalidasi
+ * backend (config.fields). Backend memvalidasi
  * ulang dengan definisi yang sama.
  */
-export function getSuratSchema(
-  config: Pick<SuratFormConfig, 'fields' | 'signatureSlots'> | null | undefined,
-) {
+export function getSuratSchema(config: Pick<SuratFormConfig, 'fields'> | null | undefined) {
   // Satu skema per nama isian; nama isian datang dari konfigurasi jenis surat.
   const shape: Record<string, z.ZodType> = {}
 
@@ -209,17 +195,6 @@ export function getSuratSchema(
       .trim()
       .max(100, `${field.label} maksimal 100 karakter`)
       .optional()
-  })
-
-  const otherSlots = (config?.signatureSlots ?? []).filter((slot) => slot.signer === 'other')
-
-  otherSlots.forEach((slot) => {
-    const names = signerFieldNames(slot.key)
-
-    shape[names.mode] = z.enum(['digital', 'wet']).default('digital')
-    shape[names.nik] = z.string().trim().optional()
-    shape[names.name] = z.string().trim().optional()
-    shape[names.file] = optionalFiles
   })
 
   return z.object(shape).superRefine((values, context) => {
@@ -269,38 +244,6 @@ export function getSuratSchema(
           code: 'custom',
           path: [otherName],
           message: `Tuliskan ${field.label.toLowerCase()}`,
-        })
-      }
-    })
-
-    otherSlots.forEach((slot) => {
-      const names = signerFieldNames(slot.key)
-
-      if (values[names.mode] === 'wet') {
-        if (!values[names.name]) {
-          context.addIssue({
-            code: 'custom',
-            path: [names.name],
-            message: `Nama penanda tangan ${slot.label} wajib diisi`,
-          })
-        }
-
-        if (!(values[names.file] as File[] | undefined)?.length) {
-          context.addIssue({
-            code: 'custom',
-            path: [names.file],
-            message: `Unggah dokumen ber-tanda tangan basah untuk ${slot.label}`,
-          })
-        }
-
-        return
-      }
-
-      if (!nikPattern.test(String(values[names.nik] ?? ''))) {
-        context.addIssue({
-          code: 'custom',
-          path: [names.nik],
-          message: `NIK ${slot.label} harus terdiri dari 16 digit`,
         })
       }
     })

@@ -2,11 +2,10 @@ import { useState } from 'react'
 
 import { PdfCanvasPreview } from '@/features/cetak-surat/components/PdfCanvasPreview'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
-import type { PdfTemplate, PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 
 type LetterDocumentsPreviewProps = {
   surat: PrintableLetter | null | undefined
-  template?: PdfTemplate
 }
 
 /**
@@ -14,13 +13,13 @@ type LetterDocumentsPreviewProps = {
  * tab per dokumen di atas pratinjau. Tanpa dokumen tambahan, sama dengan
  * PdfCanvasPreview biasa.
  */
-export function LetterDocumentsPreview({ surat, template }: LetterDocumentsPreviewProps) {
+export function LetterDocumentsPreview({ surat }: LetterDocumentsPreviewProps) {
   const documents = surat?.documents ?? []
   const [active, setActive] = useState(MAIN_DOCUMENT)
   const activeKey = documents.some((document) => document.key === active) ? active : MAIN_DOCUMENT
 
   if (documents.length <= 1) {
-    return <PdfCanvasPreview surat={surat} template={template} />
+    return <PdfCanvasPreview surat={surat} />
   }
 
   return (
@@ -41,7 +40,7 @@ export function LetterDocumentsPreview({ surat, template }: LetterDocumentsPrevi
       </div>
 
       <div role="tabpanel">
-        <PdfCanvasPreview surat={surat} template={template} documentKey={activeKey} />
+        <PdfCanvasPreview surat={surat} documentKey={activeKey} />
       </div>
     </div>
   )

@@ -6,13 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ResolveMapLinkRequest;
 use App\Http\Requests\UpdateVillageProfileRequest;
 use App\Http\Requests\UploadVillageImageRequest;
-use App\Http\Requests\UploadVillageStampRequest;
 use App\Http\Resources\VillageResource;
 use App\Services\GoogleMapsLinkResolver;
 use App\Services\VillageProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VillageProfileController extends Controller
 {
@@ -56,16 +54,6 @@ class VillageProfileController extends Controller
         return response()->json(['data' => $coords]);
     }
 
-    public function uploadStamp(UploadVillageStampRequest $request): JsonResponse
-    {
-        $village = $this->service->replaceStamp($request->user(), $request->file('stamp'));
-
-        return response()->json([
-            'message' => 'Stempel desa berhasil diperbarui.',
-            'data' => new VillageResource($village),
-        ]);
-    }
-
     /**
      * POST /villages/profile/logo dan /villages/profile/hero-image; kolomnya
      * ditetapkan route lewat ->defaults('column', ...).
@@ -80,10 +68,5 @@ class VillageProfileController extends Controller
                 : 'Foto beranda berhasil diperbarui.',
             'data' => new VillageResource($village),
         ]);
-    }
-
-    public function stampPreview(Request $request): BinaryFileResponse
-    {
-        return $this->service->stampPreview($request->user());
     }
 }

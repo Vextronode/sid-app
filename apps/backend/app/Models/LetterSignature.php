@@ -6,21 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Satu percobaan mengisi sebuah slot tanda tangan pada surat. Baris
- * terbaru per slot adalah keadaan slot saat ini.
+ * Satu percobaan mengisi saksi (atau persetujuan pihak terkait) pada surat.
+ * Baris terbaru per slot adalah keadaan slot saat ini.
  */
 class LetterSignature extends Model
 {
-    public const SIGNER_APPLICANT = 'applicant';
-
-    public const SIGNER_OTHER = 'other';
-
     /** Saksi pada isian form (isian NIK ber-`witness`): cukup persetujuan, tanpa TTD. */
     public const SIGNER_WITNESS = 'witness';
-
-    public const METHOD_DIGITAL = 'digital';
-
-    public const METHOD_WET = 'wet';
 
     /** Saksi menyetujui lewat akunnya. */
     public const METHOD_CONSENT = 'consent';
@@ -52,8 +44,6 @@ class LetterSignature extends Model
         'target_nik_hash',
         'signer_user_id',
         'signer_name',
-        'user_signature_id',
-        'attachment_id',
         'expires_at',
         'responded_at',
         'response_notes',
@@ -72,16 +62,6 @@ class LetterSignature extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
-    }
-
-    public function userSignature(): BelongsTo
-    {
-        return $this->belongsTo(UserSignature::class);
-    }
-
-    public function attachment(): BelongsTo
-    {
-        return $this->belongsTo(LetterAttachment::class, 'attachment_id');
     }
 
     public function isPending(): bool
