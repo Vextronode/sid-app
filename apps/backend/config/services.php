@@ -22,6 +22,14 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // MAILTRAP_HOST: send.api.mailtrap.io (kirim sungguhan) atau
+    // sandbox.api.mailtrap.io (inbox uji, wajib MAILTRAP_INBOX_ID).
+    'mailtrap-sdk' => [
+        'host' => env('MAILTRAP_HOST', 'send.api.mailtrap.io'),
+        'apiKey' => env('MAILTRAP_API_KEY'),
+        'inboxId' => env('MAILTRAP_INBOX_ID'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

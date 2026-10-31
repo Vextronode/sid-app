@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OccupationController;
 use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\OfficialPositionTypeController;
+use App\Http\Controllers\Api\PasswordResetApprovalController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -528,6 +529,22 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/', [SignatureResetRequestController::class, 'index']);
             Route::post('/{resetRequest}/approve', [SignatureResetRequestController::class, 'approve']);
             Route::post('/{resetRequest}/reject', [SignatureResetRequestController::class, 'reject']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Permintaan Atur Ulang Kata Sandi (tanpa email)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama. Diajukan warga yang belum login lewat
+    | POST /password-reset-requests (routes/auth.php). Kesamaan desa
+    | diperiksa di PasswordResetRequestService.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('password-reset-requests')
+        ->group(function () {
+            Route::get('/', [PasswordResetApprovalController::class, 'index']);
+            Route::post('/{resetRequest}/approve', [PasswordResetApprovalController::class, 'approve']);
+            Route::post('/{resetRequest}/reject', [PasswordResetApprovalController::class, 'reject']);
         });
 
     /*

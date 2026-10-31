@@ -1,4 +1,4 @@
-import { Check, KeyRound, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -15,17 +15,32 @@ import {
   getSignatureResetRequests,
   rejectSignatureResetRequest,
 } from '@/features/surat/api/signatureApi'
+import {
+  approvePasswordResetRequest,
+  getPasswordResetRequests,
+  rejectPasswordResetRequest,
+} from '@/features/manajemen-user/api/passwordResetApi'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { StatusTone } from '@/components/ui/StatusPill'
 import type { SignatureResetRequest } from '@/features/surat/api/signatureApi'
+import type { PasswordResetRequest } from '@/features/manajemen-user/api/passwordResetApi'
 import type { PageMeta } from '@/types'
 
 const STATUS: Record<string, { tone: StatusTone; label: string }> = {
   pending: { tone: 'warning', label: 'Menunggu' },
   approved: { tone: 'active', label: 'Disetujui' },
   rejected: { tone: 'danger', label: 'Ditolak' },
+}
+
+const PASSWORD_STATUS: Record<string, { tone: StatusTone; label: string }> = {
+  pending: { tone: 'warning', label: 'Menunggu' },
+  approved: { tone: 'active', label: 'Disetujui' },
+  rejected: { tone: 'danger', label: 'Ditolak' },
+  completed: { tone: 'active', label: 'Selesai' },
+  cancelled: { tone: 'inactive', label: 'Dibatalkan' },
+  expired: { tone: 'danger', label: 'Kedaluwarsa' },
 }
 
 const EMPTY_META: Pick<PageMeta, 'current_page' | 'last_page' | 'total'> = {
@@ -71,6 +86,14 @@ export default function PengajuanResetPage() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
+  const [passwordRequests, setPasswordRequests] = useState<PasswordResetRequest[]>([])
+  const [passwordMeta, setPasswordMeta] = useState(EMPTY_META)
+  const [passwordPage, setPasswordPage] = useState(1)
+  const [passwordPageSize, setPasswordPageSize] = usePageSize('pengajuan-reset-password')
+  const [passwordLoading, setPasswordLoading] = useState(true)
+  const [passwordBusyId, setPasswordBusyId] = useState<number | null>(null)
+  const [passwordError, setPasswordError] = useState('')
+
   const load = useCallback(async () => {
     try {
       const response = await getSignatureResetRequests({ page, perPage: pageSize })
@@ -85,11 +108,33 @@ export default function PengajuanResetPage() {
     }
   }, [page, pageSize])
 
+  const loadPassword = useCallback(async () => {
+    try {
+      const response = await getPasswordResetRequests({
+        page: passwordPage,
+        perPage: passwordPageSize,
+      })
+
+      setPasswordRequests(response.data ?? [])
+      setPasswordMeta(response.meta ?? EMPTY_META)
+      setPasswordError('')
+    } catch (requestError) {
+      setPasswordError(getApiErrorMessage(requestError, 'Gagal memuat pengajuan reset kata sandi.'))
+    } finally {
+      setPasswordLoading(false)
+    }
+  }, [passwordPage, passwordPageSize])
+
   useEffect(() => {
     // Muat awal menyinkronkan state dengan data backend.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   }, [load])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadPassword()
+  }, [loadPassword])
 
   const run = async (
     item: SignatureResetRequest,
@@ -140,7 +185,63 @@ export default function PengajuanResetPage() {
     await run(item, () => rejectSignatureResetRequest(item.id, notes), 'Gagal menolak pengajuan.')
   }
 
-  if (loading) {
+  const runPassword = async (
+    item: PasswordResetRequest,
+    action: () => Promise<{ data?: { message?: string } }>,
+    fallback: string,
+  ) => {
+    setPasswordBusyId(item.id)
+    setPasswordError('')
+
+    try {
+      const response = await action()
+
+      notifySuccess(response.data?.message ?? 'Pengajuan berhasil diproses.')
+      await loadPassword()
+    } catch (requestError) {
+      setPasswordError(getApiErrorMessage(requestError, fallback))
+      // Pengajuan mungkin sudah diproses petugas lain; segarkan tabel.
+      await loadPassword()
+    } finally {
+      setPasswordBusyId(null)
+    }
+  }
+
+  const handleApprovePassword = async (item: PasswordResetRequest) => {
+    const confirmed = await confirmDialog({
+      title: `Setujui atur ulang kata sandi ${item.user?.name}?`,
+      message: 'Pemilik akun dapat membuat kata sandi baru dalam waktu 24 jam setelah disetujui.',
+      confirmLabel: 'Setujui',
+      tone: 'primary',
+    })
+
+    if (!confirmed) return
+
+    await runPassword(
+      item,
+      () => approvePasswordResetRequest(item.id),
+      'Gagal menyetujui pengajuan.',
+    )
+  }
+
+  const handleRejectPassword = async (item: PasswordResetRequest) => {
+    const notes = await promptDialog({
+      title: `Tolak pengajuan ${item.user?.name}?`,
+      message: 'Kata sandi akun tidak berubah. Pemilik akun menerima notifikasi penolakan.',
+      label: 'Catatan untuk pemilik akun (opsional)',
+      confirmLabel: 'Tolak Pengajuan',
+    })
+
+    if (notes === null) return
+
+    await runPassword(
+      item,
+      () => rejectPasswordResetRequest(item.id, notes),
+      'Gagal menolak pengajuan.',
+    )
+  }
+
+  if (loading || passwordLoading) {
     return (
       <div className="sid-kelola-wilayah-page">
         <div className="sid-kelola-wilayah-content">
@@ -168,7 +269,10 @@ export default function PengajuanResetPage() {
           </div>
 
           <div className="sid-kelola-wilayah-header-actions">
-            <RefreshButton onRefresh={() => load()} disabled={busyId !== null} />
+            <RefreshButton
+              onRefresh={() => (activeSection === 'ttd' ? load() : loadPassword())}
+              disabled={busyId !== null || passwordBusyId !== null}
+            />
           </div>
         </div>
 
@@ -359,13 +463,168 @@ export default function PengajuanResetPage() {
             <div className="sid-wilayah-table-toolbar">
               <div>
                 <h3>Reset Kata Sandi</h3>
-                <p>Segera hadir. Sementara ini, atur ulang kata sandi lewat Manajemen Pengguna.</p>
+                <p>
+                  Bila disetujui, pemilik akun dapat membuat kata sandi baru sendiri dalam 24 jam.
+                  Reset juga dapat dilakukan langsung di Manajemen Pengguna.
+                </p>
               </div>
             </div>
 
-            <div className="sid-wilayah-empty">
-              <KeyRound size={20} aria-hidden="true" /> Segera Hadir
+            {passwordError && (
+              <div className="sid-kelola-wilayah-error" role="alert">
+                {passwordError}
+              </div>
+            )}
+
+            <div className="sid-wilayah-table-wrap">
+              <table className="sid-wilayah-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Pemohon</th>
+                    <th>Wilayah</th>
+                    <th>Diajukan</th>
+                    <th>Status</th>
+                    <th>Diproses</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {passwordRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={7}>
+                        <div className="sid-wilayah-empty">
+                          Belum ada pengajuan reset kata sandi.
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    passwordRequests.map((item, index) => {
+                      const status = PASSWORD_STATUS[item.status] ?? PASSWORD_STATUS.pending
+                      const pending = item.status === 'pending'
+                      const account = [
+                        item.user?.role_label,
+                        item.user?.username && `@${item.user.username}`,
+                        item.user?.nik_masked,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+                      const wilayah = [
+                        item.user?.hamlet,
+                        item.user?.rt && `RT ${item.user.rt}`,
+                        item.user?.rw && `RW ${item.user.rw}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+
+                      return (
+                        <tr key={item.id}>
+                          <td>{(passwordMeta.current_page - 1) * passwordPageSize + index + 1}</td>
+                          <td>
+                            <span className="sid-wilayah-name">{item.user?.name ?? '-'}</span>
+                            {account && <small className="sid-admin-cell-meta">{account}</small>}
+                          </td>
+                          <td>{wilayah || '-'}</td>
+                          <td>{formatDateTime(item.created_at)}</td>
+                          <td>
+                            <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                          </td>
+                          <td>
+                            {pending ? (
+                              '-'
+                            ) : (
+                              <>
+                                <span>{item.handler?.name ?? '-'}</span>
+                                <small className="sid-admin-cell-meta">
+                                  {formatDateTime(item.handled_at)}
+                                </small>
+                                {item.response_notes && (
+                                  <small className="sid-admin-cell-meta">
+                                    Catatan: {item.response_notes}
+                                  </small>
+                                )}
+                              </>
+                            )}
+                          </td>
+                          <td>
+                            {pending ? (
+                              <div className="sid-wilayah-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleApprovePassword(item)}
+                                  className="sid-wilayah-action sid-wilayah-action-edit"
+                                  title="Setujui atur ulang kata sandi"
+                                  aria-label={`Setujui atur ulang kata sandi ${item.user?.name}`}
+                                  disabled={passwordBusyId !== null}
+                                >
+                                  <Check size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRejectPassword(item)}
+                                  className="sid-wilayah-action sid-wilayah-action-delete"
+                                  title="Tolak pengajuan"
+                                  aria-label={`Tolak pengajuan ${item.user?.name}`}
+                                  disabled={passwordBusyId !== null}
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
+
+            {passwordMeta.total > 0 && (
+              <div className="sid-operator-pagination">
+                <div className="sid-pagination-meta">
+                  <p>
+                    {formatPageRange(
+                      passwordMeta.current_page,
+                      passwordPageSize,
+                      passwordMeta.total,
+                      'pengajuan',
+                    )}
+                  </p>
+                  <PageSizeSelect
+                    value={passwordPageSize}
+                    onChange={(value) => {
+                      setPasswordPageSize(value)
+                      setPasswordPage(1)
+                    }}
+                  />
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    disabled={passwordMeta.current_page <= 1}
+                    onClick={() => setPasswordPage(passwordMeta.current_page - 1)}
+                  >
+                    Sebelumnya
+                  </button>
+                  <PageNumbers
+                    currentPage={passwordMeta.current_page}
+                    totalPages={Math.max(1, passwordMeta.last_page)}
+                    onChange={setPasswordPage}
+                  />
+                  <button
+                    type="button"
+                    disabled={passwordMeta.current_page >= passwordMeta.last_page}
+                    onClick={() => setPasswordPage(passwordMeta.current_page + 1)}
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

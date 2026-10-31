@@ -14,6 +14,7 @@ describe('beranda routes', () => {
   it('keeps auth pages in English and matches the backend reset link', () => {
     expect(routes.HAL_DAFTAR).toBe('/register')
     expect(routes.HAL_LUPA_PASSWORD).toBe('/forgot-password')
+    expect(routes.HAL_LUPA_PASSWORD_NIK).toBe('/forgot-password/nik')
     expect(routes.HAL_RESET_PASSWORD).toBe('/reset-password/:token')
     expect(routes.HAL_GANTI_PASSWORD).toBe('/change-password')
   })

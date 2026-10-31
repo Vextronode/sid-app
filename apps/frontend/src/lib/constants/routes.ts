@@ -15,6 +15,8 @@ export const HAL_DAFTAR = '/register'
 export const HAL_LUPA_PASSWORD = '/forgot-password'
 // Link di email reset dibuat backend (AppServiceProvider), harus sama.
 export const HAL_RESET_PASSWORD = '/reset-password/:token'
+// Lupa kata sandi tanpa email: NIK + tanggal lahir, disetujui Staf SIDUTama.
+export const HAL_LUPA_PASSWORD_NIK = '/forgot-password/nik'
 export const HAL_GANTI_PASSWORD = '/change-password'
 
 // Profil akun yang sedang login.

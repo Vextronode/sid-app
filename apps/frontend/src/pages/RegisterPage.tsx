@@ -22,6 +22,7 @@ import {
 
 import { useRegisterForm } from '@/features/auth/hooks/useRegisterForm'
 import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
+import { AuthCopyright } from '@/features/auth/components/AuthCopyright'
 import { HAL_BERANDA } from '@/lib/constants/routes'
 
 export default function RegisterPage() {
@@ -87,9 +88,7 @@ export default function RegisterPage() {
           </button>
 
           <div className="sid-login-footer">
-            <p className="sid-login-copyright">
-              Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-            </p>
+            <AuthCopyright />
           </div>
         </div>
       </div>
@@ -258,9 +257,7 @@ export default function RegisterPage() {
             <ArrowLeft size={14} aria-hidden="true" /> Kembali ke Beranda
           </Link>
 
-          <p className="sid-login-copyright">
-            Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-          </p>
+          <AuthCopyright />
         </div>
       </div>
     </div>

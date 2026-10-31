@@ -22,6 +22,7 @@ import {
   HAL_LEMBAGA,
   HAL_LOGIN,
   HAL_LUPA_PASSWORD,
+  HAL_LUPA_PASSWORD_NIK,
   HAL_PENGAJUAN_SURAT,
   HAL_PPID,
   HAL_PROFIL_PEJABAT,
@@ -67,6 +68,7 @@ const PengajuanSuratPage = lazyNamed(
 const DaftarSurat = lazyNamed(() => import('@/pages/DaftarSurat'), 'DaftarSurat')
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'))
+const PasswordResetRequestPage = lazy(() => import('@/pages/PasswordResetRequestPage'))
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'))
 const GantiPasswordPage = lazy(() => import('@/pages/GantiPasswordPage'))
 const JenisSuratPage = lazy(() => import('@/pages/JenisSuratPage'))
@@ -564,6 +566,16 @@ export default function App() {
               element={
                 <GuestRoute>
                   <ForgotPasswordPage />
+                </GuestRoute>
+              }
+            />
+
+            {/* Lupa kata sandi tanpa email: NIK + tanggal lahir, disetujui Staf SIDUTama. */}
+            <Route
+              path={HAL_LUPA_PASSWORD_NIK}
+              element={
+                <GuestRoute>
+                  <PasswordResetRequestPage />
                 </GuestRoute>
               }
             />
