@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('data_action', 30)->default('none');
             $table->json('form_fields')->nullable();
             $table->json('data_fields')->nullable();
-            $table->json('signature_slots')->nullable();
             $table->text('supporting_template')->nullable();
         });
 
@@ -78,7 +77,6 @@ return new class extends Migration
                 'data_action',
                 'form_fields',
                 'data_fields',
-                'signature_slots',
                 'supporting_template',
             ]);
         });

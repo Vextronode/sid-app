@@ -2,7 +2,7 @@ LetterType:
   type: object
   description: |
     Bentuk `LetterTypeResource`. Struktur jenis surat (template, isian form,
-    slot tanda tangan, aksi data, dokumen pendukung, flow) diset developer
+    aksi data, dokumen pendukung, flow) diset developer
     lewat seeder; Staf SIDUTama hanya mengubah `validity_days`,
     `category` (petugas `assigned_role` mengikuti kategori), dan
     `is_active` (lihat LetterTypeUpdateRequest).
@@ -40,9 +40,9 @@ LetterType:
       description: |
         HTML dengan placeholder `{{ nama }}`. NULL = Draft (tidak tampil ke warga).
         Placeholder sistem: letter_number, applicant_*, submitted_at, issued_at,
-        village_* (kop surat), village_head_name, logo_img, signature_img;
-        placeholder isian form memakai nama isian; slot TTD memakai
-        `ttd_{slot}` dan `nama_ttd_{slot}`. Blok bersyarat dari jawaban form:
+        village_* (kop surat), village_head_name, logo_img; placeholder ruang
+        TTD (`signature_img`, `tanda_tangan_*`, `ttd_*`) selalu kosong (TTD
+        dibubuhkan basah); placeholder isian form memakai nama isian. Blok bersyarat dari jawaban form:
         `{{#if isian}}`, `{{#if isian=a|b}}`, `{{#if isian!=a}}` ... `{{/if}}`
         (boleh bersarang). Isian repeater/family_members dicetak per baris
         dengan `{{#each isian}}...{{/each}}`; di dalamnya `{{ no }}` = nomor
@@ -146,11 +146,6 @@ LetterType:
       description: "Kolom data warga yang boleh diubah lewat Terapkan."
       items:
         $ref: '#/LetterDataField'
-    signature_slots:
-      type: array
-      description: "Slot tanda tangan pada surat. Belum dipakai jenis surat bawaan seeder."
-      items:
-        $ref: '#/LetterSignatureSlot'
     has_supporting_document:
       type: boolean
       example: false
@@ -277,26 +272,11 @@ LetterDataField:
       type: string
       nullable: true
 
-LetterSignatureSlot:
-  type: object
-  required: [key]
-  properties:
-    key:
-      type: string
-      example: "saksi_1"
-    label:
-      type: string
-      example: "Saksi 1"
-    signer:
-      type: string
-      enum: [applicant, other]
-      description: "applicant memakai TTD akun pemohon; other diminta ke pemilik NIK atau diganti TTD basah."
-
 LetterTypeUpdateRequest:
   type: object
   description: |
     UC-21 versi sederhana. Hanya tiga field ini yang diterima; flow,
-    template, isian form, slot tanda tangan, dan aksi data tidak dapat
+    template, isian form, dan aksi data tidak dapat
     diubah dari API.
   properties:
     validity_days:

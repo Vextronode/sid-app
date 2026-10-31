@@ -1,0 +1,159 @@
+// ==========================================
+// DaftarSuratSayaPage.tsx
+// Daftar surat warga beserta tahap prosesnya (MyLettersList).
+// ==========================================
+
+import { useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { useLetterDeepLink } from '@/features/notifikasi/hooks/useLetterDeepLink'
+
+import { WargaLayout } from '@/components/layout/WargaLayout'
+import { usePageSize } from '@/components/ui/usePageSize'
+import { useLetters } from '@/features/surat/hooks/useLetters'
+import { deleteLetter } from '@/features/surat/api/letterApi'
+import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
+import { MyLettersList } from '@/features/surat/components/MyLettersList'
+
+import { SURAT_STATUS } from '@/constants/suratStatus'
+import { confirmDialog } from '@/shared/lib/dialog'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
+import type { LetterListItem } from '@/types'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+
+// Nilai ?status= di URL -> status surat di backend.
+const STATUS_PARAM: Record<string, string> = {
+  ditolak: SURAT_STATUS.REJECTED,
+  approved: SURAT_STATUS.APPROVED,
+}
+
+export default function DaftarSuratSayaPage() {
+  const pageRefresh = useQueryRefresh(['surat'])
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const filterStatus = searchParams.get('status') ?? ''
+  const activeStatus = STATUS_PARAM[filterStatus] ?? filterStatus
+
+  const changeFilter = (status: string) =>
+    setSearchParams(status ? { status } : {}, { replace: true })
+
+  // Halaman disimpan bersama filter yang berlaku saat itu, sehingga
+  // berpindah filter otomatis kembali ke halaman pertama.
+  const [pageState, setPageState] = useState({ status: filterStatus, page: 1 })
+  const page = pageState.status === filterStatus ? pageState.page : 1
+  const setPage = (nextPage: number) => setPageState({ status: filterStatus, page: nextPage })
+
+  // Filter status dan pagination diproses di server.
+  const [pageSize, setPageSizeState] = usePageSize('surat-saya')
+  const setPageSize = (value: number) => {
+    setPageSizeState(value)
+    setPage(1)
+  }
+
+  const { letters, meta, loading, refresh } = useLetters({
+    page,
+    perPage: pageSize,
+    status: activeStatus,
+  })
+
+  const [selectedSurat, setSelectedSurat] = useState<LetterListItem | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+
+  // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
+  const handleDelete = async (item: LetterListItem) => {
+    const confirmed = await confirmDialog({
+      title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus',
+    })
+
+    if (!confirmed) return
+
+    setDeletingId(item.id)
+    setDeleteError('')
+
+    try {
+      await deleteLetter(item.id)
+
+      // Baris terakhir di halaman ini terhapus: mundur satu halaman.
+      if (letters.length === 1 && page > 1) setPage(page - 1)
+
+      await refresh()
+    } catch (requestError) {
+      setDeleteError(getApiErrorMessage(requestError, 'Gagal menghapus surat.'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  // Dibuka dari notifikasi: ?surat=<id>.
+  useLetterDeepLink((letterId) => {
+    const listed = letters.find((item) => String(item.id) === letterId)
+
+    // Surat di halaman lain tetap bisa dibuka: modal memuat detailnya sendiri.
+    setSelectedSurat(listed ?? ({ id: letterId } as LetterListItem))
+  }, !loading)
+
+  return (
+    <WargaLayout>
+      <div className="sid-page sid-surat-saya-page">
+        {/* ==========================================
+            KEMBALI
+        ========================================== */}
+
+        {/* Kembali ke Beranda warga, bukan ke halaman Ajukan Surat. */}
+        <button
+          type="button"
+          onClick={() => navigate('/surat-saya')}
+          className="sid-surat-saya-back"
+        >
+          <ArrowLeft size={16} />
+          Kembali
+        </button>
+
+        <header className="sid-my-letters-header">
+          <div>
+            <h1 className="sid-my-letters-heading">Surat Saya</h1>
+            <p className="sid-my-letters-lead">
+              Pantau surat yang pernah Anda ajukan dan sampai mana prosesnya.
+            </p>
+          </div>
+          <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
+        </header>
+
+        {deleteError && (
+          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+            {deleteError}
+          </p>
+        )}
+
+        <MyLettersList
+          letters={letters}
+          loading={loading}
+          filter={activeStatus}
+          onFilterChange={changeFilter}
+          onDetail={(item) => setSelectedSurat(item)}
+          onDelete={handleDelete}
+          deletingId={deletingId}
+          onCreate={() => navigate('/jenis-surat')}
+          page={page}
+          totalPages={meta.last_page}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
+      </div>
+
+      {/* ==========================================
+          DETAIL MODAL
+      ========================================== */}
+
+      {selectedSurat && (
+        <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
+      )}
+    </WargaLayout>
+  )
+}

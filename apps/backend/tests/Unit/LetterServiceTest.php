@@ -30,7 +30,6 @@ use App\Services\LetterFlowService;
 use App\Services\LetterService;
 use App\Services\LetterSignatureService;
 use App\Services\OfficialService;
-use App\Services\UserSignatureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -57,8 +56,8 @@ class LetterServiceTest extends TestCase
             new LetterTypeRepository,
             new ApprovalSettingService(new ApprovalSettingRepository),
             new LetterFlowService($officialService, new ApprovalFlowRepository, $statusLogRepository),
-            $attachmentService = new LetterAttachmentService,
-            new LetterSignatureService(new UserSignatureService, $attachmentService, new CitizenRepository, new UserRepository),
+            new LetterAttachmentService,
+            new LetterSignatureService(new CitizenRepository, new UserRepository),
         );
     }
 

@@ -1,6 +1,6 @@
 delete:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Cabut blokir permintaan tanda tangan
+  summary: Cabut blokir permintaan saksi
   operationId: deleteSignatureBlock
   security:
     - sanctumCookie: []

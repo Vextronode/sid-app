@@ -87,6 +87,10 @@ jobs:
           # belum ada di composer.json saat ini — lihat catatan di README CI).
           extensions: mbstring, pdo, pdo_pgsql, pgsql, bcmath, xml, curl, zip, gd
           coverage: none
+        env:
+          # Paksa patch 8.3 terbaru (>= 8.3.36, patch PHP2Shell); composer.json
+          # mewajibkan ^8.3.36 sehingga composer install gagal bila runner tertinggal.
+          update: true
         # Catatan: laravel/pao dikonfirmasi package public/open-source,
         # jadi tidak perlu auth token untuk private registry.
 
@@ -143,6 +147,14 @@ jobs:
 
       - name: Lint (ESLint)
         run: npm run lint
+
+      # lint-staged hanya merapikan file yang di-stage; ini menangkap sisanya.
+      - name: Format check (Prettier)
+        run: npm run format:check
+
+      # Vite hanya membuang tipe saat build; error tipe hanya tertangkap di sini.
+      - name: Typecheck (TypeScript)
+        run: npm run typecheck
 
       - name: Check for test runner
         id: has_tests

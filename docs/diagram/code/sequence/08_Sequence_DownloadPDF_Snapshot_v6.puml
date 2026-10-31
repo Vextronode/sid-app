@@ -28,12 +28,11 @@ participant "LetterSnapshotService" as SNAP
 participant "LetterSignatureService" as SIG
 participant "dompdf" as DOM
 database "PostgreSQL" as DB
-collections "Disk private_uploads" as DISK
 
 U -> FE : Unduh PDF
-FE -> CTRL : GET /api/letters/{letter}/download?template=wet|digital
+FE -> CTRL : GET /api/letters/{letter}/download?document=
 CTRL -> POL : approved & (pemohon | desa sama sesuai role)
-CTRL -> PDF : download(letter, user, template)
+CTRL -> PDF : download(letter, user, document)
 PDF -> PDF : pemohon & expires_at lewat → 403
 PDF -> SNAP : contextFor(letter)
 alt snapshot ada
@@ -42,11 +41,12 @@ else surat approved lama
   SNAP -> DB : Kades aktif (404 bila tidak ada)
   SNAP -> DB : simpan snapshot + signed_by_official_id
 end
-PDF -> SNAP : signerFor(context)
-PDF -> SIG : renderData(letter) (TTD slot: data URI dari .enc)
-SIG -> DISK : baca & dekripsi TTD akun
-PDF -> DISK : stempel desa (+ TTD Kades bila digital)
-PDF -> PDF : ganti placeholder (escape nilai isian,\nformat tanggal/rupiah/terbilang)
-PDF -> DOM : loadView(pdf.templates.wet|digital)
+PDF -> SIG : renderData(letter) (nama penanda tangan slot)
+PDF -> PDF : ganti placeholder (escape nilai isian,\nformat tanggal/rupiah/terbilang);\nruang TTD/stempel dikosongkan
+PDF -> DOM : loadView(pdf.templates.letter)
 DOM --> FE : application/pdf (surat-{id}.pdf), tidak disimpan
+note over U, DOM
+  PDF tanpa TTD dan stempel. Surat resmi = cetakan yang ditandatangani
+  dan distempel basah di kantor desa, diambil pemohon di sana.
+end note
 @enduml

@@ -59,12 +59,6 @@ package "Controller (Api)" #F0F4FF {
     +blocks()
     +unblock(signatureBlock)
   }
-  class UserSignatureController {
-    +show()
-    +store(StoreUserSignatureRequest)
-    +image()
-    +reset(ResetUserSignatureRequest, user)
-  }
   class RtApprovalController {
     +decision(RtDecisionRequest, letter)
   }
@@ -84,7 +78,6 @@ package "Controller (Api)" #F0F4FF {
     +promote(PromoteOfficialRequest)
     +candidate(request)
     +demote() / rotate()
-    +uploadSignature() / signaturePreview()
     +uploadPhoto(UploadOfficialPhotoRequest)
   }
   class OfficialPositionTypeController {
@@ -172,19 +165,13 @@ package "Service" #E8F5E9 {
     +deleteFilesFor(letter)
   }
   class LetterSignatureService {
-    +slots(letter) / current(letter)
-    +openForSubmission(letter, applicant, signers, wetFiles)
-    +refillSlot(letter, requester, slotKey, input, wetFile)
+    +witnessSlots(letter) / current(letter)
+    +openWitnesses(letter, applicant)
+    +refillSlot(letter, requester, slotKey, input)
     +isComplete(letter) : bool
     +pendingFor(user)
     +accept(request, user) / reject(request, user, notes, block)
-    +renderData(letter) : array
-  }
-  class UserSignatureService {
-    +active(user) : ?UserSignature
-    +create(user, file)
-    +reset(actor, target, reason)
-    +imageResponse(signature) / dataUri(signature)
+    +blockByNik(user, nik)
   }
   class LetterFulfillmentService {
     +proposal(letter) : array
@@ -206,7 +193,7 @@ package "Service" #E8F5E9 {
     +resolveCitizenUser(letter)
     +resolvePetugasDesaUsers(villageId)
     +resolveKasiKaurForLetter(letter)
-    +storePhoto() / replacePhoto() / replaceSignature()
+    +storePhoto() / replacePhoto()
     +assertPositionAvailable(data)
   }
   class OfficialAssignmentService {
@@ -272,21 +259,20 @@ package "Model (Eloquent)" #FFFDE7 {
   class Letter
   class LetterType {
     data_action : LetterDataAction
-    form_fields / data_fields / signature_slots : array
+    form_fields / data_fields : array
   }
   class ApprovalFlow
   class FlowStep
   class LetterApproval
   class LetterStatusLog
   class LetterAttachment {
-    KIND_ATTACHMENT / KIND_FIELD / KIND_WET_SIGNATURE
+    KIND_ATTACHMENT / KIND_FIELD / KIND_RESULT
   }
   class LetterSignature {
-    SIGNER_APPLICANT / SIGNER_OTHER
-    METHOD_DIGITAL / METHOD_WET
+    SIGNER_WITNESS
+    METHOD_CONSENT / METHOD_RT_CHECK / METHOD_MANUAL
     STATUS_* ; +isPending()
   }
-  class UserSignature
   class SignatureBlock
   class LetterNumberCounter
   class Official
@@ -330,7 +316,6 @@ LetterSignatureController --> LetterService
 LetterFulfillmentController --> LetterFulfillmentService
 SignatureRequestController --> LetterSignatureService
 SignatureRequestController --> LetterService
-UserSignatureController --> UserSignatureService
 RtApprovalController --> RtApprovalService
 KadesApprovalController --> KadesApprovalService
 LetterTypeController --> LetterTypeService
@@ -351,7 +336,6 @@ LetterService --> LetterSignatureService
 LetterService --> ApprovalSettingService
 LetterService --> OfficialService
 LetterService --> LetterRepository
-LetterSignatureService --> UserSignatureService
 LetterSignatureService --> LetterAttachmentService
 LetterSignatureService --> CitizenRepository
 LetterSignatureService --> UserRepository
@@ -380,8 +364,6 @@ Letter "1" -- "*" LetterApproval
 Letter "1" -- "*" LetterStatusLog
 Letter "1" -- "*" LetterAttachment
 Letter "1" -- "*" LetterSignature
-LetterSignature "*" -- "0..1" UserSignature
-User "1" -- "*" UserSignature
 User "1" -- "*" SignatureBlock
 Official "*" -- "1" Citizen
 Letter ..> LetterStatus

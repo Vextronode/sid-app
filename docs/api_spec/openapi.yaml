@@ -2,12 +2,22 @@ openapi: 3.0.3
 
 info:
   title: Sistem Informasi Desa (SID) - SIDUTama REST API
-  version: "5.3.0"
+  version: "5.4.0"
   description: |
     Spesifikasi API SIDUTama, diselaraskan ke source backend aktif
     (`apps/backend/routes/api.php`, `routes/auth.php`, controller, form
     request, resource, policy, dan service) per 2026-10-16. Bila ada
     perbedaan antara dokumen ini dan source, source yang berlaku.
+
+    ## Perubahan v5.4 — Field yang sudah dipakai frontend (2026-10-31)
+
+    Penambahan field, tanpa mengubah field yang ada:
+    - `LetterListItem.rejection_reason`: catatan keputusan tolak terakhir
+      (`letter_approvals.notes`); `null` bila surat tidak ditolak.
+    - `Family.members` (hanya `GET /families/{family}`): anggota KK
+      `{ id, name, family_role }`. Daftar KK tetap memakai `members_count`.
+    - `GET /user`: `official` kini memuat `rt`, `rw`, dan `hamlet` untuk
+      label wilayah jabatan di dashboard RT/RW/Kadus.
 
     ## Perubahan v5.3 — Surat dinamis, tanda tangan, identitas desa
 
@@ -18,16 +28,17 @@ info:
       `PUT /approval-flows/{id}/steps` tidak ada lagi; flow hanya dibaca.
     - **Jenis surat data-driven (developer via seeder):** `form_fields`
       (isian form dinamis + validasi server), `data_action`/`data_fields`
-      (perubahan data kependudukan pasca-approve), `signature_slots`,
+      (perubahan data kependudukan pasca-approve),
       `supporting_template`, `classification_code`, `produces_letter`.
-    - **Surat:** pengajuan multipart (isian file, penanda tangan), daftar
+    - **Surat:** pengajuan multipart (isian file), daftar
       berpaginasi (`LetterListItem` + `meta`), `GET /letters/summary`,
-      lampiran privat, dokumen pendukung, isi ulang slot TTD, Terapkan
+      lampiran privat, dokumen pendukung, ganti saksi, Terapkan
       (`/letters/{letter}/fulfillment`), snapshot render saat final approve,
       nomor surat per kode klasifikasi (`470/001/Des/X/2026`).
-    - **Tanda tangan pribadi akun** (`/profile/signature`), permintaan TTD
-      lintas warga (`/signature-requests`), blokir (`/signature-blocks`),
-      reset oleh Staf SIDUTama (`/users/{user}/signature/reset`).
+    - **Tanpa TTD digital dan stempel digital:** surat terbit tanpa tanda
+      tangan, dicetak lalu ditandatangani dan distempel basah di kantor desa.
+      Yang tersisa: permintaan saksi/persetujuan lintas warga
+      (`/signature-requests`) dan blokir (`/signature-blocks`).
     - **Web Push** (`/push-subscriptions`) di samping notifikasi in-app.
     - **Jabatan desa dinamis:** jenis jabatan tanpa akun
       (`/official-position-types`), `officials.position` VARCHAR, foto
@@ -76,15 +87,15 @@ tags:
   - name: Epic 2 - Users, Citizens, Officials
     description: |
       Data warga & KK, sosio-ekonomi KK, katalog pekerjaan, akun, jabatan
-      (promote/demote/rotate, jenis jabatan tanpa akun, foto & TTD jabatan),
-      reset password dan reset TTD akun. UC-09, UC-14.
+      (promote/demote/rotate, jenis jabatan tanpa akun, foto jabatan),
+      reset password akun. UC-09, UC-14.
   - name: Epic 3 - Autentikasi
     description: Login, Logout, Register, profil & ganti password. UC-01, UC-02, UC-17.
   - name: Epic 4 - Konfigurasi Tipe Surat & Pipeline Approval
     description: Baca/ubah sederhana jenis surat (UC-21) dan baca flow approval.
   - name: Epic 5 - Alur Pengajuan & Approval Surat
     description: |
-      Pengajuan surat, tanda tangan pihak terkait, keputusan RT dan
+      Pengajuan surat, persetujuan saksi, keputusan RT dan
       Kades/Sekdes, daftar/ringkasan/detail, lampiran, PDF, dokumen
       pendukung, Terapkan perubahan data. UC-03..UC-08, UC-25, UC-26.
   - name: Epic 6 - Sistem Notifikasi
@@ -202,8 +213,6 @@ paths:
     $ref: 'paths/users/toggle-status-v51.yaml'
   /users/{user}/reset-password:
     $ref: 'paths/users/reset-password-v51.yaml'
-  /users/{user}/signature/reset:
-    $ref: 'paths/users/user-signature-reset.yaml'
   /users/{user}/photo:
     $ref: 'paths/users/user-photo.yaml'
   /officials:
@@ -218,8 +227,6 @@ paths:
     $ref: 'paths/officials/rotate.yaml'
   /officials/{official}/demote:
     $ref: 'paths/officials/demote-v51.yaml'
-  /officials/{official}/signature:
-    $ref: 'paths/officials/official-signature.yaml'
   /officials/{official}/photo:
     $ref: 'paths/officials/official-photo.yaml'
   /official-position-types:
@@ -278,10 +285,6 @@ paths:
     $ref: 'paths/users/profile-nik-lookup.yaml'
   /profile/family-members:
     $ref: 'paths/users/profile-family-members.yaml'
-  /profile/signature:
-    $ref: 'paths/signatures/profile-signature.yaml'
-  /profile/signature/image:
-    $ref: 'paths/signatures/profile-signature-image.yaml'
   /signature-requests:
     $ref: 'paths/signatures/signature-requests.yaml'
   /signature-requests/{signatureRequest}/accept:
@@ -346,8 +349,6 @@ paths:
     $ref: 'paths/villages/profile.yaml'
   /villages/profile/resolve-map-link:
     $ref: 'paths/villages/profile-resolve-map-link.yaml'
-  /villages/profile/stamp:
-    $ref: 'paths/villages/profile-stamp.yaml'
   /villages/profile/logo:
     $ref: 'paths/villages/profile-logo.yaml'
   /villages/profile/hero-image:

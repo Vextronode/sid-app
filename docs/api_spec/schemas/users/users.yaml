@@ -61,7 +61,9 @@ User:
       allOf:
         - $ref: '../citizens/citizens.yaml#/Citizen'
     official:
-      description: "Jabatan aktif; included when relation is loaded"
+      description: |
+        Jabatan aktif; included when relation is loaded. Pada `GET /user`
+        memuat juga `rt`, `rw`, dan `hamlet` (wilayah jabatan RT/RW/Kadus).
       allOf:
         - $ref: '#/Official'
 
@@ -304,13 +306,6 @@ Official:
     hamlet_id:
       type: integer
       nullable: true
-    has_signature_img:
-      type: boolean
-      description: "Indikator TTD jabatan (private); preview melalui endpoint terproteksi."
-    stamp_img:
-      type: string
-      nullable: true
-      description: "Kolom legacy; tidak dipakai PDF."
     photo_img:
       type: string
       nullable: true

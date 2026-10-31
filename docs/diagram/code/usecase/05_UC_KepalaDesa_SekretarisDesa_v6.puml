@@ -29,7 +29,7 @@ actor "Sekretaris Desa" as SK
 rectangle "SIDUTama" {
   usecase "UC-01/02: Login / Logout" as UC_AUTH
   usecase "UC-05: Daftar Surat Desa\n(sudah lolos RT)" as UC_LIST
-  usecase "UC-06: Detail Surat\n(riwayat RT, lampiran, TTD,\ndokumen pendukung)" as UC_DETAIL
+  usecase "UC-06: Detail Surat\n(riwayat RT, lampiran, saksi,\ndokumen pendukung)" as UC_DETAIL
   usecase "UC-04c: Approve / Reject\n(step kepala_desa, first-action-wins)" as UC_DECIDE
   usecase "UC-08: Unduh PDF" as UC_DL
   usecase "UC-15: Dashboard\n(menunggu keputusan,\ntanpa surat milik sendiri)" as UC_DASH
@@ -58,8 +58,9 @@ UC_DETAIL ..> UC_DECIDE : <<extend>>
 
 note bottom of UC_DECIDE
   Final approve: nomor surat per kode klasifikasi,
-  expires_at, snapshot (TTD & stempel Kepala Desa
-  aktif, juga bila Sekdes yang menyetujui),
+  expires_at, snapshot (nama Kepala Desa aktif,
+  juga bila Sekdes yang menyetujui; TTD & stempel
+  dibubuhkan basah saat dicetak),
   notifikasi ke pemohon & Kasi/Kaur.
   approval_level mencatat kepala_desa / sekretaris_desa.
 end note

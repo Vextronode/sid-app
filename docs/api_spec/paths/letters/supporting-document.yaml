@@ -3,7 +3,7 @@ get:
   summary: Dokumen pendukung yang digenerate dari isian form
   description: |
     Diotorisasi LetterPolicy::view. Dirender dari `letter_types.supporting_template`
-    (mis. surat pernyataan) lengkap dengan tanda tangan pemohon/pihak terkait;
+    (mis. surat pernyataan) dengan ruang TTD basah pemohon/pihak terkait;
     dipakai approver dan Kasi/Kaur sebagai bahan pertimbangan. Tidak
     ditandatangani Kepala Desa sehingga tetap dapat dirender walau jabatan
     itu kosong. Surat approved memakai snapshot.

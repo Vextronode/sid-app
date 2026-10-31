@@ -130,16 +130,10 @@ class MoveInServiceTest extends TestCase
         $this->assertStringContainsString('( Engkos Sutisna )', $statement);
     }
 
-    public function test_statement_prints_the_area_rt_and_rw_and_pastes_existing_signatures(): void
+    public function test_statement_prints_the_area_rt_and_rw_names_for_wet_signing(): void
     {
-        // Ketua RT wilayah pendatang punya TTD; Ketua RW belum.
         $rt = $this->makeOfficialUser('rt', $this->village, ['rt_id' => $this->budiasih->id]);
         $rw = $this->makeOfficialUser('rw', $this->village, ['rw_id' => $this->budiasih->rw_id]);
-        foreach ([$rt['user'], $this->applicant['user']] as $user) {
-            $this->actingAs($user)
-                ->post('/api/profile/signature', ['signature' => UploadedFile::fake()->image('ttd.png', 200, 80)], ['Accept' => 'application/json'])
-                ->assertCreated();
-        }
 
         // Kepala keluarga yang ditumpangi adalah pemohon sendiri.
         $letterId = $this->approve([
@@ -156,13 +150,9 @@ class MoveInServiceTest extends TestCase
         $this->assertStringContainsString('( '.$rt['citizen']->name.' )', $statement);
         $this->assertStringContainsString('NIK. '.$rt['citizen']->nik, $statement);
         $this->assertStringContainsString('( '.$rw['citizen']->name.' )', $statement);
-        // TTD Ketua RT dan kepala keluarga (pemohon); Ketua RW kosong.
-        $this->assertSame(2, substr_count($statement, '<img'));
-        $this->assertStringContainsString("official-signatures/{$this->village->id}/{$rt['official']->id}/", $statement);
-        $this->assertStringContainsString('data:image/png;base64,', $statement);
-
-        // F-1.02 atas nama pendatang: TTD perantara tidak ditempel.
-        $this->assertStringNotContainsString('data:image/png;base64,', $this->render($letterId, null));
+        // Ruang TTD Ketua RT/RW dan kepala keluarga kosong untuk TTD basah.
+        $this->assertStringNotContainsString('<img', $statement);
+        $this->assertStringNotContainsString('<img', $this->render($letterId, null));
     }
 
     public function test_kasi_adds_a_joining_arrival_to_the_host_family(): void
@@ -388,7 +378,7 @@ class MoveInServiceTest extends TestCase
         }
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.digital', Mockery::on(function (array $data) use (&$rendered): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data) use (&$rendered): bool {
                 $rendered = $data['template'];
 
                 return true;
@@ -397,7 +387,7 @@ class MoveInServiceTest extends TestCase
 
         $query = $document === null ? '' : "&document={$document}";
         $this->actingAs($this->applicant['user'])
-            ->get("/api/letters/{$letterId}/download?template=digital{$query}")
+            ->get("/api/letters/{$letterId}/download?{$query}")
             ->assertOk();
 
         return (string) $rendered;

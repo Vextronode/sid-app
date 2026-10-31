@@ -8,52 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // TTD pribadi melekat ke akun. Diisi sekali; reset oleh Petugas
-        // Desa menandai baris lama (revoked_at) tanpa menghapus filenya,
-        // sehingga dokumen lama tetap dapat dirender.
-        Schema::create('user_signatures', function (Blueprint $table) {
-            $table->id();
-            $table->foreignUuid('user_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
-            $table->string('path');
-            $table->string('mime_type', 50);
-            $table->timestamp('revoked_at')->nullable();
-            $table->foreignUuid('revoked_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->text('revoke_reason')->nullable();
-            $table->timestamps();
-
-            $table->index(['user_id', 'revoked_at'], 'idx_user_signatures_active');
-        });
-
-        // Pengajuan reset TTD oleh pemilik akun, diputuskan Staf SIDUTama.
-        // Maksimal satu pengajuan pending per akun (ditegakkan di service).
-        Schema::create('signature_reset_requests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignUuid('user_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
-            $table->text('reason');
-            $table->string('status', 20)->default('pending');
-            $table->foreignUuid('handled_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->timestamp('handled_at')->nullable();
-            $table->text('response_notes')->nullable();
-            $table->timestamps();
-
-            $table->index(['status', 'created_at'], 'idx_signature_reset_requests_status');
-            $table->index(['user_id', 'status'], 'idx_signature_reset_requests_user');
-        });
-
-        // Satu baris per percobaan mengisi sebuah slot tanda tangan pada
-        // surat. Baris terbaru per slot adalah keadaan slot saat ini;
-        // baris lama (ditolak/kedaluwarsa) dipertahankan sebagai riwayat
-        // dan dasar pembatasan permintaan.
+        // Satu baris per percobaan mengisi saksi (atau persetujuan pihak
+        // terkait) pada surat. Baris terbaru per slot adalah keadaan slot
+        // saat ini; baris lama (ditolak/kedaluwarsa) dipertahankan sebagai
+        // riwayat dan dasar pembatasan permintaan. Tidak ada TTD digital.
         Schema::create('letter_signatures', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('letter_id')
@@ -73,14 +31,6 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
             $table->string('signer_name', 100)->nullable();
-            $table->foreignId('user_signature_id')
-                ->nullable()
-                ->constrained('user_signatures')
-                ->nullOnDelete();
-            $table->foreignId('attachment_id')
-                ->nullable()
-                ->constrained('letter_attachments')
-                ->nullOnDelete();
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('responded_at')->nullable();
             $table->text('response_notes')->nullable();
@@ -109,7 +59,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('signature_blocks');
         Schema::dropIfExists('letter_signatures');
-        Schema::dropIfExists('signature_reset_requests');
-        Schema::dropIfExists('user_signatures');
     }
 };

@@ -7,7 +7,7 @@ put:
     Persuratan Desa dan Layanan Kependudukan di pilihan pengajuan, dan
     `assigned_role` ikut diganti (Persuratan Desa = kaur_tu_umum, Layanan
     Kependudukan = kasi_pemerintahan); `assigned_role` yang dikirim diabaikan.
-    Flow, template, isian form, slot tanda tangan,
+    Flow, template, isian form,
     aksi data, dan dokumen pendukung diset developer lewat seeder. Tipe surat
     dicari dalam desa Petugas yang login; milik desa lain menghasilkan 404.
   operationId: updateLetterType

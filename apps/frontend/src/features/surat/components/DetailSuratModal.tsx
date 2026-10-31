@@ -1,0 +1,177 @@
+// ==========================================
+// DetailSuratModal.tsx
+// Popup detail surat milik pemohon sendiri (warga, atau pejabat di
+// "Surat Saya"), di atas kerangka LetterDossierModal.
+//
+// Pemohon hanya melihat status generik: progres tanpa nama pejabat,
+// alasan penolakan, masa berlaku, dan pratinjau setelah surat terbit.
+// Surat bertanda tangan dan berstempel diambil di kantor desa; unduhan
+// lewat tombol "Unduh surat" berisi salinan tanpa tanda tangan.
+// ==========================================
+
+import { useQuery } from '@tanstack/react-query'
+import { CalendarX, FileX, Hourglass } from 'lucide-react'
+
+import { DownloadSuratMenu } from '@/features/cetak-surat/components/DownloadSuratMenu'
+import { LetterDocumentsPreview } from '@/features/cetak-surat/components/LetterDocumentsPreview'
+import { queryKeys } from '@/shared/lib/queryKeys'
+import { SURAT_STATUS } from '@/constants/suratStatus'
+
+import { LetterExtrasPanel } from './LetterExtrasPanel'
+import { LetterValidityNote } from './LetterValidityNote'
+import { DossierDocumentEmpty, LetterDossierModal } from './dossier/LetterDossierModal'
+import { DossierFacts, DossierQuote, DossierSection } from './dossier/DossierParts'
+import { formatDossierDateTime } from './dossier/dossierFormat'
+import { FlowTimeline } from './dossier/FlowTimeline'
+import { getLetterDetail } from '../api/letterExtrasApi'
+import { getApplicantAddress, getApplicantNik } from '../utils/letterDetails'
+import {
+  FORM_DOWNLOAD_HINT,
+  LETTER_PICKUP_HINT,
+  isSignedByVillageHead,
+} from '@/features/cetak-surat/utils/letterSigning'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
+import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import type { Letter, LetterListItem } from '@/types'
+
+type LetterState = 'approved' | 'expired' | 'rejected' | 'processing'
+
+function getRejectionReason(surat: Pick<LetterListItem, 'rejection_reason'>) {
+  return surat.rejection_reason ?? 'Tidak ada catatan penolakan.'
+}
+
+function getLetterState(surat: Partial<Pick<Letter, 'status' | 'is_expired'>>): LetterState {
+  if (surat?.status === SURAT_STATUS.APPROVED) {
+    return surat.is_expired === true ? 'expired' : 'approved'
+  }
+
+  return surat?.status === SURAT_STATUS.REJECTED ? 'rejected' : 'processing'
+}
+
+const HINTS: Record<LetterState, string> = {
+  approved: LETTER_PICKUP_HINT,
+  expired: 'Masa berlaku surat sudah habis, jadi surat tidak dapat diunduh lagi.',
+  rejected: 'Perbaiki permohonan sesuai alasan penolakan, lalu ajukan ulang.',
+  processing: 'Anda akan mendapat notifikasi setiap kali status surat berubah.',
+}
+
+function DocumentArea({ surat, state }: { surat: PrintableLetter; state: LetterState }) {
+  if (state === 'approved') {
+    return <LetterDocumentsPreview surat={surat} />
+  }
+
+  if (state === 'expired') {
+    return (
+      <DossierDocumentEmpty icon={CalendarX} title="Masa berlaku surat telah habis.">
+        Surat hanya tersimpan sebagai riwayat dan tidak dapat dipratinjau atau diunduh lagi.
+      </DossierDocumentEmpty>
+    )
+  }
+
+  if (state === 'rejected') {
+    return (
+      <DossierDocumentEmpty icon={FileX} title="Permohonan ditolak.">
+        Lihat alasan penolakan di samping, perbaiki permohonan, lalu ajukan ulang.
+      </DossierDocumentEmpty>
+    )
+  }
+
+  return (
+    <DossierDocumentEmpty icon={Hourglass} title="Surat sedang diproses.">
+      Pratinjau dan unduhan tersedia setelah Kepala Desa menyetujui surat ini.
+    </DossierDocumentEmpty>
+  )
+}
+
+type DetailSuratModalProps = {
+  data: LetterListItem | null
+  onClose: () => void
+}
+
+export function DetailSuratModal({ data, onClose }: DetailSuratModalProps) {
+  if (!data) {
+    return null
+  }
+
+  return <DetailSuratModalContent row={data} onClose={onClose} />
+}
+
+function DetailSuratModalContent({ row, onClose }: { row: LetterListItem; onClose: () => void }) {
+  // Baris daftar hanya memuat kolom ringkas; NIK, alamat, dan keperluan
+  // dilengkapi dari detail surat begitu tersedia.
+  const { data: detail } = useQuery({
+    queryKey: queryKeys.surat.detail(row.id),
+    queryFn: () => getLetterDetail(row.id),
+  })
+
+  const surat = detail ? { ...row, ...detail } : row
+  const state = getLetterState(surat)
+  const isApproved = surat.status === SURAT_STATUS.APPROVED
+
+  return (
+    <LetterDossierModal
+      surat={surat}
+      onClose={onClose}
+      preview={<DocumentArea surat={surat} state={state} />}
+      hint={
+        state === 'approved' && !isSignedByVillageHead(surat) ? FORM_DOWNLOAD_HINT : HINTS[state]
+      }
+      actions={
+        <>
+          <button type="button" className="sid-dossier-button-quiet" onClick={onClose}>
+            Tutup
+          </button>
+          {isApproved && (
+            <DownloadSuratMenu
+              surat={surat}
+              disabled={state === 'expired'}
+              title={state === 'expired' ? 'Masa berlaku surat telah habis' : undefined}
+            />
+          )}
+        </>
+      }
+    >
+      {state === 'rejected' && (
+        <DossierSection title="Alasan penolakan">
+          <DossierQuote tone="danger">{getRejectionReason(surat)}</DossierQuote>
+        </DossierSection>
+      )}
+
+      {isApproved && surat.expires_at && (
+        <DossierSection title="Masa berlaku">
+          <LetterValidityNote surat={surat} />
+        </DossierSection>
+      )}
+
+      <DossierSection title="Progres">
+        <FlowTimeline surat={surat} variant="generic" />
+      </DossierSection>
+
+      <DossierSection title="Detail surat">
+        <DossierFacts
+          items={[
+            { label: 'Pemohon', value: surat.applicant_name },
+            {
+              label: 'NIK',
+              value: (
+                <RevealableValue
+                  masked={getApplicantNik(surat)}
+                  reveal={() => revealLetterApplicantNik(surat.id)}
+                />
+              ),
+            },
+            { label: 'Alamat', value: getApplicantAddress(surat) },
+            { label: 'Keperluan', value: detail?.purpose },
+            { label: 'Diajukan', value: formatDossierDateTime(surat.submitted_at) },
+            { label: 'Diperbarui', value: formatDossierDateTime(surat.updated_at) },
+          ]}
+        />
+      </DossierSection>
+
+      <div className="sid-dossier-extras">
+        <LetterExtrasPanel letterId={surat.id} />
+      </div>
+    </LetterDossierModal>
+  )
+}

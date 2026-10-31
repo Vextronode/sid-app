@@ -380,7 +380,7 @@ class LetterRepository
         return Letter::query()
             ->with([
                 'citizen.rt',
-                'letterType:id,name,code,category,assigned_role,produces_letter,data_action,form_fields,signature_slots,supporting_template,documents,issues_letter_number,signed_by_village_head,requires_result_upload,result_upload_hint,data_instructions',
+                'letterType:id,name,code,category,assigned_role,produces_letter,data_action,form_fields,supporting_template,documents,issues_letter_number,signed_by_village_head,requires_result_upload,result_upload_hint,data_instructions',
                 'approvals.approvedBy:id,name',
                 'flow.steps',
                 'statusLogs.actor:id,name',
@@ -450,6 +450,7 @@ class LetterRepository
                 'letterType:id,name,code,data_action,signed_by_village_head,requires_result_upload',
                 'citizen:id,name',
                 'latestResult',
+                'latestRejection',
                 'flow:id',
                 'flow.steps:id,flow_id,step_order,approver_position,is_final',
                 'approvals:id,letter_id,flow_step_id,approved_by,deadline_at',

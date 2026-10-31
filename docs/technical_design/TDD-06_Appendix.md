@@ -30,6 +30,7 @@
 | 5.2 | 2026-10-06 | Sosio-ekonomi dipindahkan ke level KK (`family_socioeconomics`); katalog pekerjaan per desa (`occupations`) menggantikan teks pekerjaan warga; stempel PDF berasal dari desa. Ditambahkan upload dan preview terproteksi untuk stempel desa serta TTD Kepala Desa aktif pada private storage. | — |
 | 5.3 | 2026-10-16 | Dokumen diselaraskan ke source: `letter_categories` dan `verification_type` di-drop; jenis surat data-driven (`form_fields`, `data_action`/`data_fields`, `signature_slots`, `supporting_template`, `classification_code`, `produces_letter`); lampiran surat; tanda tangan akun & permintaan tanda tangan; snapshot render & nomor surat per kode klasifikasi; Terapkan perubahan data (UC-26); surat ditahan saat RT kosong; Web Push; jenis jabatan tanpa akun (`official_position_types`) & foto pejabat; kategori berita; identitas desa (kop, logo, foto beranda) & cache halaman publik; register dengan tanggal lahir; paginasi daftar surat/warga; index performa; stack Docker. Fitur yang tertulis tetapi belum ada di source dipindah ke `docs/audit-docs/`. | — |
 | 5.4 | 2026-10-17 | Organisasi desa (BPD, LPM, Karang Taruna, PKK) berstruktur slot tetap `ketua`/`wakil_ketua`/`anggota` (`village_org_positions.slot`) dengan promosi, turun jabatan, kosongkan, foto anggota, dan halaman publik `/bpd` & `/lembaga-desa`. Foto profil akun warga (`users.photo_img`) dan hapus foto pejabat. Role `petugas_desa` diganti `staf_sid` (tampil "Staf {nama aplikasi}" dari `SID_APP_NAME`/`VITE_APP_NAME`), hanya satu per desa, dirotasi termasuk oleh dirinya sendiri, tampil di Profil Desa publik; command `staf-sid:first`. Respons 403 `role_forbidden` untuk pengalihan dashboard saat peran berubah; `role_label` & `photo_url` di data akun. | — |
+| 5.5 | 2026-10-31 | TTD digital dihapus: surat terbit tanpa TTD/stempel (dibubuhkan basah di kantor desa), pratinjau pemohon setelah terbit, satu format unduh; tabel `user_signatures`/`signature_reset_requests` dan kolom `stamp_img`/`signature_img`/`signature_slots` di-drop; UC-25 menjadi Persetujuan Saksi |
 
 ## A.2. Riwayat Koreksi Spesifik: `approval_settings.approval_level`
 
@@ -220,7 +221,7 @@ Cek "sudah dipakai": `LetterFieldValue::where('field_id', $fieldId)->exists()`
 
 | Kolom | MVP (Saat Ini) | Next Dev Paket 1 (Rencana) |
 |---|---|---|
-| `template`, `form_fields`, `signature_slots`, `data_action`, `supporting_template` | Diisi developer via seeder, `template` NULL = Draft | Staf SIDUTama bisa buat/edit via UI |
+| `template`, `form_fields`, `data_action`, `supporting_template` | Diisi developer via seeder, `template` NULL = Draft | Staf SIDUTama bisa buat/edit via UI |
 | `validity_days` | Staf SIDUTama bisa edit | Tetap bisa edit |
 | `assigned_role` | Staf SIDUTama bisa edit | Tetap bisa edit |
 | `is_active` | Staf SIDUTama bisa toggle | Tetap bisa toggle |

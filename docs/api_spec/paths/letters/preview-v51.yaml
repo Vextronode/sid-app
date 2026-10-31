@@ -2,16 +2,16 @@ get:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
   summary: Preview PDF surat (inline) sesuai kewenangan view
   description: |
-    Diotorisasi LetterPolicy::view (tidak mensyaratkan status approved).
-    Surat yang belum approved dirender dari data hidup dengan Kepala Desa
-    aktif saat ini; surat approved dirender dari snapshot. Di-stream inline
-    (`surat-{id}.pdf`).
+    Diotorisasi LetterPolicy::view. **Pemohon** (akun pengaju atau warga
+    pemohon) hanya dapat mem-preview setelah surat `approved` (403
+    "Pratinjau surat tersedia setelah surat terbit."); pejabat yang memutus
+    atau memantau (RT, RW, Kadus, Kades/Sekdes) dapat mem-preview selama
+    proses. Surat yang belum approved dirender dari data hidup dengan
+    Kepala Desa aktif saat ini; surat approved dirender dari snapshot.
+    Di-stream inline (`surat-{id}.pdf`).
 
-    TTD Kepala Desa dan stempel desa hanya dipasang bila surat sudah
-    `approved` **dan** pengguna lolos LetterPolicy::download (pemohon,
-    Kades/Sekdes, Kasi/Kaur yang ditugaskan, Staf SIDUTama). Surat yang
-    belum final, atau surat final yang dilihat pihak lain (mis. RT/RW/
-    Kadus), dirender tanpa TTD dan stempel. FE menampilkan pratinjau
+    PDF tidak memuat gambar tanda tangan maupun stempel (dibubuhkan basah
+    setelah dicetak di kantor desa). FE menampilkan pratinjau
     sebagai canvas di dalam popup (bukan viewer PDF browser), sehingga
     tidak ada tombol unduh/cetak dari pratinjau.
 
@@ -28,14 +28,6 @@ get:
       schema:
         type: string
         format: uuid
-    - name: template
-      in: query
-      required: false
-      description: "`digital` memuat TTD Kepala Desa + stempel (bila berhak, lihat di atas); `wet` mengosongkan area tanda tangan. FE selalu meminta `digital`."
-      schema:
-        type: string
-        enum: [wet, digital]
-        default: wet
     - name: document
       in: query
       required: false

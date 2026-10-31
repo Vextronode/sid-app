@@ -1,0 +1,124 @@
+import { useEffect, useMemo, useState } from 'react'
+
+import { usePageSize } from '@/components/ui/usePageSize'
+import type { Id, User } from '@/types'
+import { getUsers, toggleUserStatus, updateUser as updateUserRequest } from '../api'
+import { getApiErrorMessage } from '@/shared/lib/apiError'
+
+export function useUserList() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSizeState] = usePageSize('manajemen-user')
+
+  const setPageSize = (value: number) => {
+    setPageSizeState(value)
+    setCurrentPage(1)
+  }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
+  async function loadUsers() {
+    try {
+      setLoading(true)
+      setError('')
+
+      const res = await getUsers()
+      const userData = res.data?.data ?? []
+
+      setUsers(Array.isArray(userData) ? userData : [])
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Gagal memuat data pengguna.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filtered = useMemo(() => {
+    let result = [...users]
+
+    if (search) {
+      const keyword = search.toLowerCase()
+
+      result = result.filter(
+        (user) =>
+          user.name?.toLowerCase().includes(keyword) || user.email?.toLowerCase().includes(keyword),
+      )
+    }
+
+    if (filterStatus) {
+      result = result.filter((user) =>
+        filterStatus === 'aktif' ? user.is_active : !user.is_active,
+      )
+    }
+
+    return result
+  }, [users, search, filterStatus])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+
+  const data = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
+
+  async function toggleStatus(id: Id) {
+    try {
+      setError('')
+      await toggleUserStatus(id)
+      await loadUsers()
+      return true
+    } catch (error) {
+      const message = getApiErrorMessage(error, 'Gagal mengubah status pengguna.')
+      setError(message)
+      return false
+    }
+  }
+
+  async function updateUserName(id: Id, name: string) {
+    try {
+      await updateUserRequest(id, { name })
+      await loadUsers()
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Gagal memperbarui nama pengguna.'))
+      throw error
+    }
+  }
+
+  return {
+    data,
+
+    loading,
+    error,
+    reload: loadUsers,
+
+    setSearch,
+
+    filterStatus,
+    setFilterStatus,
+
+    currentPage,
+    setCurrentPage,
+
+    totalPages,
+    totalItems: filtered.length,
+    pageSize,
+    setPageSize,
+
+    toggleStatus,
+
+    updateUser: updateUserName,
+
+    // Memperbarui satu baris di tabel tanpa memuat ulang daftar
+    // (mis. setelah foto profil diganti).
+    patchUser: (id: Id, fields: Partial<User>) =>
+      setUsers((list) => list.map((item) => (item.id === id ? { ...item, ...fields } : item))),
+  }
+}

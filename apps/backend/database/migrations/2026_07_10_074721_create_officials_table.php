@@ -22,8 +22,6 @@ return new class extends Migration
             $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
             $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
             $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('signature_img')->nullable();
-            $table->string('stamp_img')->nullable();
             $table->string('photo_img')->nullable();
             $table->string('phone_wa')->nullable();
             $table->date('started_at');

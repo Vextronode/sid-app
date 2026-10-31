@@ -137,11 +137,12 @@ post:
     Urutan di dalam satu transaksi:
     1. Simpan surat `pending`, snapshot `flow_id`, log "Permohonan surat dibuat".
     2. Simpan berkas isian bertipe file ke disk privat (`letter_attachments`, kind=field).
-    3. Isi slot tanda tangan (`signature_slots`): slot pemohon memakai TTD akun
-       (wajib sudah dibuat); slot pihak lain diminta ke NIK (TTD digital,
-       notifikasi ke pemilik NIK) atau diisi TTD basah.
-    4. Bila masih ada slot kosong → `current_step_order = 0`, log
-       "Menunggu tanda tangan pihak terkait", tidak ada approver yang dinotifikasi.
+    3. Catat saksi (isian NIK ber-`witness`): warga desa ber-akun diminta
+       persetujuannya (notifikasi ke pemilik NIK), tanpa akun diverifikasi RT,
+       di luar data penduduk dicatat manual. Tidak ada TTD digital: surat
+       ditandatangani basah setelah dicetak di kantor desa.
+    4. Bila masih ada saksi yang menunggu → `current_step_order = 0`, log
+       "Menunggu persetujuan saksi", tidak ada approver yang dinotifikasi.
     5. Bila lengkap → masuk step actionable pertama: tahap non-final milik
        pemohon dilewati (surat langsung `in_progress` di tahap desa; surat
        Kades/Sekdes selalu melewati tahap RT); bila
@@ -182,8 +183,8 @@ post:
     '422':
       description: |
         Validasi gagal: isian tak dikenal/tidak valid, berkas tidak sesuai,
-        TTD pemohon belum dibuat, NIK penanda tangan kosong/milik pemohon
-        sendiri/sedang diblokir atau dibatasi, atau flow tanpa step.
+        NIK saksi milik pemohon sendiri/sedang diblokir atau dibatasi, atau
+        flow tanpa step.
       content:
         application/json:
           schema:
@@ -194,8 +195,3 @@ post:
                 message: "Isian tidak dikenal untuk jenis surat ini: foo."
                 errors:
                   payload: ["Isian tidak dikenal untuk jenis surat ini: foo."]
-            no_signature:
-              value:
-                message: "Buat tanda tangan Anda terlebih dahulu sebelum mengajukan surat ini."
-                errors:
-                  signers.pemohon: ["Buat tanda tangan Anda terlebih dahulu sebelum mengajukan surat ini."]

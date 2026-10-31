@@ -31,12 +31,22 @@ class NewPasswordController extends Controller
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            [
+                ...$request->only('email', 'password', 'password_confirmation', 'token'),
+                'is_active' => true,
+            ],
             function ($user) use ($request) {
+                // Kata sandi dibuat sendiri oleh pemilik akun, jadi tidak
+                // perlu lagi dipaksa ganti (mis. sisa reset sementara admin).
                 $user->forceFill([
                     'password' => Hash::make($request->string('password')),
                     'remember_token' => Str::random(60),
+                    'must_change_password' => false,
                 ])->save();
+
+                // Cabut akses lama: siapa pun yang memegang token API akun
+                // ini sebelum reset harus login ulang.
+                $user->tokens()->delete();
 
                 event(new PasswordReset($user));
             }

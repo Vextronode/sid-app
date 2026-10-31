@@ -72,34 +72,24 @@ Jalankan perintah tersebut melalui `psql` atau aplikasi administrasi PostgreSQL 
 
 ### Edit `.env`
 
+`.env.example` adalah template lengkap untuk dev lokal: strukturnya sama dengan `.env` tim, nilai non-rahasia sudah terisi (locale `id`, `SESSION_DRIVER=file`, `QUEUE_CONNECTION=database`, `CACHE_STORE=file`, dst.), dan rahasia dikosongkan. Biasanya cukup isi:
+
 ```env
-# Nama aplikasi yang tampil ke pengguna; samakan dengan VITE_APP_NAME di frontend.
-SID_APP_NAME=SIDUTama
+# Port dev Vite (npm run dev) = 5173.
+APP_URL=http://127.0.0.1:8000
+FRONTEND_URL=http://127.0.0.1:5173
+SANCTUM_STATEFUL_DOMAINS=127.0.0.1:5173,localhost:5173
 
-APP_TIMEZONE=Asia/Jakarta
-
-# Pesan validasi dan error API berbahasa Indonesia (lang/id).
-APP_LOCALE=id
-APP_FALLBACK_LOCALE=id
-APP_FAKER_LOCALE=id_ID
-
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
 DB_DATABASE=sidutama
 DB_USERNAME=postgres
 DB_PASSWORD=isi_password_postgresql_anda
 
-# Port dev Vite (npm run dev) = 5173.
-FRONTEND_URL=http://localhost:5173
-SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
-
-SESSION_DRIVER=file
-QUEUE_CONNECTION=database
-CACHE_STORE=file
+# Email lupa kata sandi lewat Mailtrap Sandbox (lihat "Email lupa kata sandi" di bawah).
+MAILTRAP_API_KEY=
+MAILTRAP_INBOX_ID=
 ```
 
-> `.env.example` default-nya menunjuk ke `vite preview` (`FRONTEND_URL=http://127.0.0.1:4173`). Untuk `npm run dev`, ganti ke baris port 5173 yang di-comment di `.env.example` (seperti contoh di atas). `FRONTEND_URL` dan `SANCTUM_STATEFUL_DOMAINS` harus cocok dengan host + port frontend yang benar-benar dibuka di browser. Kalau beda, login gagal dengan error `419` atau `401 Unauthenticated`.
+> Default `.env.example` menunjuk ke `npm run dev` (port 5173); versi `vite preview` (port 4173) ada di baris yang di-comment. `FRONTEND_URL` dan `SANCTUM_STATEFUL_DOMAINS` harus cocok dengan host + port frontend yang benar-benar dibuka di browser. Kalau beda, login gagal dengan error `419` atau `401 Unauthenticated`.
 
 ### Variabel `.env` penting lainnya
 
@@ -110,7 +100,8 @@ CACHE_STORE=file
 | `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
 | `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Kunci Web Push | Buat dengan `php artisan webpush:vapid`. Kosong = push nonaktif, in-app tetap jalan |
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
-| `MAIL_MAILER` | Email | `log`; notifikasi email status surat belum diimplementasi |
+| `MAIL_MAILER`, `MAILTRAP_*`, `MAIL_FROM_*` | Email tautan lupa kata sandi dan `php artisan mail:test` | Template memakai `mailtrap-sdk` + `sandbox.api.mailtrap.io`. Tanpa token Mailtrap, ganti ke `MAIL_MAILER=log` (email ditulis ke `storage/logs/laravel.log`). Notifikasi email status surat belum diimplementasi |
+| `FRONTEND_URL` | Asal frontend untuk CORS/Sanctum dan alamat tautan di email reset (`<FRONTEND_URL>/reset-password/<token>`) | Harus sama dengan alamat yang dibuka di browser |
 
 ### Migrate & isi data
 
@@ -216,9 +207,22 @@ Cek push yang gagal: `php artisan queue:failed`; coba lagi: `php artisan queue:r
 
 Notifikasi in-app berjalan tanpa konfigurasi tambahan. Untuk push browser:
 
-1. `php artisan webpush:vapid` lalu isi `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` di `apps/backend/.env`.
-2. Isi `VITE_VAPID_PUBLIC_KEY` di `apps/frontend/.env` dengan nilai `VAPID_PUBLIC_KEY` yang sama.
+1. `php artisan webpush:vapid` (menulis `VAPID_PUBLIC_KEY` dan `VAPID_PRIVATE_KEY` ke `apps/backend/.env`), lalu lengkapi `VAPID_SUBJECT`.
+2. Isi `VITE_VAPID_PUBLIC_KEY` di `apps/frontend/.env` dengan nilai `VAPID_PUBLIC_KEY` yang sama, lalu restart `npm run dev`.
 3. Jalankan `queue:work` (atau pakai `QUEUE_CONNECTION=sync`).
+4. Buka frontend lewat `127.0.0.1`/`localhost` (browser menolak push di IP LAN tanpa HTTPS), aktifkan push dari popover lonceng, dan izinkan notifikasi.
+
+### Email lupa kata sandi (opsional)
+
+Email reset kata sandi dikirim langsung saat diminta (tanpa `queue:work`). Di lokal, kirim ke **Mailtrap Sandbox** agar email tertahan di inbox uji dan tidak sampai ke penerima sungguhan:
+
+1. Di [mailtrap.io](https://mailtrap.io), buka **Sandboxes** → inbox. ID inbox ada di URL: `https://mailtrap.io/inboxes/<INBOX_ID>/messages`.
+2. Buat token di [Settings → API Tokens](https://mailtrap.io/settings/api-tokens) dengan akses ke inbox tersebut.
+3. Isi `MAILTRAP_API_KEY` dan `MAILTRAP_INBOX_ID` di `apps/backend/.env` (`MAIL_MAILER=mailtrap-sdk` dan `MAILTRAP_HOST=sandbox.api.mailtrap.io` sudah ada di template), lalu `php artisan config:clear`.
+4. Uji: `php artisan mail:test alamat@contoh.com`, email harus muncul di inbox sandbox.
+5. Uji alur penuh: akun seeder tidak punya email, jadi login (mis. `demo_warga`), isi email di Profil, logout, lalu pakai **Lupa Kata Sandi**.
+
+Konfigurasi produksi (Mailtrap Sending dengan domain terverifikasi, kunci VAPID produksi) ada di [README](../README.md#b-produksi).
 
 ---
 
@@ -236,19 +240,16 @@ npm run dev
 Isi `apps/frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:8000
-VITE_API_BASE_URL=http://localhost:8000/api
-
 # Samakan dengan SID_APP_NAME di backend.
 VITE_APP_NAME=SIDUTama
-
+VITE_API_URL=http://127.0.0.1:8000
 # Harus sama dengan VAPID_PUBLIC_KEY di apps/backend/.env (kosong = push nonaktif).
 VITE_VAPID_PUBLIC_KEY=
 ```
 
-> `.env.example` frontend memakai `127.0.0.1`. Pilih satu host (`localhost` atau `127.0.0.1`) dan pakai konsisten di `VITE_API_URL`, `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, dan alamat yang dibuka di browser; mencampur keduanya membuat cookie sesi tidak terkirim.
+> `.env.example` frontend dan backend sama-sama memakai `127.0.0.1`. Pilih satu host (`localhost` atau `127.0.0.1`) dan pakai konsisten di `VITE_API_URL`, `APP_URL`, `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, dan alamat yang dibuka di browser; mencampur keduanya membuat cookie sesi tidak terkirim.
 
-Frontend jalan di `http://localhost:5173`. Setelah mengubah `.env` frontend, restart `npm run dev`.
+Frontend jalan di `http://127.0.0.1:5173`. Setelah mengubah `.env` frontend, restart `npm run dev`.
 
 ---
 
@@ -286,6 +287,8 @@ php artisan test
 # Frontend
 cd apps\frontend
 npm run lint
+npm run format:check   # prettier --check; perbaiki dengan npm run format
+npm run typecheck      # tsc --noEmit; build tidak memeriksa tipe
 npm run test:run
 npm run build
 ```

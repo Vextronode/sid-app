@@ -11,6 +11,9 @@
 | Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.3 |
 
 > **v5.3:** UC-03 (form dinamis & penanda tangan), UC-04a/04c (surat ditahan, snapshot, notifikasi Terapkan), UC-05/06/08, UC-09 (paginasi), UC-14 (jabatan tanpa akun, foto, reset TTD), UC-16/18/19 (identitas desa, kategori berita), UC-17 (tanggal lahir), UC-21 (field yang dapat diubah) diperbarui. UC baru: **UC-25** Kelola Tanda Tangan & Permintaan Tanda Tangan, **UC-26** Terapkan Perubahan Data Kependudukan dari Surat.
+
+> **2026-10-31:** TTD digital dihapus. UC-03 tanpa slot TTD, UC-05 pratinjau pemohon setelah terbit dan satu format unduh, UC-14 tanpa upload TTD Kades & reset TTD, UC-18 tanpa stempel, UC-25 menjadi Persetujuan Saksi.
+
 > **Pembaruan 2026-10-18:** UC-16 (bar pengumuman di semua halaman publik, sambutan Kepala Desa, kontak telepon/email yang bisa disalin, Peraturan Desa sebagai section Profil Desa, halaman informasi aktif di produksi, BUMDesa/APBDes "Segera hadir") dan UC-18 (titik kantor berupa koordinat, sambutan Kepala Desa) diperbarui. UC baru: **UC-27** Kelola Pengumuman Beranda, **UC-28** Kelola Halaman Informasi.
 
 > **Pembaruan 2026-10-25:** UC baru **UC-29** Unggah dan Verifikasi Hasil dari Instansi (formulir Layanan Kependudukan).
@@ -85,32 +88,29 @@ Main Flow:
 | Use Case ID | UC-03 |
 | Nama | Input Permohonan Surat |
 | Aktor | Pengguna aktif dengan `citizen_id` (warga, atau pejabat untuk dirinya) |
-| Pre-condition | Login, akun aktif dan terhubung ke citizen; jenis surat aktif ber-template milik desanya. Bila jenis surat punya slot TTD pemohon, akun sudah membuat tanda tangan (UC-25) |
-| Post-condition | Surat `pending` tersimpan dengan `flow_id` di-snapshot; `current_step_order` = 0 (menunggu tanda tangan) atau step actionable pertama |
+| Pre-condition | Login, akun aktif dan terhubung ke citizen; jenis surat aktif ber-template milik desanya. Tidak perlu TTD akun (TTD dibubuhkan basah setelah surat terbit) |
+| Post-condition | Surat `pending` tersimpan dengan `flow_id` di-snapshot; `current_step_order` = 0 (menunggu persetujuan saksi) atau step actionable pertama |
 
 Main Flow:
 1. Pemohon membuka "Ajukan Surat" dan memilih jenis surat (hanya `template != NULL AND is_active = true`, desa yang sama).
-2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members) dan `signature_slots`.
+2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members).
 3. Data pemohon (nama, NIK, alamat) diambil otomatis dari citizen akun; `purpose` dan `notes` tidak lagi diisi (keperluan menjadi isian bila diperlukan jenis surat).
-4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan untuk tiap slot pihak lain mengisi NIK penanda tangan **atau** nama + foto dokumen ber-TTD basah.
+4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan mengisi NIK saksi bila jenis surat memintanya.
 5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe dan wajib diperiksa).
 6. Dalam `DB::transaction()` sistem:
    - menyimpan surat (`status = pending`, `submitted_at`, `flow_id` snapshot, NIK terenkripsi + hash) dan log "Permohonan surat dibuat";
    - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
-   - mengisi slot TTD: slot pemohon langsung `signed` dari TTD akun; slot pihak lain → permintaan TTD digital ke pemilik NIK (`pending`, kedaluwarsa 3 hari, notifikasi `signature_requested`); saksi warga desa ber-akun (isian NIK ber-`witness`) → permintaan persetujuan saksi dengan alur yang sama (tanpa TTD) atau TTD basah (`signed`).
-7. Bila masih ada slot belum `signed` → `current_step_order = 0` + log "Menunggu tanda tangan pihak terkait"; surat belum terlihat approver. Setelah semua slot terisi (UC-25), langkah 8 dijalankan otomatis.
+   - mencatat saksi (isian NIK ber-`witness`): warga desa ber-akun → permintaan persetujuan (`pending`, kedaluwarsa 3 hari, notifikasi `signature_requested`); warga desa tanpa akun → `rt_check` (diverifikasi RT); di luar data penduduk → `manual`. Tidak ada TTD digital.
+7. Bila masih ada saksi yang menunggu → `current_step_order = 0` + log "Menunggu persetujuan saksi"; surat belum terlihat approver. Setelah semua saksi terisi (UC-25), langkah 8 dijalankan otomatis.
 8. Sistem memilih tahap awal: tahap non-final yang semua pejabat eligible-nya adalah pemohon dilewati (log), dan pemohon Kades/Sekdes selalu melewati tahap RT; surat yang langsung di tahap desa berstatus `in_progress`. Bila RT wilayah pemohon **kosong**, surat ditahan di step RT (log "Surat ditahan…") dan Staf SIDUTama menerima notifikasi `approver_vacant`; bila tahap final tidak punya approver selain pemohon (Kades saat Sekdes kosong, atau sebaliknya), surat ditahan di tahap final dengan notifikasi yang sama.
 9. Sistem membuat placeholder `letter_approvals` untuk step aktif (deadline dari `approval_settings`) dan mengirim notifikasi `pending` ke approver.
 10. Respons 201 berisi detail surat.
 
 Alternative Flow:
 - 5a. Validasi gagal → 422 per field; tidak ada data/berkas tersimpan.
-- 6a. TTD pemohon belum dibuat untuk slot `applicant` → 422.
-- 6b. NIK penanda tangan = NIK pemohon, pemohon diblokir pemilik NIK, atau sudah 3× ditolak NIK itu dalam 24 jam → 422 dengan pesan seragam ("tidak dapat dikirim saat ini").
+- 6b. NIK saksi = NIK pemohon, pemohon diblokir pemilik NIK, atau sudah 3× ditolak NIK itu dalam 24 jam → 422 dengan pesan seragam ("tidak dapat dikirim saat ini").
 - 6c. Kegagalan di tengah transaksi → berkas yang sudah tertulis dihapus.
 - 8a. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI.
-
-> Jenis surat bawaan seeder (A01–A11) belum memakai `signature_slots`; alur tanda tangan aktif begitu developer menambahkan slot pada jenis surat.
 
 ---
 
@@ -127,7 +127,7 @@ Alternative Flow:
 Main Flow:
 1. RT membuka daftar seluruh surat dari wilayahnya (berpaginasi); keputusan hanya tersedia untuk surat yang step aktifnya masih RT
 2. RT membuka detail permohonan
-3. RT memeriksa data pemohon, isian form, lampiran, status tanda tangan, dan dokumen pendukung (bila ada)
+3. RT memeriksa data pemohon, isian form, lampiran, status saksi, dan dokumen pendukung (bila ada)
 4. RT memilih tindakan: Setujui atau Tolak
 5. RT mengisi catatan keputusan (wajib jika menolak)
 6. Sistem memvalidasi bahwa RT berwenang atas wilayah surat ini (via OfficialService, cek `rt_id`)
@@ -232,7 +232,7 @@ Main Flow:
     - Kasi/Kaur: surat `approved` sesuai `letter_types.assigned_role` (NULL = keduanya)
     - Staf SIDUTama: semua surat di desanya
 3. Filter: status, jenis surat, rentang tanggal (`from`/`to` atau `submitted_from`/`submitted_to` dengan zona waktu klien), pencarian (nama pemohon, nomor surat, nama warga), nama pemohon; paginasi `page`/`per_page` (default 20, maks 100).
-4. Sistem menampilkan nomor surat, pemohon, jenis, status, tahap aktif, tanggal, badge overdue (`is_overdue` dihitung saat dimuat), penanda "menunggu tanda tangan" dan "perlu diterapkan".
+4. Sistem menampilkan nomor surat, pemohon, jenis, status, tahap aktif, tanggal, badge overdue (`is_overdue` dihitung saat dimuat), penanda "menunggu persetujuan saksi" dan "perlu diterapkan".
 5. Kartu ringkasan dashboard memakai `GET /letters/summary` (total, per status, overdue, per jenis, per periode hari/minggu/bulan) atas scope yang sama.
 
 ---
@@ -259,10 +259,10 @@ Main Flow:
    - Timeline riwayat: setiap perubahan status + timestamp + aktor + catatan + IP
    - Badge 'overdue' jika deadline terlewati
    - Informasi approval Kades/Sekdes (jika sudah diproses)
-   - Isian form (`payload`), lampiran (dibuka lewat endpoint terproteksi), status tiap slot tanda tangan
+   - Isian form (`payload`), lampiran (dibuka lewat endpoint terproteksi), status tiap saksi
    - Tombol dokumen pendukung bila `has_supporting_document`
-4. Jika status = `approved`, popup detail menampilkan pratinjau surat (canvas di dalam popup, tanpa tombol unduh/cetak browser) dan menu **Unduh surat** dengan dua format: TTD & stempel digital, atau untuk tanda tangan basah (area tanda tangan kosong), disertai keterangan "Berlaku sampai {tanggal}" bila `expires_at` terisi. Bila `is_expired`, pratinjau diganti keterangan kedaluwarsa, menu unduh tetap tampil tetapi nonaktif, dan badge "Kedaluwarsa" muncul; surat hanya tersimpan sebagai riwayat. Sebelum terbit, area dokumen menjelaskan status (sedang diproses/ditolak). Backend menolak unduh **dan preview** oleh pemohon (role apa pun) jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download/view, dan TTD/stempel di pratinjau hanya dipasang untuk surat final bagi pihak yang berhak mengunduh.
-5. Bila `awaiting_signatures`, pemohon dapat mengisi ulang slot yang ditolak/kedaluwarsa (UC-25).
+4. Jika status = `approved`, popup detail menampilkan pratinjau surat (canvas di dalam popup, tanpa tombol unduh/cetak browser) dan tombol **Unduh** (satu format, tanpa TTD dan stempel) dengan petunjuk mengambil surat ber-TTD & stempel basah di kantor desa, disertai keterangan "Berlaku sampai {tanggal}" bila `expires_at` terisi. Bila `is_expired`, pratinjau diganti keterangan kedaluwarsa, tombol unduh nonaktif, dan badge "Kedaluwarsa" muncul; surat hanya tersimpan sebagai riwayat. Sebelum terbit, pemohon tidak dapat mempratinjau (403 "Pratinjau surat tersedia setelah surat terbit."); area dokumen menjelaskan status (sedang diproses/ditolak). Backend menolak unduh **dan preview** oleh pemohon (role apa pun) jika `expires_at` telah lewat; role lain mengikuti LetterPolicy::download/view.
+5. Bila `awaiting_signatures`, pemohon dapat mengganti saksi yang menolak/kedaluwarsa (UC-25).
 
 ---
 
@@ -282,19 +282,19 @@ Main Flow:
 3. Backend melakukan pengecekan:
    - Jika user adalah pemohon (`submitted_by = user.id`): cek `expires_at` tanpa membedakan role
    - Kasi/Kaur hanya dapat mengakses surat approved yang sesuai `assigned_role`
-4. Sistem mengambil konteks render dari **`letters.snapshot`** (dibekukan saat final approve: template, definisi isian, kop & identitas desa, path stempel, nama & path TTD Kepala Desa penanda tangan, tanggal terbit). Surat approved lama tanpa snapshot dibekukan saat unduhan pertama.
-5. Sistem mengganti placeholder: nomor surat, data pemohon, kop desa, isian form (diformat: tanggal, rupiah + terbilang, pilihan), slot TTD (`ttd_{slot}`, `nama_ttd_{slot}`); nilai teks di-escape.
-6. Template `wet` (default) hanya stempel desa; `digital` juga menempelkan TTD Kepala Desa.
+4. Sistem mengambil konteks render dari **`letters.snapshot`** (dibekukan saat final approve: template, definisi isian, kop & identitas desa, nama Kepala Desa penanda tangan, tanggal terbit). Surat approved lama tanpa snapshot dibekukan saat unduhan pertama.
+5. Sistem mengganti placeholder: nomor surat, data pemohon, kop desa, isian form (diformat: tanggal, rupiah + terbilang, pilihan), nama penanda tangan slot (`nama_ttd_{slot}`); nilai teks di-escape.
+6. PDF tidak memuat gambar tanda tangan maupun stempel: ruang tanda tangan kosong, nama penanda tangan tetap tercetak. Surat resmi adalah cetakan yang ditandatangani dan distempel basah di kantor desa dan diambil pemohon di sana; unduhan adalah salinan tanpa TTD.
 7. `barryvdh/laravel-dompdf` generate PDF; binary dikirim langsung (tidak disimpan).
 
 Alternative Flow:
-- 3a. Status bukan `approved` → tombol Download tidak muncul
+- 3a. Status bukan `approved` → tombol Download tidak muncul; pratinjau juga tidak tersedia bagi pemohon (403 dari `GET /letters/{id}/preview`), sedangkan pejabat yang memutus tetap dapat mem-preview
 - 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon (berlaku juga untuk `GET /letters/{id}/preview`); di UI tombol tampil nonaktif. Staf SIDUTama, Kades/Sekdes, dan Kasi/Kaur yang berwenang tetap dapat mengunduh untuk arsip.
 - 3c. `validity_days` jenis surat diubah Petugas (UC-21) → hanya berlaku untuk surat yang final approve setelahnya; `expires_at` surat yang sudah terbit tidak berubah.
 
-**Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa/TTD, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
+**Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
 
-**Sub-flow - Dokumen Pendukung:** bila jenis surat memiliki `supporting_template`, siapa pun yang berhak melihat surat dapat mempratinjau/mengunduh dokumen pendukung (mis. surat pernyataan) yang digenerate dari isian dan tanda tangan, tanpa TTD Kepala Desa.
+**Sub-flow - Dokumen Pendukung:** bila jenis surat memiliki `supporting_template`, siapa pun yang berhak melihat surat dapat mempratinjau/mengunduh dokumen pendukung (mis. surat pernyataan) yang digenerate dari isian, dengan ruang TTD kosong untuk TTD basah.
 
 ---
 
@@ -389,11 +389,6 @@ Main Flow:
 4. Reset password hanya untuk akun non-Staf SIDUTama selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
 5. Perubahan jabatan dicatat pada audit activitylog.
 
-**Sub-flow - Upload / Ganti TTD Kepala Desa:**
-- Setelah rotasi jabatan, Staf SIDUTama mengunggah file TTD ke record Kepala Desa aktif yang baru melalui `POST /officials/{official}/signature` (multipart field `signature`).
-- File PNG/JPEG/WebP maksimum 5 MB disimpan pada private storage; preview binary melalui `GET` pada endpoint yang sama hanya tersedia bagi Staf SIDUTama desa terkait dan Kepala Desa aktif yang belum mengakhiri masa jabatan.
-- Upload ulang mengganti file TTD pada record aktif yang sama. Alur upload terpisah dari operasi rotasi.
-
 **Sub-flow - Penetapan pejabat (promote) & rotasi:**
 - Petugas mencari calon lewat NIK (`POST /officials/candidates/lookup`); sistem menilai kelayakan (warga aktif, belum menjabat; jabatan berakun mensyaratkan akun warga aktif).
 - Jabatan **berakun** (Kepala Desa, Sekdes, RT, RW, Kadus, Kasi Pemerintahan, Kaur TU & Umum, Staf SIDUTama) ditetapkan ke akun warga dan mengubah `users.role`. Jabatan **tanpa akun** (jenis dari `official_position_types`) ditetapkan ke data warga tanpa mengubah role.
@@ -415,9 +410,6 @@ Main Flow:
 **Sub-flow - Kelola Jenis Jabatan Tanpa Akun:**
 - Petugas menambah jenis jabatan (kode dibuat otomatis dari label dan tidak dapat diubah), mengubah label/urutan/satu-pemegang/aktif, atau menghapus.
 - Menonaktifkan ditolak selama masih dijabat; menjadi satu-pemegang ditolak bila dijabat lebih dari 1 orang; hapus ditolak bila pernah dipakai (nonaktifkan saja).
-
-**Sub-flow - Reset Tanda Tangan Akun:**
-- Staf SIDUTama mereset TTD pribadi akun di desanya dengan alasan (5-500 karakter). Baris lama ditandai revoked (berkas dipertahankan), dicatat di activity log; pemilik akun dapat membuat TTD baru.
 
 Alternative Flow:
 - NIK calon tidak ditemukan di desa → 404; calon tidak memenuhi syarat → `eligible: false` beserta alasan
@@ -538,13 +530,11 @@ Alternatif Flow:
 
 Main Flow:
 1. User membuka menu "Profil Desa"
-2. Sistem menampilkan data profil desa saat ini: nama, kode, nama Kepala Desa, alamat, telepon, email, kecamatan/kabupaten/provinsi/kode pos (kop surat), luas wilayah (ha), sejarah, visi, misi, jam layanan, titik kantor (koordinat), sambutan Kepala Desa (opsional), kredit foto, logo, foto beranda, dan indikator stempel.
+2. Sistem menampilkan data profil desa saat ini: nama, kode, nama Kepala Desa, alamat, telepon, email, kecamatan/kabupaten/provinsi/kode pos (kop surat), luas wilayah (ha), sejarah, visi, misi, jam layanan, titik kantor (koordinat), sambutan Kepala Desa (opsional), kredit foto, logo, foto beranda. Tidak ada stempel digital (surat distempel basah di kantor desa).
 3. User mengubah data profil lalu menyimpan (gambar diunggah lewat operasi terpisah). Data kop surat dipakai PDF; identitas dipakai header/footer aplikasi dan halaman publik.
 3b. Titik kantor diisi dengan menempel koordinat (`lat, lng`) atau link Google Maps, termasuk short link `maps.app.goo.gl`. Link diurai server (`POST /villages/profile/resolve-map-link`): redirect diikuti hanya ke host Google Maps, lalu titik pin diambil dan diisikan ke form sebelum disimpan sebagai `latitude`/`longitude`. Link "Buka di peta" di beranda dibuat dari koordinat ini.
 3a. Logo (maks 2 MB) dan foto beranda (maks 5 MB) diunggah terpisah, disimpan di disk publik setelah dioptimasi (diperkecil, WebP); unggahan lama dihapus, aset bawaan seeder tidak disentuh.
-4. Untuk menambah atau mengganti stempel, User mengunggah file PNG/JPEG/WebP maksimum 5 MB melalui operasi upload terpisah.
-5. File disimpan di private storage; API menyimpan path dan menyediakan preview binary melalui endpoint yang memerlukan autentikasi serta scope Staf SIDUTama pada desanya.
-6. Sistem menampilkan konfirmasi; profil publik hanya menerima indikator `has_stamp_img`, bukan path private atau URL file.
+4. Sistem menampilkan konfirmasi.
 
 Alternatif Flow:
 - Field wajib kosong (nama desa, nama Kepala Desa) → error validasi per field
@@ -556,7 +546,6 @@ Alternatif Flow:
 Notes:
 - Domain CMS (Profil Desa, Berita, Peraturan Desa) dimiliki **eksklusif** oleh `staf_sid`. Kepala Desa dan Sekretaris Desa **tidak** memiliki akses ke domain ini meski keduanya adalah approver aktif di domain surat — dua domain ini terpisah tegas.
 - Tidak ada approval bertingkat; perubahan langsung tersimpan
-- Upload stempel terpisah dari rotasi jabatan; alur upload TTD Kepala Desa dijelaskan pada UC-14.
 
 ---
 
@@ -628,7 +617,7 @@ Main Flow:
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
-> Flow, template, isian form, slot tanda tangan, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar untuk warga (`GET /letter-types` tanpa parameter) tetap hanya jenis aktif ber-template.
+> Flow, template, isian form, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar untuk warga (`GET /letter-types` tanpa parameter) tetap hanya jenis aktif ber-template.
 
 ---
 
@@ -702,35 +691,32 @@ Catatan: Tidak ada file lampiran di MVP, murni teks.
 
 ---
 
-## UC-25: Kelola Tanda Tangan & Permintaan Tanda Tangan
+## UC-25: Persetujuan Saksi
 
 | Field | Keterangan |
 |---|---|
 | Use Case ID | UC-25 |
-| Nama | Kelola Tanda Tangan Pribadi & Permintaan Tanda Tangan |
-| Aktor | Semua pengguna login (pemilik akun, pemohon surat, pemilik NIK yang dimintai tanda tangan) |
+| Nama | Persetujuan Saksi |
+| Aktor | Semua pengguna login (pemohon surat, pemilik NIK yang diminta menjadi saksi/memberi persetujuan) |
 | Pre-condition | User sudah login |
-| Post-condition | TTD pribadi tersimpan; slot tanda tangan surat terisi / ditolak; surat lanjut ke approval bila semua slot terisi |
+| Post-condition | Saksi pada surat disetujui / ditolak; surat lanjut ke approval bila semua saksi terisi |
 
-**Main Flow - Buat Tanda Tangan Pribadi:**
-1. User membuka profil → Tanda Tangan.
-2. User mengunggah gambar TTD (PNG/JPG, maks 512 KB). Sistem menyimpan berkas terenkripsi di disk privat.
-3. TTD tidak dapat diubah sendiri (409 bila sudah ada); reset hanya oleh Staf SIDUTama (UC-14).
+> Tidak ada TTD digital, TTD akun, maupun reset TTD. Surat terbit tanpa tanda tangan; tanda tangan dan stempel dibubuhkan basah di kantor desa. Yang dimintakan lewat sistem hanya persetujuan saksi (dan persetujuan pasangan/kepala KK tujuan pada F09).
 
-**Main Flow - Menanggapi Permintaan Tanda Tangan:**
-1. Pemilik NIK menerima notifikasi `signature_requested` dan membuka daftar permintaan (`GET /signature-requests`): jenis surat, nama pemohon, label slot, batas waktu.
-2. **Setujui:** pemilik memasukkan kata sandi; TTD pribadinya dibubuhkan ke slot (status `signed`); pemohon menerima `signature_accepted`.
-3. **Tolak:** opsional catatan dan opsi blokir pemohon; slot `rejected`; pemohon menerima `signature_rejected` tanpa identitas penolak.
-4. Bila semua slot surat sudah `signed`, surat otomatis masuk tahap approval pertama (UC-03 langkah 8).
+**Main Flow - Menanggapi Permintaan Saksi:**
+1. Pemilik NIK menerima notifikasi `signature_requested` dan membuka daftar "Permintaan Saksi" di profil (`GET /signature-requests`): jenis surat, nama pemohon, label (Saksi/Persetujuan), batas waktu.
+2. **Setujui:** pemilik memasukkan kata sandi; persetujuan dicatat (status `signed`); pemohon menerima `signature_accepted`.
+3. **Tolak:** opsional catatan dan opsi blokir pemohon; status `rejected`; pemohon menerima `signature_rejected` tanpa identitas penolak.
+4. Bila semua saksi surat sudah terisi, surat otomatis masuk tahap approval pertama (UC-03 langkah 8).
 
-**Main Flow - Pemohon Mengisi Ulang Slot:**
-1. Selama surat `pending` dengan `current_step_order = 0`, pemohon dapat meminta ke NIK lain atau mengunggah foto dokumen ber-TTD basah (nama penanda tangan wajib).
-2. Permintaan yang masih menunggu pada slot itu dibatalkan (`cancelled`).
+**Main Flow - Pemohon Mengganti Saksi:**
+1. Selama surat `pending` dengan `current_step_order = 0`, pemohon dapat mengganti saksi yang menolak/kedaluwarsa dengan NIK lain (bila di luar data penduduk, nama wajib).
+2. Permintaan yang masih menunggu pada saksi itu dibatalkan (`cancelled`).
 
 **Main Flow - Kelola Blokir:** pemilik melihat daftar akun yang diblokir dan dapat mencabut blokir.
 
 Alternative Flow:
-- Kata sandi salah → 422; belum punya TTD pribadi → 422
+- Kata sandi salah → 422
 - Permintaan sudah kedaluwarsa/dibatalkan → 409
 - Permintaan bukan untuk NIK akun ini → 404
 - Pemohon diblokir atau sudah 3 kali ditolak NIK yang sama dalam 24 jam → permintaan baru ditolak dengan pesan seragam

@@ -13,6 +13,10 @@ class PasswordResetLinkController extends Controller
     /**
      * Handle an incoming password reset link request.
      *
+     * Responsnya selalu sama, baik email terdaftar, tidak terdaftar, milik
+     * akun nonaktif, maupun sedang di-throttle, supaya endpoint ini tidak
+     * bisa dipakai untuk menebak email mana yang punya akun.
+     *
      * @throws ValidationException
      */
     public function store(Request $request): JsonResponse
@@ -21,19 +25,15 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Akun nonaktif tidak boleh dipulihkan lewat email: kriteria
+        // is_active ikut dipakai saat broker mencari user.
+        Password::sendResetLink([
+            'email' => $request->string('email')->trim()->value(),
+            'is_active' => true,
+        ]);
 
-        if ($status != Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages([
-                'email' => [__($status)],
-            ]);
-        }
-
-        return response()->json(['status' => __($status)]);
+        return response()->json([
+            'status' => 'Jika email tersebut terdaftar, tautan atur ulang kata sandi sudah dikirim. Periksa kotak masuk atau folder spam Anda.',
+        ]);
     }
 }

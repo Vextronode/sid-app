@@ -42,7 +42,6 @@ class LetterTypeResource extends JsonResource
             'data_action' => $this->data_action,
             'form_fields' => $this->form_fields ?? [],
             'data_fields' => $this->data_fields ?? [],
-            'signature_slots' => $this->signature_slots ?? [],
             'has_supporting_document' => $this->supporting_template !== null,
             'status_label' => $this->statusLabel(),
         ];

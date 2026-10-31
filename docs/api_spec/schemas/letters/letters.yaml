@@ -75,7 +75,7 @@ Letter:
       enum: [pending, in_progress, approved, rejected]
       example: "pending"
       description: |
-        pending: belum ada keputusan approver (termasuk saat menunggu tanda tangan).
+        pending: belum ada keputusan approver (termasuk saat menunggu persetujuan saksi).
         in_progress: minimal 1 step approve, belum sampai step is_final=true.
         approved: step is_final=true sudah di-approve.
         rejected: TERMINAL, rejected_at_step dicatat.
@@ -86,7 +86,7 @@ Letter:
     current_step_order:
       type: integer
       example: 1
-      description: "step_order yang sedang aktif/ditunggu; 0 = menunggu tanda tangan pihak terkait."
+      description: "step_order yang sedang aktif/ditunggu; 0 = menunggu persetujuan saksi."
     current_step:
       $ref: '#/CurrentStep'
     rejected_at_step:
@@ -130,7 +130,7 @@ Letter:
       type: integer
       nullable: true
       example: 3
-      description: "Kepala Desa yang TTD-nya dibekukan pada snapshot saat final approve."
+      description: "Kepala Desa yang namanya dibekukan pada snapshot saat final approve (TTD dibubuhkan basah)."
     fulfilled_at:
       type: string
       format: date-time
@@ -222,7 +222,7 @@ Letter:
       description: |
         Included when relation is loaded. Pada detail surat backend hanya
         memuat kolom id, name, code, assigned_role, produces_letter,
-        data_action, form_fields, signature_slots, supporting_template,
+        data_action, form_fields, supporting_template,
         issues_letter_number, signed_by_village_head.
       allOf:
         - $ref: '../letter-types/letter-types.yaml#/LetterType'
@@ -240,7 +240,7 @@ Letter:
         $ref: '#/LetterAttachment'
     signatures:
       type: array
-      description: "Keadaan terkini tiap slot tanda tangan (baris terbaru per slot)."
+      description: "Keadaan terkini tiap saksi/persetujuan (baris terbaru per slot)."
       items:
         $ref: '#/LetterSignature'
     user:
@@ -251,7 +251,7 @@ Letter:
 CurrentStep:
   type: object
   nullable: true
-  description: "Step flow yang cocok dengan current_step_order; null bila tidak ada (mis. menunggu tanda tangan)."
+  description: "Step flow yang cocok dengan current_step_order; null bila tidak ada (mis. menunggu persetujuan saksi)."
   properties:
     step_order:
       type: integer
@@ -308,6 +308,13 @@ LetterListItem:
     rejected_at_step:
       type: integer
       nullable: true
+    rejection_reason:
+      type: string
+      nullable: true
+      example: "Fotokopi KK tidak terbaca."
+      description: |
+        Catatan keputusan tolak terakhir (`letter_approvals.notes`, relasi
+        `latestRejection`). `null` bila status bukan `rejected`.
     is_overdue:
       type: boolean
     awaiting_signatures:
@@ -514,7 +521,7 @@ LetterStatusLog:
       nullable: true
       description: |
         Dipetakan dari kolom `reason`. Nilai sistem yang dipakai antara lain:
-        "Permohonan surat dibuat", "Menunggu tanda tangan pihak terkait",
+        "Permohonan surat dibuat", "Menunggu persetujuan saksi",
         "Surat ditahan: tahap RT belum memiliki pejabat aktif",
         "Surat ditahan: tahap Kepala Desa/Sekretaris Desa belum memiliki pejabat yang berwenang",
         "Tahap RT dilewati: pemohon adalah pejabat pada tahap tersebut",
@@ -536,17 +543,16 @@ LetterAttachment:
       example: 15
     kind:
       type: string
-      enum: [attachment, field, wet_signature]
+      enum: [attachment, field]
       example: "field"
       description: |
-        field: berkas isian bertipe file pada form; wet_signature: foto dokumen
-        ber-TTD basah untuk sebuah slot; attachment: lampiran umum (tidak dibuat
-        oleh alur pengajuan saat ini).
+        field: berkas isian bertipe file pada form; attachment: lampiran umum
+        (tidak dibuat oleh alur pengajuan saat ini).
     field:
       type: string
       nullable: true
       example: "foto_usaha"
-      description: "Nama isian (kind=field) atau slot_key (kind=wet_signature)."
+      description: "Nama isian (kind=field)."
     original_name:
       type: string
       example: "foto-warung.jpg"
@@ -565,7 +571,7 @@ LetterAttachment:
 
 LetterSignature:
   type: object
-  description: "Keadaan terkini satu slot tanda tangan pada surat (`letter_types.signature_slots`)."
+  description: "Keadaan terkini satu saksi/persetujuan pada surat (isian NIK ber-`witness`). Tidak ada TTD digital."
   properties:
     slot_key:
       type: string
@@ -575,11 +581,11 @@ LetterSignature:
       example: "Saksi 1"
     signer_type:
       type: string
-      enum: [applicant, other, witness]
-      description: "`witness` = pihak dari isian NIK ber-`witness` (saksi, penerima kuasa F-1.07, dsb.; persetujuan, tanpa TTD); slot_key = nama isian NIK."
+      enum: [witness]
+      description: "Pihak dari isian NIK ber-`witness` (saksi, penerima kuasa F-1.07, pasangan/kepala KK tujuan F09; persetujuan, tanpa TTD); slot_key = nama isian NIK."
     method:
       type: string
-      enum: [digital, wet, consent, rt_check, manual]
+      enum: [consent, rt_check, manual]
       description: |
         Saksi: `consent` = disetujui pemilik NIK lewat akun; `rt_check` =
         warga desa tanpa akun (nama dari data penduduk, diverifikasi RT);
@@ -628,29 +634,6 @@ LetterCreateRequest:
       type: object
       nullable: true
       description: "Berkas per isian bertipe file: `files[{name}]`. PDF/JPG/JPEG/PNG (atau JPG/PNG bila `accept: image`), maks 2048 KB."
-      additionalProperties:
-        type: string
-        format: binary
-    signers:
-      type: object
-      nullable: true
-      description: |
-        Per slot tanda tangan pihak lain: `signers[{slot}][nik]` (16 digit) untuk
-        meminta TTD digital pemilik NIK, atau `signers[{slot}][name]` (maks 100)
-        bersama `signature_files[{slot}]` untuk TTD basah.
-      additionalProperties:
-        type: object
-        properties:
-          nik:
-            type: string
-            pattern: '^\d{16}$'
-          name:
-            type: string
-            maxLength: 100
-    signature_files:
-      type: object
-      nullable: true
-      description: "Foto dokumen ber-TTD basah per slot. PDF/JPG/JPEG/PNG, maks 2048 KB."
       additionalProperties:
         type: string
         format: binary
@@ -853,22 +836,22 @@ FulfillmentApplyRequest:
 
 SignatureRefillRequest:
   type: object
-  description: "Salah satu: `nik`, atau `file` + `name`."
+  required: [nik]
+  description: "NIK saksi pengganti; `name` (dan `family_number`) bila NIK di luar data penduduk."
   properties:
     nik:
       type: string
       pattern: '^\d{16}$'
-    file:
-      type: string
-      format: binary
-      description: "PDF/JPG/JPEG/PNG maks 2048 KB."
     name:
       type: string
       maxLength: 100
+    family_number:
+      type: string
+      pattern: '^\d{16}$'
 
 SignatureRequest:
   type: object
-  description: "Permintaan tanda tangan yang menunggu keputusan pemilik NIK."
+  description: "Permintaan saksi/persetujuan yang menunggu keputusan pemilik NIK."
   properties:
     id:
       type: integer
@@ -908,13 +891,3 @@ SignatureBlock:
     created_at:
       type: string
       format: date-time
-
-UserSignatureStatus:
-  type: object
-  properties:
-    has_signature:
-      type: boolean
-    created_at:
-      type: string
-      format: date-time
-      nullable: true

@@ -1,10 +1,10 @@
 post:
   tags: [Epic 5 - Alur Pengajuan & Approval Surat]
-  summary: Tolak permintaan tanda tangan
+  summary: Tolak permintaan saksi/persetujuan
   description: |
     Hanya pemilik NIK yang dituju dan selama permintaan masih pending.
     `block = true` sekaligus memblokir pemohon (`signature_blocks`) agar tidak
-    dapat meminta TTD lagi ke akun ini. Pemohon menerima notifikasi
+    dapat meminta persetujuan saksi lagi ke akun ini. Pemohon menerima notifikasi
     `signature_rejected` tanpa identitas penolak.
   operationId: rejectSignatureRequest
   security:
@@ -37,7 +37,7 @@ post:
           schema:
             $ref: '../../schemas/common/errors.yaml#/SuccessMessage'
           example:
-            message: "Permintaan tanda tangan ditolak."
+            message: "Permintaan saksi ditolak."
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '404':

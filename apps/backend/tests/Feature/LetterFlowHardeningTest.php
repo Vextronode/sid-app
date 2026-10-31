@@ -55,7 +55,7 @@ class LetterFlowHardeningTest extends TestCase
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()
-            ->with('pdf.templates.wet', Mockery::on(function (array $data): bool {
+            ->with('pdf.templates.letter', Mockery::on(function (array $data): bool {
                 return str_contains($data['template'], '&lt;script&gt;alert(1)&lt;/script&gt;&lt;b&gt;Warung&lt;/b&gt;')
                     && ! str_contains($data['template'], '<script>')
                     && str_contains($data['template'], 'Nomor: 470/001/Des/X/2026')

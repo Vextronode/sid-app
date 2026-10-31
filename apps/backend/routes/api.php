@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OccupationController;
 use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\OfficialPositionTypeController;
+use App\Http\Controllers\Api\PasswordResetApprovalController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -35,10 +36,8 @@ use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
 use App\Http\Controllers\Api\RwController;
 use App\Http\Controllers\Api\SignatureRequestController;
-use App\Http\Controllers\Api\SignatureResetRequestController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\UserPhotoController;
-use App\Http\Controllers\Api\UserSignatureController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
@@ -110,11 +109,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
-    Route::get('/profile/signature', [UserSignatureController::class, 'show']);
-    Route::post('/profile/signature', [UserSignatureController::class, 'store']);
-    Route::get('/profile/signature/image', [UserSignatureController::class, 'image']);
     // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
-    Route::post('/profile/signature/reset-request', [SignatureResetRequestController::class, 'store']);
 
     // Permintaan tanda tangan yang ditujukan ke akun ini (pemilik NIK).
     Route::get('/signature-requests', [SignatureRequestController::class, 'index']);
@@ -397,11 +392,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::delete('/', [PushSubscriptionController::class, 'destroy']);
     });
 
-    // Route::prefix('official')->group(function () {
-    //     Route::post('/signature', [OfficialController::class, 'uploadSignature']);
-    //     Route::get('/signature', [OfficialController::class, 'getSignature']);
-    // });
-
     /*
     |----------------------------------------------------------------------
     | Village Regulations (UC-24)
@@ -481,8 +471,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('officials')
         ->group(function () {
-            Route::post('/{official}/signature', [OfficialController::class, 'uploadSignature']);
-            Route::get('/{official}/signature', [OfficialController::class, 'signaturePreview']);
             Route::post('/{official}/photo', [OfficialController::class, 'uploadPhoto']);
             Route::delete('/{official}/photo', [OfficialController::class, 'destroyPhoto']);
             Route::post('/promote', [OfficialController::class, 'promote']);
@@ -508,7 +496,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [UserController::class, 'index']);
             Route::post('/{user}/reset-password', [UserController::class, 'resetPassword']);
-            Route::post('/{user}/signature/reset', [UserSignatureController::class, 'reset']);
             Route::post('/{user}/photo', [UserPhotoController::class, 'store']);
             Route::delete('/{user}/photo', [UserPhotoController::class, 'destroy']);
             Route::patch('/{user}', [UserController::class, 'update']);
@@ -517,17 +504,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
-    | Pengajuan Reset (TTD)
+    | Permintaan Atur Ulang Kata Sandi (tanpa email)
     |----------------------------------------------------------------------
-    | Eksklusif Staf SIDUTama; jalur alternatif selain reset langsung di
-    | Manajemen Pengguna. Kesamaan desa diperiksa di service.
+    | Eksklusif Staf SIDUTama. Diajukan warga yang belum login lewat
+    | POST /password-reset-requests (routes/auth.php). Kesamaan desa
+    | diperiksa di PasswordResetRequestService.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
-        ->prefix('signature-reset-requests')
+        ->prefix('password-reset-requests')
         ->group(function () {
-            Route::get('/', [SignatureResetRequestController::class, 'index']);
-            Route::post('/{resetRequest}/approve', [SignatureResetRequestController::class, 'approve']);
-            Route::post('/{resetRequest}/reject', [SignatureResetRequestController::class, 'reject']);
+            Route::get('/', [PasswordResetApprovalController::class, 'index']);
+            Route::post('/{resetRequest}/approve', [PasswordResetApprovalController::class, 'approve']);
+            Route::post('/{resetRequest}/reject', [PasswordResetApprovalController::class, 'reject']);
         });
 
     /*
@@ -548,8 +536,6 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             // Titik kantor dari link Google Maps (server membuka link Google).
             Route::post('/profile/resolve-map-link', [VillageProfileController::class, 'resolveMapLink'])
                 ->middleware('throttle:10,1');
-            Route::post('/profile/stamp', [VillageProfileController::class, 'uploadStamp']);
-            Route::get('/profile/stamp', [VillageProfileController::class, 'stampPreview']);
             // Tampilan halaman publik (logo di header, foto di beranda).
             Route::post('/profile/logo', [VillageProfileController::class, 'uploadImage'])
                 ->defaults('column', 'logo');

@@ -46,32 +46,6 @@ class StoreLetterRequest extends FormRequest
                 'array',
             ],
 
-            // Penanda tangan pihak lain per slot: `nik` untuk tanda tangan
-            // digital, atau `name` + signature_files.{slot} untuk TTD basah.
-            // Kelengkapan per slot diperiksa LetterSignatureService.
-            'signers' => [
-                'nullable',
-                'array',
-            ],
-
-            'signers.*.nik' => [
-                'nullable',
-                'digits:16',
-            ],
-
-            'signers.*.name' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'signature_files' => [
-                'nullable',
-                'array',
-            ],
-
-            'signature_files.*' => self::FILE_RULES,
-
             ...$schema->payloadRules($payload),
         ];
 
