@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
+import { AuthCopyright } from '@/features/auth/components/AuthCopyright'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { resolveLoginRedirect } from '@/features/auth/utils/loginRedirect'
 import { HAL_BERANDA, HAL_DAFTAR, HAL_LUPA_PASSWORD } from '@/lib/constants/routes'
@@ -242,9 +243,7 @@ export default function LoginPage() {
             <ArrowLeft size={14} aria-hidden="true" /> Kembali ke Beranda
           </Link>
 
-          <p className="sid-login-copyright">
-            Desa Cibenda · Kec. Parigi · Kab. Pangandaran · © 2026
-          </p>
+          <AuthCopyright />
         </div>
       </div>
     </div>
