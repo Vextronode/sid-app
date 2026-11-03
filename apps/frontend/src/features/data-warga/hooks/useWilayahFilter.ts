@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
-import type { Hamlet, Rt, Rw } from '@/types'
+import type { Hamlet, Rt, Rw, UserRole } from '@/types'
 
 // Id terpilih per tingkat; '' = semua.
 export type WilayahFilters = { hamletId: string; rwId: string; rtId: string }
@@ -8,6 +8,22 @@ export type WilayahFilters = { hamletId: string; rwId: string; rtId: string }
 export type FilterOption = { value: string; label: string }
 
 const EMPTY_FILTERS: WilayahFilters = { hamletId: '', rwId: '', rtId: '' }
+
+export const ALL_WILAYAH_LEVELS: (keyof WilayahFilters)[] = ['hamletId', 'rwId', 'rtId']
+
+/**
+ * Tingkat filter wilayah yang tampil di Data Penduduk per peran. Daftar dan
+ * pilihan wilayah dari backend sudah dibatasi ke cakupan peran
+ * (PopulationScope), jadi tingkat di atas wilayahnya sendiri tidak perlu:
+ * RT tanpa filter, RW hanya RT, Kepala Dusun RW dan RT, peran lain semua.
+ */
+export function wilayahFilterLevels(role: UserRole | undefined): (keyof WilayahFilters)[] {
+  if (role === 'rt') return []
+  if (role === 'rw') return ['rtId']
+  if (role === 'kadus') return ['rwId', 'rtId']
+
+  return ALL_WILAYAH_LEVELS
+}
 
 /**
  * Filter bertingkat Dusun -> RW -> RT untuk daftar warga dan KK. Memilih
