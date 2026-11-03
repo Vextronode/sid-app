@@ -32,7 +32,7 @@ class PromoteOfficialRequest extends FormRequest
             'term_ends_at' => ['nullable', 'date', 'after:started_at'],
             'phone_wa' => ['nullable', 'string', 'max:20'],
             'notes' => ['nullable', 'string'],
-            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120', 'dimensions:ratio=1/1'],
         ];
     }
 
@@ -57,6 +57,7 @@ class PromoteOfficialRequest extends FormRequest
             'photo.image' => 'Foto pejabat harus berupa gambar.',
             'photo.mimes' => 'Foto pejabat harus berformat PNG, JPG, atau WEBP.',
             'photo.max' => 'Ukuran foto pejabat maksimal 5 MB.',
+            'photo.dimensions' => 'Foto pejabat harus persegi (1:1). Potong foto lewat tombol unggah di aplikasi.',
         ];
     }
 }
