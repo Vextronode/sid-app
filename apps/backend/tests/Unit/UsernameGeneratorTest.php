@@ -19,27 +19,27 @@ class UsernameGeneratorTest extends TestCase
         $this->assertSame('supratman.2518', $generator->generate('Supratman'));
     }
 
-    public function test_two_word_name_uses_first_and_last_name(): void
+    public function test_two_word_name_uses_first_and_last_name_with_four_digits_even_when_free(): void
     {
-        $generator = new SequenceUsernameGenerator(new UserRepository, []);
+        $generator = new SequenceUsernameGenerator(new UserRepository, [4821]);
 
-        $this->assertSame('siti.aminah', $generator->generate('Siti Aminah'));
+        $this->assertSame('siti.aminah.4821', $generator->generate('Siti Aminah'));
     }
 
     public function test_three_or_more_words_use_first_and_last_word(): void
     {
-        $generator = new SequenceUsernameGenerator(new UserRepository, []);
+        $generator = new SequenceUsernameGenerator(new UserRepository, [7305, 1002]);
 
-        $this->assertSame('ahmad.rahman', $generator->generate('Ahmad Fauzi Rahman'));
-        $this->assertSame('muhammad.hidayat', $generator->generate('Muhammad Nur Abdul Hidayat'));
+        $this->assertSame('ahmad.rahman.7305', $generator->generate('Ahmad Fauzi Rahman'));
+        $this->assertSame('muhammad.hidayat.1002', $generator->generate('Muhammad Nur Abdul Hidayat'));
     }
 
     public function test_ignores_leading_and_trailing_titles(): void
     {
-        $generator = new SequenceUsernameGenerator(new UserRepository, [1274]);
+        $generator = new SequenceUsernameGenerator(new UserRepository, [3001, 3002, 1274]);
 
-        $this->assertSame('ahmad.fauzi', $generator->generate('H. Hj. Ahmad Fauzi'));
-        $this->assertSame('budi.santoso', $generator->generate('Dr. Budi Santoso, S.Pd., M.Si'));
+        $this->assertSame('ahmad.fauzi.3001', $generator->generate('H. Hj. Ahmad Fauzi'));
+        $this->assertSame('budi.santoso.3002', $generator->generate('Dr. Budi Santoso, S.Pd., M.Si'));
         // Setelah gelar dibuang tinggal satu kata: namadepan.4digit.
         $this->assertSame('ahmad.1274', $generator->generate('H. Ahmad, S.Ag'));
     }
@@ -55,19 +55,18 @@ class UsernameGeneratorTest extends TestCase
 
     public function test_ascii_normalizes_and_removes_non_alphanumeric_characters(): void
     {
-        $generator = new SequenceUsernameGenerator(new UserRepository, [1111]);
+        $generator = new SequenceUsernameGenerator(new UserRepository, [1111, 2222]);
 
         $this->assertSame('jose.1111', $generator->generate('José!'));
-        $this->assertSame('jose.oneil', $generator->generate("José O'Neil"));
+        $this->assertSame('jose.oneil.2222', $generator->generate("José O'Neil"));
     }
 
-    public function test_taken_full_name_gets_a_number_suffix(): void
+    public function test_same_full_name_retries_the_four_digits(): void
     {
-        User::factory()->create(['username' => 'siti.aminah']);
-        User::factory()->create(['username' => 'siti.aminah27']);
-        $generator = new SequenceUsernameGenerator(new UserRepository, [27, 45]);
+        User::factory()->create(['username' => 'siti.aminah.2727']);
+        $generator = new SequenceUsernameGenerator(new UserRepository, [2727, 4545]);
 
-        $this->assertSame('siti.aminah45', $generator->generate('Siti Aminah Putri Aminah'));
+        $this->assertSame('siti.aminah.4545', $generator->generate('Siti Aminah Putri Aminah'));
     }
 
     public function test_retries_colliding_four_digit_username(): void
@@ -94,11 +93,10 @@ class UsernameGeneratorTest extends TestCase
         $single = new SequenceUsernameGenerator(new UserRepository, [12345]);
         $this->assertSame('abcdefghijklmnopqrst.12345', $single->generate('abcdefghijklmnopqrstuvwxyz'));
 
-        User::factory()->create(['username' => 'abcdefghijklm.opqrstuvwxyza']);
-        $long = new SequenceUsernameGenerator(new UserRepository, [99]);
+        $long = new SequenceUsernameGenerator(new UserRepository, [12345]);
         $username = $long->generate('abcdefghijklmnopq opqrstuvwxyzabcdef');
 
-        $this->assertSame('abcdefghijklm.opqrstuvwxyza99', $username);
+        $this->assertSame('abcdefghijk.opqrstuvwxy.12345', $username);
         $this->assertLessThanOrEqual(30, strlen($username));
     }
 }
