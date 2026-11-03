@@ -15,17 +15,25 @@ class LetterNumberCounterRepository
         }
 
         return DB::transaction(function () use ($villageId, $classificationCode, $year) {
-            $counter = LetterNumberCounter::query()
-                ->firstOrCreate([
-                    'village_id' => $villageId,
-                    'classification_code' => $classificationCode,
-                    'year' => $year,
-                ], [
-                    'last_number' => 0,
-                ]);
+            $key = [
+                'village_id' => $villageId,
+                'classification_code' => $classificationCode,
+                'year' => $year,
+            ];
+
+            // Nomor pertama per klasifikasi per tahun: dua persetujuan final
+            // bersamaan bisa sama-sama membuat baris counter. ON CONFLICT DO
+            // NOTHING membuat yang kalah tidak kena unique violation (yang
+            // membatalkan transaksi PostgreSQL-nya), lalu antre di lock bawah.
+            LetterNumberCounter::query()->insertOrIgnore([
+                ...$key,
+                'last_number' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             $counter = LetterNumberCounter::query()
-                ->whereKey($counter->getKey())
+                ->where($key)
                 ->lockForUpdate()
                 ->firstOrFail();
 
