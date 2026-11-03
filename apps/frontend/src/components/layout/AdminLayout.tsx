@@ -10,7 +10,7 @@ import type { ReactNode } from 'react'
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
-import { HAL_MANAJEMEN_AKUN } from '@/lib/constants/routes'
+import { HAL_DATA_PENDUDUK, HAL_MANAJEMEN_AKUN } from '@/lib/constants/routes'
 import type { UserRole } from '@/types'
 import { AppHeader } from './AppHeader'
 import type { MenuItem } from './AppHeader'
@@ -21,7 +21,8 @@ type AdminLayoutProps = {
   menuItems?: MenuItem[]
 }
 
-// Menu bawaan per peran: beranda, surat yang diproses, dan surat pribadi.
+// Menu bawaan per peran: beranda, surat yang diproses, Data Penduduk, dan
+// surat pribadi.
 const ROLE_MENUS: Partial<Record<UserRole, [string, string]>> = {
   rt: ['/admin/rt', '/admin/rt/surat'],
   rw: ['/admin/rw', '/admin/rw/surat'],
@@ -37,11 +38,13 @@ function defaultMenuItems(role: UserRole | undefined): MenuItem[] | null {
 
   // Aktivasi akun dan request ganti foto profil warga (petugas wilayah).
   const accounts = role ? HAL_MANAJEMEN_AKUN[role] : undefined
+  const population = role ? HAL_DATA_PENDUDUK[role] : undefined
 
   return [
     { label: 'Beranda', path: routes[0] },
     { label: 'Surat Warga', path: routes[1] },
     ...(accounts ? [{ label: 'Manajemen Akun', path: accounts }] : []),
+    ...(population ? [{ label: 'Data Penduduk', path: population }] : []),
     { label: 'Surat Saya', path: '/admin/surat-saya' },
   ]
 }

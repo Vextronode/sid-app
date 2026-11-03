@@ -49,3 +49,13 @@ export const HAL_MANAJEMEN_AKUN: Partial<Record<UserRole, string>> = {
   kadus: '/admin/kadus/manajemen-akun',
   staf_sid: '/admin/manajemen-user',
 }
+
+// Data Penduduk & KK khusus-baca untuk pejabat berbilah atas. Isinya dibatasi
+// backend ke wilayah peran; Kasi/Kaur/Staf memakai /admin/data-warga.
+export const HAL_DATA_PENDUDUK: Partial<Record<UserRole, string>> = {
+  rt: '/admin/rt/data-penduduk',
+  rw: '/admin/rw/data-penduduk',
+  kadus: '/admin/kadus/data-penduduk',
+  kepala_desa: '/admin/kades/data-penduduk',
+  sekretaris_desa: '/admin/kades/data-penduduk',
+}
