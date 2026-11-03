@@ -19,6 +19,23 @@ describe('operator role navigation', () => {
     expect(ROLE_NAVIGATION.kaur_tu_umum).toEqual(expectedRoutes)
   })
 
+  it('gives area officials and village heads their own sidebar pages', () => {
+    expect(ROLE_NAVIGATION.rt).toEqual([
+      '/admin/rt',
+      '/admin/rt/surat',
+      '/admin/surat-saya',
+      '/admin/rt/data-penduduk',
+      '/admin/rt/manajemen-akun',
+    ])
+    expect(ROLE_NAVIGATION.kepala_desa).toEqual([
+      '/admin/kades',
+      '/admin/kades/surat',
+      '/admin/surat-saya',
+      '/admin/kades/data-penduduk',
+    ])
+    expect(ROLE_NAVIGATION.sekretaris_desa).toEqual(ROLE_NAVIGATION.kepala_desa)
+  })
+
   it('gives Staf SIDUTama a personal Surat Saya page as well', () => {
     expect(ROLE_NAVIGATION.staf_sid).toContain('/admin/surat-saya')
   })
