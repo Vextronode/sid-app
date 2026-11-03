@@ -280,12 +280,12 @@ export function FotoProfilRequestSection() {
                           {item.user.username ? `, @${item.user.username}` : ''}
                         </small>
                       </td>
-                      <td>{areaLabel(item.area)}</td>
-                      <td>{formatDateTime(item.created_at)}</td>
-                      <td>
+                      <td className="center">{areaLabel(item.area)}</td>
+                      <td className="center">{formatDateTime(item.created_at)}</td>
+                      <td className="center">
                         <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
                       </td>
-                      <td>
+                      <td className="center">
                         {item.status === 'pending' ? (
                           <span>Menunggu {item.level ? LEVEL_LABELS[item.level] : 'petugas'}</span>
                         ) : (
@@ -305,7 +305,7 @@ export function FotoProfilRequestSection() {
                           </>
                         )}
                       </td>
-                      <td>
+                      <td className="center">
                         <div className="sid-wilayah-actions">
                           <button
                             type="button"

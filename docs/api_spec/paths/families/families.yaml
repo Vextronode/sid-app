@@ -2,7 +2,7 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat & cari daftar Kartu Keluarga (KK)
   description: |
-    BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Staf SIDUTama dan Kasi Pemerintahan (kelola); Kaur TU & Umum hanya membaca (GET).
+    BARU v5.0. UC-09 Sub-flow Kelola Data Keluarga. Aktor Staf SIDUTama dan Kasi Pemerintahan (kelola); Kaur TU & Umum, Kepala Desa, Sekretaris Desa, Kepala Dusun, Ketua RW, dan Ketua RT hanya membaca (GET `/families`, `/families/options`, `/families/{family}`), dengan cakupan wilayah yang sama seperti `GET /citizens` (`PopulationScope`). KK di luar cakupan dijawab 404.
     Daftar berhalaman (`IndexFamilyRequest`), hanya KK di desa user login,
     diurutkan dari yang terbaru dibuat. Tiap item memuat `members_count`,
     `head_of_family` (`id`, `name`), dan relasi wilayah (`rt`, `rw`,

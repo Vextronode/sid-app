@@ -5,6 +5,7 @@ import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
 import type { useFamilyList } from '../hooks/useFamilyList'
+import type { WilayahFilters } from '../hooks/useWilayahFilter'
 import { WilayahFilterSelects } from './WilayahFilterSelects'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
@@ -90,7 +91,9 @@ function responseData<T>(response: { data?: unknown }): Partial<T> {
 
 /**
  * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
- * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
+ * (Kaur TU & Umum dan pejabat pembaca lain); `canViewHistory` hanya untuk
+ * Staf SIDUTama (Log Aktivitas). `filterLevels` = tingkat filter wilayah
+ * yang tampil (lihat wilayahFilterLevels).
  * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
 export type FamilyManagementPanelHandle = { openCreate: () => void }
@@ -99,6 +102,7 @@ type FamilyManagementPanelProps = {
   familyList: ReturnType<typeof useFamilyList>
   canEdit?: boolean
   canViewHistory?: boolean
+  filterLevels?: (keyof WilayahFilters)[]
   ref?: Ref<FamilyManagementPanelHandle>
 }
 
@@ -106,6 +110,7 @@ export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
   canViewHistory = true,
+  filterLevels,
   ref,
 }: FamilyManagementPanelProps) {
   const navigate = useNavigate()
@@ -301,7 +306,7 @@ export default function FamilyManagementPanel({
           <p>
             {canEdit
               ? 'Kelola data KK dan survei sosio-ekonomi rumah tangga.'
-              : 'Daftar Kartu Keluarga desa (hanya lihat).'}
+              : 'Daftar Kartu Keluarga (hanya lihat).'}
           </p>
         </div>
       </div>
@@ -330,7 +335,7 @@ export default function FamilyManagementPanel({
             </div>
           </div>
 
-          <WilayahFilterSelects {...wilayahFilter} />
+          <WilayahFilterSelects {...wilayahFilter} levels={filterLevels} />
         </form>
       </div>
 
@@ -350,7 +355,7 @@ export default function FamilyManagementPanel({
           <thead>
             <tr>
               <th>No. KK</th>
-              <th>Kepala Keluarga</th>
+              <th className="left">Kepala Keluarga</th>
               <th>Anggota</th>
               <th>Alamat KK</th>
               <th>Status</th>
@@ -373,7 +378,7 @@ export default function FamilyManagementPanel({
             ) : (
               families.map((family) => (
                 <tr key={family.id}>
-                  <td>
+                  <td className="center">
                     <RevealableValue
                       masked={family.no_kk_masked}
                       reveal={() => revealFamilyNumber(family.id)}
@@ -381,9 +386,9 @@ export default function FamilyManagementPanel({
                     />
                   </td>
                   <td>{family.head_of_family?.name ?? '-'}</td>
-                  <td>{family.members_count ?? 0}</td>
+                  <td className="center">{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
-                  <td>
+                  <td className="center">
                     {family.family_status ? (
                       <StatusPill tone={FAMILY_STATUS_TONE[family.family_status] ?? 'inactive'}>
                         {labelOf(FAMILY_STATUS_LABELS, family.family_status)}

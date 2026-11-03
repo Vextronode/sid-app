@@ -8,6 +8,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
+use App\Support\PopulationScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -23,19 +24,20 @@ class FamilyService
         protected FamilyRepository $familyRepository,
     ) {}
 
+    /** Daftar, pilihan, dan detail KK dibatasi cakupan pembaca (PopulationScope). */
     public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
     {
-        return $this->familyRepository->paginateWithWilayah($this->villageId($user), $filters);
+        return $this->familyRepository->paginateWithWilayah($this->villageId($user), $filters, PopulationScope::for($user));
     }
 
     public function options(User $user): Collection
     {
-        return $this->familyRepository->optionsForVillage($this->villageId($user));
+        return $this->familyRepository->optionsForVillage($this->villageId($user), PopulationScope::for($user));
     }
 
     public function find(string $id, User $user): Family
     {
-        $family = $this->familyRepository->findById($id, $this->villageId($user));
+        $family = $this->familyRepository->findById($id, $this->villageId($user), PopulationScope::for($user));
 
         if (! $family) {
             abort(404, 'Kartu Keluarga tidak ditemukan.');

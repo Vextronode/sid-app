@@ -188,7 +188,7 @@ Tidak ada TTD digital (TTD akun, TTD jabatan, stempel digital, dan reset TTD sud
 2. Policy/Service untuk konteks resource (wilayah RT, desa, step aktif, assigned_role, pemohon).
 3. Re-validasi di dalam transaksi untuk aksi keputusan.
 
-Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jabatan, konfigurasi); Kades/Sekdes = approver final tanpa akses CMS; Kasi/Kaur = baca daftar warga, akses surat selesai, Terapkan; RT = approver wilayah; RW/Kadus = baca FYI.
+Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jabatan, konfigurasi); Kades/Sekdes = approver final tanpa akses CMS; Kasi/Kaur = baca daftar warga, akses surat selesai, Terapkan; RT = approver wilayah; RW/Kadus = baca FYI. Data Penduduk (warga & KK) khusus-baca juga untuk Kades/Sekdes (seluruh desa) dan RT/RW/Kadus (wilayahnya).
 
 ---
 
@@ -198,6 +198,7 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 - Tidak ada "warga Non-NIK"; lokal/pendatang dibedakan `residency_type`.
 - Perubahan data warga oleh warga **hanya** lewat jenis surat ber-`data_action`, yang diterapkan Kasi/Kaur/Staf SIDUTama (S3.6). Tidak ada edit langsung oleh warga.
 - Daftar warga berpaginasi (default 20, maks 100) dengan pencarian nama dan filter Dusun/RW/RT (RW dan Dusun lewat RT warga); Kasi/Kaur dapat membaca daftar.
+- Cakupan baca Data Penduduk ada di `App\Support\PopulationScope`: Staf/Kasi/Kaur/Kades/Sekdes seluruh desa; RT = RT-nya (`officials.rt_id`), RW = semua RT di RW-nya (`officials.rw_id`), Kadus = semua RT di bawah RW dusunnya (`officials.hamlet_id`), dibaca lewat RT warga/KK. Dipakai daftar warga, daftar/pilihan/detail KK, pilihan filter `GET /hamlets|rws|rts`, dan tombol lihat NIK/No. KK (`IdentityRevealService`). RT/RW/Kadus tanpa wilayah aktif ditolak 403; KK di luar cakupan 404.
 - Register warga mewajibkan NIK + tanggal lahir yang cocok dengan `citizens.date_of_birth`.
 - Impor Excel per baris, baris gagal dilewati.
 

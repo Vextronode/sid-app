@@ -131,10 +131,6 @@ export default function ApprovalSettingPage() {
     <div className="sid-desktop-page">
       <div className="sid-page">
         <div className="mb-6">
-          <p className="rw-breadcrumb">
-            Admin / <span>Pengaturan Batas Waktu</span>
-          </p>
-
           <h1 className="sid-page-title">Pengaturan Batas Waktu Persetujuan</h1>
 
           <p className="sid-page-description">
@@ -198,7 +194,7 @@ export default function ApprovalSettingPage() {
                       Batas Waktu (jam)
                     </span>
 
-                    <div className="relative">
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min="1"
@@ -208,12 +204,10 @@ export default function ApprovalSettingPage() {
                         onChange={(event) =>
                           handleChange(setting.id, 'deadline_hours', event.target.value)
                         }
-                        className="sid-input w-full pr-14"
+                        className="sid-input w-full"
                       />
 
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                        jam
-                      </span>
+                      <span className="flex-none text-sm text-gray-500">jam</span>
                     </div>
                   </label>
 
@@ -222,7 +216,7 @@ export default function ApprovalSettingPage() {
                       Reminder Hours (sebelum deadline)
                     </span>
 
-                    <div className="relative">
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min="0"
@@ -232,12 +226,10 @@ export default function ApprovalSettingPage() {
                         onChange={(event) =>
                           handleChange(setting.id, 'reminder_hours', event.target.value)
                         }
-                        className="sid-input w-full pr-14"
+                        className="sid-input w-full"
                       />
 
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                        jam
-                      </span>
+                      <span className="flex-none text-sm text-gray-500">jam</span>
                     </div>
                   </label>
 

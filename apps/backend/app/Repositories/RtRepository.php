@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Rt;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class RtRepository
@@ -12,9 +13,12 @@ class RtRepository
         //
     }
 
-    public function allOrderedByNumber(string $villageId, ?int $rwId = null): Collection
+    /** $scope (opsional): hanya RT di dalam/pemuat wilayah pembaca Data Penduduk. */
+    public function allOrderedByNumber(string $villageId, ?int $rwId = null, ?PopulationScope $scope = null): Collection
     {
-        $query = Rt::query()->where('village_id', $villageId);
+        $query = Rt::query()
+            ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->applyToRegions($query));
 
         if ($rwId !== null) {
             $query->where('rw_id', $rwId);

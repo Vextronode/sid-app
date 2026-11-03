@@ -346,7 +346,7 @@ export function UserAccountsSection() {
                       </td>
 
                       {/* Email */}
-                      <td className="center">{user.email}</td>
+                      <td>{user.email}</td>
 
                       {/* Jabatan */}
                       <td className="center">

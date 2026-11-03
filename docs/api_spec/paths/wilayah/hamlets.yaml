@@ -1,7 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar dusun (hamlets)
-  description: "Aktor: Staf SIDUTama."
+  description: "Aktor: Staf SIDUTama (kelola) dan pembaca Data Penduduk (pilihan filter). Kadus/RW/RT hanya mendapat Dusun di dalam atau yang memuat wilayahnya (PopulationScope)."
   operationId: listHamlets
   security:
     - sanctumCookie: []

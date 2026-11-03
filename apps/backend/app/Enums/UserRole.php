@@ -37,8 +37,8 @@ enum UserRole: string
     {
         return match ($this) {
             self::Warga => 'Warga',
-            self::Rt => 'RT',
-            self::Rw => 'RW',
+            self::Rt => 'Ketua RT',
+            self::Rw => 'Ketua RW',
             self::Kadus => 'Kepala Dusun',
             self::KasiPemerintahan => 'Kasi Pemerintahan',
             self::KaurTuUmum => 'Kaur TU & Umum',

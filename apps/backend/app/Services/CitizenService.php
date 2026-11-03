@@ -11,6 +11,7 @@ use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Support\AuditContext;
+use App\Support\PopulationScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -31,9 +32,10 @@ class CitizenService
         protected AuditContext $auditContext,
     ) {}
 
+    /** Daftar warga dalam cakupan pembaca (PopulationScope). */
     public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
     {
-        return $this->citizenRepository->paginateWithWilayah($this->villageId($user), $filters);
+        return $this->citizenRepository->paginateWithWilayah($this->villageId($user), $filters, PopulationScope::for($user));
     }
 
     /**

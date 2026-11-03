@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
 use App\Models\VillageOrgPosition;
 use App\Support\InfoPageFields;
+use App\Support\PopulationScope;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -157,11 +158,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Staf SIDUTama dan Kasi Pemerintahan (pemegang layanan kependudukan /
     | Layanan Kependudukan) boleh create/update/delete/import data kependudukan.
-    | Kaur TU & Umum hanya membaca daftar warga dan KK sebagai bahan
-    | pertimbangan; perubahan data olehnya hanya lewat surat
-    | (POST /letters/{letter}/fulfillment).
+    | Kaur TU & Umum, Kepala Desa, Sekretaris Desa, Kepala Dusun, Ketua RW,
+    | dan Ketua RT hanya membaca daftar warga dan KK; cakupannya (seluruh
+    | desa / dusun / RW / RT) diatur PopulationScope. Perubahan data oleh
+    | Kaur TU & Umum hanya lewat surat (POST /letters/{letter}/fulfillment).
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
+    Route::middleware(UserRole::middleware(...PopulationScope::readerRoles()))
         ->get('/citizens', [CitizenController::class, 'index']);
 
     Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
@@ -181,9 +183,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Families / Kartu Keluarga (UC-09 sub-flow)
     |----------------------------------------------------------------------
     | Sama seperti Citizens: Staf SIDUTama dan Kasi Pemerintahan mengelola,
-    | Kaur TU & Umum hanya membaca.
+    | peran pembaca lain hanya membaca dalam cakupan PopulationScope. Survei
+    | sosio-ekonomi tetap dibatasi ShowFamilySocioeconomicRequest.
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
+    Route::middleware(UserRole::middleware(...PopulationScope::readerRoles()))
         ->prefix('families')
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
@@ -259,10 +262,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     | Regions: Hamlets / RTs / RWs (UC-20)
     |----------------------------------------------------------------------
     | Kelola wilayah eksklusif Staf SIDUTama. Daftarnya juga dibaca
-    | pengelola/pembaca Data Penduduk (Kasi Pemerintahan, Kaur TU & Umum)
-    | untuk pilihan Dusun -> RW -> RT di form dan filter.
+    | pengelola/pembaca Data Penduduk untuk pilihan Dusun -> RW -> RT di
+    | form dan filter; RT/RW/Kadus hanya mendapat wilayah dalam cakupannya
+    | (PopulationScope).
     */
-    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))->group(function () {
+    Route::middleware(UserRole::middleware(...PopulationScope::readerRoles()))->group(function () {
         Route::get('/hamlets', [HamletController::class, 'index']);
         Route::get('/rws', [RwController::class, 'index']);
         Route::get('/rts', [RtController::class, 'index']);

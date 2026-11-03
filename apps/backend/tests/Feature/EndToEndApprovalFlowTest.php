@@ -416,7 +416,7 @@ class EndToEndApprovalFlowTest extends TestCase
             ->assertJsonPath('data.name', $citizen->name);
 
         $oldUsername = $registration->json('data.username');
-        $this->assertSame('siti.aminah', $oldUsername);
+        $this->assertMatchesRegularExpression('/^siti\.aminah\.\d{4}$/', $oldUsername);
 
         // Akun baru aktif setelah disetujui petugas pemegang aktivasi (D1).
         $holder = app(AccountActivationService::class)->route(AccountRegistration::query()->sole())['users']->first()

@@ -288,7 +288,7 @@ export function ProfilDesaPage() {
               {data.name ?? 'Desa'}
             </h2>
 
-            <p className="mt-4 mb-0 max-w-[62ch] text-[17px] leading-relaxed whitespace-pre-line text-pb-ink">
+            <p className="mt-4 mb-0 max-w-[62ch] text-justify text-[17px] leading-relaxed whitespace-pre-line text-pb-ink">
               {data.history || `Sejarah desa ${NA.toLowerCase()}.`}
             </p>
           </div>

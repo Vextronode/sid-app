@@ -61,8 +61,8 @@ class RegisteredUserControllerTest extends TestCase
         $this->assertSame(['name', 'username'], array_keys($response->json('data')));
 
         $username = $response->json('data.username');
-        // Dua kata: namadepan.namabelakang (UsernameGenerator).
-        $this->assertSame('siti.aminah', $username);
+        // Dua kata: namadepan.namabelakang.4digit (UsernameGenerator).
+        $this->assertMatchesRegularExpression('/^siti\.aminah\.\d{4}$/', $username);
         $this->assertGuest();
 
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
@@ -147,6 +147,22 @@ class RegisteredUserControllerTest extends TestCase
         $this->assertNotSame('nama.palsu', $user->username);
         $this->assertNull($user->email);
         $this->assertSame('warga', $user->role);
+    }
+
+    public function test_citizens_with_the_same_name_get_different_four_digit_usernames(): void
+    {
+        $first = Citizen::factory()->create(['nik' => '3201012345670008', 'name' => 'Siti Aminah']);
+        $second = Citizen::factory()->create(['nik' => '3201012345670009', 'name' => 'Siti Aminah']);
+
+        foreach ([$first, $second] as $citizen) {
+            $this->post('/register', $this->payloadFor($citizen))->assertCreated();
+        }
+
+        $usernames = User::query()->whereIn('citizen_id', [$first->id, $second->id])->pluck('username');
+        $this->assertCount(2, $usernames->unique());
+        foreach ($usernames as $username) {
+            $this->assertMatchesRegularExpression('/^siti\.aminah\.\d{4}$/', $username);
+        }
     }
 
     public function test_registration_generates_different_usernames_for_matching_first_names(): void

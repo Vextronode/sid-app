@@ -294,8 +294,6 @@ export default function KelolaPeraturanPage() {
       <div className="sid-kelola-wilayah-content">
         <div className="sid-kelola-wilayah-header">
           <div>
-            <span className="sid-kelola-wilayah-eyebrow">Konten Desa</span>
-
             <h1>Peraturan Desa</h1>
 
             <p>Kelola peraturan desa yang ditampilkan pada halaman publik.</p>
@@ -361,11 +359,11 @@ export default function KelolaPeraturanPage() {
                 ) : (
                   data.map((item, index) => (
                     <tr key={item.id}>
-                      <td>{index + 1}</td>
-                      <td className="sid-wilayah-code">{item.regulation_number}</td>
-                      <td className="sid-wilayah-name">{item.title}</td>
-                      <td>{formatDate(item.enacted_date)}</td>
-                      <td>
+                      <td className="center">{index + 1}</td>
+                      <td className="sid-wilayah-code center">{item.regulation_number}</td>
+                      <td className="sid-wilayah-name center">{item.title}</td>
+                      <td className="center">{formatDate(item.enacted_date)}</td>
+                      <td className="center">
                         <div className="sid-wilayah-actions">
                           <button
                             type="button"

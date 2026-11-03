@@ -83,13 +83,13 @@ describe('OrganisasiManager', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Tambah Anggota/ }))
     const save = screen.getByRole('button', { name: 'Simpan' })
-    expect(save).toBeDisabled()
+    // Tombol tetap aktif agar peringatan isian kosong bisa muncul.
+    expect(save).toBeEnabled()
 
     fireEvent.change(screen.getByLabelText(/NIK warga/), { target: { value: '3201010101010002' } })
 
     await waitFor(() => expect(screen.getByLabelText('Nama lengkap')).toHaveValue('Budi Santoso'))
     expect(api.lookupOrgCitizen).toHaveBeenCalledWith('3201010101010002')
-    expect(save).toBeEnabled()
 
     fireEvent.click(save)
     await waitFor(() =>
@@ -111,7 +111,13 @@ describe('OrganisasiManager', () => {
     fireEvent.change(screen.getByLabelText(/NIK warga/), { target: { value: '3201010101019999' } })
 
     expect(await screen.findByRole('alert')).toHaveTextContent('NIK tidak ditemukan')
-    expect(screen.getByRole('button', { name: 'Simpan' })).toBeDisabled()
+
+    // Simpan tetap bisa diklik dan menjelaskan kenapa belum bisa disimpan.
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }))
+    expect(
+      await screen.findByText('Isi NIK warga desa yang terdaftar sampai namanya muncul.'),
+    ).toBeInTheDocument()
+    expect(hook.fillSlot).not.toHaveBeenCalled()
   })
 
   it('lists history as NIK - name without any delete button', () => {

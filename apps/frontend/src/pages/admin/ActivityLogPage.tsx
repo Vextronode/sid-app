@@ -251,11 +251,13 @@ function PopulationTab({ params, setParam, pageSize, onPageSizeChange }: TabProp
               ) : (
                 logs.map((log) => (
                   <tr key={log.id}>
-                    <td className="sid-activity-log-time">{formatDateTime(log.created_at)}</td>
-                    <td>
+                    <td className="sid-activity-log-time center">
+                      {formatDateTime(log.created_at)}
+                    </td>
+                    <td className="center">
                       <Actor actor={log.actor} />
                     </td>
-                    <td>
+                    <td className="center">
                       <span>{POPULATION_EVENT_LABELS[log.event] ?? log.event}</span>
                       {log.event === 'letter_fulfilled' && log.letter_number && (
                         <small className="sid-admin-cell-meta">Surat {log.letter_number}</small>
@@ -264,7 +266,7 @@ function PopulationTab({ params, setParam, pageSize, onPageSizeChange }: TabProp
                         <small className="sid-admin-cell-meta">dari impor Excel</small>
                       )}
                     </td>
-                    <td>
+                    <td className="center">
                       <span>{log.subject_label ?? '-'}</span>
                       <small className="sid-admin-cell-meta">
                         {log.log_name === 'family' ? 'Kartu Keluarga' : 'Warga'}
@@ -361,17 +363,19 @@ function AccountTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) 
               ) : (
                 logs.map((log) => (
                   <tr key={log.id}>
-                    <td className="sid-activity-log-time">{formatDateTime(log.created_at)}</td>
-                    <td>
+                    <td className="sid-activity-log-time center">
+                      {formatDateTime(log.created_at)}
+                    </td>
+                    <td className="center">
                       <Actor actor={log.actor} />
                     </td>
-                    <td>
+                    <td className="center">
                       <span>{ACCOUNT_EVENT_LABELS[log.event] ?? log.event}</span>
                       {log.via === 'cli' && (
                         <small className="sid-admin-cell-meta">lewat CLI</small>
                       )}
                     </td>
-                    <td>{log.subject_label ?? '-'}</td>
+                    <td className="center">{log.subject_label ?? '-'}</td>
                     <td>
                       {log.notes ? (
                         <span>{log.notes}</span>
@@ -469,8 +473,10 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
               ) : (
                 logs.map((log) => (
                   <tr key={log.id}>
-                    <td className="sid-activity-log-time">{formatDateTime(log.created_at)}</td>
-                    <td>
+                    <td className="sid-activity-log-time center">
+                      {formatDateTime(log.created_at)}
+                    </td>
+                    <td className="center">
                       {log.letter ? (
                         <>
                           <Link
@@ -490,10 +496,10 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
                         '-'
                       )}
                     </td>
-                    <td>
+                    <td className="center">
                       <Actor actor={log.actor} />
                     </td>
-                    <td>
+                    <td className="center">
                       {log.old_status && log.old_status !== log.new_status
                         ? `${STATUS_LABELS[log.old_status] ?? log.old_status} → `
                         : ''}
@@ -552,18 +558,17 @@ export default function ActivityLogPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Log Aktivitas</span>
-        </p>
-        <div className="sid-operator-header mb-0">
-          <h1>Log Aktivitas</h1>
+        <div className="sid-operator-header">
+          <div>
+            <h1>Log Aktivitas</h1>
+            <p>
+              Riwayat perubahan data warga & Kartu Keluarga oleh petugas, tindakan atas akun
+              pengguna, dan riwayat status setiap surat. NIK, No. KK, dan alamat KK disamarkan; kata
+              sandi tidak pernah dicatat.
+            </p>
+          </div>
           <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
         </div>
-        <p className="sid-page-description">
-          Riwayat perubahan data warga & Kartu Keluarga oleh petugas, tindakan atas akun pengguna,
-          dan riwayat status setiap surat. NIK, No. KK, dan alamat KK disamarkan; kata sandi tidak
-          pernah dicatat.
-        </p>
 
         <div className="sid-wilayah-tabs" role="tablist" aria-label="Jenis log">
           {TABS.map((tab) => (

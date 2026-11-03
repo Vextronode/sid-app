@@ -2,8 +2,13 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Lihat & cari daftar warga (berpaginasi)
   description: |
-    UC-09. Aktor: Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum (Kasi/Kaur
-    hanya membaca). Warga satu desa akun login, urut nama lalu id, berpaginasi
+    UC-09. Aktor: Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum, Kepala
+    Desa, Sekretaris Desa, Kepala Dusun, Ketua RW, Ketua RT (selain Staf/Kasi
+    hanya membaca). Cakupan pembaca (`PopulationScope`): RT hanya warga di
+    RT-nya; RW semua RT di RW-nya; Kadus semua RW/RT di dusunnya; peran lain
+    seluruh desa. RT/RW/Kadus tanpa penugasan wilayah aktif mendapat 403.
+    Filter di luar cakupan menghasilkan daftar kosong.
+    Warga satu desa akun login, urut nama lalu id, berpaginasi
     di database. Pencarian nama case-insensitive (LIKE) dan filter wilayah
     bertingkat Dusun/RW/RT; RW dan Dusun dibaca lewat RT warga. Filter yang
     diisi bersamaan digabung dengan AND.

@@ -88,17 +88,17 @@ export default function DusunTable({
             ) : (
               data.map((hamlet, index) => (
                 <tr key={hamlet.id}>
-                  <td>{index + 1}</td>
-                  <td className="sid-wilayah-code">{hamlet.code || '-'}</td>
-                  <td className="sid-wilayah-name">{hamlet.name || '-'}</td>
-                  <td>{getRwCount(hamlet.id)}</td>
-                  <td>{getRtCount(hamlet.id)}</td>
-                  <td>
+                  <td className="center">{index + 1}</td>
+                  <td className="sid-wilayah-code center">{hamlet.code || '-'}</td>
+                  <td className="sid-wilayah-name center">{hamlet.name || '-'}</td>
+                  <td className="center">{getRwCount(hamlet.id)}</td>
+                  <td className="center">{getRtCount(hamlet.id)}</td>
+                  <td className="center">
                     <StatusPill active={hamlet.isActive}>
                       {hamlet.isActive ? 'Aktif' : 'Nonaktif'}
                     </StatusPill>
                   </td>
-                  <td>
+                  <td className="center">
                     <div className="sid-wilayah-actions">
                       <button
                         type="button"

@@ -10386,14 +10386,19 @@
    PERANGKAT UTAMA
    ========================================================= */
 
+/* Tiga kartu per baris; kartu sisa di baris terakhir berada di tengah. */
 .sid-profil-desa-main-officials {
-  display: grid;
-
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 
   gap: 1rem;
 
   margin-bottom: 2rem;
+}
+
+.sid-profil-desa-main-officials > .sid-profil-desa-official-card {
+  flex: 0 0 calc((100% - 2rem) / 3);
 }
 
 .sid-profil-desa-official-card {
@@ -10584,8 +10589,8 @@
     align-items: flex-start;
   }
 
-  .sid-profil-desa-main-officials {
-    grid-template-columns: 1fr;
+  .sid-profil-desa-main-officials > .sid-profil-desa-official-card {
+    flex-basis: 100%;
   }
 
   .sid-profil-desa-kadus-list {
@@ -11922,6 +11927,8 @@
   font-weight: 500;
 
   text-align: left;
+  /* Juga dipakai tautan (Situs Desa). */
+  text-decoration: none;
 
   cursor: pointer;
 
@@ -22442,6 +22449,10 @@ button.sid-operator-profile {
 }
 
 .sid-activity-log-changes {
+  /* Blok di tengah kolom, teks di dalamnya rata kiri. */
+  display: inline-block;
+  max-width: 100%;
+  text-align: left;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -23092,18 +23103,69 @@ button.sid-operator-profile {
   color: var(--sid-text-primary);
 }
 
+/* Pilihan radio (Diisi oleh, nasib pemegang lama) sebagai kartu pilihan;
+   yang terpilih disorot. */
 .sid-org-choice {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  gap: 0.5rem;
   font-size: 0.875rem;
 }
 
 .sid-org-choice label {
   display: inline-flex;
+  flex: 1 1 12rem;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+
+  padding: 0.6rem 0.85rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-control);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+
   cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sid-org-choice label:hover {
+  border-color: var(--sid-primary);
+}
+
+.sid-org-choice label:has(input:checked) {
+  border-color: var(--sid-primary);
+
+  background: var(--sid-primary-soft);
+  color: var(--sid-primary);
+
+  font-weight: 600;
+}
+
+.sid-org-choice label:has(input:disabled) {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+.sid-org-choice label:has(input:disabled):hover {
+  border-color: var(--sid-border);
+}
+
+.sid-org-choice input {
+  margin: 0;
+
+  accent-color: var(--sid-primary);
+}
+
+.sid-org-choice label:has(input:focus-visible) {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 768px) {
@@ -23314,6 +23376,7 @@ button.sid-operator-profile {
 
 .sid-dialog-change thead th {
   background: var(--sid-surface-page);
+  text-align: center;
   color: var(--sid-text-secondary);
   font-weight: 600;
 }
@@ -23737,4 +23800,171 @@ button.sid-operator-profile {
 /* Sel tabel pendek yang tidak boleh terpotong ke baris baru (mis. RT/RW "001/002"). */
 .sid-operator-table td.sid-nowrap {
   white-space: nowrap;
+}
+
+/* =========================================================
+   PERATAAN KOLOM TABEL DASHBOARD
+   Judul kolom selalu rata tengah. Isi sel bawaannya rata kiri (teks
+   yang panjangnya beda-beda: nama, email, alamat, judul, keterangan);
+   sel berisi nilai yang panjangnya seragam (nomor urut, kode, NIK/No. KK,
+   tanggal, jumlah, RT/RW, pil status, tombol aksi) diberi kelas .center.
+   Ditaruh di akhir agar mengalahkan aturan tabel sebelumnya.
+   ========================================================= */
+
+.sid-operator-table th,
+.sid-wilayah-table th {
+  text-align: center;
+}
+
+/* Pengecualian judul rata kiri (mis. Kepala Keluarga di daftar KK). */
+.sid-operator-table th.left,
+.sid-wilayah-table th.left {
+  text-align: left;
+}
+
+.sid-operator-table td,
+.sid-wilayah-table td {
+  text-align: left;
+}
+
+.sid-operator-table td.center,
+.sid-wilayah-table td.center {
+  text-align: center;
+}
+
+/* Kolom Aksi selebar grup tombol terlengkap (width 1% + nowrap), sehingga
+   judul "Aksi" tepat di tengah grup itu; tombol rata kanan, jadi baris yang
+   tombolnya tidak lengkap sejajar ujung kanan baris yang lengkap. */
+.sid-operator-table td.center:has(> .sid-operator-actions),
+.sid-wilayah-table td.center:has(> .sid-wilayah-actions) {
+  width: 1%;
+
+  white-space: nowrap;
+}
+
+.sid-operator-table td.center .sid-operator-actions,
+.sid-wilayah-table td.center .sid-wilayah-actions {
+  justify-content: flex-end;
+}
+
+/* =========================================================
+   KONTROL FORM POLOS DI MODAL
+   Input/select/textarea di .sid-modal yang tidak punya kelas sendiri
+   (mis. form Organisasi Desa dan Pejabat Desa) memakai gaya kolom isian
+   bersama (.sid-input), agar tetap terlihat sebagai form. Kontrol yang
+   sudah berkelas atau bergaya inline tidak terpengaruh.
+   ========================================================= */
+
+.sid-modal
+  :is(
+    input:not([type='radio'], [type='checkbox'], [type='file'], [type='range'], [type='hidden']),
+    select,
+    textarea
+  ):not([class]) {
+  width: 100%;
+  min-height: 2.625rem;
+
+  box-sizing: border-box;
+
+  padding: 0.5625rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-control);
+
+  background: var(--sid-surface-card);
+  color: var(--sid-text-primary);
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sid-modal :is(input, select, textarea):not([class])::placeholder {
+  color: var(--sid-text-muted);
+}
+
+.sid-modal :is(input, select, textarea):not([class]):hover:not(:disabled, [readonly]) {
+  border-color: color-mix(in srgb, var(--sid-primary) 45%, var(--sid-border));
+}
+
+.sid-modal :is(input, select, textarea):not([class]):focus {
+  border-color: var(--sid-primary);
+
+  box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.12);
+}
+
+/* Terisi otomatis (mis. nama dari NIK): tampak tidak bisa diketik. */
+.sid-modal :is(input, textarea):not([class])[readonly],
+.sid-modal :is(input, select, textarea):not([class]):disabled {
+  background: var(--sid-surface-page);
+  color: var(--sid-text-secondary);
+
+  cursor: default;
+}
+
+.sid-modal :is(input, select, textarea):not([class])[aria-invalid='true'] {
+  border-color: var(--sid-danger);
+}
+
+.sid-modal textarea:not([class]) {
+  min-height: 4.5rem;
+
+  resize: vertical;
+}
+
+.sid-modal select:not([class]) {
+  cursor: pointer;
+}
+
+/* Judul dan keterangan modal yang ditulis polos (<h2>, <p>). */
+.sid-modal > h2:not([class]) {
+  margin: 0 0 1.25rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sid-modal > p:not([class]) {
+  margin: -0.5rem 0 1.25rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   JUDUL HALAMAN + KETERANGAN (SEMUA HALAMAN PEJABAT)
+   Satu gaya untuk judul halaman (h1) dan satu baris keterangan tepat di
+   bawahnya, di semua halaman yang memakai layout sidebar. Ditaruh di
+   akhir dan dua tingkat kelas agar mengalahkan gaya judul per halaman.
+   ========================================================= */
+
+.sid-operator-layout .sid-operator-main-content h1 {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.sid-operator-layout .sid-operator-main-content h1 + p {
+  margin-top: 0.25rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
 }

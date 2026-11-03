@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Citizen;
+use App\Support\PopulationScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -20,16 +21,18 @@ class CitizenRepository
      * Dusun/RW/RT dijalankan di database. RW dan Dusun dibaca lewat RT
      * warga agar mengikuti hierarki wilayah. NIK terenkripsi sehingga tidak
      * bisa dicari sebagian: 16 digit dicocokkan lewat nik_hash, teks lain
-     * dicari di nama.
+     * dicari di nama. $scope (opsional) mempersempit ke wilayah pembaca
+     * (Data Penduduk RT/RW/Kadus).
      *
      * @param  array{search?: ?string, hamlet_id?: int|string|null, rw_id?: int|string|null, rt_id?: int|string|null, per_page?: int|string|null}  $filters
      */
-    public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
+    public function paginateWithWilayah(string $villageId, array $filters = [], ?PopulationScope $scope = null): LengthAwarePaginator
     {
         $search = trim((string) ($filters['search'] ?? ''));
 
         return Citizen::query()
             ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->apply($query))
             ->when($search !== '', function ($query) use ($search) {
                 if (preg_match('/^\d{16}$/', $search)) {
                     return $query->where('nik_hash', hash('sha256', $search));

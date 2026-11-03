@@ -4,7 +4,7 @@ RegisterRequest:
   description: |
     UC-17. Register dengan NIK, tanggal lahir, dan password. Tanggal lahir
     harus sama dengan `citizens.date_of_birth` (verifikasi kedua selain NIK);
-    nama diambil dari citizen dan username dibuat otomatis (nama-depan.NNNN).
+    nama diambil dari citizen dan username dibuat otomatis (namadepan.namabelakang.NNNN; satu kata: namadepan.NNNN; NNNN 4 digit acak).
   properties:
     nik:
       type: string
