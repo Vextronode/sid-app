@@ -21,6 +21,23 @@ export type PopulationLog = {
   created_at: IsoDateString | null
 }
 
+// AccountLogResource: tindakan petugas atas akun pengguna. Kata sandi tidak
+// pernah ikut dicatat.
+export type AccountLog = {
+  id: number
+  log_name: 'user' | 'password_reset_request'
+  event: string
+  description: string | null
+  subject_label: string | null
+  // Catatan penolakan permintaan atur ulang kata sandi.
+  notes: string | null
+  // 'cli' untuk pemulihan Staf SIDUTama lewat perintah artisan.
+  via: string | null
+  changes: Record<string, { old?: unknown; new?: unknown }> | null
+  actor: LogActor | null
+  created_at: IsoDateString | null
+}
+
 // LetterActivityLogResource: perubahan status surat.
 export type LetterActivityLog = {
   id: number
@@ -55,6 +72,15 @@ export async function getPopulationLogs(params: LogParams = {}) {
     '/api/activity-logs/population',
     { params: compact(params) },
   )
+
+  return response.data
+}
+
+// Riwayat tindakan atas akun pengguna desa - khusus Staf SIDUTama.
+export async function getAccountLogs(params: LogParams = {}) {
+  const response = await api.get<PaginatedResponse<AccountLog>>('/api/activity-logs/accounts', {
+    params: compact(params),
+  })
 
   return response.data
 }

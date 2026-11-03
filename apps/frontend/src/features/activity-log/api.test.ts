@@ -4,7 +4,7 @@ const api = vi.hoisted(() => ({ get: vi.fn() }))
 
 vi.mock('@/lib/api', () => ({ default: api }))
 
-import { getLetterActivityLogs, getPopulationLogs } from './api'
+import { getAccountLogs, getLetterActivityLogs, getPopulationLogs } from './api'
 
 describe('activity log API', () => {
   beforeEach(() => {
@@ -19,6 +19,14 @@ describe('activity log API', () => {
 
     expect(api.get).toHaveBeenCalledWith('/api/activity-logs/population', {
       params: { type: 'citizen', subject_id: 'abc', page: 2 },
+    })
+  })
+
+  it('requests account logs with only filled filters', async () => {
+    await getAccountLogs({ event: 'password_reset_by_staff', from: '', page: 1 })
+
+    expect(api.get).toHaveBeenCalledWith('/api/activity-logs/accounts', {
+      params: { event: 'password_reset_by_staff', page: 1 },
     })
   })
 

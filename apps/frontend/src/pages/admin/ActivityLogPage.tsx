@@ -1,8 +1,9 @@
 // ==========================================
 // ActivityLogPage.tsx
-// Log Aktivitas Staf SIDUTama (S-05): riwayat perubahan data warga & KK
-// dan riwayat status surat desa. Hanya baca. Tab dan filter disimpan di
-// query string agar bisa ditautkan dari baris warga/KK.
+// Log Aktivitas Staf SIDUTama (S-05): riwayat perubahan data warga & KK,
+// tindakan atas akun pengguna, dan riwayat status surat desa. Hanya baca.
+// Tab dan filter disimpan di query string agar bisa ditautkan dari baris
+// warga/KK.
 // ==========================================
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -17,8 +18,14 @@ import { RefreshButton } from '@/components/ui/RefreshButton'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 import { SURAT_STATUS_OPTIONS, STATUS_LABELS } from '@/constants/suratStatus'
-import { getLetterActivityLogs, getPopulationLogs } from '@/features/activity-log/api'
 import {
+  getAccountLogs,
+  getLetterActivityLogs,
+  getPopulationLogs,
+} from '@/features/activity-log/api'
+import {
+  ACCOUNT_EVENT_LABELS,
+  ACCOUNT_EVENT_OPTIONS,
   fieldLabel,
   formatChangeValue,
   formatDateTime,
@@ -41,6 +48,7 @@ type TabProps = {
 
 const TABS = [
   { value: 'penduduk', label: 'Data Warga & KK' },
+  { value: 'akun', label: 'Akun Pengguna' },
   { value: 'surat', label: 'Surat' },
 ]
 
@@ -282,6 +290,114 @@ function PopulationTab({ params, setParam, pageSize, onPageSizeChange }: TabProp
   )
 }
 
+function AccountTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
+  const filters = {
+    event: params.get('event') ?? '',
+    from: params.get('from') ?? '',
+    to: params.get('to') ?? '',
+    page: Number(params.get('page') ?? 1),
+    per_page: pageSize,
+  }
+
+  const { data, isPending, isError } = useQuery({
+    queryKey: ['activity-logs', 'accounts', filters],
+    queryFn: () => getAccountLogs(filters),
+    placeholderData: keepPreviousData,
+  })
+
+  const logs = data?.data ?? []
+  const meta = data?.meta ?? EMPTY_META
+
+  return (
+    <>
+      <div className="sid-operator-filter-card">
+        <div className="sid-operator-filter-grid sid-activity-log-filters">
+          <div className="sid-operator-filter-field">
+            <p>Aksi</p>
+            <select value={filters.event} onChange={(e) => setParam('event', e.target.value)}>
+              <option value="">Semua aksi</option>
+              {ACCOUNT_EVENT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DateRangeFields from={filters.from} to={filters.to} onChange={setParam} />
+        </div>
+      </div>
+
+      <div className="sid-operator-table-card">
+        <div className="sid-operator-table-wrapper">
+          <table className="sid-operator-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Petugas</th>
+                <th>Aksi</th>
+                <th>Akun</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isPending ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Memuat riwayat...
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Gagal memuat riwayat akun.
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Belum ada riwayat tindakan atas akun.
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="sid-activity-log-time">{formatDateTime(log.created_at)}</td>
+                    <td>
+                      <Actor actor={log.actor} />
+                    </td>
+                    <td>
+                      <span>{ACCOUNT_EVENT_LABELS[log.event] ?? log.event}</span>
+                      {log.via === 'cli' && (
+                        <small className="sid-admin-cell-meta">lewat CLI</small>
+                      )}
+                    </td>
+                    <td>{log.subject_label ?? '-'}</td>
+                    <td>
+                      {log.notes ? (
+                        <span>{log.notes}</span>
+                      ) : (
+                        <ChangeList
+                          log={{ event: log.event, summary: null, changes: log.changes }}
+                        />
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          meta={meta}
+          onChange={(page) => setParam('page', String(page), false)}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
+      </div>
+    </>
+  )
+}
+
 function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
   const filters = {
     new_status: params.get('status') ?? '',
@@ -404,7 +520,8 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
 
 export default function ActivityLogPage() {
   const [params, setParams] = useSearchParams()
-  const activeTab = params.get('tab') === 'surat' ? 'surat' : 'penduduk'
+  const requestedTab = params.get('tab')
+  const activeTab = TABS.some((tab) => tab.value === requestedTab) ? requestedTab : 'penduduk'
 
   // Setiap perubahan filter kembali ke halaman 1.
   const setParam: SetParam = (key, value, resetPage = true) => {
@@ -443,8 +560,9 @@ export default function ActivityLogPage() {
           <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
         </div>
         <p className="sid-page-description">
-          Riwayat perubahan data warga & Kartu Keluarga oleh petugas, dan riwayat status setiap
-          surat. NIK, No. KK, dan alamat KK disamarkan.
+          Riwayat perubahan data warga & Kartu Keluarga oleh petugas, tindakan atas akun pengguna,
+          dan riwayat status setiap surat. NIK, No. KK, dan alamat KK disamarkan; kata sandi tidak
+          pernah dicatat.
         </p>
 
         <div className="sid-wilayah-tabs" role="tablist" aria-label="Jenis log">
@@ -464,6 +582,13 @@ export default function ActivityLogPage() {
 
         {activeTab === 'surat' ? (
           <LetterTab
+            params={params}
+            setParam={setParam}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        ) : activeTab === 'akun' ? (
+          <AccountTab
             params={params}
             setParam={setParam}
             pageSize={pageSize}
