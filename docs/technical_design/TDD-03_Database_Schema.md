@@ -81,7 +81,6 @@ Identitas desa (nama, kontak, logo, kop) dibaca frontend dan PDF dari tabel ini;
 | hamlet_id | BIGINT | FK → hamlets.id, NOT NULL | Dusun yang menaungi |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik RW |
 | number | VARCHAR(255) | NOT NULL | Nomor RW |
-| full_label | VARCHAR(255) | NOT NULL | Label lengkap: 'RW 001' |
 | is_active | BOOLEAN | DEFAULT true | |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
@@ -93,7 +92,6 @@ Identitas desa (nama, kontak, logo, kop) dibaca frontend dan PDF dari tabel ini;
 | rw_id | BIGINT | FK → rws.id, NOT NULL | RW yang menaungi |
 | village_id | UUID | FK → villages.id, NOT NULL | Desa pemilik RT |
 | number | VARCHAR(255) | NOT NULL | Nomor RT |
-| full_label | VARCHAR(255) | NOT NULL | Label lengkap: 'RT 001/RW 001' |
 | is_active | BOOLEAN | DEFAULT true | |
 | created_at, updated_at | TIMESTAMP | NULL | |
 

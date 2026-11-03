@@ -67,7 +67,6 @@ entity "rws" as RWS {
   * hamlet_id : BIGINT <<FK>>
   * village_id : UUID <<FK>>
   * number : VARCHAR(255)
-  * full_label : VARCHAR(255)
   is_active : BOOLEAN = true
 }
 
@@ -77,7 +76,6 @@ entity "rts" as RTS {
   * rw_id : BIGINT <<FK>>
   * village_id : UUID <<FK>>
   * number : VARCHAR(255)
-  * full_label : VARCHAR(255)
   is_active : BOOLEAN = true
 }
 

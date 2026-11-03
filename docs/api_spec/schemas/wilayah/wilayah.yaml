@@ -49,9 +49,6 @@ Rw:
     number:
       type: string
       example: "001"
-    full_label:
-      type: string
-      example: "RW 001"
     is_active:
       type: boolean
       example: true
@@ -87,9 +84,6 @@ Rt:
     number:
       type: string
       example: "001"
-    full_label:
-      type: string
-      example: "RT 001/RW 001"
     is_active:
       type: boolean
       example: true

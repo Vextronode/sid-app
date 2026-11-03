@@ -29,7 +29,6 @@ get:
               - id: 1
                 hamlet_id: 1
                 number: "001"
-                full_label: "RW 001"
                 is_active: true
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
@@ -61,7 +60,7 @@ post:
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
     '422':
-      description: full_label sudah digunakan dalam dusun ini / hamlet_id tidak valid
+      description: Nomor RW sudah digunakan dalam dusun ini / hamlet_id tidak valid
       content:
         application/json:
           schema:
