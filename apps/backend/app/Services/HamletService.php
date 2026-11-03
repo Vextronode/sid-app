@@ -20,7 +20,7 @@ class HamletService
 
     public function getAllOrderedByName(User $user): Collection
     {
-        return $this->hamletRepository->allOrderedByName($this->villageId($user));
+        return $this->hamletRepository->allOrderedByName($this->readableVillageId($user));
     }
 
     /**
@@ -87,6 +87,20 @@ class HamletService
         }
 
         return $this->hamletRepository->delete($hamlet);
+    }
+
+    /**
+     * Membaca daftar wilayah: peran yang boleh dibatasi di route (Staf
+     * SIDUTama, Kasi Pemerintahan, Kaur TU & Umum); menulis tetap lewat
+     * villageId() yang khusus Staf SIDUTama.
+     */
+    private function readableVillageId(User $user): string
+    {
+        if (! $user->is_active || ! $user->village_id) {
+            abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        }
+
+        return $user->village_id;
     }
 
     private function villageId(User $user): string

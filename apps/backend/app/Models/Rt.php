@@ -14,7 +14,6 @@ class Rt extends Model
         'number',
         'rw_id',
         'village_id',
-        'full_label',
         'is_active',
     ];
 

@@ -15,7 +15,6 @@ class Rw extends Model
         'number',
         'hamlet_id',
         'village_id',
-        'full_label',
         'is_active',
     ];
 

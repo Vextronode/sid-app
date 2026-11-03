@@ -29,23 +29,23 @@ class RwServiceTest extends TestCase
         );
     }
 
-    public function test_create_generates_full_label_from_number(): void
+    public function test_create_stores_the_number(): void
     {
         $hamlet = Hamlet::factory()->create();
 
         $rw = $this->service->create(['hamlet_id' => $hamlet->id, 'number' => '005'], $this->makeStafSidActor($hamlet->village_id));
 
-        $this->assertSame('RW 005', $rw->full_label);
+        $this->assertSame('005', $rw->number);
         $this->assertTrue($rw->is_active);
     }
 
-    public function test_update_regenerates_full_label_when_number_changes(): void
+    public function test_update_changes_the_number(): void
     {
-        $rw = Rw::factory()->create(['number' => '001', 'full_label' => 'RW 001']);
+        $rw = Rw::factory()->create(['number' => '001']);
 
         $updated = $this->service->update($rw, ['number' => '009'], $this->makeStafSidActor($rw->village_id));
 
-        $this->assertSame('RW 009', $updated->full_label);
+        $this->assertSame('009', $updated->number);
     }
 
     public function test_update_blocks_deactivation_when_active_citizens_exist(): void

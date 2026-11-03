@@ -28,12 +28,11 @@ class RtControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
-            ->assertCreated()
-            ->assertJsonPath('data.full_label', 'RT 001 / RW 001');
+            ->assertCreated();
 
         $rt = Rt::firstWhere('rw_id', $rw->id);
 
@@ -44,8 +43,7 @@ class RtControllerTest extends TestCase
 
         $this->actingAs($user)
             ->patchJson("/api/rts/{$rt->id}", ['number' => '002'])
-            ->assertOk()
-            ->assertJsonPath('data.full_label', 'RT 002 / RW 001');
+            ->assertOk();
 
         $this->actingAs($user)
             ->deleteJson("/api/rts/{$rt->id}")
@@ -59,7 +57,7 @@ class RtControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = User::factory()->create(['village_id' => $village->id, 'role' => 'rt']);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
@@ -71,8 +69,8 @@ class RtControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
+        Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rts', ['rw_id' => $rw->id, 'number' => '001'])
@@ -85,8 +83,8 @@ class RtControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
-        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
+        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         Citizen::create([
             'village_id' => $village->id,

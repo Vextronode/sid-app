@@ -43,11 +43,10 @@ class RtRepositoryTest extends TestCase
             'rw_id' => $rw->id,
             'village_id' => $rw->village_id,
             'number' => '001',
-            'full_label' => 'RT 001 / RW 001',
             'is_active' => true,
         ]);
 
-        $this->assertDatabaseHas('rts', ['id' => $rt->id, 'full_label' => 'RT 001 / RW 001']);
+        $this->assertDatabaseHas('rts', ['id' => $rt->id]);
     }
 
     public function test_update_persists_changes(): void
