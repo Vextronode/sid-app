@@ -148,7 +148,7 @@ export default function OperatorDesaDashboardPage() {
 
         <section className="sid-operator-dashboard-grid">
           <div className="sid-operator-chart-wrapper">
-            <SuratStatChart letterTypes={summary.by_type} />
+            <SuratStatChart />
           </div>
 
           <div className="sid-operator-flow-wrapper">
