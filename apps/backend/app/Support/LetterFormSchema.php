@@ -293,12 +293,23 @@ class LetterFormSchema
 
         return $this->familyMembers = $this->applicant->family_id === null
             ? new Collection([$this->applicant])
-            : Citizen::query()
+            : self::oldestFirst(Citizen::query()
                 ->where('village_id', $this->applicant->village_id)
                 ->where('family_id', $this->applicant->family_id)
                 ->where('is_active', true)
-                ->orderBy('date_of_birth')
-                ->get();
+                ->get());
+    }
+
+    /**
+     * Urutan anggota KK dari yang tertua. Tanggal lahir terenkripsi, jadi
+     * diurutkan di PHP (anggota satu KK sedikit).
+     *
+     * @param  Collection<int, Citizen>  $members
+     * @return Collection<int, Citizen>
+     */
+    public static function oldestFirst(Collection $members): Collection
+    {
+        return $members->sortBy(fn (Citizen $member): string => $member->date_of_birth?->format('Y-m-d') ?? '')->values();
     }
 
     /**
@@ -356,7 +367,7 @@ class LetterFormSchema
             $join = $config['join'];
             $family = $this->familyByNumber($payload[$join['no_kk']] ?? null);
 
-            foreach ($family?->members()->where('is_active', true)->with($relations)->orderBy('date_of_birth')->get() ?? [] as $member) {
+            foreach (self::oldestFirst($family?->members()->where('is_active', true)->with($relations)->get() ?? new Collection) as $member) {
                 $rows[] = [$member, (string) $member->family_role?->value];
             }
 
