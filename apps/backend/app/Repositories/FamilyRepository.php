@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Family;
+use App\Support\PopulationScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -21,15 +22,17 @@ class FamilyRepository
      * sebagian: 16 digit dicocokkan lewat no_kk_hash, teks lain dicari di
      * nama kepala keluarga. Filter Dusun/RW dibaca lewat RT KK (seperti
      * daftar warga), bukan kolom rw_id/hamlet_id yang bisa tidak sinkron.
+     * $scope (opsional) mempersempit ke wilayah pembaca (RT/RW/Kadus).
      *
      * @param  array{search?: ?string, hamlet_id?: int|string|null, rw_id?: int|string|null, rt_id?: int|string|null, per_page?: int|string|null}  $filters
      */
-    public function paginateWithWilayah(string $villageId, array $filters = []): LengthAwarePaginator
+    public function paginateWithWilayah(string $villageId, array $filters = [], ?PopulationScope $scope = null): LengthAwarePaginator
     {
         $search = trim((string) ($filters['search'] ?? ''));
 
         return Family::query()
             ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->apply($query))
             ->when($search !== '', function ($query) use ($search) {
                 if (preg_match('/^\d{16}$/', $search)) {
                     return $query->where('no_kk_hash', hash('sha256', $search));
@@ -65,17 +68,18 @@ class FamilyRepository
     /**
      * Semua KK desa untuk pilihan KK di form warga (tanpa halaman).
      */
-    public function optionsForVillage(string $villageId): Collection
+    public function optionsForVillage(string $villageId, ?PopulationScope $scope = null): Collection
     {
         return Family::query()
             ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->apply($query))
             ->with('headMember')
             ->orderBy('created_at', 'desc')
             ->orderBy('id')
             ->get();
     }
 
-    public function findById(string $id, string $villageId): ?Family
+    public function findById(string $id, string $villageId, ?PopulationScope $scope = null): ?Family
     {
         return Family::query()
             ->with(array_filter([
@@ -87,6 +91,7 @@ class FamilyRepository
                 Schema::hasColumn('citizens', 'family_id') ? 'members' : null,
             ]))
             ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->apply($query))
             ->find($id);
     }
 

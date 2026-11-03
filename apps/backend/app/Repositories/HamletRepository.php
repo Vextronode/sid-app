@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Hamlet;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class HamletRepository
@@ -12,9 +13,14 @@ class HamletRepository
         //
     }
 
-    public function allOrderedByName(string $villageId): Collection
+    /** $scope (opsional): hanya Dusun yang memuat wilayah pembaca Data Penduduk. */
+    public function allOrderedByName(string $villageId, ?PopulationScope $scope = null): Collection
     {
-        return Hamlet::query()->where('village_id', $villageId)->orderBy('name')->get();
+        return Hamlet::query()
+            ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->applyToRegions($query))
+            ->orderBy('name')
+            ->get();
     }
 
     /**
