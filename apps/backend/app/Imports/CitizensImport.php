@@ -20,6 +20,7 @@ use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Row;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 /**
  * EV5-11-S2. UC-09 Import Excel. Header kolom (baris pertama) harus
@@ -40,6 +41,9 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
     /** @var list<array{row: int, message: string}> */
     private array $errors = [];
 
+    /** Huruf kolom berheader `nik`, dicari sekali dari baris header. */
+    private ?string $nikColumn = null;
+
     public function __construct(
         private readonly CitizenService $citizenService,
         private readonly User $user,
@@ -49,6 +53,18 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
     {
         $rowNumber = $row->getRowIndex();
         $data = $row->toArray();
+
+        // Excel menyimpan angka hanya sampai 15 digit signifikan: NIK di sel
+        // Angka bisa sudah berubah digit terakhirnya walau tampak 16 digit.
+        // CSV dibaca sebagai teks, jadi tidak terkena pemeriksaan ini.
+        if ($this->nikCellIsNumeric($row)) {
+            $this->errors[] = [
+                'row' => $rowNumber,
+                'message' => 'Format kolom NIK harus Teks',
+            ];
+
+            return;
+        }
 
         $validator = Validator::make($data, $this->rules());
 
@@ -62,7 +78,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
         }
 
         try {
-            $this->citizenService->create($validator->validated(), $this->user, auditSource: 'import');
+            $this->citizenService->create($validator->validated(), $this->user);
             $this->successCount++;
         } catch (ValidationException $e) {
             $this->errors[] = [
@@ -83,6 +99,24 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows, WithHeadingRow
     public function errorList(): array
     {
         return $this->errors;
+    }
+
+    private function nikCellIsNumeric(Row $row): bool
+    {
+        $sheet = $row->getDelegate()->getWorksheet();
+
+        if ($this->nikColumn === null) {
+            foreach ($sheet->getRowIterator(1, 1)->current()->getCellIterator() as $cell) {
+                if (strtolower(trim((string) $cell->getValue())) === 'nik') {
+                    $this->nikColumn = $cell->getColumn();
+
+                    break;
+                }
+            }
+        }
+
+        return $this->nikColumn !== null
+            && $sheet->getCell($this->nikColumn.$row->getRowIndex())->getDataType() === DataType::TYPE_NUMERIC;
     }
 
     /**

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Announcement;
 use App\Models\Citizen;
+use App\Models\Family;
+use App\Models\FamilySocioeconomic;
 use App\Models\Hamlet;
 use App\Models\LetterType;
 use App\Models\News;
@@ -18,7 +20,9 @@ use App\Models\VillageInfoPage;
 use App\Models\VillageOrgMember;
 use App\Models\VillageOrgPosition;
 use App\Models\VillageRegulation;
+use App\Observers\PopulationAuditObserver;
 use App\Policies\RegionPolicy;
+use App\Support\AuditContext;
 use App\Support\OfficialPositionCatalog;
 use App\Support\PublicPageCache;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -39,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(OfficialPositionCatalog::class);
+        $this->app->scoped(AuditContext::class);
     }
 
     /**
@@ -46,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Jejak audit data kependudukan (S-05) lewat observer, bukan
+        // pemanggilan manual di tiap service.
+        foreach ([Citizen::class, Family::class, FamilySocioeconomic::class] as $populationModel) {
+            $populationModel::observe(PopulationAuditObserver::class);
+        }
+
         RateLimiter::for('register', function (Request $request) {
             return [
                 Limit::perMinute(5)->by($request->ip()),

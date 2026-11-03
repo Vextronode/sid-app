@@ -10,8 +10,10 @@ use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
+use App\Support\AuditContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,9 +21,14 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CitizenService
 {
+    private const DUPLICATE_NIK_MESSAGE = 'NIK sudah ada dalam database warga';
+
+    private const DUPLICATE_HEAD_MESSAGE = 'KK ini sudah memiliki kepala keluarga aktif.';
+
     public function __construct(
         protected CitizenRepository $citizenRepository,
         protected PopulationAuditService $audit,
+        protected AuditContext $auditContext,
     ) {}
 
     public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
@@ -32,12 +39,10 @@ class CitizenService
     /**
      * UC-09 Tambah Warga. NIK dienkripsi + di-hash lewat cast/observer
      * di model Citizen; keunikan dicek lewat nik_hash. rw_id diturunkan
-     * dari rt_id (request tidak mengirim rw_id).
-     *
-     * $auditSource: `manual` / `import` dicatat di Log Aktivitas (S-05);
-     * null untuk pemanggil yang mencatat sendiri (Terapkan surat).
+     * dari rt_id (request tidak mengirim rw_id). Log Aktivitas (S-05)
+     * ditulis PopulationAuditObserver.
      */
-    public function create(array $data, User $user, ?string $auditSource = 'manual'): Citizen
+    public function create(array $data, User $user): Citizen
     {
         if (! $user->village_id) {
             abort(403, 'Data wilayah desa tidak ditemukan.');
@@ -47,27 +52,26 @@ class CitizenService
         $this->guardSingleFamilyHead($data['family_id'] ?? null, $data['family_role'] ?? null);
         $this->guardRelatedRecords($data, $user);
 
-        return DB::transaction(function () use ($data, $user, $auditSource) {
-            $citizen = $this->citizenRepository->create(array_merge($data, [
-                'village_id' => $user->village_id,
-                'data_source' => 'manual_input_desa',
-            ]));
-            $citizen->refresh();
+        try {
+            return DB::transaction(function () use ($data, $user) {
+                $citizen = $this->citizenRepository->create(array_merge($data, [
+                    'village_id' => $user->village_id,
+                    'data_source' => 'manual_input_desa',
+                ]));
+                $citizen->refresh();
 
-            if ($auditSource !== null) {
-                $this->audit->created($citizen, $user, ['source' => $auditSource]);
-            }
-
-            return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
-        });
+                return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            $this->throwIfKnownUniqueViolation($exception);
+        }
     }
 
     /**
      * UC-09 Edit Warga. NIK tidak bisa diubah (ditolak di
      * UpdateCitizenRequest). Perubahan rt_id menurunkan ulang rw_id.
-     * $audit = false bila pemanggil mencatat sendiri (Terapkan surat).
      */
-    public function update(Citizen $citizen, array $data, User $user, bool $audit = true): Citizen
+    public function update(Citizen $citizen, array $data, User $user): Citizen
     {
         if ($citizen->village_id !== $user->village_id) {
             abort(403, 'Anda tidak berwenang mengubah data warga ini.');
@@ -80,23 +84,22 @@ class CitizenService
 
         $this->guardSingleFamilyHead($familyId, $familyRole, $citizen->id);
 
-        return DB::transaction(function () use ($citizen, $data, $user, $audit) {
-            $before = clone $citizen;
-            $citizen = $this->citizenRepository->update($citizen, $data);
+        try {
+            return DB::transaction(function () use ($citizen, $data) {
+                $citizen = $this->citizenRepository->update($citizen, $data);
 
-            // users.name hanya salinan citizens.name saat akun dibuat;
-            // ikut diperbarui agar Manajemen Pengguna tidak menampilkan
-            // nama lama.
-            if ($before->name !== $citizen->name) {
-                $citizen->user()->update(['name' => $citizen->name]);
-            }
+                // users.name hanya salinan citizens.name saat akun dibuat;
+                // ikut diperbarui agar Manajemen Pengguna tidak menampilkan
+                // nama lama.
+                if ($citizen->wasChanged('name')) {
+                    $citizen->user()->update(['name' => $citizen->name]);
+                }
 
-            if ($audit) {
-                $this->audit->updated($before, $citizen, $user);
-            }
-
-            return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
-        });
+                return $citizen->load(['family', 'rt', 'rw', 'hamlet', 'village', 'occupation']);
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            $this->throwIfKnownUniqueViolation($exception);
+        }
     }
 
     /**
@@ -110,7 +113,8 @@ class CitizenService
     {
         $import = new CitizensImport($this, $user);
 
-        Excel::import($import, $file);
+        // Setiap baris tercatat sebagai `created` dengan `source = import`.
+        $this->auditContext->with(['source' => 'import'], fn () => Excel::import($import, $file));
 
         $summary = [
             'total_rows' => $import->successCount() + count($import->errorList()),
@@ -128,11 +132,8 @@ class CitizenService
     {
         $this->guardCitizenVillage($citizen, $user);
 
-        return DB::transaction(function () use ($citizen, $user) {
-            $this->audit->deleted($citizen, $user);
-
-            return $this->citizenRepository->delete($citizen);
-        });
+        // Transaksi: data dan Log Aktivitas dari observer tersimpan bersama.
+        return DB::transaction(fn () => $this->citizenRepository->delete($citizen));
     }
 
     public function getDistinctWilayah(User $user): Collection
@@ -209,7 +210,7 @@ class CitizenService
     {
         if ($this->citizenRepository->findByNikHash(hash('sha256', $nik))) {
             throw ValidationException::withMessages([
-                'nik' => ['NIK sudah ada dalam database warga'],
+                'nik' => [self::DUPLICATE_NIK_MESSAGE],
             ]);
         }
     }
@@ -225,8 +226,30 @@ class CitizenService
 
         if ($this->citizenRepository->existsFamilyHead($familyId, $excludeCitizenId)) {
             throw ValidationException::withMessages([
-                'family_role' => ['KK ini sudah memiliki kepala keluarga aktif.'],
+                'family_role' => [self::DUPLICATE_HEAD_MESSAGE],
             ]);
         }
+    }
+
+    /**
+     * Dua penyimpanan bersamaan bisa sama-sama lolos guard di atas; yang
+     * kalah kena unique index dan dijawab 422, bukan 500. Dikenali dari nama
+     * index (PostgreSQL) atau kolomnya (SQLite tidak menyebut nama index).
+     */
+    private function throwIfKnownUniqueViolation(UniqueConstraintViolationException $exception): never
+    {
+        $violates = fn (string $index, string $column): bool => $exception->index !== null
+            ? $exception->index === $index
+            : $exception->columns === [$column];
+
+        if ($violates('citizens_nik_hash_unique', 'nik_hash')) {
+            throw ValidationException::withMessages(['nik' => [self::DUPLICATE_NIK_MESSAGE]]);
+        }
+
+        if ($violates('citizens_single_active_head_unique', 'family_id')) {
+            throw ValidationException::withMessages(['family_role' => [self::DUPLICATE_HEAD_MESSAGE]]);
+        }
+
+        throw $exception;
     }
 }

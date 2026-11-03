@@ -10,6 +10,7 @@ use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
 use App\Services\PopulationAuditService;
+use App\Support\AuditContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
@@ -74,7 +75,9 @@ class ActivityLogTest extends TestCase
             ['old' => 'Siti Aminah', 'new' => 'Siti Aminah Putri'],
             $logs[1]->properties['changes']['name'],
         );
-        $this->assertSame('Jl. Baru 1', $logs[1]->properties['changes']['address']['new']);
+        // Alamat terenkripsi (B1): tercatat berubah, nilainya disamarkan.
+        $this->assertSame(PopulationAuditService::REDACTED, $logs[1]->properties['changes']['address']['new']);
+        $this->assertStringNotContainsString('Jl. Baru 1', Activity::query()->pluck('properties')->toJson());
         $this->assertSame('Siti Aminah Putri', $logs[2]->properties['changes']['name']['old']);
 
         $this->assertStringNotContainsString('3201012345670001', Activity::query()->pluck('properties')->toJson());
@@ -82,7 +85,7 @@ class ActivityLogTest extends TestCase
 
     public function test_update_without_real_changes_is_not_logged(): void
     {
-        $citizen = Citizen::factory()->create(['village_id' => $this->village->id, 'name' => 'Budi']);
+        $citizen = $this->existing(fn () => Citizen::factory()->create(['village_id' => $this->village->id, 'name' => 'Budi']));
 
         $this->actingAs($this->staf)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Budi'])->assertOk();
 
@@ -122,18 +125,18 @@ class ActivityLogTest extends TestCase
 
     public function test_population_endpoint_is_scoped_filterable_and_includes_deleted_subjects(): void
     {
-        $citizen = Citizen::factory()->create(['village_id' => $this->village->id, 'name' => 'Ani']);
+        $citizen = $this->existing(fn () => Citizen::factory()->create(['village_id' => $this->village->id, 'name' => 'Ani']));
         $this->actingAs($this->staf)->patchJson("/api/citizens/{$citizen->id}", ['name' => 'Ani Lestari'])->assertOk();
         $this->actingAs($this->staf)->deleteJson("/api/citizens/{$citizen->id}")->assertSuccessful();
 
         $otherVillage = Village::factory()->create();
         $otherStaf = User::factory()->create(['role' => 'staf_sid', 'village_id' => $otherVillage->id]);
-        $other = Citizen::factory()->create([
+        $other = $this->existing(fn () => Citizen::factory()->create([
             'village_id' => $otherVillage->id,
             'rt_id' => Rt::factory()->create(['village_id' => $otherVillage->id])->id,
             'hamlet_id' => null,
             'family_id' => null,
-        ]);
+        ]));
         $this->actingAs($otherStaf)->patchJson("/api/citizens/{$other->id}", ['name' => 'Desa Lain'])->assertOk();
 
         $this->actingAs($this->staf)
@@ -236,12 +239,26 @@ class ActivityLogTest extends TestCase
 
     public function test_family_and_socioeconomic_logs_ignore_family_owned_by_another_village(): void
     {
-        $family = Family::factory()->create(['village_id' => Village::factory()->create()->id]);
+        $family = $this->existing(fn () => Family::factory()->create(['village_id' => Village::factory()->create()->id]));
 
         $this->actingAs($this->staf)
             ->patchJson("/api/families/{$family->id}", ['family_status' => 'pindah'])
             ->assertNotFound();
 
         $this->assertSame(0, Activity::query()->count());
+    }
+
+    /**
+     * Data yang sudah ada sebelum skenario: dibuat tanpa jejak audit agar
+     * yang dihitung hanya log dari aksi yang diuji.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $create
+     * @return T
+     */
+    private function existing(\Closure $create): mixed
+    {
+        return app(AuditContext::class)->muted($create);
     }
 }

@@ -11,6 +11,8 @@ use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
+use App\Support\AuditContext;
+use App\Support\LetterFormSchema;
 use Database\Seeders\Support\DemoData;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -65,7 +67,16 @@ class DemoCitizenSeeder extends Seeder
 
     private int $sequence = 0;
 
+    /**
+     * Data demo tidak masuk Log Aktivitas: audit dibisukan lewat
+     * AuditContext, event `saving` model tetap berjalan.
+     */
     public function run(): void
+    {
+        app(AuditContext::class)->muted(fn () => $this->seedDemoData());
+    }
+
+    private function seedDemoData(): void
     {
         DemoData::start(1001);
 
@@ -220,6 +231,9 @@ class DemoCitizenSeeder extends Seeder
                 'domicile_status' => 'menetap',
                 'current_domicile' => $attributes['address'],
                 'residency_type' => mt_rand(1, 10) === 1 ? 'pendatang' : 'lokal',
+                // Kolom terenkripsi tanpa default di database; DatabaseSeeder
+                // mematikan event model, jadi hook `saving` tidak mengisinya.
+                'has_disorder' => false,
                 'data_source' => 'manual_input_desa',
                 'is_active' => true,
             ] + $attributes,
@@ -258,11 +272,11 @@ class DemoCitizenSeeder extends Seeder
      */
     private function seedFamilyAccounts(Citizen $head): void
     {
-        $members = Citizen::query()
+        // Tanggal lahir terenkripsi: diurutkan di PHP.
+        $members = LetterFormSchema::oldestFirst(Citizen::query()
             ->where('family_id', $head->family_id)
             ->whereKeyNot($head->id)
-            ->orderBy('date_of_birth')
-            ->get();
+            ->get());
         $spouse = $members->first(fn (Citizen $member): bool => $member->family_role?->value === 'istri') ?? $members->first();
         $child = $members->first(fn (Citizen $member): bool => $member->family_role?->value === 'anak' && $member->isNot($spouse));
 
