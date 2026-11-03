@@ -51,10 +51,15 @@ class Letter extends Model
         'applicant_nik_hash',
     ];
 
+    /**
+     * payload, snapshot, dan fulfillment memuat NIK/No KK pihak lain
+     * (keluarga, saksi, penerima kuasa) serta perubahan data warga, jadi
+     * disimpan terenkripsi (kolom `text`). Isinya tidak pernah di-query.
+     */
     protected $casts = [
         'applicant_nik' => 'encrypted',
         'applicant_address' => 'encrypted',
-        'payload' => 'array',
+        'payload' => 'encrypted:array',
 
         'status' => LetterStatus::class,
 
@@ -65,9 +70,9 @@ class Letter extends Model
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
         'processed_at' => 'datetime',
-        'snapshot' => 'array',
+        'snapshot' => 'encrypted:array',
         'fulfilled_at' => 'datetime',
-        'fulfillment' => 'array',
+        'fulfillment' => 'encrypted:array',
     ];
 
     protected static function booted(): void
