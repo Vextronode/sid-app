@@ -215,7 +215,11 @@ export type Letter = {
   applicant_name: string | null
   applicant_nik_masked: string | null
   purpose: string | null
+  // NIK / No. KK pihak lain di isian tampil tersamar ("************1234").
   payload: Record<string, unknown> | null
+  // Path isian yang disamarkan (mis. "nik_ayah", "kk_pendaftaran.0.nik");
+  // nilai utuh lewat revealLetterPayloadIdentity (tercatat di log).
+  masked_payload_paths?: string[]
   notes: string | null
   status: LetterStatus
   flow_id: number | null

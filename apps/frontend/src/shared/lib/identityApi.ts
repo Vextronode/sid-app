@@ -20,6 +20,16 @@ export const revealFamilyNumber = async (familyId: Id) => {
   return response.data.data?.no_kk ?? ''
 }
 
+// NIK / No. KK pihak lain di isian surat; path dari masked_payload_paths.
+export const revealLetterPayloadIdentity = async (letterId: Id, path: string) => {
+  const response = await api.get<ResourceResponse<{ value?: string }>>(
+    `/api/letters/${letterId}/payload-identity`,
+    { params: { path } },
+  )
+
+  return response.data.data?.value ?? ''
+}
+
 export const revealLetterApplicantNik = async (letterId: Id) => {
   const response = await api.get<ResourceResponse<{ nik?: string }>>(
     `/api/letters/${letterId}/applicant-identity`,
