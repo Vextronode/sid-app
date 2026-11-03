@@ -2,14 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Imports\CitizensImport;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Rt;
 use App\Models\User;
 use App\Models\Village;
+use App\Services\CitizenService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Http\UploadedFile;
+use Maatwebsite\Excel\Excel as ExcelFormat;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Activitylog\Models\Activity;
@@ -30,15 +36,33 @@ class CitizenImportTest extends TestCase
     }
 
     /**
+     * Kolom NIK ditulis sebagai Teks seperti di template, kecuali
+     * $numericNik (sel Angka yang harus ditolak).
+     *
      * @param  list<string>  $headers
      * @param  list<list<mixed>>  $rows
      */
-    private function makeXlsx(array $headers, array $rows): UploadedFile
+    private function makeXlsx(array $headers, array $rows, bool $numericNik = false): UploadedFile
     {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->fromArray($headers, null, 'A1');
         $sheet->fromArray($rows, null, 'A2');
+
+        $nikIndex = array_search('nik', $headers, true);
+
+        if ($nikIndex !== false) {
+            foreach ($rows as $index => $row) {
+                if (($row[$nikIndex] ?? null) === null) {
+                    continue;
+                }
+
+                $cell = $sheet->getCell(Coordinate::stringFromColumnIndex($nikIndex + 1).($index + 2));
+                $numericNik
+                    ? $cell->setValueExplicit($row[$nikIndex], DataType::TYPE_NUMERIC)
+                    : $cell->setValueExplicit((string) $row[$nikIndex], DataType::TYPE_STRING);
+            }
+        }
 
         $path = tempnam(sys_get_temp_dir(), 'citizens_import_').'.xlsx';
         (new Xlsx($spreadsheet))->save($path);
@@ -205,6 +229,44 @@ class CitizenImportTest extends TestCase
             ->assertJsonPath('data.total_rows', 1)
             ->assertJsonPath('data.success_count', 1)
             ->assertJsonPath('data.error_count', 0);
+    }
+
+    public function test_import_rejects_nik_cells_formatted_as_numbers_per_row(): void
+    {
+        $rt = Rt::factory()->create();
+        $headers = ['nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id'];
+        // Excel sudah membulatkan digit ke-16 menjadi 0: nilai ini tetap 16 digit.
+        $rows = [['3201012345670000', 'Warga Angka', '1990-05-12', 'P', 'Jl. Merdeka 1', $rt->id]];
+
+        $this->actingAs($this->petugas())
+            ->postJson('/api/citizens/import', ['file' => $this->makeXlsx($headers, $rows, numericNik: true)])
+            ->assertOk()
+            ->assertJsonPath('data.success_count', 0)
+            ->assertJsonPath('data.errors', [['row' => 2, 'message' => 'Format kolom NIK harus Teks']]);
+        $this->assertSame(0, Citizen::query()->count());
+
+        // NIK yang sama di sel Teks diterima.
+        $this->actingAs($this->petugas())
+            ->postJson('/api/citizens/import', ['file' => $this->makeXlsx($headers, $rows)])
+            ->assertOk()
+            ->assertJsonPath('data.success_count', 1);
+    }
+
+    public function test_csv_nik_is_read_as_text_and_not_rejected(): void
+    {
+        // CSV tidak menyimpan tipe sel dan digit NIK-nya utuh.
+        $rt = Rt::factory()->create();
+        $path = tempnam(sys_get_temp_dir(), 'citizens_import_').'.csv';
+        file_put_contents($path, "nik,name,date_of_birth,gender,address,rt_id
+3201012345670001,Warga CSV,1990-05-12,L,Jl. Merdeka 3,{$rt->id}
+");
+
+        $import = new CitizensImport(app(CitizenService::class), $this->petugas());
+        Excel::import($import, $path, null, ExcelFormat::CSV);
+
+        $this->assertSame([], $import->errorList());
+        $this->assertSame(1, $import->successCount());
+        $this->assertDatabaseHas('citizens', ['nik_hash' => hash('sha256', '3201012345670001')]);
     }
 
     public function test_import_rejects_non_excel_file(): void
