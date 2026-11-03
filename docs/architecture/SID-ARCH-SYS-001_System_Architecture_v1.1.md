@@ -71,9 +71,9 @@ Tier hanyalah label navigasi/guard frontend di atas `users.role` (9 nilai).
 | Tier | Label | `users.role` | Scope |
 |---|---|---|---|
 | 1 | Superadmin | *(belum ada)* | Tidak diimplementasikan |
-| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Staf SIDUTama (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS |
+| 2 | Admin Desa / Eksekutif | `staf_sid`, `kepala_desa`, `sekretaris_desa` | Staf SIDUTama (`staf_sid`, tampil "Staf {nama aplikasi}", satu per desa, diganti lewat rotasi) = operator penuh desanya (CMS, kependudukan, jabatan, konfigurasi, semua surat). Kades/Sekdes = approver final tanpa akses CMS, membaca Data Penduduk & KK seluruh desa |
 | 3 | Staff Desa | `kasi_pemerintahan`, `kaur_tu_umum` | Notifikasi & akses surat selesai sesuai `assigned_role`, menerapkan aksi data, membaca daftar warga; bukan approver. Kasi Pemerintahan memegang Layanan Kependudukan (F01–F10: verifikasi hasil Disdukcapil lalu Terapkan) dan mengelola Data Penduduk & KK; Kaur TU & Umum memegang Persuratan Desa (A01–A11). Kasi Pelayanan adalah jabatan tanpa akun |
-| 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only |
+| 4 | RT/RW/Kadus | `rt`, `rw`, `kadus` | RT approver wilayah; RW & Kadus hanya FYI read-only. Ketiganya membaca Data Penduduk & KK di wilayahnya (RT: RT-nya; RW: RT di RW-nya; Kadus: RW/RT di dusunnya) |
 | 5 | Warga | `warga` | Ajukan surat, setujui/tolak permintaan saksi, unduh surat sendiri setelah terbit (ambil surat ber-TTD & stempel basah di kantor desa) |
 
 Pejabat dengan citizen juga dapat mengajukan surat untuk dirinya (menu "Surat Saya").

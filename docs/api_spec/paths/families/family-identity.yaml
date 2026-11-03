@@ -2,7 +2,8 @@ get:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: No. KK utuh (tombol "lihat")
   description: |
-    Boleh: Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum untuk KK desanya;
+    Boleh: pembaca Data Penduduk untuk KK dalam cakupannya (lihat
+    `GET /citizens`);
     warga untuk KK-nya sendiri. Pembukaan KK orang lain dicatat di Log
     Aktivitas. Dibatasi 60 permintaan per menit.
   operationId: revealFamilyIdentity
