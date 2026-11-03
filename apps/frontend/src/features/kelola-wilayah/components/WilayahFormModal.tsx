@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
+import { WilayahCascadeFields } from './WilayahCascadeFields'
 import type {
   WilayahHamlet,
   WilayahItem,
@@ -262,35 +263,56 @@ export default function WilayahFormModal({
 
           {type === 'rt' && (
             <>
-              <div className="sid-wilayah-form-group">
-                <label htmlFor="wilayah-rt-rw">RW</label>
-                <select
-                  id="wilayah-rt-rw"
-                  value={form.rw_id}
-                  onChange={(event) => handleChange('rw_id', event.target.value)}
-                  disabled={isEdit}
-                  required
-                >
-                  <option value="">Pilih RW</option>
+              {isEdit ? (
+                <div className="sid-wilayah-form-group">
+                  <label htmlFor="wilayah-rt-rw">RW</label>
+                  <select
+                    id="wilayah-rt-rw"
+                    value={form.rw_id}
+                    onChange={(event) => handleChange('rw_id', event.target.value)}
+                    disabled
+                    required
+                  >
+                    <option value="">Pilih RW</option>
 
-                  {rws.map((rw) => {
-                    const hamlet = hamlets.find((item) => item.id === rw.hamletId)
+                    {rws.map((rw) => {
+                      const hamlet = hamlets.find((item) => item.id === rw.hamletId)
 
-                    return (
-                      <option key={rw.id} value={rw.id ?? ''}>
-                        RW {rw.number}
-                        {hamlet ? ` - ${hamlet.name}` : ''}
-                      </option>
-                    )
-                  })}
-                </select>
+                      return (
+                        <option key={rw.id} value={rw.id ?? ''}>
+                          RW {rw.number}
+                          {hamlet ? ` - ${hamlet.name}` : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
 
-                {isEdit && (
                   <span className="sid-wilayah-form-help">
                     RW tidak dapat dipindahkan setelah disimpan.
                   </span>
-                )}
-              </div>
+                </div>
+              ) : (
+                // RT baru: pilih dusun dulu, lalu RW di dusun itu.
+                <WilayahCascadeFields
+                  depth="rw"
+                  idPrefix="wilayah-rt"
+                  required
+                  value={{ hamletId: String(form.hamlet_id), rwId: String(form.rw_id), rtId: '' }}
+                  onChange={(area) =>
+                    setForm((current) => ({
+                      ...current,
+                      hamlet_id: area.hamletId,
+                      rw_id: area.rwId,
+                    }))
+                  }
+                  renderField={({ id, label, control }) => (
+                    <div key={id} className="sid-wilayah-form-group">
+                      <label htmlFor={id}>{label}</label>
+                      {control}
+                    </div>
+                  )}
+                />
+              )}
 
               <div className="sid-wilayah-form-group">
                 <label htmlFor="wilayah-rt-number">Nomor RT</label>

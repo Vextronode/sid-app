@@ -158,6 +158,7 @@ export default function DataWargaReadOnlyPage() {
                     <tr>
                       <th>Nama</th>
                       <th className="center">NIK</th>
+                      <th className="center">Dusun</th>
                       <th className="center">RT/RW</th>
                       <th className="center">Jenis Kelamin</th>
                       <th className="center">Tempat, Tanggal Lahir</th>
@@ -170,19 +171,19 @@ export default function DataWargaReadOnlyPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={9} className="empty sid-admin-error" role="alert">
+                        <td colSpan={10} className="empty sid-admin-error" role="alert">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Tidak ada data warga.
                         </td>
                       </tr>
@@ -197,7 +198,11 @@ export default function DataWargaReadOnlyPage() {
                             />
                           </td>
                           <td className="center">
-                            RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
+                            {warga.rw?.hamlet?.name ?? warga.hamlet?.name ?? '-'}
+                          </td>
+                          <td className="center sid-nowrap">
+                            {/* Judul kolom sudah "RT/RW": cukup nomornya, satu baris. */}
+                            {warga.rt?.number ?? '-'}/{warga.rw?.number ?? '-'}
                           </td>
                           <td className="center">
                             {warga.gender === 'L'

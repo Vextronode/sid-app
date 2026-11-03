@@ -47,8 +47,8 @@ export default function RtTable({
 
       const matchesSearch =
         !keyword ||
-        String(rt.number).toLowerCase().includes(keyword) ||
-        String(rt.fullLabel).toLowerCase().includes(keyword)
+        // "001" maupun "RT 001" cocok.
+        `rt ${rt.number}`.toLowerCase().includes(keyword)
 
       return matchesHamlet && matchesRw && matchesSearch
     })

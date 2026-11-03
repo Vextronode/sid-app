@@ -55,7 +55,6 @@ function normalizeRw(item: Rw): WilayahRw {
   return {
     id: item?.id ?? null,
     number: item?.number ?? '',
-    fullLabel: item?.full_label ?? `RW ${item?.number ?? ''}`,
     isActive: Boolean(item?.is_active),
     hamletId: item?.hamlet_id ?? null,
   }
@@ -65,7 +64,6 @@ function normalizeRt(item: Rt): WilayahRt {
   return {
     id: item?.id ?? null,
     number: item?.number ?? '',
-    fullLabel: item?.full_label ?? `RT ${item?.number ?? ''}`,
     isActive: Boolean(item?.is_active),
     rwId: item?.rw_id ?? null,
   }

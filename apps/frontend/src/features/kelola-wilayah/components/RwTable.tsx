@@ -31,8 +31,8 @@ export default function RwTable({
 
       const matchesSearch =
         !keyword ||
-        String(rw.number).toLowerCase().includes(keyword) ||
-        String(rw.fullLabel).toLowerCase().includes(keyword)
+        // "001" maupun "RW 001" cocok.
+        `rw ${rw.number}`.toLowerCase().includes(keyword)
 
       return matchesHamlet && matchesSearch
     })

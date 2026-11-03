@@ -15,7 +15,6 @@ export type WilayahHamlet = {
 export type WilayahRw = {
   id: number | null
   number: string
-  fullLabel: string
   isActive: boolean
   hamletId: number | null
 }
@@ -23,7 +22,6 @@ export type WilayahRw = {
 export type WilayahRt = {
   id: number | null
   number: string
-  fullLabel: string
   isActive: boolean
   rwId: number | null
 }

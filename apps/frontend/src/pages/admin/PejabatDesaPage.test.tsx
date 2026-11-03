@@ -86,7 +86,7 @@ describe('PejabatDesaPage - Tetapkan Pejabat', () => {
       },
     })
     wilayahApi.getRws.mockResolvedValue({ data: { data: [{ id: 5, number: '001' }] } })
-    wilayahApi.getHamlets.mockResolvedValue({ data: { data: [] } })
+    wilayahApi.getHamlets.mockResolvedValue({ data: { data: [{ id: 3, name: 'Patrol' }] } })
   })
 
   it('disables single positions that are already held', async () => {
@@ -110,7 +110,14 @@ describe('PejabatDesaPage - Tetapkan Pejabat', () => {
       'rt',
     )
 
-    expect(option(present(dialog), 'RT 001 / RW 001 (sudah ada)')).toBeDisabled()
-    expect(option(present(dialog), 'RT 002 / RW 001')).toBeEnabled()
+    // Dusun -> RW -> RT diambil per tingkat; hanya tingkat RT yang dicek.
+    const scope = present(dialog)
+    await screen.findAllByRole('option', { name: 'Patrol' })
+    await user.selectOptions(within(scope).getByRole('combobox', { name: /Dusun/ }), '3')
+    await within(scope).findByRole('option', { name: 'RW 001' })
+    await user.selectOptions(within(scope).getByRole('combobox', { name: /^RW/ }), '5')
+
+    expect(await within(scope).findByRole('option', { name: 'RT 001 (sudah ada)' })).toBeDisabled()
+    expect(option(scope, 'RT 002')).toBeEnabled()
   })
 })
