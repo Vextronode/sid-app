@@ -9,6 +9,7 @@ use App\Models\Hamlet;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class HamletService
@@ -20,7 +21,7 @@ class HamletService
 
     public function getAllOrderedByName(User $user): Collection
     {
-        return $this->hamletRepository->allOrderedByName($this->readableVillageId($user));
+        return $this->hamletRepository->allOrderedByName($this->readableVillageId($user), PopulationScope::for($user));
     }
 
     /**

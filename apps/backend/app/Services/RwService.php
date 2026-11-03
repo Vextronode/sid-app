@@ -10,6 +10,7 @@ use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class RwService
@@ -21,7 +22,7 @@ class RwService
 
     public function getAllOrderedByNumber(User $user, ?int $hamletId = null): Collection
     {
-        return $this->rwRepository->allOrderedByNumber($this->readableVillageId($user), $hamletId);
+        return $this->rwRepository->allOrderedByNumber($this->readableVillageId($user), $hamletId, PopulationScope::for($user));
     }
 
     public function create(array $data, User $user): Rw

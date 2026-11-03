@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RtRepository;
 use App\Repositories\RwRepository;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class RtService
@@ -22,7 +23,7 @@ class RtService
 
     public function getAllOrderedByNumber(User $user, ?int $rwId = null): Collection
     {
-        return $this->rtRepository->allOrderedByNumber($this->readableVillageId($user), $rwId);
+        return $this->rtRepository->allOrderedByNumber($this->readableVillageId($user), $rwId, PopulationScope::for($user));
     }
 
     public function create(array $data, User $user): Rt

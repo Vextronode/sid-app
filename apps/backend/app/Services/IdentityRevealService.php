@@ -2,18 +2,20 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\User;
 use App\Support\LetterIdentityMask;
+use App\Support\PopulationScope;
 use Illuminate\Support\Facades\Gate;
 
 /**
  * Menampilkan NIK / No. KK utuh yang di daftar hanya tampil tersamar
  * (tombol "lihat" di UI). Yang boleh melihat:
- *  - Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum: warga dan KK desanya;
+ *  - pembaca Data Penduduk: warga dan KK dalam cakupannya (PopulationScope:
+ *    seluruh desa untuk Staf/Kasi/Kaur/Kades/Sekdes, wilayahnya untuk
+ *    RT/RW/Kadus);
  *  - warga: dirinya dan anggota KK-nya sendiri;
  *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu dan
  *    NIK/No. KK pihak lain di isian surat itu.
@@ -21,8 +23,6 @@ use Illuminate\Support\Facades\Gate;
  */
 class IdentityRevealService
 {
-    private const POPULATION_ROLES = [UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum];
-
     /**
      * @return array{nik: string|null, no_kk: string|null}
      */
@@ -34,7 +34,7 @@ class IdentityRevealService
             || ($actor->citizen->family_id !== null && $actor->citizen->family_id === $citizen->family_id)
         );
 
-        if (! $ownFamily && ! $this->managesPopulation($actor, $citizen->village_id)) {
+        if (! $ownFamily && ! $this->managesPopulation($actor, $citizen)) {
             abort(403, 'Anda tidak berhak melihat NIK warga ini.');
         }
 
@@ -52,7 +52,7 @@ class IdentityRevealService
     {
         $ownFamily = $actor->citizen?->family_id !== null && $actor->citizen->family_id === $family->id;
 
-        if (! $ownFamily && ! $this->managesPopulation($actor, $family->village_id)) {
+        if (! $ownFamily && ! $this->managesPopulation($actor, $family)) {
             abort(403, 'Anda tidak berhak melihat No. KK ini.');
         }
 
@@ -105,12 +105,9 @@ class IdentityRevealService
         return ['value' => $value];
     }
 
-    private function managesPopulation(User $actor, ?string $villageId): bool
+    private function managesPopulation(User $actor, Citizen|Family $record): bool
     {
-        return $actor->is_active
-            && $actor->village_id !== null
-            && $actor->village_id === $villageId
-            && in_array(UserRole::tryFrom((string) $actor->role), self::POPULATION_ROLES, true);
+        return PopulationScope::tryFor($actor)?->includes($record) ?? false;
     }
 
     /**
