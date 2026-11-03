@@ -1,3 +1,5 @@
+import { ACCOUNT_SECTION_PARAM, HAL_MANAJEMEN_AKUN } from '@/lib/constants/routes'
+import type { AccountSection } from '@/lib/constants/routes'
 import type { NotificationContext, UserRole } from '@/types'
 
 // Halaman daftar surat tiap peran. Halaman-halaman ini membuka detail
@@ -35,6 +37,15 @@ const SIGNATURE_REQUEST_STATUSES = ['signature_requested']
 
 export const SIGNATURE_REQUESTS_ANCHOR = 'permintaan-saksi'
 
+// Permintaan akun warga untuk petugas wilayah: section Manajemen Akun yang dibuka.
+const ACCOUNT_REQUEST_SECTIONS: Record<string, AccountSection> = {
+  account_registration_submitted: 'aktivasi',
+  profile_photo_requested: 'foto',
+}
+
+// Keputusan permintaan ganti foto, untuk warga yang memintanya.
+const PROFILE_PHOTO_DECISIONS = ['profile_photo_approved', 'profile_photo_rejected']
+
 function profileRoute(role: UserRole) {
   return role === 'warga' ? '/profil' : '/admin/profil'
 }
@@ -51,6 +62,20 @@ export function getNotificationTarget(
 
   if (context.status && SIGNATURE_REQUEST_STATUSES.includes(context.status)) {
     return `${profileRoute(role)}#${SIGNATURE_REQUESTS_ANCHOR}`
+  }
+
+  // Warga mendaftar akun atau meminta ganti foto: buka section Manajemen
+  // Akun petugas yang memegangnya.
+  const section = context.status ? ACCOUNT_REQUEST_SECTIONS[context.status] : undefined
+
+  if (section) {
+    const route = HAL_MANAJEMEN_AKUN[role]
+
+    return route ? `${route}?${ACCOUNT_SECTION_PARAM}=${section}` : null
+  }
+
+  if (context.status && PROFILE_PHOTO_DECISIONS.includes(context.status)) {
+    return profileRoute(role)
   }
 
   // Pejabat yang menjadi pemohon surat itu: buka di "Surat Saya", bukan

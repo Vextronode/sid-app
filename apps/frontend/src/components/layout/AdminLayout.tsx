@@ -10,6 +10,7 @@ import type { ReactNode } from 'react'
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
+import { HAL_MANAJEMEN_AKUN } from '@/lib/constants/routes'
 import type { UserRole } from '@/types'
 import { AppHeader } from './AppHeader'
 import type { MenuItem } from './AppHeader'
@@ -34,9 +35,13 @@ function defaultMenuItems(role: UserRole | undefined): MenuItem[] | null {
 
   if (!routes) return null
 
+  // Aktivasi akun dan request ganti foto profil warga (petugas wilayah).
+  const accounts = role ? HAL_MANAJEMEN_AKUN[role] : undefined
+
   return [
     { label: 'Beranda', path: routes[0] },
     { label: 'Surat Warga', path: routes[1] },
+    ...(accounts ? [{ label: 'Manajemen Akun', path: accounts }] : []),
     { label: 'Surat Saya', path: '/admin/surat-saya' },
   ]
 }

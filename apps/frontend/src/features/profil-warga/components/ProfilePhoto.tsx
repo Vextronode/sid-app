@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Camera, Trash2, User, X } from 'lucide-react'
 
+import { CameraCapture } from '@/features/auth/components/CameraCapture'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { userPhotoUrl } from '@/features/auth/utils/userPhoto'
-import { deleteOwnPhoto, uploadOwnPhoto } from '../api'
+import { deleteOwnPhoto, getOwnPhotoRequest, submitPhotoRequest } from '../api'
+import type { OwnPhotoRequest } from '../api'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
-
-const PHOTO_TYPES = 'image/png,image/jpeg,image/webp'
 
 /**
  * Pratinjau foto ukuran besar. Ditutup lewat tombol X di pojok kanan atas
@@ -57,48 +56,106 @@ function PhotoPreview({ src, alt, onClose }: { src: string; alt: string; onClose
 }
 
 /**
+ * Ambil foto dari kamera lalu kirim sebagai permintaan ganti foto profil.
+ */
+function PhotoRequestDialog({
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  busy: boolean
+  onCancel: () => void
+  onSubmit: (photo: Blob) => void
+}) {
+  const [photo, setPhoto] = useState<Blob | null>(null)
+
+  return createPortal(
+    <div className="sid-modal-overlay">
+      <div
+        className="sid-modal sid-photo-request-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="photo-request-heading"
+      >
+        <div className="sid-dialog-heading">
+          <h2 id="photo-request-heading">Ganti Foto Profil</h2>
+          <p>
+            Foto baru terpasang setelah disetujui petugas wilayah (RT, RW, Kepala Dusun, atau{' '}
+            {STAF_APP_LABEL}).
+          </p>
+        </div>
+
+        <CameraCapture photo={photo} onChange={setPhoto} />
+
+        <div className="sid-modal-actions">
+          <button type="button" className="sid-button sid-button-outline" onClick={onCancel}>
+            Batal
+          </button>
+          <button
+            type="button"
+            className="sid-button sid-button-primary"
+            disabled={!photo || busy}
+            onClick={() => photo && onSubmit(photo)}
+          >
+            {busy ? 'Mengirim...' : 'Kirim permintaan'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+/**
  * Foto profil di kepala halaman Profil. Bila ada foto, mengekliknya membuka
  * pratinjau ukuran besar.
  *
- * Akun warga: foto akun, bisa diunggah, diganti, dan dihapus sendiri.
- * Akun yang menjabat: foto pejabat (official.photo_img), hanya tampil;
- * yang mengubahnya Staf SIDUTama lewat halaman Pejabat Desa.
+ * Akun warga: ganti foto lewat permintaan dari kamera yang disetujui petugas
+ * wilayah; hapus foto langsung. Akun yang menjabat: foto pejabat
+ * (official.photo_img), hanya tampil; yang mengubahnya Staf SIDUTama lewat
+ * halaman Pejabat Desa.
  */
 export function ProfilePhoto({ avatarClassName }: { avatarClassName?: string }) {
   const { user, patchUser } = useAuth()
-  const input = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [request, setRequest] = useState<OwnPhotoRequest | null>(null)
   const closePreview = useCallback(() => setPreviewOpen(false), [])
 
   const isWarga = user?.role === 'warga'
   const src = userPhotoUrl(user)
   const alt = `Foto ${user?.name ?? 'profil'}`
+  const pending = request?.status === 'pending'
 
-  const run = async (
-    request: () => Promise<{ data?: { data?: { photo_url?: string | null } } }>,
-    fallback: string,
-    successMessage: string,
-  ) => {
+  const loadRequest = useCallback(async () => {
+    try {
+      setRequest(await getOwnPhotoRequest())
+    } catch {
+      // Status permintaan hanya pelengkap; tombol tetap bisa dipakai.
+    }
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isWarga) void loadRequest()
+  }, [isWarga, loadRequest])
+
+  const sendRequest = async (photo: Blob) => {
     setBusy(true)
     setError('')
     try {
-      const response = await request()
-      patchUser({ photo_url: response?.data?.data?.photo_url ?? null })
-      notifySuccess(successMessage)
+      const response = await submitPhotoRequest(photo)
+      notifySuccess(response.data?.message ?? 'Permintaan ganti foto terkirim.')
+      setCameraOpen(false)
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, fallback))
+      setError(getApiErrorMessage(requestError, 'Gagal mengirim permintaan ganti foto.'))
+      setCameraOpen(false)
     } finally {
       setBusy(false)
+      await loadRequest()
     }
-  }
-
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (file)
-      run(() => uploadOwnPhoto(file), 'Gagal mengunggah foto.', 'Foto profil berhasil diperbarui.')
   }
 
   const handleDelete = async () => {
@@ -110,7 +167,18 @@ export function ProfilePhoto({ avatarClassName }: { avatarClassName?: string }) 
       }))
     )
       return
-    run(deleteOwnPhoto, 'Gagal menghapus foto.', 'Foto profil berhasil dihapus.')
+
+    setBusy(true)
+    setError('')
+    try {
+      const response = await deleteOwnPhoto()
+      patchUser({ photo_url: response?.data?.data?.photo_url ?? null })
+      notifySuccess('Foto profil berhasil dihapus.')
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Gagal menghapus foto.'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -133,28 +201,39 @@ export function ProfilePhoto({ avatarClassName }: { avatarClassName?: string }) 
       {previewOpen && src && <PhotoPreview src={src} alt={alt} onClose={closePreview} />}
 
       {isWarga ? (
-        <div className="sid-profile-photo-actions">
-          <input
-            ref={input}
-            type="file"
-            accept={PHOTO_TYPES}
-            hidden
-            aria-label="Pilih foto profil"
-            onChange={handleFile}
-          />
-          <button type="button" disabled={busy} onClick={() => input.current?.click()}>
-            <Camera size={13} />
-            {busy ? 'Memproses...' : src ? 'Ganti foto' : 'Unggah foto'}
-          </button>
-          {src && (
-            <button type="button" disabled={busy} onClick={handleDelete}>
-              <Trash2 size={13} />
-              Hapus
+        <>
+          <div className="sid-profile-photo-actions">
+            <button type="button" disabled={busy || pending} onClick={() => setCameraOpen(true)}>
+              <Camera size={13} />
+              {src ? 'Ganti foto' : 'Unggah foto'}
             </button>
+            {src && (
+              <button type="button" disabled={busy} onClick={handleDelete}>
+                <Trash2 size={13} />
+                Hapus
+              </button>
+            )}
+          </div>
+
+          {pending && (
+            <p className="sid-profile-photo-note">Foto baru menunggu persetujuan petugas</p>
           )}
-        </div>
+          {request?.status === 'rejected' && (
+            <p className="sid-form-field-error" role="status">
+              Ganti foto ditolak: {request.decision_notes}
+            </p>
+          )}
+        </>
       ) : (
         <p className="sid-profile-photo-note">Foto jabatan diatur {STAF_APP_LABEL}</p>
+      )}
+
+      {cameraOpen && (
+        <PhotoRequestDialog
+          busy={busy}
+          onCancel={() => setCameraOpen(false)}
+          onSubmit={(photo) => void sendRequest(photo)}
+        />
       )}
 
       {error && (

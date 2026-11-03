@@ -11,16 +11,15 @@ import { apiErrorStatus, apiErrorBody } from '@/shared/lib/apiError'
 
 const INITIAL_FORM = {
   nik: '',
-  date_of_birth: '',
   password: '',
   password_confirmation: '',
 }
 
 const INITIAL_ERRORS = {
   nik: '',
-  date_of_birth: '',
   password: '',
   password_confirmation: '',
+  photo: '',
   general: '',
 }
 
@@ -32,6 +31,14 @@ export function useRegisterForm() {
   const [isSuccess, setIsSuccess] = useState(false)
 
   const [registeredUsername, setRegisteredUsername] = useState('')
+
+  // Foto wajah dari kamera untuk petugas pemegang aktivasi (lihat CameraCapture).
+  const [photo, setPhotoState] = useState<Blob | null>(null)
+
+  const setPhoto = (value: Blob | null) => {
+    setPhotoState(value)
+    setErrors((previous) => ({ ...previous, photo: '', general: '' }))
+  }
 
   const [showPassword, setShowPassword] = useState(false)
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
@@ -65,10 +72,6 @@ export function useRegisterForm() {
       nextErrors.nik = 'NIK harus terdiri dari 16 digit.'
     }
 
-    if (!formData.date_of_birth) {
-      nextErrors.date_of_birth = 'Tanggal lahir wajib diisi.'
-    }
-
     if (!formData.password) {
       nextErrors.password = 'Kata sandi wajib diisi.'
     }
@@ -77,6 +80,10 @@ export function useRegisterForm() {
       nextErrors.password_confirmation = 'Konfirmasi kata sandi wajib diisi.'
     } else if (formData.password !== formData.password_confirmation) {
       nextErrors.password_confirmation = 'Konfirmasi kata sandi tidak cocok.'
+    }
+
+    if (!photo) {
+      nextErrors.photo = 'Foto wajah wajib diisi.'
     }
 
     setErrors(nextErrors)
@@ -118,12 +125,13 @@ export function useRegisterForm() {
       await api.get('/sanctum/csrf-cookie')
 
       // 2. Register
-      const response = await api.post('/register', {
-        nik: formData.nik,
-        date_of_birth: formData.date_of_birth,
-        password: formData.password,
-        password_confirmation: formData.password_confirmation,
-      })
+      const body = new FormData()
+      body.append('nik', formData.nik)
+      body.append('password', formData.password)
+      body.append('password_confirmation', formData.password_confirmation)
+      if (photo) body.append('photo', photo, 'wajah.jpg')
+
+      const response = await api.post('/register', body)
 
       const registeredUser = response.data?.user ?? response.data?.data ?? null
 
@@ -143,9 +151,9 @@ export function useRegisterForm() {
       if (status === 422) {
         setErrors({
           nik: backendErrors.nik?.[0] ?? '',
-          date_of_birth: backendErrors.date_of_birth?.[0] ?? '',
           password: backendErrors.password?.[0] ?? '',
           password_confirmation: backendErrors.password_confirmation?.[0] ?? '',
+          photo: backendErrors.photo?.[0] ?? '',
           general: backendMessage ?? 'Data pendaftaran belum sesuai.',
         })
 
@@ -194,6 +202,8 @@ export function useRegisterForm() {
     isLoading,
     isSuccess,
     registeredUsername,
+    photo,
+    setPhoto,
 
     showPassword,
     showPasswordConfirmation,

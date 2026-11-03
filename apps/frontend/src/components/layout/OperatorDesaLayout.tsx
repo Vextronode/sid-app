@@ -156,7 +156,8 @@ const MENU_ITEMS = [
     icon: BriefcaseBusiness,
   },
   {
-    label: 'Manajemen Pengguna',
+    // Kelola akun, aktivasi akun, dan request ganti foto profil (?bagian=).
+    label: 'Manajemen Akun',
     route: '/admin/manajemen-user',
     allowedRoles: getOperatorAllowedRoles('/admin/manajemen-user'),
     icon: UserCog,

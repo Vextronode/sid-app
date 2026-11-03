@@ -1,16 +1,15 @@
 // ==========================================
 // RegisterPage.tsx
 // Registrasi akun warga - Backend v5.1
-// NIK + Password
+// NIK + password + foto wajah dari kamera
 // Username dibuat otomatis oleh backend
-// User wajib login manual setelah register
+// Akun aktif setelah disetujui petugas wilayah (D1), lalu login manual
 // ==========================================
 
 import { Link, useNavigate } from 'react-router-dom'
 
 import {
   ArrowLeft,
-  CalendarDays,
   CheckCircle2,
   CreditCard,
   Eye,
@@ -20,6 +19,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 
+import { CameraCapture } from '@/features/auth/components/CameraCapture'
 import { useRegisterForm } from '@/features/auth/hooks/useRegisterForm'
 import { useAuthBackground } from '@/features/auth/hooks/useAuthBackground'
 import { AuthCopyright } from '@/features/auth/components/AuthCopyright'
@@ -35,6 +35,8 @@ export default function RegisterPage() {
     isLoading,
     isSuccess,
     registeredUsername,
+    photo,
+    setPhoto,
     showPassword,
     showPasswordConfirmation,
     handleChange,
@@ -52,10 +54,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="sid-login-header">
-            <h1 className="sid-login-title">Pendaftaran Berhasil</h1>
+            <h1 className="sid-login-title">Pendaftaran Terkirim</h1>
 
             <p className="sid-login-description">
-              Akun warga berhasil dibuat. Silakan login untuk mulai menggunakan sistem.
+              Akun Anda menunggu aktivasi oleh petugas wilayah (RT, RW, Kepala Dusun, atau Staf
+              desa). Setelah disetujui, Anda bisa masuk dengan username di bawah. Bila ditolak,
+              alasannya tampil saat Anda mencoba masuk.
             </p>
           </div>
 
@@ -105,7 +109,10 @@ export default function RegisterPage() {
         <div className="sid-login-header">
           <h1 className="sid-login-title">Daftar Akun Warga</h1>
 
-          <p className="sid-login-description">Buat akun menggunakan NIK dan password Anda</p>
+          <p className="sid-login-description">
+            Isi NIK dan kata sandi, lalu ambil foto wajah. Petugas wilayah memeriksa pendaftaran
+            sebelum akun aktif.
+          </p>
         </div>
 
         {errors.general && <div className="sid-login-error">{errors.general}</div>}
@@ -134,37 +141,6 @@ export default function RegisterPage() {
             </div>
 
             {errors.nik && <span className="sid-login-field-error">{errors.nik}</span>}
-          </div>
-
-          {/* DATE OF BIRTH */}
-          <div className="sid-login-field">
-            <label htmlFor="date_of_birth" className="sid-login-label">
-              Tanggal Lahir
-            </label>
-
-            <div className="sid-login-input-wrapper">
-              <CalendarDays size={16} className="sid-login-input-icon" />
-
-              <input
-                id="date_of_birth"
-                type="date"
-                name="date_of_birth"
-                value={formData.date_of_birth}
-                onChange={handleChange}
-                autoComplete="bday"
-                className={`sid-login-input sid-login-input-with-left-icon ${
-                  errors.date_of_birth ? 'sid-login-input-error' : ''
-                }`}
-                aria-invalid={Boolean(errors.date_of_birth)}
-                aria-describedby={errors.date_of_birth ? 'date-of-birth-error' : undefined}
-              />
-            </div>
-
-            {errors.date_of_birth && (
-              <span id="date-of-birth-error" className="sid-login-field-error">
-                {errors.date_of_birth}
-              </span>
-            )}
           </div>
 
           {/* PASSWORD */}
@@ -235,6 +211,15 @@ export default function RegisterPage() {
             {errors.password_confirmation && (
               <span className="sid-login-field-error">{errors.password_confirmation}</span>
             )}
+          </div>
+
+          {/* FOTO WAJAH (kamera saja) */}
+          <div className="sid-login-field">
+            <span className="sid-login-label">Foto Wajah</span>
+
+            <CameraCapture photo={photo} onChange={setPhoto} />
+
+            {errors.photo && <span className="sid-login-field-error">{errors.photo}</span>}
           </div>
 
           {/* SUBMIT */}
