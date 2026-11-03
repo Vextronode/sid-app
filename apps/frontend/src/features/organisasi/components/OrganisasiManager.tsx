@@ -7,7 +7,6 @@ import {
   Pencil,
   Phone,
   Repeat,
-  Trash2,
   UserPlus,
   UserRoundMinus,
   Users,
@@ -16,8 +15,12 @@ import {
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
+import { PhotoCropDialog } from '@/components/ui/PhotoCropDialog'
 import { RefreshButton } from '@/components/ui/RefreshButton'
+import { RevealableValue } from '@/components/ui/RevealableValue'
+import { lookupOrgCitizen } from '../api'
 import { useOrganisasi } from '../hooks/useOrganisasi'
+import { revealCitizenNik } from '@/shared/lib/identityApi'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
@@ -39,6 +42,8 @@ type FillForm = {
   lockSlot: boolean
   source: 'existing' | 'new'
   from_member_id: string
+  // Warga baru: NIK yang diketik dan nama hasil pencarian NIK.
+  nik: string
   member_name: string
   phone_wa: string
   notes: string
@@ -46,10 +51,16 @@ type FillForm = {
   previous_holder: 'end' | 'to_member'
 }
 
-// Data anggota dari MemberForm; started_at hanya untuk anggota baru.
-type MemberPayload = UpdateOrgMemberPayload & { started_at?: string }
+// Data anggota dari MemberForm; nik dan started_at hanya untuk anggota baru.
+type MemberPayload = UpdateOrgMemberPayload & { nik?: string; started_at?: string }
 
-type MemberFormState = { member_name: string; phone_wa: string; started_at: string; notes: string }
+type MemberFormState = {
+  nik: string
+  member_name: string
+  phone_wa: string
+  started_at: string
+  notes: string
+}
 
 type ModalState =
   | { kind: 'fill'; initial: FillForm }
@@ -115,6 +126,9 @@ type PhotoFieldProps = {
 
 function PhotoField({ file, currentSrc, onChange }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  const input = useRef<HTMLInputElement>(null)
+  // Berkas pilihan yang sedang dipotong persegi sebelum dipakai.
+  const [picked, setPicked] = useState<File | null>(null)
 
   useEffect(
     () => () => {
@@ -132,13 +146,117 @@ function PhotoField({ file, currentSrc, onChange }: PhotoFieldProps) {
         <MemberPhoto src={preview ?? currentSrc} name="anggota" size="small" />
         <input
           id="org-member-photo"
+          ref={input}
           type="file"
           accept={PHOTO_TYPES}
-          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+          onChange={(event) => setPicked(event.target.files?.[0] ?? null)}
         />
       </div>
-      <small className="sid-admin-cell-meta">Opsional. PNG, JPG, atau WEBP. Maksimal 5 MB.</small>
+      <small className="sid-admin-cell-meta">
+        Opsional. PNG, JPG, atau WEBP. Maksimal 5 MB. Foto dipotong persegi sebelum disimpan.
+      </small>
+
+      {picked && (
+        <PhotoCropDialog
+          source={picked}
+          title="Atur Foto Anggota"
+          onCancel={() => {
+            setPicked(null)
+            if (input.current) input.current.value = ''
+          }}
+          onConfirm={(photo) => {
+            setPicked(null)
+            onChange(photo)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+// NIK tersamar (tombol mata untuk NIK utuh, tercatat) lalu nama: "NIK - Nama".
+function MemberIdentity({ member }: { member: OrgMember }) {
+  const citizenId = member.citizen_id
+
+  return (
+    <span className="sid-org-identity">
+      {citizenId ? (
+        <RevealableValue masked={member.nik_masked} reveal={() => revealCitizenNik(citizenId)} />
+      ) : (
+        '-'
+      )}
+      <span aria-hidden="true">-</span>
+      <span>{member.member_name}</span>
+    </span>
+  )
+}
+
+type NikFieldProps = {
+  nik: string
+  name: string
+  onChange: (value: { nik: string; name: string }) => void
+}
+
+/**
+ * NIK warga desa; begitu 16 digit, nama dicari otomatis. Hanya warga desa
+ * ini yang bisa dipilih.
+ */
+function NikField({ nik, name, onChange }: NikFieldProps) {
+  const latest = useRef('')
+  const [searching, setSearching] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const change = async (raw: string) => {
+    const value = raw.replace(/\D/g, '').slice(0, 16)
+
+    latest.current = value
+    setMessage('')
+    onChange({ nik: value, name: '' })
+
+    if (value.length !== 16) return
+
+    setSearching(true)
+    try {
+      const citizen = await lookupOrgCitizen(value)
+      if (latest.current === value) onChange({ nik: value, name: citizen.name })
+    } catch (err) {
+      if (latest.current === value) {
+        setMessage(getApiErrorMessage(err, 'NIK tidak ditemukan di data warga desa ini.'))
+      }
+    } finally {
+      if (latest.current === value) setSearching(false)
+    }
+  }
+
+  return (
+    <>
+      <label className="sid-form-group">
+        <span className="sid-form-label">NIK warga *</span>
+        <input
+          required
+          inputMode="numeric"
+          maxLength={16}
+          pattern="\d{16}"
+          placeholder="16 digit NIK"
+          value={nik}
+          onChange={(e) => void change(e.target.value)}
+          aria-invalid={Boolean(message)}
+        />
+        {message && (
+          <small className="sid-form-field-error" role="alert">
+            {message}
+          </small>
+        )}
+      </label>
+      <label className="sid-form-group">
+        <span className="sid-form-label">Nama lengkap</span>
+        <input
+          readOnly
+          value={searching ? 'Mencari...' : name}
+          placeholder="Terisi otomatis dari NIK"
+        />
+      </label>
+    </>
   )
 }
 
@@ -189,24 +307,33 @@ function ModalError({ error }: { error: string | null }) {
   )
 }
 
-type ModalActionsProps = { submitting: boolean; submitLabel: string; onCancel: () => void }
+type ModalActionsProps = {
+  submitting: boolean
+  submitLabel: string
+  onCancel: () => void
+  // Mis. NIK belum ditemukan.
+  disabled?: boolean
+}
 
-function ModalActions({ submitting, submitLabel, onCancel }: ModalActionsProps) {
+function ModalActions({ submitting, submitLabel, onCancel, disabled }: ModalActionsProps) {
   return (
     <div className="sid-modal-actions">
       <button type="button" className="sid-button sid-button-outline" onClick={onCancel}>
         Batal
       </button>
-      <button type="submit" className="sid-button sid-button-primary" disabled={submitting}>
+      <button
+        type="submit"
+        className="sid-button sid-button-primary"
+        disabled={submitting || disabled}
+      >
         {submitting ? 'Menyimpan...' : submitLabel}
       </button>
     </div>
   )
 }
 
-type HistoryListProps = { members: OrgMember[]; processing: boolean; onDelete: MemberHandler }
-
-function HistoryList({ members, processing, onDelete }: HistoryListProps) {
+// Riwayat pemegang jabatan; permanen (tidak dapat diubah atau dihapus).
+function HistoryList({ members }: { members: OrgMember[] }) {
   if (members.length === 0) return null
 
   return (
@@ -216,21 +343,11 @@ function HistoryList({ members, processing, onDelete }: HistoryListProps) {
         {members.map((m) => (
           <li key={m.id}>
             <span>
-              {m.member_name}
+              <MemberIdentity member={m} />
               <small>
                 {formatDate(m.started_at)} – {formatDate(m.ended_at)}
               </small>
             </span>
-            <button
-              type="button"
-              className="sid-operator-action delete"
-              title="Hapus riwayat"
-              aria-label={`Hapus riwayat ${m.member_name}`}
-              disabled={processing}
-              onClick={() => onDelete(m)}
-            >
-              <Trash2 size={14} />
-            </button>
           </li>
         ))}
       </ul>
@@ -245,7 +362,6 @@ type LeaderCardProps = {
   onFill: () => void
   onEdit: MemberHandler
   onEnd: (member: OrgMember, toMember: boolean) => void
-  onDeleteHistory: MemberHandler
   onPickPhoto: MemberHandler
   onRemovePhoto: MemberHandler
 }
@@ -257,7 +373,6 @@ function LeaderCard({
   onFill,
   onEdit,
   onEnd,
-  onDeleteHistory,
   onPickPhoto,
   onRemovePhoto,
 }: LeaderCardProps) {
@@ -315,6 +430,17 @@ function LeaderCard({
           <div>
             <p className="sid-org-slot-name">{holder.member_name}</p>
             <p className="sid-org-slot-meta">
+              NIK{' '}
+              {holder.citizen_id ? (
+                <RevealableValue
+                  masked={holder.nik_masked}
+                  reveal={() => revealCitizenNik(holder.citizen_id as string)}
+                />
+              ) : (
+                '-'
+              )}
+            </p>
+            <p className="sid-org-slot-meta">
               Sejak {formatDate(holder.started_at)}
               {holder.phone_wa && (
                 <>
@@ -340,11 +466,7 @@ function LeaderCard({
         {holder ? `Ganti ${label}` : `Isi ${label}`}
       </button>
 
-      <HistoryList
-        members={historyOf(position)}
-        processing={processing}
-        onDelete={onDeleteHistory}
-      />
+      <HistoryList members={historyOf(position)} />
     </article>
   )
 }
@@ -400,7 +522,7 @@ function FillLeaderForm({
         previous_holder: form.previous_holder,
         ...(isExisting
           ? { from_member_id: Number(form.from_member_id) }
-          : { member_name: form.member_name.trim(), phone_wa: form.phone_wa || null }),
+          : { nik: form.nik, phone_wa: form.phone_wa || null }),
       },
       isExisting ? null : photo,
     )
@@ -443,7 +565,7 @@ function FillLeaderForm({
               checked={form.source === 'new'}
               onChange={() => set({ source: 'new' })}
             />
-            Orang baru
+            Warga lain (lewat NIK)
           </label>
         </div>
       </div>
@@ -466,17 +588,13 @@ function FillLeaderForm({
         </label>
       ) : (
         <>
+          <NikField
+            nik={form.nik}
+            name={form.member_name}
+            onChange={({ nik, name }) => set({ nik, member_name: name })}
+          />
           <label className="sid-form-group">
-            <span className="sid-form-label">Nama lengkap *</span>
-            <input
-              required
-              maxLength={150}
-              value={form.member_name}
-              onChange={(e) => set({ member_name: e.target.value })}
-            />
-          </label>
-          <label className="sid-form-group">
-            <span className="sid-form-label">Nomor WhatsApp</span>
+            <span className="sid-form-label">Nomor WhatsApp (opsional)</span>
             <input
               maxLength={20}
               value={form.phone_wa}
@@ -534,6 +652,7 @@ function FillLeaderForm({
       <ModalActions
         submitting={submitting}
         submitLabel={holder ? 'Ganti' : 'Simpan'}
+        disabled={form.source === 'new' && !form.member_name}
         onCancel={() => requestCancel(onCancel)}
       />
     </form>
@@ -551,6 +670,7 @@ type MemberFormProps = {
 
 function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFormProps) {
   const [initialForm] = useState<MemberFormState>(() => ({
+    nik: '',
     member_name: member?.member_name ?? '',
     phone_wa: member?.phone_wa ?? '',
     started_at: member?.started_at ?? today(),
@@ -572,10 +692,9 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
         event.preventDefault()
         onSubmit(
           {
-            member_name: form.member_name.trim(),
             phone_wa: form.phone_wa || null,
             notes: form.notes || null,
-            ...(member ? {} : { started_at: form.started_at }),
+            ...(member ? {} : { nik: form.nik, started_at: form.started_at }),
           },
           photo,
         )
@@ -583,17 +702,21 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
     >
       <h2>{member ? 'Edit Data' : 'Tambah Anggota'}</h2>
 
-      <label className="sid-form-group">
-        <span className="sid-form-label">Nama lengkap *</span>
-        <input
-          required
-          maxLength={150}
-          value={form.member_name}
-          onChange={(e) => set({ member_name: e.target.value })}
+      {member ? (
+        // Nama mengikuti data warga; tidak diubah di sini.
+        <div className="sid-form-group">
+          <span className="sid-form-label">Warga</span>
+          <MemberIdentity member={member} />
+        </div>
+      ) : (
+        <NikField
+          nik={form.nik}
+          name={form.member_name}
+          onChange={({ nik, name }) => set({ nik, member_name: name })}
         />
-      </label>
+      )}
       <label className="sid-form-group">
-        <span className="sid-form-label">Nomor WhatsApp</span>
+        <span className="sid-form-label">Nomor WhatsApp (opsional)</span>
         <input
           maxLength={20}
           value={form.phone_wa}
@@ -621,6 +744,7 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
       <ModalActions
         submitting={submitting}
         submitLabel="Simpan"
+        disabled={!member && !form.member_name}
         onCancel={() => requestCancel(onCancel)}
       />
     </form>
@@ -639,6 +763,7 @@ type EndFormProps = {
 
 function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmit }: EndFormProps) {
   const [endedAt, setEndedAt] = useState(today())
+  const isAnggota = label === SLOT_LABEL.anggota
 
   return (
     <form
@@ -648,10 +773,21 @@ function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmi
         onSubmit({ ended_at: endedAt, to_member: toMember })
       }}
     >
-      <h2>{toMember ? 'Turunkan jadi Anggota' : `Kosongkan ${label}`}</h2>
+      <h2>
+        {toMember
+          ? 'Turunkan jadi Anggota'
+          : isAnggota
+            ? 'Akhiri Keanggotaan'
+            : `Kosongkan ${label}`}
+      </h2>
       <p>
         {member.member_name} berhenti sebagai {label}
-        {toMember ? ' dan dicatat sebagai Anggota.' : '. Jabatan ini kosong sampai diisi lagi.'}
+        {toMember
+          ? ' dan dicatat sebagai Anggota.'
+          : isAnggota
+            ? ' dan masuk riwayat.'
+            : '. Jabatan ini kosong sampai diisi lagi.'}{' '}
+        Riwayat tersimpan permanen dan tidak dapat dihapus.
       </p>
 
       <label className="sid-form-group">
@@ -662,7 +798,7 @@ function EndForm({ label, member, toMember, submitting, error, onCancel, onSubmi
       <ModalError error={error} />
       <ModalActions
         submitting={submitting}
-        submitLabel={toMember ? 'Turunkan' : 'Kosongkan'}
+        submitLabel={toMember ? 'Turunkan' : isAnggota ? 'Akhiri' : 'Kosongkan'}
         onCancel={onCancel}
       />
     </form>
@@ -693,7 +829,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
     fillSlot,
     editMember,
     endMember,
-    removeMember,
     uploadPhoto,
     removePhoto,
   } = useOrganisasi(activeType)
@@ -702,6 +837,12 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
   // kartu pimpinan dan tabel anggota; tujuannya disimpan di ref.
   const photoInput = useRef<HTMLInputElement>(null)
   const photoTarget = useRef<{ position: OrgPosition; member: OrgMember } | null>(null)
+  // Berkas dari galeri yang sedang dipotong persegi sebelum diunggah.
+  const [cropping, setCropping] = useState<{
+    file: File
+    position: OrgPosition
+    member: OrgMember
+  } | null>(null)
 
   // fill: Isi/Ganti Ketua atau Wakil; member: tambah anggota / edit data;
   // end: akhiri jabatan.
@@ -748,6 +889,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
         lockSlot,
         source: fromMemberId ? 'existing' : 'new',
         from_member_id: fromMemberId ? String(fromMemberId) : '',
+        nik: '',
         member_name: '',
         phone_wa: '',
         notes: '',
@@ -755,23 +897,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
         previous_holder: 'end',
       },
     })
-
-  const handleDelete = async (position: OrgPosition | null, member: OrgMember, label: string) => {
-    if (!position) return
-    if (
-      !(await confirmDialog({
-        title: `Hapus ${label} "${member.member_name}"?`,
-        message: 'Tindakan ini tidak dapat dibatalkan.',
-        confirmLabel: 'Hapus',
-      }))
-    )
-      return
-    run(
-      () => removeMember(position.id, member.id),
-      'Data berhasil dihapus.',
-      'Gagal menghapus data.',
-    )
-  }
 
   const pickPhotoFor = (position: OrgPosition | null) => (member: OrgMember) => {
     if (!position) return
@@ -786,8 +911,17 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
     event.target.value = ''
     if (!file || !target) return
 
+    setCropping({ file, ...target })
+  }
+
+  const uploadCropped = (photo: File) => {
+    if (!cropping) return
+
+    const { position, member } = cropping
+
+    setCropping(null)
     run(
-      () => uploadPhoto(target.position.id, target.member.id, file),
+      () => uploadPhoto(position.id, member.id, photo),
       'Foto berhasil disimpan.',
       'Gagal mengunggah foto.',
     )
@@ -861,6 +995,16 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
           onChange={handlePhotoChange}
         />
 
+        {cropping && (
+          <PhotoCropDialog
+            source={cropping.file}
+            title={`Atur Foto ${cropping.member.member_name}`}
+            confirmLabel="Simpan foto"
+            onCancel={() => setCropping(null)}
+            onConfirm={uploadCropped}
+          />
+        )}
+
         {actionError && (
           <p className="sid-admin-alert sid-admin-alert-error" role="alert">
             {actionError}
@@ -892,7 +1036,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                     const position = slots[s.key]
                     if (position) openModal({ kind: 'end', position, member, toMember })
                   }}
-                  onDeleteHistory={(member) => handleDelete(slots[s.key], member, 'riwayat')}
                   onPickPhoto={pickPhotoFor(slots[s.key])}
                   onRemovePhoto={removePhotoOf(slots[s.key])}
                 />
@@ -939,7 +1082,20 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                           <td className="primary-text">
                             <div className="flex items-center gap-3">
                               <MemberPhoto src={m.photo_img} name={m.member_name} />
-                              {m.member_name}
+                              <div>
+                                {m.member_name}
+                                <small className="sid-admin-cell-meta">
+                                  NIK{' '}
+                                  {m.citizen_id ? (
+                                    <RevealableValue
+                                      masked={m.nik_masked}
+                                      reveal={() => revealCitizenNik(m.citizen_id as string)}
+                                    />
+                                  ) : (
+                                    '-'
+                                  )}
+                                </small>
+                              </div>
                             </div>
                           </td>
                           <td>{m.phone_wa || '-'}</td>
@@ -981,12 +1137,20 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                               <button
                                 type="button"
                                 className="sid-operator-action delete"
-                                title="Hapus anggota"
-                                aria-label={`Hapus ${m.member_name}`}
+                                title="Akhiri keanggotaan"
+                                aria-label={`Akhiri keanggotaan ${m.member_name}`}
                                 disabled={processing}
-                                onClick={() => handleDelete(anggota, m, 'anggota')}
+                                onClick={() =>
+                                  anggota &&
+                                  openModal({
+                                    kind: 'end',
+                                    position: anggota,
+                                    member: m,
+                                    toMember: false,
+                                  })
+                                }
                               >
-                                <Trash2 size={16} />
+                                <UserX size={16} />
                               </button>
                             </div>
                           </td>
@@ -998,11 +1162,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
               </div>
             </div>
 
-            <HistoryList
-              members={historyOf(anggota)}
-              processing={processing}
-              onDelete={(member) => handleDelete(anggota, member, 'riwayat')}
-            />
+            <HistoryList members={historyOf(anggota)} />
           </>
         )}
       </div>

@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   addMember,
-  deleteMember,
   deleteMemberPhoto,
   endMember,
   getPositions,
@@ -81,7 +80,6 @@ export function useOrganisasi(orgType: string) {
     fillSlot: withRefresh(fillSlot),
     editMember: withRefresh(editMember),
     endMember: withRefresh(endMember),
-    removeMember: withRefresh(deleteMember),
     uploadPhoto: withRefresh(uploadMemberPhoto),
     removePhoto: withRefresh(deleteMemberPhoto),
   }
