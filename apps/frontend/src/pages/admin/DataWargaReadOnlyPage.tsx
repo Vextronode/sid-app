@@ -102,12 +102,17 @@ export default function DataWargaReadOnlyPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Data Penduduk</span>
-        </p>
-
         <div className="sid-operator-header">
-          <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+          <div>
+            <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+            <p>
+              {user?.role === 'kaur_tu_umum'
+                ? 'Halaman ini hanya untuk melihat data. Perubahan data warga dilakukan lewat tombol Terapkan pada surat yang sudah disetujui.'
+                : `Halaman ini hanya untuk melihat data warga dan Kartu Keluarga ${
+                    AREA_ROLES.includes(user?.role ?? '') ? 'di wilayah Anda' : 'seluruh desa'
+                  }.`}
+            </p>
+          </div>
           {/* Memuat ulang tab yang sedang dibuka. */}
           {activeSection === 'kk' ? (
             <RefreshButton onRefresh={familyList.reload} />
@@ -115,14 +120,6 @@ export default function DataWargaReadOnlyPage() {
             <RefreshButton onRefresh={refreshCitizens} refreshing={loading} />
           )}
         </div>
-
-        <p className="sid-admin-alert" role="note">
-          {user?.role === 'kaur_tu_umum'
-            ? 'Halaman ini hanya untuk melihat data. Perubahan data warga dilakukan lewat tombol Terapkan pada surat yang sudah disetujui.'
-            : `Halaman ini hanya untuk melihat data warga dan Kartu Keluarga ${
-                AREA_ROLES.includes(user?.role ?? '') ? 'di wilayah Anda' : 'seluruh desa'
-              }.`}
-        </p>
 
         <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih bagian data">
           {SECTIONS.map((section) => (
@@ -239,7 +236,7 @@ export default function DataWargaReadOnlyPage() {
                                 ? 'Perempuan'
                                 : '-'}
                           </td>
-                          <td className="center">
+                          <td>
                             {[
                               warga.place_of_birth,
                               warga.date_of_birth

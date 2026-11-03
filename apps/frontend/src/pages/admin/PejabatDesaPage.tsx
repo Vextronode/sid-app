@@ -690,12 +690,11 @@ export default function PejabatDesaPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Pejabat Desa</span>
-        </p>
-
         <div className="sid-operator-header">
-          <h1>Pejabat Desa</h1>
+          <div>
+            <h1>Pejabat Desa</h1>
+            <p>Kelola pejabat desa yang memiliki akun beserta masa jabatannya.</p>
+          </div>
           <div className="sid-admin-page-actions">
             <RefreshButton onRefresh={loadData} disabled={processing} />
             <button
@@ -826,7 +825,7 @@ export default function PejabatDesaPage() {
                               </div>
                             </div>
                           </td>
-                          <td>
+                          <td className={group.areaLabel === 'Dusun' ? undefined : 'center'}>
                             {group.areaLabel
                               ? describeArea(official, rwNumbers)
                               : positionLabel(official)}

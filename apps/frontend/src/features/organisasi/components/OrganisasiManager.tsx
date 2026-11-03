@@ -297,6 +297,9 @@ function PhotoActions({ member, processing, onPick, onRemove }: PhotoActionsProp
   )
 }
 
+// NIK diisi tetapi belum cocok dengan warga desa (nama belum terisi).
+const NIK_NOT_FOUND = 'Isi NIK warga desa yang terdaftar sampai namanya muncul.'
+
 function ModalError({ error }: { error: string | null }) {
   if (!error) return null
 
@@ -311,21 +314,15 @@ type ModalActionsProps = {
   submitting: boolean
   submitLabel: string
   onCancel: () => void
-  // Mis. NIK belum ditemukan.
-  disabled?: boolean
 }
 
-function ModalActions({ submitting, submitLabel, onCancel, disabled }: ModalActionsProps) {
+function ModalActions({ submitting, submitLabel, onCancel }: ModalActionsProps) {
   return (
     <div className="sid-modal-actions">
       <button type="button" className="sid-button sid-button-outline" onClick={onCancel}>
         Batal
       </button>
-      <button
-        type="submit"
-        className="sid-button sid-button-primary"
-        disabled={submitting || disabled}
-      >
+      <button type="submit" className="sid-button sid-button-primary" disabled={submitting}>
         {submitting ? 'Menyimpan...' : submitLabel}
       </button>
     </div>
@@ -492,6 +489,7 @@ function FillLeaderForm({
 }: FillLeaderFormProps) {
   const [form, setForm] = useState(initial)
   const [photo, setPhoto] = useState<File | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const requestCancel = useConfirmDiscard(
     isFormDirty({ ...form, photo }, { ...initial, photo: null }),
     {
@@ -506,13 +504,20 @@ function FillLeaderForm({
     .filter((key) => key !== form.slot)
     .flatMap((key) => activeOf(slots[key]).map((m) => ({ ...m, slotLabel: SLOT_LABEL[key] })))
 
-  const set = (patch: Partial<FillForm>) => setForm((current) => ({ ...current, ...patch }))
+  const set = (patch: Partial<FillForm>) => {
+    setFormError(null)
+    setForm((current) => ({ ...current, ...patch }))
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!target) return
 
     const isExisting = form.source === 'existing'
+    if (!isExisting && !form.member_name) {
+      setFormError(NIK_NOT_FOUND)
+      return
+    }
     // Anggota yang dipromosikan membawa fotonya sendiri.
     onSubmit(
       target.id,
@@ -596,7 +601,10 @@ function FillLeaderForm({
           <label className="sid-form-group">
             <span className="sid-form-label">Nomor WhatsApp (opsional)</span>
             <input
+              type="tel"
+              inputMode="tel"
               maxLength={20}
+              placeholder="Contoh: 081234567890"
               value={form.phone_wa}
               onChange={(e) => set({ phone_wa: e.target.value })}
             />
@@ -648,11 +656,10 @@ function FillLeaderForm({
         <textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
       </label>
 
-      <ModalError error={error} />
+      <ModalError error={formError ?? error} />
       <ModalActions
         submitting={submitting}
         submitLabel={holder ? 'Ganti' : 'Simpan'}
-        disabled={form.source === 'new' && !form.member_name}
         onCancel={() => requestCancel(onCancel)}
       />
     </form>
@@ -678,18 +685,26 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
   }))
   const [form, setForm] = useState(initialForm)
   const [photo, setPhoto] = useState<File | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const requestCancel = useConfirmDiscard(
     isFormDirty({ ...form, photo }, { ...initialForm, photo: null }),
     { disabled: submitting, escapeClose: onCancel },
   )
 
-  const set = (patch: Partial<MemberFormState>) => setForm((current) => ({ ...current, ...patch }))
+  const set = (patch: Partial<MemberFormState>) => {
+    setFormError(null)
+    setForm((current) => ({ ...current, ...patch }))
+  }
 
   return (
     <form
       className="sid-modal"
       onSubmit={(event) => {
         event.preventDefault()
+        if (!member && !form.member_name) {
+          setFormError(NIK_NOT_FOUND)
+          return
+        }
         onSubmit(
           {
             phone_wa: form.phone_wa || null,
@@ -718,7 +733,10 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
       <label className="sid-form-group">
         <span className="sid-form-label">Nomor WhatsApp (opsional)</span>
         <input
+          type="tel"
+          inputMode="tel"
           maxLength={20}
+          placeholder="Contoh: 081234567890"
           value={form.phone_wa}
           onChange={(e) => set({ phone_wa: e.target.value })}
         />
@@ -740,11 +758,10 @@ function MemberForm({ member, submitting, error, onCancel, onSubmit }: MemberFor
         <textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
       </label>
 
-      <ModalError error={error} />
+      <ModalError error={formError ?? error} />
       <ModalActions
         submitting={submitting}
         submitLabel="Simpan"
-        disabled={!member && !form.member_name}
         onCancel={() => requestCancel(onCancel)}
       />
     </form>
@@ -956,10 +973,6 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>{title}</span>
-        </p>
-
         <div className="sid-operator-header">
           <div>
             <h1>{title}</h1>
@@ -1098,7 +1111,7 @@ export default function OrganisasiManager({ title, subtitle, orgTypes }: Organis
                               </div>
                             </div>
                           </td>
-                          <td>{m.phone_wa || '-'}</td>
+                          <td className="center">{m.phone_wa || '-'}</td>
                           <td className="center">{formatDate(m.started_at)}</td>
                           <td>{m.notes || '-'}</td>
                           <td className="center">

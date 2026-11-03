@@ -134,12 +134,11 @@ export default function OperatorSuratListPage() {
             HEADER
         ========================================== */}
 
-        <div className="sid-operator-breadcrumb">
-          Admin /<span> Daftar Permohonan Surat</span>
-        </div>
-
         <div className="sid-operator-header">
-          <h1>Daftar Permohonan Surat</h1>
+          <div>
+            <h1>Daftar Permohonan Surat</h1>
+            <p>Pantau dan proses permohonan surat warga desa.</p>
+          </div>
 
           <div className="sid-admin-page-actions">
             <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />

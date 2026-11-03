@@ -367,12 +367,11 @@ export default function DataWargaPage() {
   return (
     <div className="sid-operator-page sid-admin-data-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Data Penduduk</span>
-        </p>
-
         <div className="sid-operator-header">
-          <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+          <div>
+            <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+            <p>Kelola data penduduk dan Kartu Keluarga desa.</p>
+          </div>
           <div className="sid-admin-page-actions">
             {/* Memuat ulang tab yang sedang dibuka. */}
             <RefreshButton
@@ -490,6 +489,7 @@ export default function DataWargaPage() {
                       <th className="center">Status Domisili</th>
                       <th className="center">No. KK</th>
                       <th className="center">Peran KK</th>
+                      <th className="center">Pekerjaan</th>
                       <th className="center">Sinkronisasi</th>
                       <th className="center">Aksi</th>
                     </tr>
@@ -497,19 +497,19 @@ export default function DataWargaPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={10} className="empty">
+                        <td colSpan={11} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={10} className="empty sid-admin-error">
+                        <td colSpan={11} className="empty sid-admin-error">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="empty">
+                        <td colSpan={11} className="empty">
                           Belum ada data warga.
                         </td>
                       </tr>
@@ -545,6 +545,7 @@ export default function DataWargaPage() {
                           <td className="center">
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
                           </td>
+                          <td className="center">{warga.occupation ?? '-'}</td>
                           <td className="center">
                             {/* "-" hanya bila status sinkronisasi dan sumber data kosong. */}
                             {warga.sync_status

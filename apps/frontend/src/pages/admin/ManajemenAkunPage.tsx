@@ -43,10 +43,6 @@ export default function ManajemenAkunPage() {
   return (
     <div className="sid-operator-page sid-admin-users-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Manajemen Akun</span>
-        </p>
-
         <div className="sid-operator-header">
           <div>
             <h1>Manajemen Akun</h1>

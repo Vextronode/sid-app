@@ -304,9 +304,9 @@ export function AktivasiAkunSection() {
                           {item.username ? `, @${item.username}` : ''}
                         </small>
                       </td>
-                      <td>{areaLabel(item.area)}</td>
-                      <td>{formatDateTime(item.created_at)}</td>
-                      <td>
+                      <td className="center">{areaLabel(item.area)}</td>
+                      <td className="center">{formatDateTime(item.created_at)}</td>
+                      <td className="center">
                         <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
                         {item.banned && item.status === 'rejected' && (
                           <small className="sid-admin-cell-meta">
@@ -317,7 +317,7 @@ export function AktivasiAkunSection() {
                           <small className="sid-admin-cell-meta">Aktivasi manual</small>
                         )}
                       </td>
-                      <td>
+                      <td className="center">
                         {item.status === 'pending' ? (
                           <span>Menunggu {item.level ? LEVEL_LABELS[item.level] : 'petugas'}</span>
                         ) : (
@@ -337,7 +337,7 @@ export function AktivasiAkunSection() {
                           </>
                         )}
                       </td>
-                      <td>
+                      <td className="center">
                         <div className="sid-wilayah-actions">
                           <button
                             type="button"

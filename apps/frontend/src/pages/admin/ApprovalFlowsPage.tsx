@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ListOrdered } from 'lucide-react'
+import { BellRing, ListOrdered } from 'lucide-react'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApprovalFlows } from '@/features/approval/api'
@@ -13,6 +13,10 @@ const POSITION_LABELS: Record<string, string> = {
   kepala_desa: 'Kepala Desa / Sekretaris Desa',
   sekretaris_desa: 'Kepala Desa / Sekretaris Desa',
 }
+
+// Siapa yang diberi tahu setelah tahap disetujui (tanpa ikut menyetujui).
+const RT_STEP_NOTE = 'Ketua RW dan Kepala Dusun mendapat pemberitahuan.'
+const FINAL_STEP_NOTE = 'Surat terbit; Kasi/Kaur sesuai jenis surat mendapat pemberitahuan.'
 
 /**
  * Semua jenis surat memakai satu alur persetujuan (RT -> Kepala Desa) yang
@@ -60,18 +64,15 @@ export default function ApprovalFlowsPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Alur & Jenis Surat</span>
-        </p>
-        <div className="sid-operator-header mb-0">
-          <h1>Alur Persetujuan &amp; Jenis Surat</h1>
+        <div className="sid-operator-header">
+          <div>
+            <h1>Alur Persetujuan &amp; Jenis Surat</h1>
+            <p>
+              Semua jenis surat memakai satu alur persetujuan berikut. Masa berlaku dan petugas tiap
+              jenis surat diatur di bawahnya.
+            </p>
+          </div>
           <RefreshButton onRefresh={refresh} />
-        </div>
-        <div className="mb-6">
-          <p className="sid-page-description">
-            Semua jenis surat memakai satu alur persetujuan. RW dan Kadus menerima pemberitahuan
-            setelah RT menyetujui; Kasi/Kaur menerima pemberitahuan setelah persetujuan akhir.
-          </p>
         </div>
 
         {error && (
@@ -101,30 +102,53 @@ export default function ApprovalFlowsPage() {
             </p>
           ) : (
             flows.map((flow) => (
-              <div key={flow.id} className="px-5 py-4">
-                <p className="font-medium text-[var(--sid-text)]">{flow.name}</p>
-                {flow.description && (
-                  <p className="mt-1 max-w-3xl text-sm text-gray-600">{flow.description}</p>
+              <div key={flow.id} className="px-5 py-5">
+                {/* Nama alur hanya perlu bila ada lebih dari satu alur. */}
+                {flows.length > 1 && (
+                  <p className="mb-3 font-medium text-[var(--sid-text)]">{flow.name}</p>
                 )}
-                <ol className="mt-3 space-y-2">
-                  {(flow.steps ?? []).map((step) => (
-                    <li
-                      key={step.id ?? step.step_order}
-                      className="flex items-center gap-3 text-sm"
-                    >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
-                        {step.step_order}
-                      </span>
-                      <span>
-                        {POSITION_LABELS[step.approver_position] ?? step.approver_position}
-                      </span>
-                      {step.is_final && (
-                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-                          Persetujuan akhir
-                        </span>
-                      )}
-                    </li>
-                  ))}
+                <ol className="grid gap-3 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+                  {(flow.steps ?? []).map((step) => {
+                    const note = step.is_final
+                      ? FINAL_STEP_NOTE
+                      : step.approver_position === 'rt'
+                        ? RT_STEP_NOTE
+                        : null
+
+                    return (
+                      <li
+                        key={step.id ?? step.step_order}
+                        className="flex flex-col gap-2 rounded-xl border border-[var(--sid-border)] bg-[var(--sid-surface-page)] p-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                            {step.step_order}
+                          </span>
+                          <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+                            Tahap {step.step_order}
+                          </span>
+                          {step.is_final && (
+                            <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                              Persetujuan akhir
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-semibold text-[var(--sid-text)]">
+                          {POSITION_LABELS[step.approver_position] ?? step.approver_position}
+                        </p>
+                        {note && (
+                          <p className="flex items-start gap-1.5 text-sm text-gray-600">
+                            <BellRing
+                              size={14}
+                              className="mt-0.5 flex-none text-gray-400"
+                              aria-hidden="true"
+                            />
+                            {note}
+                          </p>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ol>
               </div>
             ))

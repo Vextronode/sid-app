@@ -97,15 +97,15 @@ export default function RwTable({
             ) : (
               data.map((rw, index) => (
                 <tr key={rw.id}>
-                  <td>{index + 1}</td>
-                  <td className="sid-wilayah-name">RW {rw.number}</td>
-                  <td>{getHamletName(rw.hamletId)}</td>
-                  <td>
+                  <td className="center">{index + 1}</td>
+                  <td className="sid-wilayah-name center">RW {rw.number}</td>
+                  <td className="center">{getHamletName(rw.hamletId)}</td>
+                  <td className="center">
                     <StatusPill active={rw.isActive}>
                       {rw.isActive ? 'Aktif' : 'Nonaktif'}
                     </StatusPill>
                   </td>
-                  <td>
+                  <td className="center">
                     <div className="sid-wilayah-actions">
                       <button
                         type="button"

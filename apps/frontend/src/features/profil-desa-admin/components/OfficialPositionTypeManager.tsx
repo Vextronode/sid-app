@@ -185,7 +185,7 @@ export default function OfficialPositionTypeManager({
               ) : (
                 types.map((type) => (
                   <tr key={type.id}>
-                    <td className="primary-text">{type.label}</td>
+                    <td className="primary-text center">{type.label}</td>
                     <td className="center">{type.sort_order}</td>
                     <td className="center">{type.is_single_occupant ? 'Satu orang' : 'Banyak'}</td>
                     <td className="center">

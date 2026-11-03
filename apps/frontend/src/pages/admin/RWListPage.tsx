@@ -96,10 +96,6 @@ export default function RWListPage() {
               HEADER
               ====================================== */}
 
-          <p className="rw-breadcrumb">
-            Admin / <span>Daftar Permohonan Surat</span>
-          </p>
-
           <div className="sid-dashboard-header">
             <div>
               <h1 className="sid-page-title">Daftar Permohonan Surat</h1>

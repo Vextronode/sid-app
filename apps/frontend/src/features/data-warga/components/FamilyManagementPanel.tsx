@@ -355,7 +355,7 @@ export default function FamilyManagementPanel({
           <thead>
             <tr>
               <th>No. KK</th>
-              <th>Kepala Keluarga</th>
+              <th className="left">Kepala Keluarga</th>
               <th>Anggota</th>
               <th>Alamat KK</th>
               <th>Status</th>
@@ -378,7 +378,7 @@ export default function FamilyManagementPanel({
             ) : (
               families.map((family) => (
                 <tr key={family.id}>
-                  <td>
+                  <td className="center">
                     <RevealableValue
                       masked={family.no_kk_masked}
                       reveal={() => revealFamilyNumber(family.id)}
@@ -386,9 +386,9 @@ export default function FamilyManagementPanel({
                     />
                   </td>
                   <td>{family.head_of_family?.name ?? '-'}</td>
-                  <td>{family.members_count ?? 0}</td>
+                  <td className="center">{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
-                  <td>
+                  <td className="center">
                     {family.family_status ? (
                       <StatusPill tone={FAMILY_STATUS_TONE[family.family_status] ?? 'inactive'}>
                         {labelOf(FAMILY_STATUS_LABELS, family.family_status)}

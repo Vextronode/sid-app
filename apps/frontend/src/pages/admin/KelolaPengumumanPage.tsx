@@ -581,8 +581,6 @@ export default function KelolaPengumumanPage() {
       <div className="sid-kelola-wilayah-content">
         <div className="sid-kelola-wilayah-header">
           <div>
-            <span className="sid-kelola-wilayah-eyebrow">Konten Desa</span>
-
             <h1>Pengumuman</h1>
 
             <p>

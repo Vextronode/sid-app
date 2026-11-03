@@ -19,7 +19,8 @@ import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { FormEvent } from 'react'
 import type { Occupation } from '@/types'
 
-type OccupationPayload = { name: string; sort_order: number }
+// sort_order kosong (pekerjaan baru) = masuk paling akhir.
+type OccupationPayload = { name: string; sort_order?: number }
 
 type OccupationFormModalProps = {
   item: Occupation | null
@@ -40,7 +41,7 @@ function OccupationFormModal({
   const isEdit = Boolean(item?.id)
   const [initialForm] = useState<{ name: string; sort_order: number | string }>(() => ({
     name: item?.name ?? '',
-    sort_order: item?.sort_order ?? 0,
+    sort_order: item?.sort_order ?? '',
   }))
   const [form, setForm] = useState(initialForm)
   const requestClose = useConfirmDiscard(isFormDirty(form, initialForm), {
@@ -53,7 +54,7 @@ function OccupationFormModal({
 
     const success = await onSubmit({
       name: form.name.trim(),
-      sort_order: Number(form.sort_order) || 0,
+      ...(form.sort_order === '' ? {} : { sort_order: Number(form.sort_order) || 0 }),
     })
 
     if (success) {
@@ -108,10 +109,14 @@ function OccupationFormModal({
               type="number"
               min={0}
               value={form.sort_order}
+              placeholder={isEdit ? undefined : 'Kosongkan untuk urutan terakhir'}
               onChange={(event) =>
                 setForm((current) => ({ ...current, sort_order: event.target.value }))
               }
             />
+            <p className="sid-wilayah-form-help">
+              Bila nomor urut sudah dipakai pekerjaan lain, posisinya ditukar.
+            </p>
           </div>
 
           {error && <div className="sid-wilayah-form-error">{error}</div>}
@@ -282,8 +287,6 @@ export default function KelolaPekerjaanPage() {
       <div className="sid-kelola-wilayah-content">
         <div className="sid-kelola-wilayah-header">
           <div>
-            <span className="sid-kelola-wilayah-eyebrow">Master Data</span>
-
             <h1>Katalog Pekerjaan</h1>
 
             <p>Kelola daftar pekerjaan yang dapat dipilih pada data warga.</p>
@@ -350,16 +353,16 @@ export default function KelolaPekerjaanPage() {
                 ) : (
                   data.map((item, index) => (
                     <tr key={item.id}>
-                      <td>{index + 1}</td>
-                      <td className="sid-wilayah-name">{item.name}</td>
-                      <td>{item.sort_order ?? 0}</td>
-                      <td>{item.citizens_count ?? '-'}</td>
-                      <td>
+                      <td className="center">{index + 1}</td>
+                      <td className="sid-wilayah-name center">{item.name}</td>
+                      <td className="center">{item.sort_order ?? 0}</td>
+                      <td className="center">{item.citizens_count ?? '-'}</td>
+                      <td className="center">
                         <StatusPill active={item.is_active}>
                           {item.is_active ? 'Aktif' : 'Nonaktif'}
                         </StatusPill>
                       </td>
-                      <td>
+                      <td className="center">
                         <div className="sid-wilayah-actions">
                           <button
                             type="button"

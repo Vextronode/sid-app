@@ -197,6 +197,8 @@
 .sid-letter-table th {
   border-bottom: 1px solid var(--sid-border);
 
+  text-align: center;
+
   color: var(--sid-text-muted);
 
   font-size: 0.75rem;
@@ -218,11 +220,22 @@
   background: color-mix(in srgb, var(--sid-primary-soft) 45%, transparent);
 }
 
-/* Kolom Aksi berisi grup tombol yang lebar; judul dan tombol dipusatkan
-   bersama agar "Aksi" tepat di atas tombolnya. Kolom lain rata kiri. */
-.sid-letter-table th.sid-letter-table-actions,
+/* Judul kolom selalu di tengah. Isi yang panjangnya seragam (nomor surat,
+   tanggal, status, tombol Aksi) di tengah; Pemohon dan Jenis rata kiri. */
+.sid-letter-table td.sid-letter-table-center,
 .sid-letter-table td.sid-letter-table-actions {
   text-align: center;
+}
+
+.sid-letter-table td.sid-letter-table-center .sid-letter-table-status {
+  align-items: center;
+}
+
+/* Kolom Aksi selebar grup tombol terlengkap; tombol rata tengah. */
+.sid-letter-table td.sid-letter-table-actions {
+  width: 1%;
+
+  white-space: nowrap;
 }
 
 .sid-letter-table td.sid-letter-table-actions .sid-row-actions {
@@ -389,6 +402,7 @@
     background: transparent;
   }
 
+  /* Kartu tanpa judul kolom: label dan nilai rata kiri. */
   .sid-letter-table tbody td {
     display: grid;
     grid-template-columns: 5.5rem minmax(0, 1fr);
@@ -396,6 +410,16 @@
     gap: 0.75rem;
 
     padding: 0;
+
+    text-align: left;
+  }
+
+  .sid-letter-table tbody td.sid-letter-table-center {
+    text-align: left;
+  }
+
+  .sid-letter-table td.sid-letter-table-center .sid-letter-table-status {
+    align-items: flex-start;
   }
 
   .sid-letter-table tbody td[data-label]::before {
