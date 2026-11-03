@@ -9,10 +9,17 @@ post:
     pemegang lama sekaligus dicatat sebagai Anggota aktif. Untuk slot
     `anggota`, anggota baru ditambahkan tanpa mengakhiri yang lama.
 
+    Pemegang baru dipilih lewat `nik` warga aktif desa ini (nama diambil
+    dari data warga; 404 bila NIK tidak ada di desa). Satu warga tidak
+    bisa aktif di dua jabatan organisasi yang sama (422).
+
     Dengan `from_member_id`, yang diisikan adalah anggota/wakil aktif
     organisasi yang sama (promosi): masa jabatan lamanya diakhiri dan
-    nama/foto/WA disalin, sehingga `member_name` tidak wajib. Semua
+    data warga/foto/WA disalin, sehingga `nik` tidak wajib. Semua
     langkah berjalan dalam satu transaksi.
+
+    Anggota tidak pernah dihapus: jabatan yang berakhir menjadi riwayat
+    (endpoint .../members/{id}/end) yang tidak dapat diubah.
   operationId: addVillageOrgMember
   security:
     - sanctumCookie: []

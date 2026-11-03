@@ -592,7 +592,7 @@ Alternatif Flow:
 Main Flow:
 - Petugas membuka menu "Kelola Wilayah" — hierarki: Desa → Dusun → RW → RT
 - Petugas dapat tambah/edit/nonaktifkan unit wilayah (`hamlets`, `rws`, `rts`)
-- Sistem memvalidasi keunikan `code` (dusun) dan `full_label` per level
+- Sistem memvalidasi keunikan `code` (dusun) dan `number` per level (RW dalam dusun, RT dalam RW)
 - Sistem menyimpan ke `hamlets`/`rws`/`rts`
 - Menonaktifkan wilayah: `is_active = false` (guard: cek ada warga aktif di wilayah ini)
 

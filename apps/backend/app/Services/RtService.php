@@ -22,7 +22,7 @@ class RtService
 
     public function getAllOrderedByNumber(User $user, ?int $rwId = null): Collection
     {
-        return $this->rtRepository->allOrderedByNumber($this->villageId($user), $rwId);
+        return $this->rtRepository->allOrderedByNumber($this->readableVillageId($user), $rwId);
     }
 
     public function create(array $data, User $user): Rt
@@ -34,7 +34,6 @@ class RtService
             'rw_id' => $data['rw_id'],
             'village_id' => $rw->hamlet->village_id,
             'number' => $data['number'],
-            'full_label' => "RT {$data['number']} / RW {$rw->number}",
             'is_active' => true,
         ]);
     }
@@ -52,11 +51,6 @@ class RtService
             throw new RegionHasActiveCitizensException('RT');
         }
 
-        if (isset($data['number'])) {
-            $rt->loadMissing('rw');
-            $data['full_label'] = "RT {$data['number']} / RW {$rt->rw->number}";
-        }
-
         return $this->rtRepository->update($rt, $data);
     }
 
@@ -70,6 +64,20 @@ class RtService
         }
 
         return $this->rtRepository->delete($rt);
+    }
+
+    /**
+     * Membaca daftar wilayah: peran yang boleh dibatasi di route (Staf
+     * SIDUTama, Kasi Pemerintahan, Kaur TU & Umum); menulis tetap lewat
+     * villageId() yang khusus Staf SIDUTama.
+     */
+    private function readableVillageId(User $user): string
+    {
+        if (! $user->is_active || ! $user->village_id) {
+            abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        }
+
+        return $user->village_id;
     }
 
     private function villageId(User $user): string

@@ -19,6 +19,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
+use Spatie\Activitylog\Models\Activity;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
@@ -344,6 +345,15 @@ class FamilyRestructureServiceTest extends TestCase
 
         $this->assertSame('orang_tua', $this->father->fresh()->family_role->value);
         $this->assertSame('kepala_keluarga', $this->applicant['citizen']->fresh()->family_role->value);
+
+        // Observer: satu `letter_fulfilled` per warga, tanpa entri `updated`
+        // dobel; preview (dry run) tidak meninggalkan log.
+        $logs = Activity::query()->where('log_name', 'citizen')->where('causer_id', $this->kasi['user']->id)->get();
+        $this->assertEqualsCanonicalizing([$this->father->id, $this->applicant['citizen']->id], $logs->pluck('subject_id')->all());
+        $this->assertSame(['letter_fulfilled'], $logs->pluck('event')->unique()->values()->all());
+        $this->assertTrue($logs->every(fn (Activity $log): bool => $log->properties['letter_id'] === $letterId
+            && $log->properties['action'] === 'restructure_family'));
+        $this->assertSame(['old' => 'kepala_keluarga', 'new' => 'orang_tua'], $logs->firstWhere('subject_id', $this->father->id)->properties['changes']['family_role']);
     }
 
     public function test_member_joins_another_family_with_the_host_head_consent(): void

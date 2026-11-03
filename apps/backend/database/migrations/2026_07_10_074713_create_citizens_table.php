@@ -17,8 +17,12 @@ return new class extends Migration
             $table->text('nik');
             $table->string('nik_hash')->unique();
             $table->string('name', 100);
-            $table->date('date_of_birth');
-            $table->string('place_of_birth', 100)->nullable();
+            // TTL, alamat, nama orang tua, tanggal kawin/cerai, domisili, dan
+            // status kelainan terenkripsi (cast di model Citizen): kolom
+            // `text` karena ciphertext jauh lebih panjang dari nilainya dan
+            // bukan tanggal/boolean yang sah.
+            $table->text('date_of_birth');
+            $table->text('place_of_birth')->nullable();
             $table->enum('gender', ['L', 'P']);
             $table->enum('blood_type', ['A', 'B', 'AB', 'O', 'tidak_tahu'])->nullable();
             $table->text('address');
@@ -34,29 +38,31 @@ return new class extends Migration
             $table->enum('family_role', ['kepala_keluarga', 'suami', 'istri', 'anak', 'menantu', 'cucu', 'orang_tua', 'mertua', 'famili_lain', 'pembantu', 'lainnya'])->nullable();
             $table->uuid('father_id')->nullable();
             $table->uuid('mother_id')->nullable();
-            $table->string('father_name_text')->nullable();
-            $table->string('mother_name_text')->nullable();
+            $table->text('father_name_text')->nullable();
+            $table->text('mother_name_text')->nullable();
 
             $table->enum('marital_status', ['belum_kawin', 'kawin', 'kawin_belum_tercatat', 'cerai_hidup', 'cerai_hidup_belum_tercatat', 'cerai_mati'])->nullable();
             $table->foreignId('occupation_id')->nullable()->constrained('occupations')->restrictOnDelete();
             $table->enum('religion', ['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu'])->nullable();
             $table->enum('last_education', ['tidak_sekolah', 'sd', 'smp', 'sma', 'diploma', 's1', 's2', 's3'])->nullable();
             $table->enum('domicile_status', ['menetap', 'merantau_dalam_negeri', 'merantau_luar_negeri', 'tki'])->default('menetap');
-            $table->string('current_domicile', 150)->nullable();
+            $table->text('current_domicile')->nullable();
 
             $table->enum('residency_type', ['lokal', 'pendatang'])->default('lokal');
             $table->string('origin_region')->nullable();
 
             // Dokumen & keterangan tambahan untuk F-1.01 (CitizenDocumentRules).
-            // Nomor akta dan jenis cacat terenkripsi (cast `encrypted`).
+            // Nomor akta, tanggal kawin/cerai, status kelainan, dan jenis
+            // cacat terenkripsi. has_disorder tanpa default di database;
+            // model mengisi `false` saat menyimpan.
             $table->string('title_front', 30)->nullable();
             $table->string('title_back', 30)->nullable();
             $table->text('birth_certificate_number')->nullable();
             $table->text('marriage_certificate_number')->nullable();
-            $table->date('marriage_date')->nullable();
+            $table->text('marriage_date')->nullable();
             $table->text('divorce_certificate_number')->nullable();
-            $table->date('divorce_date')->nullable();
-            $table->boolean('has_disorder')->default(false);
+            $table->text('divorce_date')->nullable();
+            $table->text('has_disorder')->nullable();
             $table->text('disability')->nullable();
 
             $table->enum('data_source', ['manual_input_desa', 'import_excel', 'dukcapil_sync'])->default('manual_input_desa');

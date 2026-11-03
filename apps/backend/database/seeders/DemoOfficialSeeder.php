@@ -13,6 +13,7 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
+use App\Support\AuditContext;
 use Database\Seeders\Support\DemoData;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -69,7 +70,16 @@ class DemoOfficialSeeder extends Seeder
 
     private int $sequence = self::NIK_SEQUENCE_START;
 
+    /**
+     * Data demo tidak masuk Log Aktivitas: audit dibisukan lewat
+     * AuditContext, event `saving` model tetap berjalan.
+     */
     public function run(): void
+    {
+        app(AuditContext::class)->muted(fn () => $this->seedDemoData());
+    }
+
+    private function seedDemoData(): void
     {
         DemoData::start(2002);
 
@@ -187,6 +197,8 @@ class DemoOfficialSeeder extends Seeder
                 'name' => $name ?? DemoData::uniqueName($gender),
                 'date_of_birth' => $dateOfBirth,
                 'place_of_birth' => 'Pangandaran',
+                // Kolom terenkripsi tanpa default di database (lihat DemoCitizenSeeder).
+                'has_disorder' => false,
                 'gender' => $gender,
                 'blood_type' => DemoData::pick(['A', 'B', 'AB', 'O']),
                 'address' => $address,

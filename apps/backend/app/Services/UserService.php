@@ -16,6 +16,8 @@ class UserService
     public function __construct(
         protected UserRepository $userRepository,
         protected OfficialRepository $officialRepository,
+        protected AccountAuditService $audit,
+        protected AccountActivationService $activation,
     ) {}
 
     public function getAllWithCitizenAndOfficial(User $actor): Collection
@@ -28,9 +30,15 @@ class UserService
     public function toggleActive(User $user, User $actingUser): User
     {
         $this->assertSameVillage($user, $actingUser);
+        $this->guardAwaitingActivation($user);
         $this->guardDeactivation($user, $actingUser, $user->is_active);
 
-        return $this->userRepository->toggleActive($user);
+        return DB::transaction(function () use ($user, $actingUser): User {
+            $user = $this->userRepository->toggleActive($user);
+            $this->audit->statusToggled($user, $actingUser);
+
+            return $user;
+        });
     }
 
     public function getCurrentUserProfile(User $user): User
@@ -47,11 +55,22 @@ class UserService
     public function update(User $user, array $data, User $actingUser): User
     {
         $this->assertSameVillage($user, $actingUser);
+
+        if (array_key_exists('is_active', $data)) {
+            $this->guardAwaitingActivation($user);
+        }
+
         $deactivating = array_key_exists('is_active', $data) && ! $data['is_active'] && $user->is_active;
 
         $this->guardDeactivation($user, $actingUser, $deactivating);
 
-        return $this->userRepository->update($user, $data);
+        return DB::transaction(function () use ($user, $data, $actingUser): User {
+            $before = clone $user;
+            $user = $this->userRepository->update($user, $data);
+            $this->audit->updated($before, $user, $actingUser);
+
+            return $user;
+        });
     }
 
     public function resetPassword(User $target, User $actor): string
@@ -66,7 +85,14 @@ class UserService
             abort(403, UserRole::stafSidLabel().' tidak dapat mengatur ulang kata sandi '.UserRole::stafSidLabel().' lain.');
         }
 
-        return $this->setTemporaryPassword($target);
+        // Staf menerima kata sandi sementara dan bisa masuk sebagai pemilik
+        // akun, jadi tindakan ini harus meninggalkan jejak (tanpa kata sandinya).
+        return DB::transaction(function () use ($target, $actor): string {
+            $temporaryPassword = $this->setTemporaryPassword($target);
+            $this->audit->passwordResetByStaff($target, $actor);
+
+            return $temporaryPassword;
+        });
     }
 
     /**
@@ -112,6 +138,9 @@ class UserService
                 ->performedOn($user)
                 ->event('staf_sid_recovered')
                 ->withProperties([
+                    // village_id & subject_label: tampil di tab Akun halaman Log Aktivitas.
+                    'village_id' => $user->village_id,
+                    'subject_label' => "{$user->name} ({$user->username})",
                     'via' => 'cli',
                     'host' => gethostname() ?: null,
                 ])
@@ -130,6 +159,17 @@ class UserService
         ]);
 
         return $temporaryPassword;
+    }
+
+    /**
+     * Akun hasil pendaftaran online yang belum disetujui hanya diaktifkan
+     * lewat aktivasi petugas wilayah, bukan dari Manajemen Pengguna.
+     */
+    private function guardAwaitingActivation(User $target): void
+    {
+        if ($this->activation->awaitingActivation($target)) {
+            abort(409, 'Akun ini belum diaktivasi. Gunakan menu Aktivasi Akun.');
+        }
     }
 
     private function guardDeactivation(User $target, User $actingUser, bool $deactivating): void

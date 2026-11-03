@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\AccountRegistration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -52,6 +53,10 @@ class UserRepository
             'official',
         ])
             ->where('village_id', $villageId)
+            // Pendaftaran online yang belum disetujui ada di menu Aktivasi Akun.
+            ->where(fn ($query) => $query
+                ->whereDoesntHave('accountRegistrations')
+                ->orWhereHas('accountRegistrations', fn ($registrations) => $registrations->where('status', AccountRegistration::STATUS_APPROVED)))
             ->latest()
             ->get();
     }

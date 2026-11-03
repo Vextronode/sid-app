@@ -19,6 +19,7 @@ use App\Notifications\FamilyMemberMovedNotification;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
+use App\Support\AuditContext;
 use App\Support\CitizenDocumentRules;
 use App\Support\CitizenLabels;
 use App\Support\FieldCondition;
@@ -105,6 +106,7 @@ class LetterFulfillmentService
         protected OfficialService $officialService,
         protected UserRepository $userRepository,
         protected FamilyService $familyService,
+        protected AuditContext $auditContext,
     ) {}
 
     /**
@@ -241,30 +243,43 @@ class LetterFulfillmentService
             $newFamilyNumber = $values['no_kk'] ?? null;
             unset($values['no_kk']);
 
-            // Daftar [warga, perubahan] untuk jejak audit per warga.
-            [$result, $touched] = match ($action) {
-                LetterDataAction::UpdateCitizen, LetterDataAction::CreateCitizen => $this->singleCitizen(
-                    $action,
-                    $action === LetterDataAction::UpdateCitizen
-                        ? $this->updateCitizen($locked, $actor, $this->finalValues($locked, $values), $subjectNik)
-                        : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
-                ),
-                LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor, $notes),
-                LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
-                LetterDataAction::UpdateCitizens => $this->updateCitizens($locked, $actor),
-                LetterDataAction::RestructureFamily => $this->restructureFamily($locked, $actor, $newFamilyNumber),
-                LetterDataAction::AdoptChild => $this->adoptee($locked) !== null
-                    ? $this->adoptChild($locked, $actor)
-                    : $this->singleCitizen(
-                        LetterDataAction::CreateCitizen,
-                        $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
-                    ),
-                LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
-                default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
-            };
+            // Setiap penyimpanan warga/KK di dalam lingkup ini dicatat
+            // observer sebagai satu `letter_fulfilled` per warga/KK (S-05),
+            // ditulis di akhir lingkup dan ikut batal bila transaksinya batal.
+            $audit = [
+                'event' => 'letter_fulfilled',
+                'letter_id' => $locked->id,
+                'letter_number' => $locked->letter_number,
+                'actor_role' => $actor->role,
+                'action' => $action->value,
+            ];
 
-            // Data tambahan anggota (gelar, akta, kelainan) dari form layanan.
-            $touched = $this->applyMemberDetails($locked, $actor, $touched);
+            // $touched: daftar [warga, perubahan] untuk ringkasan & notifikasi.
+            [$result, $touched] = $this->auditContext->with($audit, function () use ($action, $locked, $actor, $values, $subjectNik, $newFamilyNumber, $notes): array {
+                [$result, $touched] = match ($action) {
+                    LetterDataAction::UpdateCitizen, LetterDataAction::CreateCitizen => $this->singleCitizen(
+                        $action,
+                        $action === LetterDataAction::UpdateCitizen
+                            ? $this->updateCitizen($locked, $actor, $this->finalValues($locked, $values), $subjectNik)
+                            : $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
+                    ),
+                    LetterDataAction::DeactivateMembers => $this->deactivateMembers($locked, $actor, $notes),
+                    LetterDataAction::UpdateMembers => $this->updateMembers($locked, $actor, $values),
+                    LetterDataAction::UpdateCitizens => $this->updateCitizens($locked, $actor),
+                    LetterDataAction::RestructureFamily => $this->restructureFamily($locked, $actor, $newFamilyNumber),
+                    LetterDataAction::AdoptChild => $this->adoptee($locked) !== null
+                        ? $this->adoptChild($locked, $actor)
+                        : $this->singleCitizen(
+                            LetterDataAction::CreateCitizen,
+                            $this->createCitizen($locked, $actor, $this->finalValues($locked, $values), $newFamilyNumber),
+                        ),
+                    LetterDataAction::Manual => [['action' => $action->value, 'notes' => $notes], []],
+                    default => abort(422, 'Jenis surat ini tidak memiliki aksi perubahan data.'),
+                };
+
+                // Data tambahan anggota (gelar, akta, kelainan) dari form layanan.
+                return [$result, $this->applyMemberDetails($locked, $actor, $touched)];
+            }, aggregate: true);
             $changes = $this->describe($touched);
 
             if ($dryRun) {
@@ -288,30 +303,6 @@ class LetterFulfillmentService
                     : 'Perubahan data kependudukan diterapkan')
                     .($locked->isApplicant($actor) ? ' oleh pemohon sendiri' : ''),
             ]);
-
-            // Perubahan manual tercatat sendiri saat Kasi/Kaur mengedit data warga.
-            foreach ($touched as [$citizen, $changes]) {
-                activity('citizen')
-                    ->performedOn($citizen)
-                    ->causedBy($actor)
-                    ->event('letter_fulfilled')
-                    ->withProperties([
-                        // Scoping halaman Log Aktivitas (S-05).
-                        'village_id' => $citizen->village_id,
-                        'subject_label' => $citizen->name,
-                        'letter_id' => $locked->id,
-                        'letter_number' => $locked->letter_number,
-                        'actor_role' => $actor->role,
-                        'action' => $action->value,
-                        'citizen_id' => $citizen->id,
-                        // Nomor akta dan jenis cacat (terenkripsi) disamarkan seperti NIK.
-                        'changes' => array_map(
-                            fn (array $change): array => ['old' => PopulationAuditService::REDACTED, 'new' => PopulationAuditService::REDACTED],
-                            array_intersect_key($changes, array_flip(CitizenDocumentRules::ENCRYPTED)),
-                        ) + $changes,
-                    ])
-                    ->log('Data kependudukan diubah berdasarkan surat');
-            }
 
             // Anak angkat pindah dari KK lain: kepala KK asalnya diberi tahu.
             if ($action === LetterDataAction::AdoptChild) {
@@ -480,8 +471,7 @@ class LetterFulfillmentService
                 $changes['account_is_active'] = ['old' => true, 'new' => false];
             }
 
-            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-            $citizen = $this->citizenService->update($citizen, ['is_active' => false], $actor, audit: false);
+            $citizen = $this->citizenService->update($citizen, ['is_active' => false], $actor);
             $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
             $touched[] = [$citizen, $changes];
         }
@@ -495,7 +485,7 @@ class LetterFulfillmentService
 
         if ($head !== null && $head->is_active && $head->family_role?->value !== FamilyRole::KEPALA_KELUARGA->value) {
             $changes = ['family_role' => ['old' => $head->family_role?->value, 'new' => FamilyRole::KEPALA_KELUARGA->value]];
-            $head = $this->citizenService->update($head, ['family_role' => FamilyRole::KEPALA_KELUARGA->value], $actor, audit: false);
+            $head = $this->citizenService->update($head, ['family_role' => FamilyRole::KEPALA_KELUARGA->value], $actor);
             $members[] = ['citizen_id' => $head->id, 'name' => $head->name, 'changes' => $changes];
             $touched[] = [$head, $changes];
         }
@@ -638,8 +628,7 @@ class LetterFulfillmentService
                 }
             }
 
-            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $citizen = $this->citizenService->update($citizen, $validated, $actor);
             $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
             $touched[] = [$citizen, $changes];
         }
@@ -837,8 +826,7 @@ class LetterFulfillmentService
             }
         }
 
-        // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-        $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+        $citizen = $this->citizenService->update($citizen, $validated, $actor);
 
         return [$citizen, $changes];
     }
@@ -880,7 +868,7 @@ class LetterFulfillmentService
         $rules = Arr::only($this->createRules(), [...$allowed, 'nik', 'name', 'date_of_birth', 'gender', 'address', 'rt_id']);
         $validated = $this->validate($final, $rules);
 
-        $citizen = $this->citizenService->create($validated, $actor, auditSource: null);
+        $citizen = $this->citizenService->create($validated, $actor);
 
         $changes = [];
         foreach ($validated as $column => $value) {
@@ -1058,8 +1046,7 @@ class LetterFulfillmentService
                 }
             }
 
-            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $citizen = $this->citizenService->update($citizen, $validated, $actor);
             $members[] = ['citizen_id' => $citizen->id, 'name' => $citizen->name, 'changes' => $changes];
             $touched[] = [$citizen, $changes];
         }
@@ -1164,8 +1151,7 @@ class LetterFulfillmentService
                 }
             }
 
-            // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $citizen = $this->citizenService->update($citizen, $validated, $actor);
             $touched[] = [$citizen, $changes];
         };
 
@@ -1297,7 +1283,7 @@ class LetterFulfillmentService
                 continue;
             }
 
-            $citizen = $this->citizenService->update($citizen, $validated, $actor, audit: false);
+            $citizen = $this->citizenService->update($citizen, $validated, $actor);
             $index = collect($touched)->search(fn (array $entry): bool => $entry[0]->id === $citizen->id);
 
             if ($index === false) {
@@ -1599,8 +1585,7 @@ class LetterFulfillmentService
             }
         }
 
-        // Dicatat sebagai `letter_fulfilled` di apply(); jangan dobel.
-        $child = $this->citizenService->update($child, $validated, $actor, audit: false);
+        $child = $this->citizenService->update($child, $validated, $actor);
 
         return [[
             'action' => LetterDataAction::AdoptChild->value,

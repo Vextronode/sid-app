@@ -1,3 +1,5 @@
+import type { UserRole } from '@/types'
+
 // Tujuan link yang dipakai beranda. Simpan semua route di sini supaya
 // komponen tidak menulis string path sendiri-sendiri.
 
@@ -36,3 +38,14 @@ export const SECTION_KONTAK = 'kontak'
 export const HAL_KEBIJAKAN_PRIVASI = '/kebijakan-privasi'
 export const HAL_AKSESIBILITAS = '/aksesibilitas'
 export const HAL_PPID = '/ppid'
+
+// Manajemen Akun (Staf SIDUTama, RT, RW, Kepala Dusun). Section yang dibuka
+// dipilih lewat ?bagian=: akun (khusus Staf), aktivasi, atau foto.
+export const ACCOUNT_SECTION_PARAM = 'bagian'
+export type AccountSection = 'akun' | 'aktivasi' | 'foto'
+export const HAL_MANAJEMEN_AKUN: Partial<Record<UserRole, string>> = {
+  rt: '/admin/rt/manajemen-akun',
+  rw: '/admin/rw/manajemen-akun',
+  kadus: '/admin/kadus/manajemen-akun',
+  staf_sid: '/admin/manajemen-user',
+}

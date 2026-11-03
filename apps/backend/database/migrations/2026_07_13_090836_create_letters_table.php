@@ -29,7 +29,9 @@ return new class extends Migration
             $table->string('applicant_nik_hash', 64)->index();
             $table->text('applicant_address')->nullable();
             $table->text('purpose')->nullable();
-            $table->json('payload')->nullable();
+            // Isian form terenkripsi (cast `encrypted:array`): `text`, karena
+            // kolom json PostgreSQL menolak ciphertext yang bukan JSON.
+            $table->text('payload')->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', [
                 'pending',

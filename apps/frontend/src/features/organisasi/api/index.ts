@@ -3,6 +3,7 @@ import type { Id, ResourceResponse } from '@/types'
 import type {
   AddOrgMemberPayload,
   EndOrgMemberPayload,
+  OrgCitizen,
   OrgMember,
   OrgPosition,
   UpdateOrgMemberPayload,
@@ -14,6 +15,16 @@ export function getPositions(orgType?: string) {
   return api.get<ResourceResponse<OrgPosition[]>>('/api/village-org-positions', {
     params: orgType ? { org_type: orgType } : {},
   })
+}
+
+// Nama warga desa pemilik NIK; 404 bila NIK tidak ada di desa ini.
+export async function lookupOrgCitizen(nik: string) {
+  const response = await api.get<ResourceResponse<OrgCitizen>>(
+    '/api/village-org-positions/citizen-lookup',
+    { params: { nik } },
+  )
+
+  return response.data.data
 }
 
 // Mengisi slot. Untuk Ketua/Wakil, pemegang lama otomatis diakhiri
@@ -32,7 +43,8 @@ export function updateMember(positionId: Id, memberId: Id, payload: UpdateOrgMem
   )
 }
 
-// Mengosongkan slot Ketua/Wakil, opsional menurunkan jadi Anggota (to_member).
+// Mengosongkan slot Ketua/Wakil (opsional menurunkan jadi Anggota lewat
+// to_member) atau mengakhiri keanggotaan. Riwayat tidak dapat dihapus.
 export function endMember(positionId: Id, memberId: Id, payload: EndOrgMemberPayload) {
   return api.post<ResourceResponse<OrgMember>>(
     `/api/village-org-positions/${positionId}/members/${memberId}/end`,
@@ -56,8 +68,4 @@ export function uploadMemberPhoto(positionId: Id, memberId: Id, file: File) {
 
 export function deleteMemberPhoto(positionId: Id, memberId: Id) {
   return api.delete(`/api/village-org-positions/${positionId}/members/${memberId}/photo`)
-}
-
-export function deleteMember(positionId: Id, memberId: Id) {
-  return api.delete(`/api/village-org-positions/${positionId}/members/${memberId}`)
 }

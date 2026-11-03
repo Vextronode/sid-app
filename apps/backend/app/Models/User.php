@@ -83,6 +83,12 @@ class User extends Authenticatable
         return $this->hasMany(Official::class);
     }
 
+    /** Riwayat pendaftaran online akun ini (aktivasi oleh petugas wilayah). */
+    public function accountRegistrations(): HasMany
+    {
+        return $this->hasMany(AccountRegistration::class);
+    }
+
     public function news()
     {
         return $this->hasMany(News::class);

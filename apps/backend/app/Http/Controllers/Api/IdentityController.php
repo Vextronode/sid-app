@@ -34,4 +34,14 @@ class IdentityController extends Controller
     {
         return response()->json(['data' => $this->identityRevealService->letterApplicant($request->user(), $letter)]);
     }
+
+    /**
+     * ?path= mengikuti `masked_payload_paths` di LetterResource.
+     */
+    public function letterPayload(Request $request, Letter $letter): JsonResponse
+    {
+        $path = (string) $request->validate(['path' => ['required', 'string', 'max:200']])['path'];
+
+        return response()->json(['data' => $this->identityRevealService->letterPayload($request->user(), $letter, $path)]);
+    }
 }

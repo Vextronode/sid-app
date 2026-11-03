@@ -103,7 +103,7 @@ const KadesListPage = lazy(() => import('@/pages/admin/KadesListPage'))
 // are restricted according to their backend capabilities.
 const OperatorDesaDashboardPage = lazy(() => import('@/pages/admin/OperatorDesaDashboardPage'))
 const DataWargaAccessPage = lazy(() => import('@/pages/admin/DataWargaAccessPage'))
-const ManajemenUserPage = lazy(() => import('@/pages/admin/ManajemenUserPage'))
+const ManajemenAkunPage = lazy(() => import('@/pages/admin/ManajemenAkunPage'))
 const PengajuanResetPage = lazy(() => import('@/pages/admin/PengajuanResetPage'))
 const KelolaBeritaPage = lazy(() => import('@/pages/admin/KelolaBeritaPage'))
 const KelolaProfilDesaPage = lazy(() => import('@/pages/admin/KelolaProfilDesaPage'))
@@ -321,6 +321,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/rt/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['rt']}>
+                    <ManajemenAkunPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/rt/surat"
                 element={
                   <ProtectedRoute allowedRoles={['rt']}>
@@ -339,6 +347,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/rw/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['rw']}>
+                    <ManajemenAkunPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/rw/surat"
                 element={
                   <ProtectedRoute allowedRoles={['rw']}>
@@ -353,6 +369,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={['kadus']}>
                     <KadusDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kadus/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['kadus']}>
+                    <ManajemenAkunPage />
                   </ProtectedRoute>
                 }
               />
@@ -428,7 +452,7 @@ export default function App() {
                 path="/admin/manajemen-user"
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
-                    <ManajemenUserPage />
+                    <ManajemenAkunPage />
                   </ProtectedRoute>
                 }
               />

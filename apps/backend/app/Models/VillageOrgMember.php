@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Pemegang jabatan organisasi desa (BPD, LPM, Karang Taruna, PKK). Satu
+ * baris per masa jabatan; baris yang berakhir (is_active=false, ended_at)
+ * adalah riwayat dan tidak dapat diubah maupun dihapus.
+ */
 class VillageOrgMember extends Model
 {
     /** @use HasFactory<VillageOrgMemberFactory> */
@@ -14,6 +19,7 @@ class VillageOrgMember extends Model
 
     protected $fillable = [
         'position_id',
+        'citizen_id',
         'member_name',
         'photo_img',
         'phone_wa',
@@ -32,5 +38,10 @@ class VillageOrgMember extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(VillageOrgPosition::class, 'position_id');
+    }
+
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(Citizen::class);
     }
 }

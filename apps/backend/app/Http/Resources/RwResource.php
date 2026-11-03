@@ -17,8 +17,8 @@ class RwResource extends JsonResource
         return [
             'id' => $this->id,
             'hamlet_id' => $this->hamlet_id,
+            'hamlet' => new HamletResource($this->whenLoaded('hamlet')),
             'number' => $this->number,
-            'full_label' => $this->full_label,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

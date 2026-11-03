@@ -17,9 +17,9 @@ const RWS = partialFixture<WilayahRw[]>([
 ])
 
 const RTS = [
-  { id: 100, number: '01', rwId: 10, fullLabel: 'RT 001', isActive: true },
-  { id: 101, number: '02', rwId: 11, fullLabel: 'RT 002', isActive: true },
-  { id: 200, number: '03', rwId: 20, fullLabel: 'RT 003', isActive: true },
+  { id: 100, number: '01', rwId: 10, isActive: true },
+  { id: 101, number: '02', rwId: 11, isActive: true },
+  { id: 200, number: '03', rwId: 20, isActive: true },
 ]
 
 function renderTable() {

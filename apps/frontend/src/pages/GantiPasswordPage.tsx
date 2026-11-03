@@ -154,7 +154,7 @@ export default function GantiPasswordPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-[#163e6b] text-white rounded-lg py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#163e6b] text-white rounded-(--sid-radius-button) py-3 text-sm font-medium hover:bg-[#0e2a4a] flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? 'Menyimpan...' : 'Simpan Kata Sandi Baru'} <KeyRound size={16} />
           </button>

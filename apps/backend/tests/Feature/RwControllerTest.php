@@ -30,8 +30,7 @@ class RwControllerTest extends TestCase
 
         $this->actingAs($user)
             ->postJson('/api/rws', ['hamlet_id' => $hamlet->id, 'number' => '001'])
-            ->assertCreated()
-            ->assertJsonPath('data.full_label', 'RW 001');
+            ->assertCreated();
 
         $rw = Rw::firstWhere('hamlet_id', $hamlet->id);
 
@@ -42,8 +41,7 @@ class RwControllerTest extends TestCase
 
         $this->actingAs($user)
             ->patchJson("/api/rws/{$rw->id}", ['number' => '002'])
-            ->assertOk()
-            ->assertJsonPath('data.full_label', 'RW 002');
+            ->assertOk();
 
         $this->actingAs($user)
             ->deleteJson("/api/rws/{$rw->id}")
@@ -68,7 +66,7 @@ class RwControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         $this->actingAs($user)
             ->postJson('/api/rws', ['hamlet_id' => $hamlet->id, 'number' => '001'])
@@ -81,7 +79,7 @@ class RwControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
-        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'full_label' => 'RW 001', 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
         Citizen::create([
             'village_id' => $village->id,

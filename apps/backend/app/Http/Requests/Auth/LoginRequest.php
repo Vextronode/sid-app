@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Services\AccountActivationService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -70,10 +71,13 @@ class LoginRequest extends FormRequest
         }
 
         if (! Auth::user()->is_active) {
+            // Akun hasil pendaftaran online: menunggu aktivasi, ditolak, atau diblokir.
+            $message = app(AccountActivationService::class)->loginBlockMessage(Auth::user());
+
             Auth::guard('web')->logout();
             RateLimiter::clear($this->throttleKey());
 
-            abort(403, 'Akun tidak aktif, hubungi administrator');
+            abort(403, $message ?? 'Akun tidak aktif, hubungi administrator');
         }
 
         RateLimiter::clear($this->throttleKey());

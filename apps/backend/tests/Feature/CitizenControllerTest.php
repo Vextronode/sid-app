@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Citizen;
+use App\Models\Hamlet;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -28,6 +31,21 @@ class CitizenControllerTest extends TestCase
                     '*' => ['id', 'name', 'nik_masked', 'village', 'rt', 'rw', 'hamlet'],
                 ],
             ]);
+    }
+
+    public function test_index_includes_the_hamlet_of_the_citizen_rw(): void
+    {
+        $user = User::factory()->create(['role' => 'staf_sid']);
+        $hamlet = Hamlet::factory()->create(['name' => 'Dusun Patrol']);
+        $rw = Rw::factory()->create(['hamlet_id' => $hamlet->id, 'village_id' => $hamlet->village_id]);
+        $rt = Rt::factory()->create(['rw_id' => $rw->id, 'village_id' => $hamlet->village_id]);
+        // hamlet_id warga kosong: dusun tetap terbaca dari RW-nya.
+        Citizen::factory()->create(['village_id' => $hamlet->village_id, 'rt_id' => $rt->id, 'hamlet_id' => null]);
+
+        $this->actingAs($user)
+            ->getJson('/api/citizens')
+            ->assertOk()
+            ->assertJsonPath('data.0.rw.hamlet.name', 'Dusun Patrol');
     }
 
     public function test_index_is_paginated_with_meta(): void

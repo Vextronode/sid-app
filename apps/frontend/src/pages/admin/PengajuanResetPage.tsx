@@ -163,7 +163,7 @@ export default function PengajuanResetPage() {
 
             <p>
               Tinjau pengajuan reset kata sandi dari pemilik akun. Reset juga dapat dilakukan
-              langsung di Manajemen Pengguna.
+              langsung di Manajemen Akun.
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function PengajuanResetPage() {
               <h3>Reset Kata Sandi</h3>
               <p>
                 Bila disetujui, pemilik akun dapat membuat kata sandi baru sendiri dalam 24 jam.
-                Reset juga dapat dilakukan langsung di Manajemen Pengguna.
+                Reset juga dapat dilakukan langsung di Manajemen Akun.
               </p>
             </div>
           </div>

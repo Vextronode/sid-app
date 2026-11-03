@@ -48,7 +48,7 @@ describe('OperatorDesaLayout role regression', () => {
       // Kasi/Kaur boleh melihat data penduduk (khusus-baca), tetapi tidak
       // mendapat menu pengelolaan milik Staf SIDUTama.
       expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Manajemen Akun' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Alur & Jenis Surat' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Log Aktivitas' })).toBeNull()

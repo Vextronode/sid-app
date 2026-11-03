@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\LetterNumberCounter;
 use App\Models\LetterType;
 use App\Models\Village;
 use App\Repositories\LetterNumberCounterRepository;
@@ -31,6 +32,24 @@ class LetterNumberCounterRepositoryTest extends TestCase
             $this->assertSame(1, $this->repository->nextNumber($village->id, '470', 2026));
             $this->assertSame(2, $this->repository->nextNumber($village->id, '470', 2026));
         });
+    }
+
+    public function test_next_number_continues_from_an_existing_counter_row(): void
+    {
+        $village = Village::factory()->create();
+        LetterNumberCounter::query()->create([
+            'village_id' => $village->id,
+            'classification_code' => '470',
+            'year' => 2026,
+            'last_number' => 41,
+        ]);
+
+        DB::transaction(function () use ($village) {
+            $this->assertSame(42, $this->repository->nextNumber($village->id, '470', 2026));
+            $this->assertSame(43, $this->repository->nextNumber($village->id, '470', 2026));
+        });
+
+        $this->assertSame(1, LetterNumberCounter::query()->count());
     }
 
     public function test_next_number_keeps_ranges_separate_per_year_and_classification(): void

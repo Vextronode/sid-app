@@ -208,7 +208,9 @@ export function useLoginForm() {
       // ==========================================
       // ACCOUNT INACTIVE
       // Backend:
-      // abort(403, 'Akun tidak aktif, hubungi administrator')
+      // abort(403, 'Akun tidak aktif, hubungi administrator'), atau pesan
+      // aktivasi pendaftaran: menunggu petugas, ditolak (beserta catatan),
+      // atau diblokir setelah ditolak 3 kali.
       // ==========================================
 
       if (status === 403) {

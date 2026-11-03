@@ -252,7 +252,7 @@ export default function ApprovalSettingPage() {
                     type="button"
                     onClick={() => handleSave(setting)}
                     disabled={savingId === setting.id}
-                    className="sid-button-primary inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60"
+                    className="sid-button-primary inline-flex items-center justify-center gap-2 rounded-(--sid-radius-button) px-4 py-2 text-sm font-medium disabled:opacity-60"
                   >
                     <Save size={16} />
 

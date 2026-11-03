@@ -52,11 +52,10 @@ class RwRepositoryTest extends TestCase
             'hamlet_id' => $hamlet->id,
             'village_id' => $hamlet->village_id,
             'number' => '001',
-            'full_label' => 'RW 001',
             'is_active' => true,
         ]);
 
-        $this->assertDatabaseHas('rws', ['id' => $rw->id, 'full_label' => 'RW 001']);
+        $this->assertDatabaseHas('rws', ['id' => $rw->id]);
     }
 
     public function test_find_or_fail_returns_rw(): void

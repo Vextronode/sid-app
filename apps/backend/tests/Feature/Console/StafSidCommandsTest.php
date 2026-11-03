@@ -72,7 +72,7 @@ class StafSidCommandsTest extends TestCase
         $this->assertSame('manual_input_desa', $citizen->data_source->value);
         $user = User::query()->where('citizen_id', $citizen->id)->firstOrFail();
         $this->assertSame('staf_sid', $user->role);
-        $this->assertMatchesRegularExpression('/^budi\.\d{4,5}$/', $user->username);
+        $this->assertSame('budi.santoso', $user->username);
         $this->assertTrue($user->must_change_password);
         $this->assertNotSame('3201010101010001', $citizen->getRawOriginal('nik'));
         $this->assertDatabaseHas('officials', [

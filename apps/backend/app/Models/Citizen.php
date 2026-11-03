@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedBoolean;
+use App\Casts\EncryptedDate;
 use App\Enums\BloodType;
 use App\Enums\DataSource;
 use App\Enums\DomicileStatus;
@@ -63,16 +65,27 @@ class Citizen extends Model
         'is_active',
     ];
 
+    /**
+     * Data pribadi disimpan terenkripsi (kolom `text`) sehingga tidak bisa
+     * dipakai di WHERE/ORDER BY; pengurutan menurut umur dilakukan di PHP.
+     * Kolom yang tetap plaintext (nama, jenis kelamin, enum bernilai
+     * sedikit, relasi wilayah) dibutuhkan untuk pencarian dan statistik.
+     */
     protected $casts = [
         'nik' => 'encrypted',
         'birth_certificate_number' => 'encrypted',
         'marriage_certificate_number' => 'encrypted',
         'divorce_certificate_number' => 'encrypted',
         'disability' => 'encrypted',
-        'date_of_birth' => 'date',
-        'marriage_date' => 'date',
-        'divorce_date' => 'date',
-        'has_disorder' => 'boolean',
+        'place_of_birth' => 'encrypted',
+        'address' => 'encrypted',
+        'father_name_text' => 'encrypted',
+        'mother_name_text' => 'encrypted',
+        'current_domicile' => 'encrypted',
+        'date_of_birth' => EncryptedDate::class,
+        'marriage_date' => EncryptedDate::class,
+        'divorce_date' => EncryptedDate::class,
+        'has_disorder' => EncryptedBoolean::class,
         'is_active' => 'boolean',
         'blood_type' => BloodType::class,
         'religion' => Religion::class,
@@ -91,6 +104,9 @@ class Citizen extends Model
             if ($citizen->isDirty('nik')) {
                 $citizen->nik_hash = hash('sha256', $citizen->nik);
             }
+
+            // Kolom terenkripsi tidak punya default di database.
+            $citizen->has_disorder ??= false;
 
             // Jenis cacat hanya tercatat bila ada kelainan fisik & mental.
             if (! $citizen->has_disorder) {

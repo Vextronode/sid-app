@@ -30,24 +30,25 @@ class RtServiceTest extends TestCase
         );
     }
 
-    public function test_create_generates_full_label_using_rw_number(): void
+    public function test_create_stores_the_number_under_the_rw(): void
     {
         $rw = Rw::factory()->create(['number' => '007']);
 
         $rt = $this->service->create(['rw_id' => $rw->id, 'number' => '003'], $this->makeStafSidActor($rw->village_id));
 
-        $this->assertSame('RT 003 / RW 007', $rt->full_label);
+        $this->assertSame('003', $rt->number);
+        $this->assertSame($rw->id, $rt->rw_id);
         $this->assertTrue($rt->is_active);
     }
 
-    public function test_update_regenerates_full_label_when_number_changes(): void
+    public function test_update_changes_the_number(): void
     {
         $rw = Rw::factory()->create(['number' => '001']);
-        $rt = Rt::factory()->create(['rw_id' => $rw->id, 'number' => '001', 'full_label' => 'RT 001 / RW 001']);
+        $rt = Rt::factory()->create(['rw_id' => $rw->id, 'number' => '001']);
 
         $updated = $this->service->update($rt, ['number' => '005'], $this->makeStafSidActor($rt->village_id));
 
-        $this->assertSame('RT 005 / RW 001', $updated->full_label);
+        $this->assertSame('005', $updated->number);
     }
 
     public function test_update_blocks_deactivation_when_active_citizens_exist(): void

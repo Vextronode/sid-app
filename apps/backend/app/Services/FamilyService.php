@@ -10,14 +10,17 @@ use App\Models\User;
 use App\Repositories\FamilyRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FamilyService
 {
+    private const DUPLICATE_NO_KK_MESSAGE = 'No KK sudah ada dalam database.';
+
+    /** Log Aktivitas (S-05) ditulis PopulationAuditObserver. */
     public function __construct(
         protected FamilyRepository $familyRepository,
-        protected PopulationAuditService $audit,
     ) {}
 
     public function paginateWithWilayah(User $user, array $filters = []): LengthAwarePaginator
@@ -46,8 +49,8 @@ class FamilyService
         $this->guardRelatedRegions($data, $user);
         $this->guardDuplicateNoKk($data['no_kk']);
 
-        return DB::transaction(function () use ($data, $user) {
-            $family = $this->familyRepository->create([
+        try {
+            return DB::transaction(fn () => $this->familyRepository->create([
                 'village_id' => $user->village_id,
                 'no_kk' => $data['no_kk'],
                 'family_address' => $data['family_address'],
@@ -55,12 +58,21 @@ class FamilyService
                 'rt_id' => $data['rt_id'] ?? null,
                 'rw_id' => $data['rw_id'] ?? null,
                 'hamlet_id' => $data['hamlet_id'] ?? null,
-            ]);
+            ]));
+        } catch (UniqueConstraintViolationException $exception) {
+            // Dua KK dengan No KK sama yang dibuat bersamaan sama-sama lolos
+            // guard di atas; yang kalah dijawab 422, bukan 500. Dikenali dari
+            // nama index (PostgreSQL) atau kolomnya (SQLite).
+            $isDuplicateNoKk = $exception->index !== null
+                ? $exception->index === 'families_no_kk_hash_unique'
+                : $exception->columns === ['no_kk_hash'];
 
-            $this->audit->created($family, $user);
+            if ($isDuplicateNoKk) {
+                throw ValidationException::withMessages(['no_kk' => [self::DUPLICATE_NO_KK_MESSAGE]]);
+            }
 
-            return $family;
-        });
+            throw $exception;
+        }
     }
 
     public function update(Family $family, array $data, User $user): Family
@@ -71,13 +83,8 @@ class FamilyService
         // NIK di citizens) — abaikan meski terkirim di payload.
         unset($data['no_kk'], $data['no_kk_hash']);
 
-        return DB::transaction(function () use ($family, $data, $user) {
-            $before = clone $family;
-            $family = $this->familyRepository->update($family, $data);
-            $this->audit->updated($before, $family, $user);
-
-            return $family;
-        });
+        // Transaksi: data dan Log Aktivitas dari observer tersimpan bersama.
+        return DB::transaction(fn () => $this->familyRepository->update($family, $data));
     }
 
     public function delete(Family $family, User $user): bool
@@ -87,11 +94,7 @@ class FamilyService
             abort(409, 'Kartu Keluarga tidak bisa dihapus karena masih memiliki anggota terdaftar.');
         }
 
-        return DB::transaction(function () use ($family, $user) {
-            $this->audit->deleted($family, $user);
-
-            return $this->familyRepository->delete($family);
-        });
+        return DB::transaction(fn () => $this->familyRepository->delete($family));
     }
 
     private function villageId(User $user): string
@@ -127,7 +130,7 @@ class FamilyService
 
         if ($this->familyRepository->findByNoKkHash($hash)) {
             throw ValidationException::withMessages([
-                'no_kk' => ['No KK sudah ada dalam database.'],
+                'no_kk' => [self::DUPLICATE_NO_KK_MESSAGE],
             ]);
         }
     }

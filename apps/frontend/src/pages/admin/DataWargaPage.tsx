@@ -21,6 +21,9 @@ import { useWargaList } from '../../features/data-warga/hooks/useWargaList'
 import { useFamilyList } from '../../features/data-warga/hooks/useFamilyList'
 import FamilyManagementPanel from '../../features/data-warga/components/FamilyManagementPanel'
 import { WilayahFilterSelects } from '../../features/data-warga/components/WilayahFilterSelects'
+import { WilayahCascadeFields } from '@/features/kelola-wilayah/components/WilayahCascadeFields'
+import { EMPTY_WILAYAH_CASCADE } from '@/features/kelola-wilayah/hooks/useWilayahCascade'
+import type { WilayahCascadeValue } from '@/features/kelola-wilayah/hooks/useWilayahCascade'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getOccupations } from '../../features/pekerjaan/api'
 import { PageNumbers } from '@/components/ui/PageNumbers'
@@ -73,7 +76,7 @@ const labelStyle = {
 const inputStyle = {
   width: '100%',
   padding: '8px 12px',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: 'var(--sid-radius-control)',
   border: '1px solid var(--sid-border)',
   background: 'var(--sid-surface-card)',
   color: 'var(--sid-text-primary)',
@@ -121,7 +124,6 @@ export default function DataWargaPage() {
     hamletOptions,
     rwOptions,
     rtOptions,
-    wilayahOptions,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -146,6 +148,8 @@ export default function DataWargaPage() {
   const [formData, setFormData] = useState<CitizenForm>(EMPTY_CITIZEN_FORM)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  // Dusun dan RW hanya penyaring pilihan RT; yang dikirim tetap rt_id.
+  const [formArea, setFormArea] = useState<WilayahCascadeValue>(EMPTY_WILAYAH_CASCADE)
 
   // Katalog pekerjaan untuk pilihan di form warga. Yang nonaktif ikut
   // dimuat agar pekerjaan lama warga tetap tampil saat diedit.
@@ -189,10 +193,8 @@ export default function DataWargaPage() {
 
   const handleOpenAddModal = () => {
     setEditingCitizen(null)
-    openForm({
-      ...EMPTY_CITIZEN_FORM,
-      rt_id: wilayahOptions[0]?.id ? String(wilayahOptions[0].id) : '',
-    })
+    openForm(EMPTY_CITIZEN_FORM)
+    setFormArea(EMPTY_WILAYAH_CASCADE)
     setFormError(null)
     setIsFormModalOpen(true)
   }
@@ -200,6 +202,11 @@ export default function DataWargaPage() {
   const handleOpenEditModal = (warga: Citizen) => {
     setEditingCitizen(warga)
     openForm(citizenToForm(warga))
+    setFormArea({
+      hamletId: String(warga.rw?.hamlet_id ?? warga.hamlet_id ?? ''),
+      rwId: warga.rw_id ? String(warga.rw_id) : '',
+      rtId: warga.rt_id ? String(warga.rt_id) : '',
+    })
     setFormError(null)
     setIsFormModalOpen(true)
   }
@@ -477,6 +484,7 @@ export default function DataWargaPage() {
                     <tr>
                       <th>Nama</th>
                       <th className="center">NIK</th>
+                      <th className="center">Dusun</th>
                       <th className="center">RT/RW</th>
                       <th className="center">Jenis Kelamin</th>
                       <th className="center">Status Domisili</th>
@@ -489,19 +497,19 @@ export default function DataWargaPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={9} className="empty sid-admin-error">
+                        <td colSpan={10} className="empty sid-admin-error">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Belum ada data warga.
                         </td>
                       </tr>
@@ -516,7 +524,12 @@ export default function DataWargaPage() {
                             />
                           </td>
                           <td className="center">
-                            RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
+                            {/* Dusun dari RW warga; sama dengan filter Dusun di atas. */}
+                            {warga.rw?.hamlet?.name ?? warga.hamlet?.name ?? '-'}
+                          </td>
+                          <td className="center sid-nowrap">
+                            {/* Judul kolom sudah "RT/RW": cukup nomornya, satu baris. */}
+                            {warga.rt?.number ?? '-'}/{warga.rw?.number ?? '-'}
                           </td>
                           <td className="center">
                             {warga.gender === 'L'
@@ -533,7 +546,10 @@ export default function DataWargaPage() {
                             {labelOf(FAMILY_ROLE_LABELS, warga.family_role)}
                           </td>
                           <td className="center">
-                            {labelOf(SYNC_STATUS_LABELS, warga.sync_status)}
+                            {/* "-" hanya bila status sinkronisasi dan sumber data kosong. */}
+                            {warga.sync_status
+                              ? labelOf(SYNC_STATUS_LABELS, warga.sync_status)
+                              : !warga.data_source && '-'}
                             {warga.data_source && (
                               <small className="sid-admin-cell-meta">
                                 {labelOf(DATA_SOURCE_LABELS, warga.data_source)}
@@ -1051,21 +1067,26 @@ export default function DataWargaPage() {
                 />
               </div>
 
-              <div>
-                <label style={labelStyle}>Wilayah RT / RW</label>
-                <select
+              <div className="grid gap-3 sm:grid-cols-3">
+                <WilayahCascadeFields
+                  depth="rt"
+                  idPrefix="warga-wilayah"
                   required
-                  value={formData.rt_id}
-                  onChange={(e) => setFormData({ ...formData, rt_id: e.target.value })}
-                  style={inputStyle}
-                >
-                  <option value="">Pilih RT/RW</option>
-                  {wilayahOptions.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
+                  value={formArea}
+                  onChange={(area) => {
+                    setFormArea(area)
+                    setFormData({ ...formData, rt_id: area.rtId })
+                  }}
+                  selectStyle={inputStyle}
+                  renderField={({ id, label, control }) => (
+                    <div key={id}>
+                      <label htmlFor={id} style={labelStyle}>
+                        {label}
+                      </label>
+                      {control}
+                    </div>
+                  )}
+                />
               </div>
 
               {formError && (

@@ -7,6 +7,7 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\User;
+use App\Support\LetterIdentityMask;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Gate;
  * (tombol "lihat" di UI). Yang boleh melihat:
  *  - Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum: warga dan KK desanya;
  *  - warga: dirinya dan anggota KK-nya sendiri;
- *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu.
+ *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu dan
+ *    NIK/No. KK pihak lain di isian surat itu.
  * Setiap pembukaan data orang lain dicatat di Log Aktivitas.
  */
 class IdentityRevealService
@@ -75,6 +77,34 @@ class IdentityRevealService
         return ['nik' => $letter->applicant_nik];
     }
 
+    /**
+     * NIK / No. KK pihak lain di isian surat (ayah/ibu, saksi, anggota KK,
+     * dst.) yang di API tampil tersamar (LetterIdentityMask). Boleh dibuka
+     * siapa pun yang boleh melihat surat itu; selain pemohon, tercatat.
+     *
+     * @param  string  $path  path isian, mis. `nik_ayah` atau `kk_pendaftaran.1.nik`
+     * @return array{value: string}
+     */
+    public function letterPayload(User $actor, Letter $letter, string $path): array
+    {
+        Gate::forUser($actor)->authorize('view', $letter);
+
+        $value = LetterIdentityMask::valueAt($letter->payload, $path);
+
+        if ($value === null) {
+            abort(404, 'Isian NIK/No. KK ini tidak ditemukan pada surat.');
+        }
+
+        if (! $letter->isSubmittedBy($actor)) {
+            $label = collect($letter->letterType?->form_fields ?? [])
+                ->firstWhere('name', explode('.', $path)[0])['label'] ?? $path;
+
+            $this->log($actor, $letter, $letter->village_id, (string) $letter->applicant_name, "NIK/No. KK isian surat ({$label})", ['path' => $path]);
+        }
+
+        return ['value' => $value];
+    }
+
     private function managesPopulation(User $actor, ?string $villageId): bool
     {
         return $actor->is_active
@@ -83,7 +113,10 @@ class IdentityRevealService
             && in_array(UserRole::tryFrom((string) $actor->role), self::POPULATION_ROLES, true);
     }
 
-    private function log(User $actor, object $subject, ?string $villageId, string $label, string $field): void
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    private function log(User $actor, object $subject, ?string $villageId, string $label, string $field, array $extra = []): void
     {
         activity($subject instanceof Letter ? 'letter' : ($subject instanceof Family ? 'family' : 'citizen'))
             ->performedOn($subject)
@@ -94,6 +127,7 @@ class IdentityRevealService
                 'subject_label' => $label,
                 'actor_role' => $actor->role,
                 'field' => $field,
+                ...$extra,
             ])
             ->log("Melihat {$field}");
     }

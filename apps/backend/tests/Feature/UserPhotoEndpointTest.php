@@ -11,7 +11,8 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Foto profil akun: warga mengelola sendiri, Staf SIDUTama boleh mengganti
+ * Foto profil akun: warga menghapus sendiri (mengganti lewat permintaan,
+ * lihat ProfilePhotoRequestTest), Staf SIDUTama boleh langsung mengganti
  * atau menghapus foto warga. Akun yang sedang menjabat tidak bisa diubah
  * lewat jalur ini (fotonya foto pejabat, dikelola di Pejabat Desa).
  */
@@ -29,28 +30,23 @@ class UserPhotoEndpointTest extends TestCase
     }
 
     #[Test]
-    public function warga_can_upload_replace_and_delete_own_photo(): void
+    public function warga_cannot_upload_directly_but_can_delete_own_photo(): void
     {
-        $warga = User::factory()->create(['role' => 'warga']);
-        $upload = fn (string $name) => $this->actingAs($warga)
-            ->post('/api/profile/photo', ['photo' => UploadedFile::fake()->image($name)], self::JSON);
+        Storage::disk('public')->put('user-photos/lama.jpg', 'x');
+        $warga = User::factory()->create(['role' => 'warga', 'photo_img' => 'user-photos/lama.jpg']);
 
-        $upload('satu.jpg')
-            ->assertOk()
-            ->assertJsonPath('data.photo_url', fn ($url) => str_contains((string) $url, 'user-photos/'));
-        $firstPath = $warga->fresh()->photo_img;
-
-        $upload('dua.png')->assertOk();
-        $secondPath = $warga->fresh()->photo_img;
-        Storage::disk('public')->assertMissing($firstPath);
-        Storage::disk('public')->assertExists($secondPath);
+        // Ganti foto lewat permintaan yang disetujui petugas wilayah.
+        $this->actingAs($warga)
+            ->post('/api/profile/photo', ['photo' => UploadedFile::fake()->image('baru.jpg')], self::JSON)
+            ->assertMethodNotAllowed();
+        $this->assertSame('user-photos/lama.jpg', $warga->fresh()->photo_img);
 
         $this->actingAs($warga)
             ->deleteJson('/api/profile/photo')
             ->assertOk()
             ->assertJsonPath('data.photo_url', null);
         $this->assertNull($warga->fresh()->photo_img);
-        Storage::disk('public')->assertMissing($secondPath);
+        Storage::disk('public')->assertMissing('user-photos/lama.jpg');
     }
 
     #[Test]
@@ -69,27 +65,9 @@ class UserPhotoEndpointTest extends TestCase
     {
         $rt = User::factory()->create(['role' => 'rt']);
 
-        $this->actingAs($rt)
-            ->post('/api/profile/photo', ['photo' => UploadedFile::fake()->image('rt.jpg')], self::JSON)
-            ->assertForbidden();
         $this->actingAs($rt)->deleteJson('/api/profile/photo')->assertForbidden();
 
         $this->assertNull($rt->fresh()->photo_img);
-    }
-
-    #[Test]
-    public function uploading_non_image_fails_validation(): void
-    {
-        $warga = User::factory()->create(['role' => 'warga']);
-
-        $this->actingAs($warga)
-            ->post(
-                '/api/profile/photo',
-                ['photo' => UploadedFile::fake()->create('ktp.pdf', 10, 'application/pdf')],
-                self::JSON,
-            )
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['photo']);
     }
 
     #[Test]
@@ -149,5 +127,19 @@ class UserPhotoEndpointTest extends TestCase
         $this->actingAs($other)
             ->post("/api/users/{$warga->id}/photo", ['photo' => UploadedFile::fake()->image('w.jpg')], self::JSON)
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function petugas_upload_must_be_a_square_photo(): void
+    {
+        $village = Village::factory()->create();
+        $petugas = User::factory()->create(['role' => 'staf_sid', 'village_id' => $village->id]);
+        $warga = User::factory()->create(['role' => 'warga', 'village_id' => $village->id]);
+
+        $this->actingAs($petugas)
+            ->post("/api/users/{$warga->id}/photo", ['photo' => UploadedFile::fake()->image('w.jpg', 1600, 900)], self::JSON)
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.photo.0', 'Foto profil harus persegi (1:1). Potong foto lewat tombol unggah di aplikasi.');
+        $this->assertNull($warga->fresh()->photo_img);
     }
 }

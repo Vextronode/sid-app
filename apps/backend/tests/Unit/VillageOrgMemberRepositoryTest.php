@@ -68,15 +68,6 @@ class VillageOrgMemberRepositoryTest extends TestCase
         $this->assertSame('Baru', $updated->member_name);
     }
 
-    public function test_delete_removes_member(): void
-    {
-        $member = VillageOrgMember::factory()->create();
-
-        $this->repository->delete($member);
-
-        $this->assertDatabaseMissing('village_org_members', ['id' => $member->id]);
-    }
-
     public function test_belongs_to_position_true_and_false(): void
     {
         $positionA = VillageOrgPosition::factory()->create();

@@ -33,7 +33,7 @@ export function ListField({ id, label, hint, items, onChange, disabled }: ListFi
   }
 
   const iconButton =
-    'inline-flex size-10 flex-none items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 hover:border-[#185fa5] hover:text-[#185fa5] disabled:opacity-40'
+    'inline-flex size-10 flex-none items-center justify-center rounded-(--sid-radius-button) border border-gray-300 bg-white text-gray-600 hover:border-[#185fa5] hover:text-[#185fa5] disabled:opacity-40'
 
   return (
     <fieldset className="m-0 flex flex-col gap-2 border-0 p-0" disabled={disabled}>
@@ -94,7 +94,7 @@ export function ListField({ id, label, hint, items, onChange, disabled }: ListFi
       <button
         type="button"
         onClick={add}
-        className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-lg border border-dashed border-gray-400 bg-white px-3.5 text-sm font-semibold text-[#185fa5] hover:border-[#185fa5]"
+        className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-(--sid-radius-button) border border-dashed border-gray-400 bg-white px-3.5 text-sm font-semibold text-[#185fa5] hover:border-[#185fa5]"
       >
         <Plus size={16} aria-hidden="true" />
         Tambah butir

@@ -26,31 +26,28 @@ export default function ProfilePage() {
         ====================================== */}
 
         <div className="sid-profile-card sid-profile-header-card">
-          <div className="sid-profile-user">
-            <ProfilePhoto avatarClassName="sid-profile-avatar" />
+          <ProfilePhoto avatarClassName="sid-profile-avatar" />
 
-            <div className="sid-profile-user-info">
-              <p className="sid-profile-user-name">{user?.name ?? 'Pengguna'}</p>
+          <div className="sid-profile-user-info">
+            <p className="sid-profile-user-name">{user?.name ?? 'Pengguna'}</p>
 
-              <p className="sid-profile-user-email">{user?.email ?? '-'}</p>
-            </div>
+            {/* Warga umumnya tanpa email: tampilkan username untuk masuk. */}
+            <p className="sid-profile-user-email">
+              {user?.email ?? (user?.username ? `@${user.username}` : '-')}
+            </p>
+
+            <span className="sid-profile-verification">
+              <CheckCircle2 size={12} aria-hidden="true" />
+              NIK terverifikasi
+            </span>
           </div>
-
-          {/* STATUS NIK */}
-
-          <div className="sid-profile-verification">
-            <CheckCircle2 size={12} />
-            NIK TERVERIFIKASI
-          </div>
-
-          {/* EDIT */}
 
           <button
             type="button"
             onClick={() => setModalOpen(true)}
             className="sid-profile-edit-button"
           >
-            <Pencil size={14} />
+            <Pencil size={14} aria-hidden="true" />
             Pengaturan Akun
           </button>
         </div>

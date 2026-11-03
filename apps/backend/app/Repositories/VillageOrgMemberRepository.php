@@ -34,8 +34,8 @@ class VillageOrgMemberRepository
 
     /**
      * Mengakhiri masa jabatan anggota lama (dipakai saat rotasi otomatis
-     * untuk jabatan is_single_occupant=true): set ended_at + is_active=false.
-     * Tidak menghapus row — riwayat pemegang jabatan tetap tersimpan.
+     * untuk jabatan is_single_occupant=true) atau keanggotaan: set ended_at +
+     * is_active=false. Baris tidak pernah dihapus; riwayat tetap tersimpan.
      */
     public function endMembership(VillageOrgMember $member, string $endedAt): VillageOrgMember
     {
@@ -54,9 +54,17 @@ class VillageOrgMemberRepository
         return $member;
     }
 
-    public function delete(VillageOrgMember $member): void
+    /**
+     * Warga sedang aktif di salah satu jabatan organisasi yang sama (mis.
+     * Anggota BPD tidak bisa sekaligus didaftarkan lagi di BPD).
+     */
+    public function citizenActiveInOrganization(string $citizenId, string $villageId, string $orgType): bool
     {
-        $member->delete();
+        return VillageOrgMember::query()
+            ->where('citizen_id', $citizenId)
+            ->where('is_active', true)
+            ->whereHas('position', fn ($query) => $query->where('village_id', $villageId)->where('org_type', $orgType))
+            ->exists();
     }
 
     /**

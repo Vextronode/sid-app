@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Models\User;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
+use App\Services\AccountActivationService;
+use App\Services\AccountAuditService;
 use App\Services\UserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -21,7 +23,12 @@ class UserServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new UserService(new UserRepository, new OfficialRepository);
+        $this->service = new UserService(
+            new UserRepository,
+            new OfficialRepository,
+            new AccountAuditService,
+            app(AccountActivationService::class),
+        );
     }
 
     public function test_get_all_with_citizen_and_official_returns_users(): void

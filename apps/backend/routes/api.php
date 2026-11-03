@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\Api\AccountRegistrationController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\ApprovalFlowController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Api\OfficialController;
 use App\Http\Controllers\Api\OfficialPositionTypeController;
 use App\Http\Controllers\Api\PasswordResetApprovalController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProfilePhotoRequestController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\RegulationController;
@@ -104,8 +106,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     // tidak dipakai menebak NIK.
     Route::get('/profile/nik-lookup', [ProfileController::class, 'lookupNik'])->middleware('throttle:30,1');
     // Foto profil akun warga; akun yang menjabat ditolak (foto pejabat
-    // dikelola Staf SIDUTama).
-    Route::post('/profile/photo', [UserPhotoController::class, 'storeOwn']);
+    // dikelola Staf SIDUTama). Ganti foto lewat permintaan yang disetujui
+    // petugas wilayah (D1/K4); hapus foto langsung.
+    Route::get('/profile/photo-request', [ProfilePhotoRequestController::class, 'showOwn']);
+    Route::post('/profile/photo-request', [ProfilePhotoRequestController::class, 'storeOwn']);
     Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
@@ -199,13 +203,15 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
-    | Log Aktivitas (S-05): riwayat data warga & KK dan status surat desa
+    | Log Aktivitas (S-05): riwayat data warga & KK, tindakan atas akun,
+    | dan status surat desa
     |----------------------------------------------------------------------
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('activity-logs')
         ->group(function () {
             Route::get('/population', [ActivityLogController::class, 'population']);
+            Route::get('/accounts', [ActivityLogController::class, 'accounts']);
             Route::get('/letters', [ActivityLogController::class, 'letters']);
         });
 
@@ -241,6 +247,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/citizens/{citizen}/identity', [IdentityController::class, 'citizen']);
         Route::get('/families/{family}/identity', [IdentityController::class, 'family']);
         Route::get('/letters/{letter}/applicant-identity', [IdentityController::class, 'letterApplicant']);
+        Route::get('/letters/{letter}/payload-identity', [IdentityController::class, 'letterPayload']);
     });
 
     // Pilihan Dusun -> RW -> RT desa untuk isian wilayah di form surat
@@ -251,25 +258,30 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Regions: Hamlets / RTs / RWs (UC-20)
     |----------------------------------------------------------------------
-    | Eksklusif Staf SIDUTama.
+    | Kelola wilayah eksklusif Staf SIDUTama. Daftarnya juga dibaca
+    | pengelola/pembaca Data Penduduk (Kasi Pemerintahan, Kaur TU & Umum)
+    | untuk pilihan Dusun -> RW -> RT di form dan filter.
     */
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))->group(function () {
+        Route::get('/hamlets', [HamletController::class, 'index']);
+        Route::get('/rws', [RwController::class, 'index']);
+        Route::get('/rts', [RtController::class, 'index']);
+    });
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::prefix('hamlets')->group(function () {
-            Route::get('/', [HamletController::class, 'index']);
             Route::post('/', [HamletController::class, 'store']);
             Route::patch('/{hamlet}', [HamletController::class, 'update']);
             Route::delete('/{hamlet}', [HamletController::class, 'destroy']);
         });
 
         Route::prefix('rts')->group(function () {
-            Route::get('/', [RtController::class, 'index']);
             Route::post('/', [RtController::class, 'store']);
             Route::patch('/{rt}', [RtController::class, 'update']);
             Route::delete('/{rt}', [RtController::class, 'destroy']);
         });
 
         Route::prefix('rws')->group(function () {
-            Route::get('/', [RwController::class, 'index']);
             Route::post('/', [RwController::class, 'store']);
             Route::patch('/{rw}', [RwController::class, 'update']);
             Route::delete('/{rw}', [RwController::class, 'destroy']);
@@ -520,6 +532,40 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
+    | Aktivasi Akun Warga (D1/K4)
+    |----------------------------------------------------------------------
+    | Pendaftaran online menunggu RT wilayahnya, lalu RW, Kepala Dusun, atau
+    | Staf SIDUTama bila jenjang di bawahnya kosong. Wewenang tiap permintaan
+    | dan aktivasi manual (khusus Staf) diperiksa AccountActivationService.
+    */
+    Route::middleware(UserRole::middleware(UserRole::Rt, UserRole::Rw, UserRole::Kadus, UserRole::StafSid))
+        ->prefix('account-registrations')
+        ->group(function () {
+            Route::get('/', [AccountRegistrationController::class, 'index']);
+            Route::get('/{accountRegistration}/photo', [AccountRegistrationController::class, 'photo']);
+            Route::post('/{accountRegistration}/approve', [AccountRegistrationController::class, 'approve']);
+            Route::post('/{accountRegistration}/reject', [AccountRegistrationController::class, 'reject']);
+            Route::post('/{accountRegistration}/manual-activation', [AccountRegistrationController::class, 'manualActivation']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Permintaan Ganti Foto Profil Warga (D1/K4)
+    |----------------------------------------------------------------------
+    | Jenjang pemegangnya sama dengan aktivasi akun. Wewenang tiap
+    | permintaan diperiksa ProfilePhotoRequestService.
+    */
+    Route::middleware(UserRole::middleware(UserRole::Rt, UserRole::Rw, UserRole::Kadus, UserRole::StafSid))
+        ->prefix('profile-photo-requests')
+        ->group(function () {
+            Route::get('/', [ProfilePhotoRequestController::class, 'index']);
+            Route::get('/{profilePhotoRequest}/photo', [ProfilePhotoRequestController::class, 'photo']);
+            Route::post('/{profilePhotoRequest}/approve', [ProfilePhotoRequestController::class, 'approve']);
+            Route::post('/{profilePhotoRequest}/reject', [ProfilePhotoRequestController::class, 'reject']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
     | Villages: Profile (UC-18)
     |----------------------------------------------------------------------
     | show(): lintas-role, dipakai halaman mana pun yang perlu tampilkan
@@ -573,6 +619,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->prefix('village-org-positions')
         ->group(function () {
             Route::get('/', [VillageOrgPositionController::class, 'index']);
+            Route::get('/citizen-lookup', [VillageOrgMemberController::class, 'citizenLookup'])->middleware('throttle:30,1');
             Route::get('/{id}', [VillageOrgPositionController::class, 'show']);
 
             Route::post('/{position}/members', [VillageOrgMemberController::class, 'store']);
@@ -580,6 +627,5 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::post('/{position}/members/{id}/end', [VillageOrgMemberController::class, 'end']);
             Route::post('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'uploadPhoto']);
             Route::delete('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'destroyPhoto']);
-            Route::delete('/{position}/members/{id}', [VillageOrgMemberController::class, 'destroy']);
         });
 });

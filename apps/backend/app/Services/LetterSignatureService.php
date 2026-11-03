@@ -2,15 +2,19 @@
 
 namespace App\Services;
 
+use App\Enums\LetterStatus;
+use App\Models\Citizen;
 use App\Models\Letter;
 use App\Models\LetterSignature;
 use App\Models\SignatureBlock;
 use App\Models\User;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\CitizenRepository;
+use App\Repositories\LetterRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -23,12 +27,17 @@ use Illuminate\Validation\ValidationException;
  *
  * Surat baru masuk ke tahap approval setelah semua saksi terisi. Pembatas
  * penolakan, blokir, dan masa berlaku permintaan berlaku untuk tiap saksi.
+ *
+ * Ganti, setujui, dan tolak saksi sama-sama mengunci baris surat lalu
+ * membaca ulang status setelah lock, sehingga ketiganya berjalan berurutan
+ * dan yang kalah mendapat 409.
  */
 class LetterSignatureService
 {
     public function __construct(
         protected CitizenRepository $citizenRepository,
         protected UserRepository $userRepository,
+        protected LetterRepository $letterRepository,
     ) {}
 
     /**
@@ -71,7 +80,8 @@ class LetterSignatureService
             $nik = (string) ($letter->payload[$slot['key']] ?? '');
 
             if ($nik !== '') {
-                $this->recordWitness($letter, $applicant, $slot, $nik, "payload.{$slot['key']}");
+                $witness = $this->checkWitness($letter, $applicant, $nik, "payload.{$slot['key']}");
+                $this->recordWitness($letter, $applicant, $slot, $witness);
             }
         }
     }
@@ -79,6 +89,10 @@ class LetterSignatureService
     /**
      * Mengganti saksi yang menolak atau kedaluwarsa. Permintaan yang masih
      * menunggu dibatalkan.
+     *
+     * Tahap surat dan status slot dicek ulang setelah baris surat dikunci:
+     * data hasil route binding bisa sudah usang (mis. saksi baru saja
+     * menyetujui).
      *
      * @param  array<string, mixed>  $input  nik, dan name/family_number bila di luar data penduduk
      */
@@ -90,17 +104,24 @@ class LetterSignatureService
             abort(404, 'Saksi tidak ditemukan.');
         }
 
-        $current = $this->current($letter)->get($slotKey);
+        return DB::transaction(function () use ($letter, $requester, $slot, $input): LetterSignature {
+            $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
 
-        if ($current?->status === LetterSignature::STATUS_SIGNED) {
-            abort(409, 'Saksi ini sudah menyetujui.');
-        }
+            if (
+                $locked->status !== LetterStatus::Pending
+                || $locked->current_step_order !== LetterService::AWAITING_SIGNATURES_STEP
+            ) {
+                abort(409, 'Surat ini tidak sedang menunggu persetujuan saksi.');
+            }
 
-        if ($current?->status === LetterSignature::STATUS_PENDING) {
-            $current->update(['status' => LetterSignature::STATUS_CANCELLED, 'responded_at' => now()]);
-        }
+            $current = $this->current($locked)->get($slot['key']);
 
-        return $this->replaceWitness($letter, $requester, $slot, $input);
+            if ($current?->status === LetterSignature::STATUS_SIGNED) {
+                abort(409, 'Saksi ini sudah menyetujui.');
+            }
+
+            return $this->replaceWitness($locked, $requester, $slot, $input, $current);
+        });
     }
 
     /**
@@ -111,11 +132,14 @@ class LetterSignatureService
      */
     public function current(Letter $letter): SupportCollection
     {
+        // Per baris lewat model, bukan mass update: semua penulisan
+        // letter_signatures lewat Eloquent (EloquentOnlyWritesTest).
         LetterSignature::query()
             ->where('letter_id', $letter->id)
             ->where('status', LetterSignature::STATUS_PENDING)
             ->where('expires_at', '<', now())
-            ->update(['status' => LetterSignature::STATUS_EXPIRED]);
+            ->get()
+            ->each(fn (LetterSignature $request) => $request->update(['status' => LetterSignature::STATUS_EXPIRED]));
 
         return LetterSignature::query()
             ->where('letter_id', $letter->id)
@@ -168,58 +192,65 @@ class LetterSignatureService
 
     public function accept(LetterSignature $request, User $user): LetterSignature
     {
-        $this->guardIsTarget($request, $user);
+        return DB::transaction(function () use ($request, $user): LetterSignature {
+            $locked = $this->lockPending($request, $user);
 
-        $request->update([
-            'status' => LetterSignature::STATUS_SIGNED,
-            'signer_user_id' => $user->id,
-            'signer_name' => $user->citizen?->name ?? $user->name,
-            'responded_at' => now(),
-        ]);
+            $locked->update([
+                'status' => LetterSignature::STATUS_SIGNED,
+                'signer_user_id' => $user->id,
+                'signer_name' => $user->citizen?->name ?? $user->name,
+                'responded_at' => now(),
+            ]);
 
-        $request->requester?->notify(new LetterStatusNotification(
-            $request->letter,
-            'Saksi Menyetujui',
-            "Permintaan menjadi \"{$request->slot_label}\" telah disetujui.",
-            'signature_accepted',
-        ));
+            $locked->requester?->notify(new LetterStatusNotification(
+                $locked->letter,
+                'Saksi Menyetujui',
+                "Permintaan menjadi \"{$locked->slot_label}\" telah disetujui.",
+                'signature_accepted',
+            ));
 
-        return $request;
+            return $locked;
+        });
     }
 
     public function reject(LetterSignature $request, User $user, ?string $notes, bool $blockRequester): LetterSignature
     {
-        $this->guardIsTarget($request, $user);
+        return DB::transaction(function () use ($request, $user, $notes, $blockRequester): LetterSignature {
+            $locked = $this->lockPending($request, $user);
 
-        $request->update([
-            'status' => LetterSignature::STATUS_REJECTED,
-            'signer_user_id' => $user->id,
-            'responded_at' => now(),
-            'response_notes' => $notes,
-        ]);
-
-        if ($blockRequester) {
-            SignatureBlock::query()->firstOrCreate([
-                'user_id' => $user->id,
-                'blocked_user_id' => $request->requested_by,
+            $locked->update([
+                'status' => LetterSignature::STATUS_REJECTED,
+                'signer_user_id' => $user->id,
+                'responded_at' => now(),
+                'response_notes' => $notes,
             ]);
-        }
 
-        // Identitas penolak tidak disebut: pemohon hanya tahu slotnya.
-        $request->requester?->notify(new LetterStatusNotification(
-            $request->letter,
-            'Permintaan Saksi Ditolak',
-            "Permintaan menjadi \"{$request->slot_label}\" ditolak. Ganti saksi di rincian surat.",
-            'signature_rejected',
-        ));
+            if ($blockRequester) {
+                SignatureBlock::query()->firstOrCreate([
+                    'user_id' => $user->id,
+                    'blocked_user_id' => $locked->requested_by,
+                ]);
+            }
 
-        return $request;
+            // Identitas penolak tidak disebut: pemohon hanya tahu slotnya.
+            $locked->requester?->notify(new LetterStatusNotification(
+                $locked->letter,
+                'Permintaan Saksi Ditolak',
+                "Permintaan menjadi \"{$locked->slot_label}\" ditolak. Ganti saksi di rincian surat.",
+                'signature_rejected',
+            ));
+
+            return $locked;
+        });
     }
 
     /**
-     * @param  array{key: string, label: string, name_field: ?string, family_field: ?string}  $slot
+     * Syarat saksi: bukan pemohon sendiri, dan pemilik NIK yang ber-akun
+     * tidak sedang membatasi atau memblokir pemohon. Tidak menulis apa pun.
+     *
+     * @return array{nik_hash: string, citizen: ?Citizen, target: ?User}
      */
-    private function recordWitness(Letter $letter, User $requester, array $slot, string $nik, string $errorKey): LetterSignature
+    private function checkWitness(Letter $letter, User $requester, string $nik, string $errorKey): array
     {
         $nikHash = hash('sha256', $nik);
 
@@ -229,6 +260,25 @@ class LetterSignatureService
 
         $citizen = $this->citizenRepository->findActiveInVillageByNik($letter->village_id, $nik);
         $target = $citizen ? $this->userRepository->findByCitizenId($citizen->id) : null;
+
+        if ($target !== null && $target->is_active) {
+            if ($this->isRateLimited($requester, $nikHash) || $this->isBlocked($requester, $target)) {
+                throw ValidationException::withMessages([$errorKey => ['NIK saksi ini tidak dapat dipakai saat ini.']]);
+            }
+        }
+
+        return ['nik_hash' => $nikHash, 'citizen' => $citizen, 'target' => $target];
+    }
+
+    /**
+     * Mencatat saksi yang sudah lolos checkWitness().
+     *
+     * @param  array{key: string, label: string, name_field: ?string, family_field: ?string}  $slot
+     * @param  array{nik_hash: string, citizen: ?Citizen, target: ?User}  $witness
+     */
+    private function recordWitness(Letter $letter, User $requester, array $slot, array $witness): LetterSignature
+    {
+        ['nik_hash' => $nikHash, 'citizen' => $citizen, 'target' => $target] = $witness;
         $base = [
             'letter_id' => $letter->id,
             'slot_key' => $slot['key'],
@@ -240,10 +290,6 @@ class LetterSignatureService
 
         // Warga desa yang punya akun: minta persetujuan.
         if ($target !== null && $target->is_active) {
-            if ($this->isRateLimited($requester, $nikHash) || $this->isBlocked($requester, $target)) {
-                throw ValidationException::withMessages([$errorKey => ['NIK saksi ini tidak dapat dipakai saat ini.']]);
-            }
-
             $request = LetterSignature::query()->create([
                 ...$base,
                 'method' => LetterSignature::METHOD_CONSENT,
@@ -278,22 +324,36 @@ class LetterSignatureService
     /**
      * Mengganti saksi yang menolak/kedaluwarsa: NIK (dan nama/No. KK bila di
      * luar data penduduk) diperbarui di isian surat lalu dicatat ulang.
+     * Dipanggil di dalam transaksi refillSlot(), dengan $letter yang sudah
+     * dikunci.
      *
      * @param  array{key: string, label: string, name_field: ?string, family_field: ?string}  $slot
      * @param  array<string, mixed>  $input
      */
-    private function replaceWitness(Letter $letter, User $requester, array $slot, array $input): LetterSignature
+    private function replaceWitness(Letter $letter, User $requester, array $slot, array $input, ?LetterSignature $current): LetterSignature
     {
         $nik = (string) ($input['nik'] ?? '');
-        $citizen = $nik !== '' ? $this->citizenRepository->findActiveInVillageByNik($letter->village_id, $nik) : null;
-        $name = trim((string) ($input['name'] ?? ''));
 
-        if ($nik === '' || ($citizen === null && $name === '')) {
-            throw ValidationException::withMessages([
-                $nik === '' ? 'nik' : 'name' => [$nik === '' ? 'Isi NIK saksi.' : 'NIK tidak terdaftar: isi nama saksi.'],
-            ]);
+        if ($nik === '') {
+            throw ValidationException::withMessages(['nik' => ['Isi NIK saksi.']]);
         }
 
+        // Semua syarat dicek sebelum ada yang diubah: pengganti yang ditolak
+        // tidak membatalkan permintaan lama dan tidak masuk ke isian surat.
+        $witness = $this->checkWitness($letter, $requester, $nik, 'nik');
+        $citizen = $witness['citizen'];
+        $name = trim((string) ($input['name'] ?? ''));
+
+        if ($citizen === null && $name === '') {
+            throw ValidationException::withMessages(['name' => ['NIK tidak terdaftar: isi nama saksi.']]);
+        }
+
+        if ($current?->status === LetterSignature::STATUS_PENDING) {
+            $current->update(['status' => LetterSignature::STATUS_CANCELLED, 'responded_at' => now()]);
+        }
+
+        // Payload dibaca dari baris yang sudah dikunci, sehingga penggantian
+        // slot lain yang baru tersimpan tidak tertimpa.
         $payload = $letter->payload ?? [];
         $payload[$slot['key']] = $nik;
 
@@ -309,7 +369,7 @@ class LetterSignatureService
 
         $letter->update(['payload' => $payload]);
 
-        return $this->recordWitness($letter, $requester, $slot, $nik, 'nik');
+        return $this->recordWitness($letter, $requester, $slot, $witness);
     }
 
     /**
@@ -352,6 +412,21 @@ class LetterSignatureService
             ->where('user_id', $target->id)
             ->where('blocked_user_id', $requester->id)
             ->exists();
+    }
+
+    /**
+     * Mengunci baris surat (kunci yang sama dengan penggantian saksi), lalu
+     * membaca ulang permintaan: model hasil route binding bisa sudah usang,
+     * mis. permintaan baru saja dibatalkan karena saksinya diganti.
+     */
+    private function lockPending(LetterSignature $request, User $user): LetterSignature
+    {
+        $this->letterRepository->findForUpdateOrFail($request->letter_id);
+
+        $locked = LetterSignature::query()->findOrFail($request->id);
+        $this->guardIsTarget($locked, $user);
+
+        return $locked;
     }
 
     private function guardIsTarget(LetterSignature $request, User $user): void

@@ -83,7 +83,6 @@ class DemoVillageSeeder extends Seeder
                     ['hamlet_id' => $hamlet->id, 'number' => $rwLabel],
                     [
                         'village_id' => $village->id,
-                        'full_label' => 'RW '.$rwLabel,
                         'is_active' => true,
                     ],
                 );
@@ -94,7 +93,6 @@ class DemoVillageSeeder extends Seeder
                         ['rw_id' => $rw->id, 'number' => $rtLabel],
                         [
                             'village_id' => $village->id,
-                            'full_label' => "RT {$rtLabel} / RW {$rwLabel}",
                             'is_active' => true,
                         ],
                     );

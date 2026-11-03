@@ -57,7 +57,7 @@ class LetterServiceTest extends TestCase
             new ApprovalSettingService(new ApprovalSettingRepository),
             new LetterFlowService($officialService, new ApprovalFlowRepository, $statusLogRepository),
             new LetterAttachmentService,
-            new LetterSignatureService(new CitizenRepository, new UserRepository),
+            new LetterSignatureService(new CitizenRepository, new UserRepository, $letterRepository),
         );
     }
 
@@ -664,7 +664,7 @@ class LetterServiceTest extends TestCase
         $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
     }
 
-    public function test_delete_allowed_for_authorized_staff_role(): void
+    public function test_delete_forbidden_for_staff(): void
     {
         $owner = User::factory()->create();
         $village = Village::factory()->create();
@@ -674,9 +674,32 @@ class LetterServiceTest extends TestCase
         ]);
         $letter = Letter::factory()->create(['submitted_by' => $owner->id, 'village_id' => $village->id]);
 
-        $result = $this->service->delete($letter, $staff);
+        try {
+            $this->service->delete($letter, $staff);
+            $this->fail('Staf seharusnya tidak dapat menghapus surat warga.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
 
-        $this->assertTrue($result);
+        $this->assertDatabaseHas('letters', ['id' => $letter->id]);
+    }
+
+    public function test_delete_rechecks_the_letter_after_locking(): void
+    {
+        $user = User::factory()->create();
+        $stale = Letter::factory()->create(['submitted_by' => $user->id]);
+
+        // RT baru saja menyetujui setelah daftar surat dimuat pemohon.
+        Letter::query()->whereKey($stale->id)->update(['status' => 'in_progress', 'current_step_order' => 2]);
+
+        try {
+            $this->service->delete($stale, $user);
+            $this->fail('Surat yang sudah diproses seharusnya tidak dapat dihapus.');
+        } catch (HttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+        }
+
+        $this->assertDatabaseHas('letters', ['id' => $stale->id]);
     }
 
     public function test_delete_forbidden_for_unrelated_user(): void

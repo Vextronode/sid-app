@@ -122,8 +122,12 @@ class AdoptionServiceTest extends TestCase
             ->assertJsonPath('data.payload.nama_anak', 'Rina Kurnia')
             ->assertJsonPath('data.payload.tanggal_lahir_anak', '2015-05-15')
             ->assertJsonPath('data.payload.nama_ayah_kandung', 'Dedi Kurnia')
-            ->assertJsonPath('data.payload.nik_ayah_angkat', '3207240101800001')
+            // NIK di isian tampil tersamar di API (K3); nilai utuh lewat reveal.
+            ->assertJsonPath('data.payload.nik_ayah_angkat', '************0001')
             ->assertJsonPath('data.payload.nama_ibu_angkat', 'Neneng Hasanah');
+        $this->actingAs($this->applicant['user'])
+            ->getJson("/api/letters/{$letterId}/payload-identity?path=nik_ayah_angkat")
+            ->assertJsonPath('data.value', '3207240101800001');
 
         // F-2.01: jenis Pengangkatan Anak dan bagiannya terisi.
         $report = $this->render($letterId, null);

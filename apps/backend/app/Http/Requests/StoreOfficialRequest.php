@@ -98,6 +98,8 @@ class StoreOfficialRequest extends FormRequest
                 'image',
                 'mimes:png,jpg,jpeg,webp',
                 'max:5120',
+                // Foto profil dan pejabat selalu persegi (dipotong di aplikasi).
+                'dimensions:ratio=1/1',
             ],
         ];
     }

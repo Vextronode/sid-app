@@ -9,8 +9,9 @@ use App\Repositories\LetterStatusLogRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
- * Halaman Log Aktivitas Staf SIDUTama: riwayat data warga & KK (S-05)
- * dan riwayat status surat (letter_status_logs). Hanya baca.
+ * Halaman Log Aktivitas Staf SIDUTama: riwayat data warga & KK (S-05),
+ * tindakan atas akun pengguna, dan riwayat status surat
+ * (letter_status_logs). Hanya baca.
  */
 class ActivityLogService
 {
@@ -24,6 +25,11 @@ class ActivityLogService
     public function population(User $user, array $filters): LengthAwarePaginator
     {
         return $this->activityLogRepository->paginatePopulation($this->villageId($user), $filters, $this->perPage($filters));
+    }
+
+    public function accounts(User $user, array $filters): LengthAwarePaginator
+    {
+        return $this->activityLogRepository->paginateAccounts($this->villageId($user), $filters, $this->perPage($filters));
     }
 
     public function letters(User $user, array $filters): LengthAwarePaginator

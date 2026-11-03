@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\User;
 use App\Models\Village;
 use App\Models\VillageOrgMember;
@@ -15,6 +16,21 @@ use Tests\TestCase;
 class VillageOrgMemberEndpointTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const OTHER_NIK = '3201010101019999';
+
+    private int $nikSequence = 0;
+
+    /**
+     * Warga aktif desa staf; pemegang jabatan dipilih lewat NIK-nya.
+     */
+    private function nikOf(User $user, string $name): string
+    {
+        $nik = sprintf('320101010101%04d', ++$this->nikSequence);
+        Citizen::factory()->create(['village_id' => $user->village_id, 'nik' => $nik, 'name' => $name, 'is_active' => true]);
+
+        return $nik;
+    }
 
     private function stafSid(): User
     {
@@ -32,7 +48,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $position = VillageOrgPosition::factory()->create();
 
         $response = $this->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi Santoso',
+            'nik' => self::OTHER_NIK,
             'started_at' => '2024-01-01',
         ]);
 
@@ -46,7 +62,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $position = VillageOrgPosition::factory()->create();
 
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi Santoso',
+            'nik' => self::OTHER_NIK,
             'started_at' => '2024-01-01',
         ]);
 
@@ -59,14 +75,18 @@ class VillageOrgMemberEndpointTest extends TestCase
         $user = $this->stafSid();
         $position = VillageOrgPosition::factory()->create(['village_id' => $user->village_id]);
 
+        $nik = $this->nikOf($user, 'Budi Santoso');
+
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi Santoso',
+            'nik' => $nik,
             'phone_wa' => '6281111222333',
             'started_at' => '2024-01-01',
         ]);
 
+        // Nama diambil dari data warga pemilik NIK.
         $response->assertCreated()
             ->assertJsonPath('data.member_name', 'Budi Santoso')
+            ->assertJsonPath('data.nik_masked', '************'.substr($nik, -4))
             ->assertJsonPath('data.is_active', true)
             ->assertJsonPath('data.position_id', $position->id);
     }
@@ -85,7 +105,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Pengganti Baru',
+            'nik' => $this->nikOf($user, 'Pengganti Baru'),
             'started_at' => '2026-08-01',
         ]);
 
@@ -111,7 +131,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         ]);
 
         $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Anggota Kedua',
+            'nik' => $this->nikOf($user, 'Anggota Kedua'),
             'started_at' => '2026-08-01',
         ])->assertCreated();
 
@@ -128,7 +148,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $position = VillageOrgPosition::factory()->inactive()->create(['village_id' => $user->village_id]);
 
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi Santoso',
+            'nik' => self::OTHER_NIK,
             'started_at' => '2024-01-01',
         ]);
 
@@ -145,7 +165,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['member_name', 'started_at']);
+            ->assertJsonValidationErrors(['nik', 'started_at']);
     }
 
     #[Test]
@@ -157,25 +177,13 @@ class VillageOrgMemberEndpointTest extends TestCase
 
         $response = $this->actingAs($user)->patchJson(
             "/api/village-org-positions/{$position->id}/members/{$member->id}",
-            ['member_name' => 'Baru']
+            ['phone_wa' => '6281234567890', 'member_name' => 'Diabaikan']
         );
 
-        $response->assertOk()->assertJsonPath('data.member_name', 'Baru');
-    }
-
-    #[Test]
-    public function staf_sid_can_delete_member(): void
-    {
-        $user = $this->stafSid();
-        $position = VillageOrgPosition::factory()->multiOccupant()->create(['village_id' => $user->village_id]);
-        $member = VillageOrgMember::factory()->create(['position_id' => $position->id]);
-
-        $response = $this->actingAs($user)->deleteJson(
-            "/api/village-org-positions/{$position->id}/members/{$member->id}"
-        );
-
-        $response->assertOk()->assertJsonPath('message', 'Anggota organisasi berhasil dihapus');
-        $this->assertDatabaseMissing('village_org_members', ['id' => $member->id]);
+        // Nama mengikuti data warga; yang bisa diubah hanya kontak dan catatan.
+        $response->assertOk()
+            ->assertJsonPath('data.phone_wa', '6281234567890')
+            ->assertJsonPath('data.member_name', 'Lama');
     }
 
     #[Test]
@@ -191,7 +199,7 @@ class VillageOrgMemberEndpointTest extends TestCase
 
         $response = $this->actingAs($user)->patchJson(
             "/api/village-org-positions/{$position->id}/members/{$member->id}",
-            ['member_name' => 'Baru']
+            ['phone_wa' => '6280000000000']
         );
 
         $response->assertStatus(404);
@@ -199,7 +207,7 @@ class VillageOrgMemberEndpointTest extends TestCase
 
     /**
      * Guard multi-tenant (EV5-10-S2): Staf SIDUTama satu desa tidak boleh
-     * bisa menambah/mengubah/menghapus anggota jabatan milik desa lain,
+     * bisa menambah/mengubah/mengakhiri anggota jabatan milik desa lain,
      * walau position_id-nya valid.
      */
     #[Test]
@@ -210,7 +218,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $position = VillageOrgPosition::factory()->create(['village_id' => $otherVillage->id]);
 
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi Santoso',
+            'nik' => self::OTHER_NIK,
             'started_at' => '2024-01-01',
         ]);
 
@@ -228,26 +236,10 @@ class VillageOrgMemberEndpointTest extends TestCase
 
         $response = $this->actingAs($user)->patchJson(
             "/api/village-org-positions/{$position->id}/members/{$member->id}",
-            ['member_name' => 'Baru']
+            ['phone_wa' => '6280000000000']
         );
 
         $response->assertStatus(404);
-    }
-
-    #[Test]
-    public function deleting_member_of_position_belonging_to_other_village_returns_404(): void
-    {
-        $user = $this->stafSid();
-        $otherVillage = Village::create(['name' => 'Desa Lain', 'code' => 'DLL7']);
-        $position = VillageOrgPosition::factory()->create(['village_id' => $otherVillage->id]);
-        $member = VillageOrgMember::factory()->create(['position_id' => $position->id]);
-
-        $response = $this->actingAs($user)->deleteJson(
-            "/api/village-org-positions/{$position->id}/members/{$member->id}"
-        );
-
-        $response->assertStatus(404);
-        $this->assertDatabaseHas('village_org_members', ['id' => $member->id]);
     }
 
     #[Test]
@@ -281,7 +273,7 @@ class VillageOrgMemberEndpointTest extends TestCase
         $position = VillageOrgPosition::factory()->create(['village_id' => $user->village_id]);
 
         $response = $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
-            'member_name' => 'Budi',
+            'nik' => self::OTHER_NIK,
             'started_at' => '2026-10-01',
             'previous_holder' => 'hapus',
         ]);
@@ -315,21 +307,6 @@ class VillageOrgMemberEndpointTest extends TestCase
             'member_name' => 'Ketua Lama',
             'is_active' => true,
         ]);
-    }
-
-    #[Test]
-    public function deleting_active_ketua_is_rejected(): void
-    {
-        $user = $this->stafSid();
-        $ketua = VillageOrgPosition::factory()->create(['village_id' => $user->village_id]);
-        $holder = VillageOrgMember::factory()->create(['position_id' => $ketua->id, 'is_active' => true]);
-
-        $response = $this->actingAs($user)->deleteJson(
-            "/api/village-org-positions/{$ketua->id}/members/{$holder->id}"
-        );
-
-        $response->assertStatus(422);
-        $this->assertDatabaseHas('village_org_members', ['id' => $holder->id]);
     }
 
     #[Test]
@@ -437,21 +414,98 @@ class VillageOrgMemberEndpointTest extends TestCase
     }
 
     #[Test]
-    public function deleting_member_removes_its_photo_file(): void
+    public function nik_outside_the_village_is_rejected(): void
     {
-        Storage::fake('public');
-        Storage::disk('public')->put('org-member-photos/anggota.png', 'x');
         $user = $this->stafSid();
-        $position = VillageOrgPosition::factory()->multiOccupant()->create(['village_id' => $user->village_id]);
-        $member = VillageOrgMember::factory()->create([
-            'position_id' => $position->id,
-            'photo_img' => 'org-member-photos/anggota.png',
-        ]);
+        $position = VillageOrgPosition::factory()->create(['village_id' => $user->village_id]);
+        $otherVillage = Village::create(['name' => 'Desa Lain', 'code' => 'DLL10']);
+        Citizen::factory()->create(['village_id' => $otherVillage->id, 'nik' => self::OTHER_NIK]);
+
+        $this->actingAs($user)->postJson("/api/village-org-positions/{$position->id}/members", [
+            'nik' => self::OTHER_NIK,
+            'started_at' => '2026-10-01',
+        ])->assertNotFound()->assertJsonPath('message', 'NIK tidak ditemukan di data warga desa ini.');
+
+        $this->assertDatabaseCount('village_org_members', 0);
+    }
+
+    #[Test]
+    public function citizen_cannot_hold_two_active_positions_in_one_organization(): void
+    {
+        $user = $this->stafSid();
+        $this->actingAs($user)->getJson('/api/village-org-positions?org_type=pkk')->assertOk();
+        $ketua = VillageOrgPosition::query()->where('org_type', 'pkk')->where('slot', 'ketua')->firstOrFail();
+        $anggota = VillageOrgPosition::query()->where('org_type', 'pkk')->where('slot', 'anggota')->firstOrFail();
+        $nik = $this->nikOf($user, 'Siti Aminah');
+
+        $this->actingAs($user)->postJson("/api/village-org-positions/{$anggota->id}/members", [
+            'nik' => $nik,
+            'started_at' => '2026-10-01',
+        ])->assertCreated();
+
+        $this->actingAs($user)->postJson("/api/village-org-positions/{$ketua->id}/members", [
+            'nik' => $nik,
+            'started_at' => '2026-10-02',
+        ])->assertStatus(422);
+    }
+
+    #[Test]
+    public function citizen_lookup_returns_the_name_of_a_village_citizen(): void
+    {
+        $user = $this->stafSid();
+        $nik = $this->nikOf($user, 'Budi Santoso');
 
         $this->actingAs($user)
-            ->deleteJson("/api/village-org-positions/{$position->id}/members/{$member->id}")
-            ->assertOk();
+            ->getJson("/api/village-org-positions/citizen-lookup?nik={$nik}")
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Budi Santoso')
+            ->assertJsonPath('data.nik_masked', '************'.substr($nik, -4));
+        $this->actingAs($user)
+            ->getJson('/api/village-org-positions/citizen-lookup?nik='.self::OTHER_NIK)
+            ->assertNotFound();
+    }
 
-        Storage::disk('public')->assertMissing('org-member-photos/anggota.png');
+    #[Test]
+    public function anggota_membership_is_ended_into_history_and_never_deleted(): void
+    {
+        Storage::fake('public');
+        $user = $this->stafSid();
+        $position = VillageOrgPosition::factory()->multiOccupant()->create(['village_id' => $user->village_id]);
+        $member = VillageOrgMember::factory()->create(['position_id' => $position->id, 'is_active' => true, 'ended_at' => null]);
+        $url = "/api/village-org-positions/{$position->id}/members/{$member->id}";
+
+        // Tidak ada lagi endpoint hapus.
+        $this->actingAs($user)->deleteJson($url)->assertStatus(405);
+
+        $this->actingAs($user)
+            ->postJson("{$url}/end", ['ended_at' => '2026-10-01'])
+            ->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.ended_at', '2026-10-01');
+
+        // Riwayat tidak dapat diubah, termasuk fotonya.
+        $this->actingAs($user)->patchJson($url, ['phone_wa' => '6281'])->assertStatus(422);
+        $this->actingAs($user)
+            ->post("{$url}/photo", ['photo' => UploadedFile::fake()->image('x.png')], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+        $this->assertDatabaseHas('village_org_members', ['id' => $member->id, 'is_active' => false]);
+    }
+
+    #[Test]
+    public function member_photo_must_be_square(): void
+    {
+        Storage::fake('public');
+        $user = $this->stafSid();
+        $position = VillageOrgPosition::factory()->create(['village_id' => $user->village_id]);
+        $member = VillageOrgMember::factory()->create(['position_id' => $position->id, 'photo_img' => null]);
+
+        $this->actingAs($user)
+            ->post(
+                "/api/village-org-positions/{$position->id}/members/{$member->id}/photo",
+                ['photo' => UploadedFile::fake()->image('lebar.jpg', 1600, 900)],
+                ['Accept' => 'application/json'],
+            )
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('photo');
     }
 }

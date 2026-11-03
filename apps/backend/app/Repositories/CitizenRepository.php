@@ -49,7 +49,8 @@ class CitizenRepository
                 fn ($rtQuery) => $rtQuery->where('rw_id', $filters['rw_id']),
             ))
             ->when(! empty($filters['rt_id']), fn ($query) => $query->where('rt_id', $filters['rt_id']))
-            ->with(['rt', 'rw', 'hamlet', 'village', 'occupation', 'family'])
+            // Dusun warga dibaca dari RW-nya (sama dengan filter hamlet_id di atas).
+            ->with(['rt', 'rw.hamlet', 'hamlet', 'village', 'occupation', 'family'])
             ->orderBy('name')
             ->orderBy('id')
             ->paginate((int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE));

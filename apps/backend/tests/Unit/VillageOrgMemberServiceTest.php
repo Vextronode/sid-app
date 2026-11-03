@@ -2,10 +2,12 @@
 
 namespace Tests\Unit;
 
+use App\Models\Citizen;
 use App\Models\User;
 use App\Models\Village;
 use App\Models\VillageOrgMember;
 use App\Models\VillageOrgPosition;
+use App\Repositories\CitizenRepository;
 use App\Repositories\VillageOrgMemberRepository;
 use App\Repositories\VillageOrgPositionRepository;
 use App\Services\VillageOrgMemberService;
@@ -26,7 +28,21 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->service = new VillageOrgMemberService(
             new VillageOrgMemberRepository,
             new VillageOrgPositionRepository,
+            new CitizenRepository,
         );
+    }
+
+    private int $nikSequence = 0;
+
+    /**
+     * Warga aktif desa jabatan; pemegang jabatan dipilih lewat NIK-nya.
+     */
+    private function nikIn(VillageOrgPosition $position, string $name): string
+    {
+        $nik = sprintf('320101010102%04d', ++$this->nikSequence);
+        Citizen::factory()->create(['village_id' => $position->village_id, 'nik' => $nik, 'name' => $name, 'is_active' => true]);
+
+        return $nik;
     }
 
     private function stafSidFor(VillageOrgPosition $position): User
@@ -40,11 +56,12 @@ class VillageOrgMemberServiceTest extends TestCase
         $user = $this->stafSidFor($position);
 
         $member = $this->service->addOrRotate($user, $position, [
-            'member_name' => 'Budi Santoso',
+            'nik' => $this->nikIn($position, 'Budi Santoso'),
             'started_at' => '2024-01-01',
         ]);
 
         $this->assertSame('Budi Santoso', $member->member_name);
+        $this->assertNotNull($member->citizen_id);
         $this->assertTrue($member->is_active);
         $this->assertDatabaseHas('village_org_members', [
             'id' => $member->id,
@@ -63,7 +80,7 @@ class VillageOrgMemberServiceTest extends TestCase
         ]);
 
         $newMember = $this->service->addOrRotate($user, $position, [
-            'member_name' => 'Pengganti Baru',
+            'nik' => $this->nikIn($position, 'Pengganti Baru'),
             'started_at' => '2026-08-01',
         ]);
 
@@ -94,7 +111,7 @@ class VillageOrgMemberServiceTest extends TestCase
         ]);
 
         $this->service->addOrRotate($user, $position, [
-            'member_name' => 'Anggota Kedua',
+            'nik' => $this->nikIn($position, 'Anggota Kedua'),
             'started_at' => '2026-08-01',
         ]);
 
@@ -120,7 +137,7 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->expectExceptionMessage('Fitur rotasi untuk organisasi ini belum diaktifkan, menunggu konfirmasi desa.');
 
         $this->service->addOrRotate($user, $position, [
-            'member_name' => 'Budi Santoso',
+            'nik' => '3201010101029999',
             'started_at' => '2024-01-01',
         ]);
     }
@@ -142,7 +159,7 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->expectExceptionMessage('Jabatan organisasi tidak ditemukan.');
 
         $this->service->addOrRotate($user, $position, [
-            'member_name' => 'Budi Santoso',
+            'nik' => '3201010101029999',
             'started_at' => '2024-01-01',
         ]);
     }
@@ -153,20 +170,10 @@ class VillageOrgMemberServiceTest extends TestCase
         $user = $this->stafSidFor($position);
         $member = VillageOrgMember::factory()->create(['position_id' => $position->id, 'member_name' => 'Lama']);
 
-        $updated = $this->service->update($user, $position, $member->id, ['member_name' => 'Baru']);
+        $updated = $this->service->update($user, $position, $member->id, ['phone_wa' => '6281234']);
 
-        $this->assertSame('Baru', $updated->member_name);
-    }
-
-    public function test_delete_removes_member(): void
-    {
-        $position = VillageOrgPosition::factory()->multiOccupant()->create();
-        $user = $this->stafSidFor($position);
-        $member = VillageOrgMember::factory()->create(['position_id' => $position->id]);
-
-        $this->service->delete($user, $position, $member->id);
-
-        $this->assertDatabaseMissing('village_org_members', ['id' => $member->id]);
+        $this->assertSame('6281234', $updated->phone_wa);
+        $this->assertSame('Lama', $updated->member_name);
     }
 
     public function test_update_throws_when_member_does_not_belong_to_position(): void
@@ -182,22 +189,7 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Anggota organisasi tidak ditemukan pada jabatan ini.');
 
-        $this->service->update($user, $position, $member->id, ['member_name' => 'Baru']);
-    }
-
-    public function test_delete_throws_when_member_does_not_belong_to_position(): void
-    {
-        $position = VillageOrgPosition::factory()->create();
-        $user = $this->stafSidFor($position);
-        $otherPosition = VillageOrgPosition::factory()->wakilKetua()->create([
-            'village_id' => $position->village_id,
-            'org_type' => $position->org_type,
-        ]);
-        $member = VillageOrgMember::factory()->create(['position_id' => $otherPosition->id]);
-
-        $this->expectException(HttpException::class);
-
-        $this->service->delete($user, $position, $member->id);
+        $this->service->update($user, $position, $member->id, ['phone_wa' => '6281234']);
     }
 
     public function test_update_throws_when_position_belongs_to_other_village(): void
@@ -210,21 +202,7 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Jabatan organisasi tidak ditemukan.');
 
-        $this->service->update($user, $position, $member->id, ['member_name' => 'Baru']);
-    }
-
-    public function test_delete_of_active_ketua_is_rejected_but_history_can_be_deleted(): void
-    {
-        $position = VillageOrgPosition::factory()->create();
-        $user = $this->stafSidFor($position);
-        $active = VillageOrgMember::factory()->create(['position_id' => $position->id, 'is_active' => true]);
-        $history = VillageOrgMember::factory()->inactive()->create(['position_id' => $position->id]);
-
-        $this->service->delete($user, $position, $history->id);
-        $this->assertDatabaseMissing('village_org_members', ['id' => $history->id]);
-
-        $this->expectException(HttpException::class);
-        $this->service->delete($user, $position, $active->id);
+        $this->service->update($user, $position, $member->id, ['phone_wa' => '6281234']);
     }
 
     public function test_promoting_anggota_to_ketua_ends_anggota_membership_and_copies_data(): void
@@ -327,14 +305,48 @@ class VillageOrgMemberServiceTest extends TestCase
         $this->assertSame(['Ketua Turun'], $anggota->activeMembers()->pluck('member_name')->all());
     }
 
-    public function test_ending_anggota_is_rejected(): void
+    public function test_ending_anggota_moves_it_to_history(): void
+    {
+        [$user, , , $anggota] = $this->organization();
+        $member = VillageOrgMember::factory()->create(['position_id' => $anggota->id, 'is_active' => true, 'ended_at' => null]);
+
+        $this->service->end($user, $anggota, $member->id, ['ended_at' => '2026-10-01']);
+
+        $this->assertFalse($member->fresh()->is_active);
+        $this->assertSame('2026-10-01', $member->fresh()->ended_at->format('Y-m-d'));
+    }
+
+    public function test_anggota_cannot_be_demoted_further(): void
     {
         [$user, , , $anggota] = $this->organization();
         $member = VillageOrgMember::factory()->create(['position_id' => $anggota->id, 'is_active' => true]);
 
         $this->expectException(HttpException::class);
 
-        $this->service->end($user, $anggota, $member->id, []);
+        $this->service->end($user, $anggota, $member->id, ['to_member' => true]);
+    }
+
+    public function test_history_rows_cannot_be_changed(): void
+    {
+        $position = VillageOrgPosition::factory()->create();
+        $user = $this->stafSidFor($position);
+        $history = VillageOrgMember::factory()->inactive()->create(['position_id' => $position->id]);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Riwayat jabatan tidak dapat diubah.');
+
+        $this->service->update($user, $position, $history->id, ['phone_wa' => '6281234']);
+    }
+
+    public function test_promotion_and_demotion_keep_the_citizen(): void
+    {
+        [$user, $ketua, , $anggota] = $this->organization();
+        $nik = $this->nikIn($ketua, 'Siti Aminah');
+        $holder = $this->service->addOrRotate($user, $ketua, ['nik' => $nik, 'started_at' => '2026-10-01']);
+
+        $this->service->end($user, $ketua, $holder->id, ['to_member' => true]);
+
+        $this->assertSame([$holder->citizen_id], $anggota->activeMembers()->pluck('citizen_id')->all());
     }
 
     /**

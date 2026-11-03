@@ -29,7 +29,8 @@ class AddVillageOrgMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'member_name' => ['required_without:from_member_id', 'nullable', 'string', 'max:150'],
+            // Warga desa pemegang jabatan; nama diambil dari data warga.
+            'nik' => ['required_without:from_member_id', 'nullable', 'string', 'digits:16'],
             'from_member_id' => ['nullable', 'integer', 'exists:village_org_members,id'],
             'previous_holder' => ['sometimes', 'string', 'in:end,to_member'],
             'phone_wa' => ['nullable', 'string', 'max:20'],
@@ -41,7 +42,8 @@ class AddVillageOrgMemberRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'member_name.required_without' => 'Nama anggota wajib diisi',
+            'nik.required_without' => 'NIK warga wajib diisi',
+            'nik.digits' => 'NIK harus 16 digit angka',
             'from_member_id.exists' => 'Anggota yang dipilih tidak ditemukan',
             'previous_holder.in' => 'Pilihan pemegang jabatan lama tidak valid',
             'started_at.required' => 'Tanggal mulai menjabat wajib diisi',
