@@ -45,7 +45,7 @@ const EMPTY_FAMILY = {
   family_status: 'aktif',
 }
 
-// Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Pengguna.
+// Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Akun.
 const FAMILY_STATUS_TONE: Record<string, StatusTone> = {
   aktif: 'active',
   pindah: 'inactive',
@@ -74,7 +74,7 @@ const EMPTY_SOCIOECONOMIC: SocioeconomicForm = {
 const fieldStyle = {
   width: '100%',
   padding: '8px 12px',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: 'var(--sid-radius-control)',
   border: '1px solid var(--sid-border)',
   background: 'var(--sid-surface-card)',
   color: 'var(--sid-text-primary)',

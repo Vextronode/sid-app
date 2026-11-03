@@ -174,7 +174,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
               <th>Keluaran</th>
               <th>Masa Berlaku (hari)</th>
               <th>Kategori</th>
-              <th>Aksi</th>
+              <th className="center">Aksi</th>
             </tr>
           </thead>
           <tbody>

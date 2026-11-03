@@ -20,7 +20,7 @@
   padding: 0 0.875rem 0 1rem;
 
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--sid-radius-button);
 
   font: inherit;
   font-size: 0.875rem;
@@ -289,7 +289,7 @@
   padding: 0 0.75rem;
 
   border: 1px solid var(--sid-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--sid-radius-button);
 
   background: var(--sid-surface-card);
   color: var(--sid-text-primary);
@@ -883,7 +883,7 @@
   padding: 0 1rem;
 
   border: 1px solid var(--sid-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--sid-radius-button);
 
   background: var(--sid-surface-card);
   color: var(--sid-text-primary);
@@ -986,7 +986,7 @@
   padding: 0 1rem;
 
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--sid-radius-button);
 
   font: inherit;
   font-size: 0.875rem;
@@ -1082,7 +1082,7 @@
   padding: 0.625rem 0.75rem;
 
   border: 1px solid var(--sid-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--sid-radius-control);
 
   background: var(--sid-surface-card);
   color: var(--sid-text-primary);
@@ -1134,7 +1134,7 @@
   padding: 0.4rem 0.85rem;
 
   border: 1px solid var(--sid-border);
-  border-radius: 999px;
+  border-radius: var(--sid-radius-button);
 
   background: var(--sid-surface-card);
   color: var(--sid-text-primary);
@@ -1347,7 +1347,7 @@
   padding: 0.5rem 1rem;
 
   border: 1px solid var(--sid-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--sid-radius-button);
 
   font: inherit;
   font-weight: 600;
