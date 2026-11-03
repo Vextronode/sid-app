@@ -28,6 +28,24 @@ const LETTERS = partialFixture<LetterListItem[]>([
     created_at: '2026-10-01T08:00:00Z',
     letter_type: { name: 'Surat Keterangan Usaha' },
   },
+  {
+    id: 'letter-3',
+    status: 'pending',
+    letter_number: null,
+    created_at: '2026-10-14T08:00:00Z',
+    current_step_order: 1,
+    current_step: { approver_position: 'rt' },
+    letter_type: { name: 'Surat Pengantar SKCK' },
+  },
+  {
+    id: 'letter-4',
+    status: 'rejected',
+    letter_number: null,
+    created_at: '2026-10-05T08:00:00Z',
+    current_step_order: 1,
+    rejected_at_step: 1,
+    letter_type: { name: 'Surat Keterangan Tidak Mampu' },
+  },
 ])
 
 function renderList(props = {}) {
@@ -79,16 +97,23 @@ describe('MyLettersList', () => {
     expect(screen.getByText('No. 470/012/2026')).toBeTruthy()
   })
 
-  it('offers download for issued letters and hides their delete action', () => {
-    const { onDetail, onDelete } = renderList()
+  it('offers download for issued letters', () => {
+    const { onDetail } = renderList()
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat detail Surat Keterangan Usaha' }))
     expect(onDetail).toHaveBeenCalledWith(LETTERS[1])
     expect(screen.getByRole('button', { name: /^Unduh/ })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Hapus Surat Keterangan Usaha' })).toBeNull()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hapus Surat Keterangan Domisili' }))
-    expect(onDelete).toHaveBeenCalledWith(LETTERS[0])
+  it('offers delete only for letters nobody has decided on yet', () => {
+    const { onDelete } = renderList()
+
+    expect(screen.queryByRole('button', { name: 'Hapus Surat Keterangan Domisili' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Hapus Surat Keterangan Usaha' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Hapus Surat Keterangan Tidak Mampu' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Surat Pengantar SKCK' }))
+    expect(onDelete).toHaveBeenCalledWith(LETTERS[2])
   })
 
   it('shows status counts from the own-letter summary and filters by status', async () => {
