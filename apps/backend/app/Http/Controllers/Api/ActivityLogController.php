@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IndexAccountLogRequest;
 use App\Http\Requests\IndexLetterActivityLogRequest;
 use App\Http\Requests\IndexPopulationLogRequest;
+use App\Http\Resources\AccountLogResource;
 use App\Http\Resources\LetterActivityLogResource;
 use App\Http\Resources\PopulationLogResource;
 use App\Services\ActivityLogService;
@@ -22,6 +24,13 @@ class ActivityLogController extends Controller
         $logs = $this->activityLogService->population($request->user(), $request->validated());
 
         return $this->paginated('Riwayat data kependudukan berhasil diambil.', PopulationLogResource::collection($logs->getCollection()), $logs);
+    }
+
+    public function accounts(IndexAccountLogRequest $request): JsonResponse
+    {
+        $logs = $this->activityLogService->accounts($request->user(), $request->validated());
+
+        return $this->paginated('Riwayat tindakan akun berhasil diambil.', AccountLogResource::collection($logs->getCollection()), $logs);
     }
 
     public function letters(IndexLetterActivityLogRequest $request): JsonResponse

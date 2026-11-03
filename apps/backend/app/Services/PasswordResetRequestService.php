@@ -33,7 +33,8 @@ class PasswordResetRequestService
     ];
 
     public function __construct(
-        protected CitizenRepository $citizenRepository
+        protected CitizenRepository $citizenRepository,
+        protected AccountAuditService $audit,
     ) {}
 
     /**
@@ -164,24 +165,32 @@ class PasswordResetRequestService
     {
         $this->ensureHandleable($actor, $resetRequest);
 
-        $resetRequest->update([
-            'status' => PasswordResetRequest::STATUS_APPROVED,
-            'handled_by' => $actor->id,
-            'handled_at' => now(),
-            'approved_until' => now()->addHours(PasswordResetRequest::APPROVAL_TTL_HOURS),
-        ]);
+        DB::transaction(function () use ($actor, $resetRequest): void {
+            $resetRequest->update([
+                'status' => PasswordResetRequest::STATUS_APPROVED,
+                'handled_by' => $actor->id,
+                'handled_at' => now(),
+                'approved_until' => now()->addHours(PasswordResetRequest::APPROVAL_TTL_HOURS),
+            ]);
+
+            $this->audit->resetRequestHandled($resetRequest, $actor);
+        });
     }
 
     public function reject(User $actor, PasswordResetRequest $resetRequest, ?string $notes): void
     {
         $this->ensureHandleable($actor, $resetRequest);
 
-        $resetRequest->update([
-            'status' => PasswordResetRequest::STATUS_REJECTED,
-            'handled_by' => $actor->id,
-            'handled_at' => now(),
-            'response_notes' => $notes,
-        ]);
+        DB::transaction(function () use ($actor, $resetRequest, $notes): void {
+            $resetRequest->update([
+                'status' => PasswordResetRequest::STATUS_REJECTED,
+                'handled_by' => $actor->id,
+                'handled_at' => now(),
+                'response_notes' => $notes,
+            ]);
+
+            $this->audit->resetRequestHandled($resetRequest, $actor);
+        });
     }
 
     /**
