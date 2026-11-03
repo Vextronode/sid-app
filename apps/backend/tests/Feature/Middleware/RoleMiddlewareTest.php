@@ -305,10 +305,15 @@ class RoleMiddlewareTest extends TestCase
         $this->actingAs($user)->getJson('/api/citizens')->assertForbidden();
     }
 
+    /**
+     * Warga ditolak middleware; RT/RW/Kadus tanpa penugasan wilayah aktif
+     * ditolak PopulationScope. Kepala Desa dan Sekretaris Desa kini membaca
+     * seluruh desa (lihat PopulationReadScopeTest).
+     */
     public static function rolesWithoutCitizenAccess(): array
     {
         return [
-            ['warga'], ['rt'], ['rw'], ['kadus'], ['kepala_desa'], ['sekretaris_desa'],
+            ['warga'], ['rt'], ['rw'], ['kadus'],
         ];
     }
 
