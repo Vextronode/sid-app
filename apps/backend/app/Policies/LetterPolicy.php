@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\LetterDataAction;
 use App\Enums\LetterResultStage;
+use App\Enums\LetterStatus;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\User;
@@ -14,14 +15,6 @@ class LetterPolicy
     {
         //
     }
-
-    private const STAFF_ROLES = [
-        'kepala_desa',
-        'sekretaris_desa',
-        'kasi_pemerintahan',
-        'kaur_tu_umum',
-        'staf_sid',
-    ];
 
     /**
      * Posisi yang scope aksesnya berbasis village_id (bukan wilayah RT/RW
@@ -154,16 +147,17 @@ class LetterPolicy
                 || $letter->letterType->assigned_role === $user->role);
     }
 
+    /**
+     * Hanya pemohon, dan hanya selama surat masih menunggu tanpa keputusan
+     * apa pun (menunggu saksi atau menunggu RT). Surat yang sudah diproses,
+     * terbit, atau ditolak tetap tersimpan beserta nomor dan riwayatnya;
+     * staf tidak menghapus surat warga.
+     */
     public function delete(User $user, Letter $letter): bool
     {
-        $isOwner = $letter->submitted_by === $user->id;
-
-        if ($isOwner) {
-            return true;
-        }
-
-        return in_array($user->role, self::STAFF_ROLES, true)
-            && $this->isSameVillage($user, $letter);
+        return $letter->submitted_by === $user->id
+            && $letter->status === LetterStatus::Pending
+            && ! $letter->approvals()->whereNotNull('action')->exists();
     }
 
     /**

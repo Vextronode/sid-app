@@ -439,8 +439,40 @@ class LetterPolicyTest extends TestCase
         $this->assertTrue($this->policy->delete($user, $letter));
     }
 
+    #[DataProvider('processedLetterProvider')]
+    public function test_delete_forbidden_for_owner_once_the_letter_is_processed(string $state): void
+    {
+        $user = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->{$state}()->create(['submitted_by' => $user->id]);
+
+        $this->assertFalse($this->policy->delete($user, $letter));
+    }
+
+    public static function processedLetterProvider(): array
+    {
+        return [
+            ['inProgress'],
+            ['approved'],
+            ['rejected'],
+        ];
+    }
+
+    public function test_delete_forbidden_for_owner_when_a_pending_letter_already_has_a_decision(): void
+    {
+        $user = User::factory()->create(['role' => 'warga']);
+        $letter = Letter::factory()->create(['submitted_by' => $user->id]);
+        LetterApproval::query()->create([
+            'letter_id' => $letter->id,
+            'approved_by' => User::factory()->create(['role' => 'rt'])->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+
+        $this->assertFalse($this->policy->delete($user, $letter));
+    }
+
     #[DataProvider('staffRoleProvider')]
-    public function test_delete_allowed_for_staff_roles(string $role): void
+    public function test_delete_forbidden_for_staff_roles(string $role): void
     {
         $village = Village::factory()->create();
         $owner = User::factory()->create();
@@ -453,7 +485,7 @@ class LetterPolicyTest extends TestCase
             'village_id' => $village->id,
         ]);
 
-        $this->assertTrue($this->policy->delete($staff, $letter));
+        $this->assertFalse($this->policy->delete($staff, $letter));
     }
 
     public function test_delete_forbidden_for_staf_sid_in_another_village(): void
