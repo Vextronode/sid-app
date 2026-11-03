@@ -2,15 +2,20 @@
 
 namespace Tests\Unit;
 
+use App\Models\AccountRegistration;
 use App\Models\Citizen;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\UserRepository;
+use App\Services\AccountActivationService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\UsernameGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -26,10 +31,19 @@ class AuthServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new AuthService(
+        Storage::fake('private_uploads');
+        Notification::fake();
+
+        $this->service = $this->makeService(new UsernameGenerator(new UserRepository));
+    }
+
+    private function makeService(UsernameGenerator $generator): AuthService
+    {
+        return new AuthService(
             new CitizenRepository,
             new UserRepository,
-            new UsernameGenerator(new UserRepository),
+            $generator,
+            app(AccountActivationService::class),
         );
     }
 
@@ -40,13 +54,28 @@ class AuthServiceTest extends TestCase
     {
         return array_merge([
             'nik' => $citizen->nik,
-            'date_of_birth' => $citizen->date_of_birth->format('Y-m-d'),
             'password' => 'RahasiaAman123!',
         ], $overrides);
     }
 
+    private function register(array $payload, ?AuthService $service = null): User
+    {
+        return ($service ?? $this->service)->registerWarga($payload, UploadedFile::fake()->image('wajah.jpg'));
+    }
+
+    private function assertRegistrationFails(callable $register): void
+    {
+        try {
+            $register();
+            $this->fail('Pendaftaran seharusnya ditolak.');
+        } catch (ValidationException $e) {
+            // D2: satu pesan untuk semua kegagalan.
+            $this->assertSame(['nik' => [AuthService::REGISTRATION_FAILED]], $e->errors());
+        }
+    }
+
     #[Test]
-    public function it_registers_a_new_user_using_the_matching_citizen_data(): void
+    public function it_registers_an_inactive_user_waiting_for_activation(): void
     {
         $village = Village::factory()->create();
         $citizen = Citizen::factory()->create([
@@ -54,7 +83,7 @@ class AuthServiceTest extends TestCase
             'nik' => '3201012345670001',
         ]);
 
-        $user = $this->service->registerWarga($this->payloadFor($citizen));
+        $user = $this->register($this->payloadFor($citizen));
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -64,9 +93,10 @@ class AuthServiceTest extends TestCase
             'role' => 'warga',
             'citizen_id' => $citizen->id,
             'village_id' => $village->id,
-            'is_active' => true,
+            'is_active' => false,
             'must_change_password' => false,
         ]);
+        $this->assertSame(AccountRegistration::STATUS_PENDING, AccountRegistration::query()->where('user_id', $user->id)->value('status'));
     }
 
     #[Test]
@@ -87,7 +117,7 @@ class AuthServiceTest extends TestCase
             'village_id' => $otherVillage->id,
         ]);
 
-        $user = $this->service->registerWarga($this->payloadFor($citizen, [
+        $user = $this->register($this->payloadFor($citizen, [
             // Field ini tidak boleh memengaruhi identitas hasil register.
             'village_id' => $otherVillage->id,
             'citizen_id' => $otherCitizen->id,
@@ -104,64 +134,10 @@ class AuthServiceTest extends TestCase
     #[Test]
     public function it_rejects_registration_when_nik_is_not_found_in_citizens(): void
     {
-        $this->expectException(ValidationException::class);
-
-        try {
-            $this->service->registerWarga([
-                'nik' => '9999999999999999',
-                'date_of_birth' => '2000-01-01',
-                'password' => 'RahasiaAman123!',
-            ]);
-        } catch (ValidationException $e) {
-            $this->assertArrayHasKey('nik', $e->errors());
-            $this->assertSame(
-                'NIK tidak terdaftar sebagai warga Desa Cibenda',
-                $e->errors()['nik'][0]
-            );
-
-            throw $e;
-        }
-    }
-
-    #[Test]
-    public function it_rejects_registration_when_date_of_birth_does_not_match_the_citizen_record(): void
-    {
-        $citizen = Citizen::factory()->create([
-            'nik' => '3201012345670009',
-            'date_of_birth' => '1990-05-12',
-        ]);
-
-        $this->expectException(ValidationException::class);
-
-        try {
-            $this->service->registerWarga($this->payloadFor($citizen, [
-                'date_of_birth' => '1991-06-13',
-            ]));
-        } catch (ValidationException $e) {
-            $this->assertArrayHasKey('date_of_birth', $e->errors());
-            $this->assertSame(
-                'Tanggal lahir tidak sesuai dengan data kependudukan',
-                $e->errors()['date_of_birth'][0]
-            );
-            $this->assertDatabaseMissing('users', ['citizen_id' => $citizen->id]);
-
-            throw $e;
-        }
-    }
-
-    #[Test]
-    public function it_accepts_a_date_of_birth_regardless_of_time_component(): void
-    {
-        $citizen = Citizen::factory()->create([
-            'nik' => '3201012345670013',
-            'date_of_birth' => '1990-05-12',
-        ]);
-
-        $user = $this->service->registerWarga($this->payloadFor($citizen, [
-            'date_of_birth' => '1990-05-12T00:00:00+07:00',
+        $this->assertRegistrationFails(fn () => $this->register([
+            'nik' => '9999999999999999',
+            'password' => 'RahasiaAman123!',
         ]));
-
-        $this->assertSame($citizen->id, $user->citizen_id);
     }
 
     #[Test]
@@ -170,19 +146,7 @@ class AuthServiceTest extends TestCase
         $citizen = Citizen::factory()->create(['nik' => '3201012345670003']);
         User::factory()->create(['citizen_id' => $citizen->id]);
 
-        $this->expectException(ValidationException::class);
-
-        try {
-            $this->service->registerWarga($this->payloadFor($citizen));
-        } catch (ValidationException $e) {
-            $this->assertArrayHasKey('nik', $e->errors());
-            $this->assertSame(
-                'NIK sudah terdaftar, silakan login',
-                $e->errors()['nik'][0]
-            );
-
-            throw $e;
-        }
+        $this->assertRegistrationFails(fn () => $this->register($this->payloadFor($citizen)));
     }
 
     #[Test]
@@ -190,7 +154,7 @@ class AuthServiceTest extends TestCase
     {
         $citizen = Citizen::factory()->create(['nik' => '3201012345670004']);
 
-        $user = $this->service->registerWarga($this->payloadFor($citizen));
+        $user = $this->register($this->payloadFor($citizen));
 
         $this->assertNotSame('RahasiaAman123!', $user->password);
         $this->assertTrue(Hash::check('RahasiaAman123!', $user->password));
@@ -203,7 +167,7 @@ class AuthServiceTest extends TestCase
         $citizen = Citizen::factory()->create(['nik' => '3201012345670010']);
         $password = 'RahasiaAman123!';
 
-        $user = $this->service->registerWarga($this->payloadFor($citizen, [
+        $user = $this->register($this->payloadFor($citizen, [
             'password' => $password,
         ]));
 
@@ -225,8 +189,7 @@ class AuthServiceTest extends TestCase
             ->with($citizen->name)
             ->andReturn('siti.1234', 'siti.5678');
 
-        $service = new AuthService(new CitizenRepository, new UserRepository, $generator);
-        $user = $service->registerWarga($this->payloadFor($citizen));
+        $user = $this->register($this->payloadFor($citizen), $this->makeService($generator));
 
         $this->assertSame('siti.5678', $user->username);
         $this->assertSame($citizen->id, $user->citizen_id);

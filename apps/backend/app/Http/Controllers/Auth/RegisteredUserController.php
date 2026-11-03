@@ -17,12 +17,12 @@ class RegisteredUserController extends Controller
 
     public function store(RegisterUserRequest $request): JsonResponse
     {
-        $user = $this->authService->registerWarga($request->validated());
+        $user = $this->authService->registerWarga($request->safe()->except('photo'), $request->file('photo'));
 
         event(new Registered($user));
 
         return (new RegisteredUserResource($user))
-            ->additional(['message' => 'Akun berhasil dibuat. Simpan username Anda.'])
+            ->additional(['message' => 'Pendaftaran terkirim. Akun aktif setelah disetujui petugas wilayah. Simpan username Anda.'])
             ->response()
             ->setStatusCode(201);
     }

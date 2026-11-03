@@ -21,7 +21,7 @@ class UploadUserPhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120', 'dimensions:ratio=1/1'],
         ];
     }
 
@@ -35,6 +35,7 @@ class UploadUserPhotoRequest extends FormRequest
             'photo.image' => 'Foto profil harus berupa gambar.',
             'photo.mimes' => 'Foto profil harus berformat PNG, JPG, atau WEBP.',
             'photo.max' => 'Ukuran foto profil maksimal 5 MB.',
+            'photo.dimensions' => 'Foto profil harus persegi (1:1). Potong foto lewat tombol unggah di aplikasi.',
         ];
     }
 }

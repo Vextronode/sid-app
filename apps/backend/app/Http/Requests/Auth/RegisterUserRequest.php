@@ -25,8 +25,11 @@ class RegisterUserRequest extends FormRequest
     {
         return [
             'nik' => ['required', 'string', 'digits:16'],
-            'date_of_birth' => ['required', 'date'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            // Foto wajah dari kamera untuk diperiksa petugas pemegang aktivasi
+            // (D1/K4). Kamera-saja ditegakkan di frontend; server memastikan
+            // berkasnya gambar persegi (dipotong 1:1, 1080 px di aplikasi).
+            'photo' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120', 'dimensions:ratio=1/1'],
         ];
     }
 
@@ -36,11 +39,14 @@ class RegisterUserRequest extends FormRequest
             'nik.digits' => 'NIK harus 16 digit angka.',
             'nik.required' => 'NIK wajib diisi.',
             'nik.string' => 'NIK harus berupa teks.',
-            'date_of_birth.required' => 'Tanggal lahir wajib diisi.',
-            'date_of_birth.date' => 'Tanggal lahir tidak valid.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
             'password' => 'Kata sandi tidak memenuhi persyaratan keamanan.',
+            'photo.required' => 'Ambil foto wajah Anda dengan kamera.',
+            'photo.image' => 'Foto tidak valid. Ambil ulang dengan kamera.',
+            'photo.mimes' => 'Foto tidak valid. Ambil ulang dengan kamera.',
+            'photo.max' => 'Ukuran foto maksimal 5 MB.',
+            'photo.dimensions' => 'Foto harus persegi (1:1). Ambil ulang dan atur fotonya di aplikasi.',
         ];
     }
 }
