@@ -40,18 +40,32 @@ class OccupationService
         return $this->repository->allForVillage($this->villageId($user), $includeInactive);
     }
 
+    /**
+     * Urutan tampil tidak boleh dobel. Tanpa urutan, pekerjaan baru masuk
+     * paling akhir; bila urutannya sudah dipakai, pemegang lama pindah ke
+     * urutan paling akhir (pekerjaan baru belum punya posisi untuk ditukar).
+     */
     public function create(User $user, array $data): Occupation
     {
         $villageId = $this->villageId($user);
         $this->guardUniqueName($villageId, $data['name']);
 
         try {
-            return $this->repository->create([
-                ...$data,
-                'village_id' => $villageId,
-                'is_active' => $data['is_active'] ?? true,
-                'sort_order' => $data['sort_order'] ?? 0,
-            ]);
+            return DB::transaction(function () use ($villageId, $data): Occupation {
+                $next = ($this->repository->maxSortOrder($villageId) ?? -1) + 1;
+                $sortOrder = $data['sort_order'] ?? $next;
+
+                if (array_key_exists('sort_order', $data)) {
+                    $this->repository->moveSortOrder($villageId, $sortOrder, $next);
+                }
+
+                return $this->repository->create([
+                    ...$data,
+                    'village_id' => $villageId,
+                    'is_active' => $data['is_active'] ?? true,
+                    'sort_order' => $sortOrder,
+                ]);
+            });
         } catch (QueryException $exception) {
             $this->throwIfNameUniqueViolation($exception);
             throw $exception;
@@ -68,7 +82,21 @@ class OccupationService
         }
 
         try {
-            return $this->repository->update($occupation, $data);
+            // Urutan yang sudah dipakai pekerjaan lain ditukar, bukan dobel.
+            return DB::transaction(function () use ($villageId, $occupation, $data): Occupation {
+                $newOrder = $data['sort_order'] ?? null;
+
+                if ($newOrder !== null && (int) $newOrder !== (int) $occupation->sort_order) {
+                    $this->repository->moveSortOrder(
+                        $villageId,
+                        (int) $newOrder,
+                        (int) $occupation->sort_order,
+                        $occupation->id,
+                    );
+                }
+
+                return $this->repository->update($occupation, $data);
+            });
         } catch (QueryException $exception) {
             $this->throwIfNameUniqueViolation($exception);
             throw $exception;

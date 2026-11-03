@@ -34,6 +34,7 @@ get:
 post:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Tambah pekerjaan desa
+  description: "Tanpa sort_order, pekerjaan masuk di urutan paling akhir. Bila sort_order sudah dipakai pekerjaan lain di desa ini, pemegang lamanya dipindah ke urutan paling akhir (urutan tidak pernah dobel)."
   operationId: createOccupation
   security:
     - sanctumCookie: []

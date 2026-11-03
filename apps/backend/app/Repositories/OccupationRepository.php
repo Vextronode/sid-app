@@ -23,6 +23,25 @@ class OccupationRepository
         return Occupation::query()->where('village_id', $villageId)->findOrFail($id);
     }
 
+    public function maxSortOrder(string $villageId): ?int
+    {
+        $max = Occupation::query()->where('village_id', $villageId)->max('sort_order');
+
+        return $max === null ? null : (int) $max;
+    }
+
+    /**
+     * Pindahkan pekerjaan lain desa ini yang memakai urutan $from ke $to.
+     */
+    public function moveSortOrder(string $villageId, int $from, int $to, ?int $exceptId = null): void
+    {
+        Occupation::query()
+            ->where('village_id', $villageId)
+            ->where('sort_order', $from)
+            ->when($exceptId !== null, fn ($query) => $query->whereKeyNot($exceptId))
+            ->update(['sort_order' => $to]);
+    }
+
     public function create(array $data): Occupation
     {
         return Occupation::create($data);

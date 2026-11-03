@@ -131,4 +131,44 @@ class OccupationEndpointTest extends TestCase
         $this->actingAs($user)->patchJson("/api/occupations/{$occupation->id}", ['name' => 'Changed'])->assertNotFound();
         $this->actingAs($user)->deleteJson("/api/occupations/{$occupation->id}")->assertNotFound();
     }
+
+    #[Test]
+    public function updating_to_a_taken_sort_order_swaps_positions(): void
+    {
+        $village = Village::factory()->create();
+        $petani = Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Petani', 'sort_order' => 1]);
+        $guru = Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Guru', 'sort_order' => 4]);
+        $other = Occupation::factory()->create(['name' => 'Desa Lain', 'sort_order' => 1]);
+
+        $this->actingAs($this->petugas($village))
+            ->patchJson("/api/occupations/{$guru->id}", ['sort_order' => 1])
+            ->assertOk();
+
+        $this->assertSame(1, $guru->fresh()->sort_order);
+        $this->assertSame(4, $petani->fresh()->sort_order);
+        // Desa lain tidak ikut tergeser.
+        $this->assertSame(1, $other->fresh()->sort_order);
+    }
+
+    #[Test]
+    public function creating_with_a_taken_sort_order_moves_the_holder_to_the_end(): void
+    {
+        $village = Village::factory()->create();
+        $petani = Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Petani', 'sort_order' => 1]);
+        Occupation::factory()->create(['village_id' => $village->id, 'name' => 'Guru', 'sort_order' => 3]);
+        $user = $this->petugas($village);
+
+        $this->actingAs($user)
+            ->postJson('/api/occupations', ['name' => 'Nelayan', 'sort_order' => 1])
+            ->assertCreated()
+            ->assertJsonPath('data.sort_order', 1);
+
+        $this->assertSame(4, $petani->fresh()->sort_order);
+
+        // Tanpa urutan: masuk paling akhir, bukan 0.
+        $this->actingAs($user)
+            ->postJson('/api/occupations', ['name' => 'Pedagang'])
+            ->assertCreated()
+            ->assertJsonPath('data.sort_order', 5);
+    }
 }
