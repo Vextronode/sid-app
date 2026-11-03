@@ -47,7 +47,7 @@ class VillageOrgPositionRepository
         return VillageOrgPosition::query()
             ->where('village_id', $villageId)
             ->when($orgType !== null, fn ($query) => $query->where('org_type', $orgType))
-            ->with(['members' => fn ($query) => $query->orderByDesc('started_at')])
+            ->with(['members' => fn ($query) => $query->orderByDesc('started_at')->orderByDesc('id'), 'members.citizen:id,nik'])
             ->orderBy('org_type')
             ->orderBy('sort_order')
             ->get();
@@ -55,13 +55,13 @@ class VillageOrgPositionRepository
 
     public function findByIdOrFail(int $id): VillageOrgPosition
     {
-        return VillageOrgPosition::query()->with('members')->findOrFail($id);
+        return VillageOrgPosition::query()->with(['members', 'members.citizen:id,nik'])->findOrFail($id);
     }
 
     public function findByIdForVillageOrFail(int $id, string $villageId): VillageOrgPosition
     {
         return VillageOrgPosition::query()
-            ->with(['members' => fn ($query) => $query->orderByDesc('started_at')])
+            ->with(['members' => fn ($query) => $query->orderByDesc('started_at')->orderByDesc('id'), 'members.citizen:id,nik'])
             ->where('village_id', $villageId)
             ->findOrFail($id);
     }
