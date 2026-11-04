@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Imports\CitizensImport;
+use App\Imports\CitizensWorkbookImport;
+use App\Imports\Support\CitizenImportColumns;
+use App\Imports\Support\CitizenImportLayout;
+use App\Imports\Support\XlsxStreamReader;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Hamlet;
@@ -16,8 +20,12 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CitizenService
@@ -25,6 +33,11 @@ class CitizenService
     private const DUPLICATE_NIK_MESSAGE = 'NIK sudah ada dalam database warga';
 
     private const DUPLICATE_HEAD_MESSAGE = 'KK ini sudah memiliki kepala keluarga aktif.';
+
+    /** File impor yang menunggu keputusan "Timpa / Lewati" (disk local). */
+    private const IMPORT_DIR = 'citizen-imports';
+
+    private const IMPORT_TTL_MINUTES = 60;
 
     public function __construct(
         protected CitizenRepository $citizenRepository,
@@ -44,7 +57,7 @@ class CitizenService
      * dari rt_id (request tidak mengirim rw_id). Log Aktivitas (S-05)
      * ditulis PopulationAuditObserver.
      */
-    public function create(array $data, User $user): Citizen
+    public function create(array $data, User $user, string $dataSource = 'manual_input_desa'): Citizen
     {
         if (! $user->village_id) {
             abort(403, 'Data wilayah desa tidak ditemukan.');
@@ -55,10 +68,10 @@ class CitizenService
         $this->guardRelatedRecords($data, $user);
 
         try {
-            return DB::transaction(function () use ($data, $user) {
+            return DB::transaction(function () use ($data, $user, $dataSource) {
                 $citizen = $this->citizenRepository->create(array_merge($data, [
                     'village_id' => $user->village_id,
-                    'data_source' => 'manual_input_desa',
+                    'data_source' => $dataSource,
                 ]));
                 $citizen->refresh();
 
@@ -105,29 +118,188 @@ class CitizenService
     }
 
     /**
-     * EV5-11-S2 (UC-09 Import Excel). Setiap baris divalidasi &
-     * disimpan sendiri-sendiri lewat create() - baris gagal di-skip,
-     * bukan all-or-nothing transaction (SID-ARCH-BE-001 S5.4).
+     * EV5-11-S2 (UC-09 Import Excel) langsung dari file. Setiap baris
+     * divalidasi & disimpan sendiri-sendiri lewat create() - baris gagal
+     * (termasuk NIK yang sudah terdaftar) di-skip, bukan all-or-nothing
+     * transaction (SID-ARCH-BE-001 S5.4).
      *
-     * @return array{total_rows: int, success_count: int, error_count: int, errors: list<array{row: int, message: string}>}
+     * @return array{total_rows: int, success_count: int, updated_count: int, skipped_count: int, error_count: int, errors: list<array{row: int, message: string}>, warning_count: int, warnings: list<array{row: int, message: string}>}
      */
     public function importFromExcel(UploadedFile $file, User $user): array
     {
-        $import = new CitizensImport($this, $user);
+        [$import] = $this->runImport($file->getRealPath(), $file->getClientOriginalExtension(), $user);
 
-        // Setiap baris tercatat sebagai `created` dengan `source = import`.
-        $this->auditContext->with(['source' => 'import'], fn () => Excel::import($import, $file));
+        return $this->finishImport($import, $user, $file->getClientOriginalName());
+    }
 
-        $summary = [
-            'total_rows' => $import->successCount() + count($import->errorList()),
-            'success_count' => $import->successCount(),
+    /**
+     * Tahap 1 impor dengan pilihan "Timpa / Lewati": semua baris diperiksa
+     * tanpa menyimpan apa pun. File disimpan sementara di balik token untuk
+     * tahap 2 (importFromPreview), jadi tidak perlu diunggah ulang.
+     *
+     * @return array{token: string, expires_at: string, total_rows: int, new_count: int, conflict_count: int, error_count: int, errors: list<array{row: int, message: string}>, warning_count: int, warnings: list<array{row: int, message: string}>, conflicts: list<array<string, mixed>>}
+     */
+    public function previewImport(UploadedFile $file, User $user): array
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+        [$import, $layout] = $this->runImport($file->getRealPath(), $extension, $user, dryRun: true);
+
+        $this->pruneImportFiles();
+
+        $token = (string) Str::uuid();
+        $path = $file->storeAs(self::IMPORT_DIR, "{$token}.{$extension}", 'local');
+        $expiresAt = now()->addMinutes(self::IMPORT_TTL_MINUTES);
+
+        Cache::put(self::importCacheKey($token), [
+            'user_id' => $user->id,
+            'path' => $path,
+            'extension' => $extension,
+            'name' => $file->getClientOriginalName(),
+        ], $expiresAt);
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+            'total_rows' => $import->successCount() + count($import->conflicts()) + count($import->errorList()),
+            'new_count' => $import->successCount(),
+            'conflict_count' => count($import->conflicts()),
             'error_count' => count($import->errorList()),
             'errors' => $import->errorList(),
+            'warning_count' => count($import->warningList()),
+            'warnings' => $import->warningList(),
+            'conflicts' => $import->conflicts(),
+            'columns' => $layout->describe(),
+        ];
+    }
+
+    /**
+     * Tahap 2: impor file hasil preview. Baris di $overwriteRows yang NIK-nya
+     * sudah terdaftar ditimpa (kolom yang terisi di file saja, NIK tetap);
+     * baris lain yang NIK-nya terdaftar dilewati. Token hanya bisa dipakai
+     * sekali.
+     *
+     * @param  list<int>  $overwriteRows
+     * @return array{total_rows: int, success_count: int, updated_count: int, skipped_count: int, error_count: int, errors: list<array{row: int, message: string}>, warning_count: int, warnings: list<array{row: int, message: string}>}
+     */
+    public function importFromPreview(string $token, array $overwriteRows, User $user): array
+    {
+        $session = Cache::pull(self::importCacheKey($token));
+
+        if (! is_array($session) || $session['user_id'] !== $user->id || ! Storage::disk('local')->exists($session['path'])) {
+            throw ValidationException::withMessages([
+                'token' => ['Sesi impor tidak ditemukan atau sudah kedaluwarsa. Unggah ulang file.'],
+            ]);
+        }
+
+        try {
+            [$import] = $this->runImport(
+                Storage::disk('local')->path($session['path']),
+                $session['extension'],
+                $user,
+                overwriteRows: array_values(array_unique(array_map('intval', $overwriteRows))),
+            );
+        } finally {
+            Storage::disk('local')->delete($session['path']);
+        }
+
+        return $this->finishImport($import, $user, $session['name']);
+    }
+
+    /**
+     * @param  list<int>|null  $overwriteRows
+     * @return array{0: CitizensImport, 1: CitizenImportLayout}
+     */
+    private function runImport(string $path, string $extension, User $user, bool $dryRun = false, ?array $overwriteRows = null): array
+    {
+        $readerType = match (strtolower($extension)) {
+            'csv' => ExcelFormat::CSV,
+            'xls' => ExcelFormat::XLS,
+            default => ExcelFormat::XLSX,
+        };
+
+        // Template sistem maupun file pemutakhiran data pemilih desa (tabel
+        // di bawah judul, di salah satu dari banyak sheet).
+        $xlsx = $readerType === ExcelFormat::XLSX ? new XlsxStreamReader($path) : null;
+        $layout = $xlsx !== null
+            ? CitizenImportLayout::detectXlsx($xlsx)
+            : CitizenImportLayout::detect($path, $readerType);
+
+        if ($layout === null) {
+            throw ValidationException::withMessages([
+                'file' => ['Kolom NIK dan Nama tidak ditemukan. Pastikan baris judul kolom ada di '.CitizenImportColumns::SCAN_ROWS.' baris pertama.'],
+            ]);
+        }
+
+        $import = new CitizensImport($this, $user, $layout, $dryRun, $overwriteRows);
+
+        // Satu file desa berisi ribuan warga; tiap baris dienkripsi, divalidasi,
+        // dan dicatat di Log Aktivitas (±2 menit untuk ±6.000 baris).
+        set_time_limit(600);
+
+        // .xlsx dibaca baris demi baris (sheet file desa bisa puluhan MB);
+        // CSV/XLS lewat Maatwebsite, hanya sheet tabel warga yang dimuat.
+        $run = $xlsx !== null
+            ? function () use ($xlsx, $layout, $import) {
+                foreach ($xlsx->rows($layout->sheet, $import->wantsColumn(...)) as $row => $cells) {
+                    $import->importRow($row, $cells);
+                }
+            }
+        : fn () => Excel::import(
+            new CitizensWorkbookImport($layout->sheet, $import),
+            new UploadedFile($path, basename($path), null, null, true),
+            null,
+            $readerType,
+        );
+
+        // Setiap baris tercatat sebagai `created`/`updated` dengan
+        // `source = import`; SHDK yang ditebak setelahnya tercatat `updated`.
+        $this->auditContext->with(['source' => 'import'], function () use ($run, $import) {
+            $run();
+            $import->finish();
+        });
+
+        return [$import, $layout];
+    }
+
+    /**
+     * @return array{total_rows: int, success_count: int, updated_count: int, skipped_count: int, error_count: int, errors: list<array{row: int, message: string}>, warning_count: int, warnings: list<array{row: int, message: string}>}
+     */
+    private function finishImport(CitizensImport $import, User $user, string $fileName): array
+    {
+        $errors = $import->errorList();
+
+        $summary = [
+            'total_rows' => $import->successCount() + $import->updatedCount() + $import->skippedCount() + count($errors),
+            'success_count' => $import->successCount(),
+            'updated_count' => $import->updatedCount(),
+            'skipped_count' => $import->skippedCount(),
+            'error_count' => count($errors),
+            'errors' => $errors,
+            'warning_count' => count($import->warningList()),
+            'warnings' => $import->warningList(),
         ];
 
-        $this->audit->citizensImported($user, $summary, $file->getClientOriginalName());
+        $this->audit->citizensImported($user, $summary, $fileName);
 
         return $summary;
+    }
+
+    private static function importCacheKey(string $token): string
+    {
+        return "citizen-import:{$token}";
+    }
+
+    /** File preview yang tidak pernah dilanjutkan ke impor. */
+    private function pruneImportFiles(): void
+    {
+        $disk = Storage::disk('local');
+        $cutoff = now()->subMinutes(self::IMPORT_TTL_MINUTES)->getTimestamp();
+
+        foreach ($disk->files(self::IMPORT_DIR) as $file) {
+            if ($disk->lastModified($file) < $cutoff) {
+                $disk->delete($file);
+            }
+        }
     }
 
     public function delete(Citizen $citizen, User $user): bool

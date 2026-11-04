@@ -72,6 +72,19 @@ Family:
             type: string
             nullable: true
             example: "kepala_keluarga"
+          gender:
+            type: string
+            enum: [L, P]
+            example: "L"
+          age:
+            type: integer
+            nullable: true
+            description: "Umur (tahun) dari tanggal lahir; tanggal lahir sendiri tidak dikirim."
+            example: 45
+          religion:
+            type: string
+            nullable: true
+            example: "islam"
     rw_id:
       type: integer
       nullable: true

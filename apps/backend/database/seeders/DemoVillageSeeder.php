@@ -32,6 +32,23 @@ class DemoVillageSeeder extends Seeder
         .'Lahannya dimanfaatkan untuk persawahan, perkebunan, kolam ikan, dan permukiman, sehingga sebagian besar warga hidup dari bertani, berkebun, dan melaut. '
         .'Kedekatan dengan pesisir selatan Pangandaran juga membuka peluang usaha di bidang perikanan dan wisata.';
 
+    /**
+     * Struktur RW/RT mengikuti data pemutakhiran pemilih Desa Cibenda
+     * (docs/template-surat/DATA PENDUDUK.xlsb): nomor RW urut se-desa, tidak
+     * mulai lagi di tiap dusun, dan nomor RT mulai dari 001 di tiap RW.
+     * Kunci luar = nomor dusun (DemoData::HAMLETS), kunci dalam = nomor RW,
+     * nilai = jumlah RT di RW itu.
+     *
+     * @var array<int, array<int, int>>
+     */
+    private const RW_RT_COUNTS = [
+        1 => [1 => 2, 2 => 3, 3 => 2, 4 => 3, 5 => 3],
+        2 => [6 => 2, 7 => 2, 8 => 3, 9 => 3, 10 => 2],
+        3 => [11 => 2, 12 => 3, 13 => 2, 14 => 2, 15 => 2],
+        4 => [16 => 3, 17 => 2, 18 => 3, 19 => 2, 20 => 2],
+        5 => [21 => 2, 22 => 3, 23 => 2, 24 => 3, 25 => 2, 26 => 2],
+    ];
+
     public function run(): void
     {
         DemoData::ensureNotProduction();
@@ -77,7 +94,7 @@ class DemoVillageSeeder extends Seeder
                 ],
             );
 
-            for ($rwNumber = 1; $rwNumber <= 5; $rwNumber++) {
+            foreach (self::RW_RT_COUNTS[$hamletNumber] as $rwNumber => $rtCount) {
                 $rwLabel = sprintf('%03d', $rwNumber);
                 $rw = Rw::query()->updateOrCreate(
                     ['hamlet_id' => $hamlet->id, 'number' => $rwLabel],
@@ -87,7 +104,7 @@ class DemoVillageSeeder extends Seeder
                     ],
                 );
 
-                for ($rtNumber = 1; $rtNumber <= 5; $rtNumber++) {
+                for ($rtNumber = 1; $rtNumber <= $rtCount; $rtNumber++) {
                     $rtLabel = sprintf('%03d', $rtNumber);
                     Rt::query()->updateOrCreate(
                         ['rw_id' => $rw->id, 'number' => $rtLabel],

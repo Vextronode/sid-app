@@ -400,18 +400,171 @@ CitizenImportResponse:
           example: 120
         success_count:
           type: integer
-          example: 115
+          description: Warga baru yang dibuat
+          example: 95
+        updated_count:
+          type: integer
+          description: Warga yang ditimpa (impor dari preview; 0 bila langsung dari file)
+          example: 15
+        skipped_count:
+          type: integer
+          description: Baris yang NIK-nya terdaftar dan tidak dipilih untuk ditimpa
+          example: 5
         error_count:
           type: integer
           example: 5
         errors:
+          $ref: '#/CitizenImportRowErrors'
+        warning_count:
+          type: integer
+          example: 2
+        warnings:
+          $ref: '#/CitizenImportRowWarnings'
+
+CitizenImportRowWarnings:
+  type: array
+  description: Isi kolom yang tidak dikenali lalu dikosongkan; barisnya tetap dibuat/ditimpa
+  items:
+    type: object
+    properties:
+      row:
+        type: integer
+        example: 14
+      message:
+        type: string
+        example: "Agama \"KEPERCAYAAN\" tidak dikenali; kolom ini dikosongkan."
+
+CitizenImportRowErrors:
+  type: array
+  items:
+    type: object
+    properties:
+      row:
+        type: integer
+        example: 23
+      message:
+        type: string
+        example: "RT 7 tidak ditemukan di RW 016."
+
+CitizenImportPreviewResponse:
+  type: object
+  properties:
+    data:
+      type: object
+      properties:
+        token:
+          type: string
+          format: uuid
+          description: Dipakai di POST /citizens/import; sekali pakai, hanya oleh user ini
+        expires_at:
+          type: string
+          format: date-time
+        total_rows:
+          type: integer
+          example: 120
+        new_count:
+          type: integer
+          description: Baris valid dengan NIK baru (akan dibuat)
+          example: 95
+        conflict_count:
+          type: integer
+          example: 20
+        error_count:
+          type: integer
+          example: 5
+        errors:
+          $ref: '#/CitizenImportRowErrors'
+        warning_count:
+          type: integer
+          example: 2
+        warnings:
+          $ref: '#/CitizenImportRowWarnings'
+        columns:
+          type: object
+          properties:
+            sheet:
+              type: string
+              example: "PEMUTAKHIRAN"
+            header_row:
+              type: integer
+              example: 8
+            mapped:
+              type: array
+              items:
+                type: object
+                properties:
+                  column:
+                    type: string
+                    example: "E"
+                  header:
+                    type: string
+                    description: Judul kolom asli di file
+                    example: "NAMA LENGKAP"
+                  field:
+                    type: string
+                    example: "name"
+                  label:
+                    type: string
+                    example: "Nama"
+            ignored:
+              type: array
+              items:
+                type: object
+                properties:
+                  column:
+                    type: string
+                    example: "A"
+                  header:
+                    type: string
+                    example: "NO"
+                  reason:
+                    type: string
+                    example: "Tidak dikenali."
+                  suggestion:
+                    type: string
+                    nullable: true
+                    description: Kolom yang mungkin dimaksud; hanya petunjuk, kolom tetap tidak dibaca
+                    example: "Agama"
+            missing_required:
+              type: array
+              description: Kolom wajib yang tidak ada di file
+              items:
+                type: string
+              example: ["Jenis Kelamin", "RT dan RW"]
+        conflicts:
           type: array
           items:
             type: object
             properties:
               row:
                 type: integer
-                example: 23
-              message:
+                example: 12
+              citizen_id:
                 type: string
-                example: "NIK sudah terdaftar dalam database warga"
+                format: uuid
+              name:
+                type: string
+                description: Nama warga yang terdaftar sekarang
+                example: "Asep"
+              moves_family:
+                type: boolean
+                description: NKK di file berbeda dengan KK warga sekarang
+                example: false
+              changes:
+                type: array
+                description: Kolom yang berbeda; kosong = data sama persis
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      example: "rt_id"
+                    label:
+                      type: string
+                      example: "RT/RW"
+                    before:
+                      type: string
+                      example: "RT 001 / RW 001"
+                    after:
+                      type: string
+                      example: "RT 002 / RW 003"

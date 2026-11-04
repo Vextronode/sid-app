@@ -85,7 +85,7 @@ class DemoOfficialSeeder extends Seeder
 
         $this->village = Village::query()->where('code', DemoData::VILLAGE_CODE)->firstOrFail();
         $this->occupations = Occupation::query()->where('village_id', $this->village->id)->pluck('id', 'name')->all();
-        // Satu kali bcrypt untuk ±160 akun; hasil hash dipakai ulang.
+        // Satu kali bcrypt untuk ±100 akun; hasil hash dipakai ulang.
         $this->passwordHash = Hash::make(DemoData::DEMO_PASSWORD);
 
         $hamlets = Hamlet::query()

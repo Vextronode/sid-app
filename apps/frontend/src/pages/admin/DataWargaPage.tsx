@@ -13,6 +13,7 @@ import {
   Edit,
   History,
   Trash2,
+  RefreshCw,
 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -49,10 +50,17 @@ import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealCitizenNik } from '@/shared/lib/identityApi'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, DragEvent, FormEvent } from 'react'
 import { EMPTY_CITIZEN_FORM, citizenToForm } from '@/features/data-warga/utils/citizenForm'
 import type { CitizenForm } from '@/features/data-warga/utils/citizenForm'
-import type { CitizenImportResult } from '@/features/data-warga/hooks/useWargaList'
+import type {
+  CitizenImportConflict,
+  CitizenImportPreview,
+  CitizenImportResult,
+} from '@/features/data-warga/hooks/useWargaList'
+import { ImportConflictDialog } from '@/features/data-warga/components/ImportConflictDialog'
+import { ImportPreviewSummary } from '@/features/data-warga/components/ImportPreviewSummary'
+import { ImportProgressOverlay } from '@/features/data-warga/components/ImportProgressOverlay'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { Citizen, Occupation } from '@/types'
 import { FamilyNumberValue } from '@/features/data-warga/components/FamilyNumberValue'
@@ -91,6 +99,47 @@ type ImportStatus = {
 }
 
 const emptyImportStatus: ImportStatus = { loading: false, success: null, error: null, result: null }
+
+// Tahap yang sedang berjalan; selama itu halaman diblokir ImportProgressOverlay.
+type ImportPhase = 'template' | 'checking' | 'importing'
+
+const IMPORT_PHASE_TEXT: Record<ImportPhase, { title: string; description: string }> = {
+  template: {
+    title: 'Menyiapkan template...',
+    description:
+      'Template dibuat dari data dusun, RW, RT, dan Katalog Pekerjaan desa terbaru. Unduhan dimulai otomatis setelah selesai.',
+  },
+  checking: {
+    title: 'Memeriksa file impor...',
+    description:
+      'Setiap baris dicek: format, wilayah RT/RW, dan NIK yang sudah terdaftar. Belum ada data yang disimpan.',
+  },
+  importing: {
+    title: 'Mengimpor data warga...',
+    description:
+      'Data sedang disimpan dan dicatat di Log Aktivitas. File berisi ribuan warga bisa memakan beberapa menit.',
+  },
+}
+
+// Konfirmasi "Timpa" memuat perbandingan sebanyak ini; sisanya diringkas.
+const OVERWRITE_DETAIL_LIMIT = 30
+
+function importSummaryText(result: CitizenImportResult) {
+  const parts = [`${result.success_count} warga baru ditambahkan`]
+  if (result.updated_count) parts.push(`${result.updated_count} ditimpa`)
+  if (result.skipped_count) parts.push(`${result.skipped_count} dilewati`)
+  if (result.error_count) parts.push(`${result.error_count} baris gagal`)
+
+  return `${parts.join(', ')}.`
+}
+
+// Sama dengan ImportCitizensRequest (max:25600) dan upload_max_filesize PHP.
+const IMPORT_MAX_MB = 25
+const IMPORT_MAX_BYTES = IMPORT_MAX_MB * 1024 * 1024
+
+// .xlsb (Excel Binary) tidak bisa dibaca server; pesan sama dengan backend.
+const XLSB_IMPORT_MESSAGE =
+  'File .xlsb belum didukung. Buka file di Excel, pilih Simpan Sebagai (Save As) "Excel Workbook (*.xlsx)", lalu unggah file .xlsx tersebut.'
 
 // Dua bagian halaman, ditampilkan sebagai tab seperti halaman Lembaga
 // Kemasyarakatan. Tab aktif disimpan di ?tab= agar tetap saat kembali
@@ -132,7 +181,8 @@ export default function DataWargaPage() {
     addCitizen,
     editCitizen,
     deleteWarga,
-    importWargaExcel,
+    previewWargaImport,
+    importWargaFromPreview,
   } = useWargaList()
 
   const [keyword, setKeyword] = useState('')
@@ -140,7 +190,14 @@ export default function DataWargaPage() {
   // Modal Impor Excel
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [fileDragging, setFileDragging] = useState(false)
+  const replaceFileInputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState(emptyImportStatus)
+  const [importPhase, setImportPhase] = useState<ImportPhase | null>(null)
+  // Hasil pemeriksaan file (ringkasan di modal impor) sebelum impor dijalankan.
+  const [importPreview, setImportPreview] = useState<CitizenImportPreview | null>(null)
+  // Pop-up Timpa/Lewati menggantikan modal impor selama terbuka.
+  const [showConflicts, setShowConflicts] = useState(false)
 
   // Modal Form CRUD (Tambah / Edit)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
@@ -281,7 +338,12 @@ export default function DataWargaPage() {
     }
   }
 
+  // Template dibuat server dari data desa terbaru (beberapa detik): overlay
+  // menandai prosesnya supaya tombol tidak terkesan diam.
   const handleDownloadTemplate = async () => {
+    if (importPhase) return
+
+    setImportPhase('template')
     try {
       await downloadFile('/api/citizens/import-template', 'template_impor_warga.xlsx')
     } catch (err) {
@@ -289,28 +351,59 @@ export default function DataWargaPage() {
         title: 'Unduhan gagal',
         message: await downloadErrorMessage(err, 'Gagal mengunduh templat Excel.'),
       })
+    } finally {
+      setImportPhase(null)
     }
   }
 
+  // Dipakai pilih file, seret-lepas, dan Ganti; isi input dikosongkan supaya
+  // file yang sama bisa dipilih lagi setelah Hapus.
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
-        setSelectedFile(file)
-        setImportStatus(emptyImportStatus)
-      } else {
-        setImportStatus({
-          ...emptyImportStatus,
-          error: 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv)',
-        })
-      }
+    selectImportFile(e.target.files?.[0])
+    e.target.value = ''
+  }
+
+  const clearImportFile = () => {
+    setSelectedFile(null)
+    setImportStatus(emptyImportStatus)
+  }
+
+  const handleFileCardDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setFileDragging(false)
+    selectImportFile(e.dataTransfer.files?.[0])
+  }
+
+  const selectImportFile = (file: File | undefined) => {
+    if (!file) return
+
+    const name = file.name.toLowerCase()
+    let error: string | null = null
+
+    if (name.endsWith('.xlsb')) {
+      error = XLSB_IMPORT_MESSAGE
+    } else if (!['.xlsx', '.xls', '.csv'].some((ext) => name.endsWith(ext))) {
+      error = 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv)'
+    } else if (file.size > IMPORT_MAX_BYTES) {
+      error = `Ukuran file maksimal ${IMPORT_MAX_MB} MB.`
     }
+
+    if (error) {
+      setSelectedFile(null)
+      setImportStatus({ ...emptyImportStatus, error })
+      return
+    }
+
+    setSelectedFile(file)
+    setImportStatus(emptyImportStatus)
   }
 
   const closeImportModal = () => {
     setIsImportModalOpen(false)
     setSelectedFile(null)
     setImportStatus(emptyImportStatus)
+    setImportPreview(null)
+    setShowConflicts(false)
   }
 
   // Berkas sudah dipilih tetapi belum diimpor: tanya dulu sebelum menutup.
@@ -318,42 +411,33 @@ export default function DataWargaPage() {
     isImportModalOpen && Boolean(selectedFile) && !importStatus.result,
     {
       disabled: importStatus.loading,
-      escapeClose: isImportModalOpen ? closeImportModal : null,
+      // Selama pop-up konflik tampil, Escape milik pop-up itu (kembali ke sini).
+      escapeClose: isImportModalOpen && !showConflicts ? closeImportModal : null,
     },
   )
 
-  const handleImportSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!selectedFile) return
-
-    const confirmed = await confirmDialog({
-      title: `Impor data dari ${selectedFile.name}?`,
-      message:
-        'Setiap baris yang valid langsung ditambahkan sebagai data warga baru dan baris yang gagal dilewati. Impor tidak dapat dibatalkan sekaligus.',
-      confirmLabel: 'Mulai Impor',
-      tone: 'primary',
-    })
-
-    if (!confirmed) return
-
+  // Tahap 2: impor file hasil preview; baris overwriteRows ditimpa.
+  const runPreviewImport = async (token: string, overwriteRows: number[]) => {
+    // Token sekali pakai: setelah ini modal kembali ke tampilan file + hasil.
+    setImportPreview(null)
+    setShowConflicts(false)
     setImportStatus({ ...emptyImportStatus, loading: true })
+    setImportPhase('importing')
 
     try {
-      const result = await importWargaExcel(selectedFile)
-      const failed = result?.error_count ?? 0
+      const result = await importWargaFromPreview(token, overwriteRows)
+      const failed = result.error_count
 
       setImportStatus({
         loading: false,
-        success: `${result?.success_count ?? 0} baris berhasil diimpor${
-          failed ? `, ${failed} baris gagal` : ''
-        }.`,
+        success: importSummaryText(result),
         error: null,
-        result: result ?? null,
+        result,
       })
 
       // Tutup otomatis hanya kalau semua baris berhasil.
       if (!failed) {
-        notifySuccess(`${result?.success_count ?? 0} data warga berhasil diimpor.`)
+        notifySuccess(importSummaryText(result))
         setTimeout(closeImportModal, 1200)
       }
     } catch (err) {
@@ -361,7 +445,87 @@ export default function DataWargaPage() {
         ...emptyImportStatus,
         error: getApiErrorMessage(err, 'Gagal mengimpor data. Periksa kembali format file Anda.'),
       })
+    } finally {
+      setImportPhase(null)
     }
+  }
+
+  // Tahap 1: periksa file tanpa menyimpan; hasilnya tampil sebagai ringkasan.
+  const handleImportSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!selectedFile) return
+
+    setImportStatus({ ...emptyImportStatus, loading: true })
+    setImportPhase('checking')
+
+    try {
+      const preview = await previewWargaImport(selectedFile)
+      setImportStatus(emptyImportStatus)
+      setImportPreview(preview)
+    } catch (err) {
+      setImportStatus({
+        ...emptyImportStatus,
+        error: getApiErrorMessage(err, 'Gagal memeriksa file. Periksa kembali format file Anda.'),
+      })
+    } finally {
+      setImportPhase(null)
+    }
+  }
+
+  // Dari ringkasan: konflik NIK dipilih dulu (Timpa/Lewati), tanpa konflik
+  // langsung impor warga baru.
+  const handlePreviewContinue = () => {
+    if (!importPreview) return
+
+    if (importPreview.conflict_count > 0) {
+      setShowConflicts(true)
+      return
+    }
+
+    void runPreviewImport(importPreview.token, [])
+  }
+
+  // Pilihan di ImportConflictDialog; "Timpa" dikonfirmasi sekali lagi dengan
+  // perbandingan data lama dan baru.
+  const handleConflictConfirm = async (overwriteRows: number[]) => {
+    if (!importPreview) return
+
+    if (overwriteRows.length > 0) {
+      const selected = importPreview.conflicts.filter((conflict) =>
+        overwriteRows.includes(conflict.row),
+      )
+      const hidden = selected.length - OVERWRITE_DETAIL_LIMIT
+      const movesFamily = selected.filter((conflict) => conflict.moves_family).length
+
+      const confirmed = await confirmDialog({
+        title: `Timpa data ${selected.length} warga?`,
+        message: [
+          'Kolom berikut diganti dengan data dari file. Kolom yang tidak ada di file dan NIK tidak berubah.',
+          movesFamily ? `${movesFamily} warga akan pindah KK.` : '',
+          hidden > 0
+            ? `Ditampilkan ${OVERWRITE_DETAIL_LIMIT} warga pertama; ${hidden} lainnya ikut ditimpa.`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        details: selected
+          .slice(0, OVERWRITE_DETAIL_LIMIT)
+          .map((conflict: CitizenImportConflict) => ({
+            title: `Baris ${conflict.row} · ${conflict.name}`,
+            rows: conflict.changes.map((change) => ({
+              label: change.label,
+              from: change.before,
+              to: change.after,
+            })),
+          })),
+        confirmLabel: 'Ya, timpa & impor',
+        tone: 'danger',
+      })
+
+      if (!confirmed) return
+    }
+
+    await runPreviewImport(importPreview.token, overwriteRows)
   }
 
   return (
@@ -486,6 +650,7 @@ export default function DataWargaPage() {
                       <th className="center">Dusun</th>
                       <th className="center">RT/RW</th>
                       <th className="center">Jenis Kelamin</th>
+                      <th className="center">Agama</th>
                       <th className="center">Status Domisili</th>
                       <th className="center">No. KK</th>
                       <th className="center">Peran KK</th>
@@ -497,19 +662,19 @@ export default function DataWargaPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={11} className="empty">
+                        <td colSpan={12} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={11} className="empty sid-admin-error">
+                        <td colSpan={12} className="empty sid-admin-error">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="empty">
+                        <td colSpan={12} className="empty">
                           Belum ada data warga.
                         </td>
                       </tr>
@@ -538,6 +703,7 @@ export default function DataWargaPage() {
                                 ? 'Perempuan'
                                 : '-'}
                           </td>
+                          <td className="center">{labelOf(RELIGION_LABELS, warga.religion)}</td>
                           <td className="center">{formatResidencyType(warga.residency_type)}</td>
                           <td className="center">
                             <FamilyNumberValue family={warga.family} />
@@ -1118,7 +1284,9 @@ export default function DataWargaPage() {
       )}
 
       {/* Modal Impor Excel */}
-      {isImportModalOpen && (
+      {/* Diganti pop-up konflik selama pilihan Timpa/Lewati belum diambil;
+          Batal di pop-up itu kembali ke ringkasan pemeriksaan. */}
+      {isImportModalOpen && !showConflicts && (
         <div className="sid-modal-overlay sid-admin-modal-overlay">
           <div className="sid-modal sid-admin-import-modal">
             <div className="sid-admin-modal-header">
@@ -1136,92 +1304,176 @@ export default function DataWargaPage() {
               </button>
             </div>
 
-            <div className="sid-admin-import-template">
-              <div>
-                <strong>Belum punya formatnya?</strong>
-                <p>Unduh templat Excel standar di sini.</p>
-              </div>
-              <button
-                type="button"
-                className="sid-admin-template-link"
-                onClick={handleDownloadTemplate}
-              >
-                <Download size={14} /> Templat
-              </button>
-            </div>
-
-            <form onSubmit={handleImportSubmit} className="sid-admin-import-form">
-              <label className="sid-admin-file-dropzone">
-                <input
-                  type="file"
-                  accept=".xlsx, .xls, .csv"
-                  onChange={handleFileChange}
-                  className="sid-admin-file-input"
-                />
-
-                {!selectedFile ? (
-                  <>
-                    <Upload size={36} className="sid-admin-file-icon" />
-                    <p className="sid-admin-file-title">Klik atau seret file Excel / CSV ke sini</p>
-                    <p className="sid-admin-file-hint">Format yang didukung: .xlsx, .xls, .csv</p>
-                  </>
-                ) : (
-                  <div className="sid-admin-file-selected">
-                    <FileText size={28} className="sid-admin-file-icon" />
-                    <div>
-                      <p className="sid-admin-file-title">{selectedFile.name}</p>
-                      <p className="sid-admin-file-hint">
-                        {(selectedFile.size / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
+            {importPreview && selectedFile ? (
+              <ImportPreviewSummary
+                preview={importPreview}
+                fileName={selectedFile.name}
+                onBack={() => setImportPreview(null)}
+                onContinue={handlePreviewContinue}
+              />
+            ) : (
+              <>
+                <div className="sid-admin-import-template">
+                  <div>
+                    <strong>Belum punya formatnya?</strong>
+                    <p>
+                      Unduh templat Excel standar di sini. File data pemilih desa juga bisa langsung
+                      diunggah; kolom yang tidak dikenali diabaikan.
+                    </p>
                   </div>
-                )}
-              </label>
-
-              {importStatus.error && (
-                <div className="sid-admin-import-alert sid-admin-alert-error" role="alert">
-                  <AlertCircle size={16} />
-                  <span>{importStatus.error}</span>
+                  <button
+                    type="button"
+                    className="sid-admin-template-link"
+                    onClick={handleDownloadTemplate}
+                    disabled={importPhase !== null}
+                  >
+                    <Download size={14} /> Templat
+                  </button>
                 </div>
-              )}
 
-              {importStatus.success && (
-                <div className="sid-admin-import-alert sid-admin-alert-success" role="status">
-                  <CheckCircle size={16} />
-                  <span>{importStatus.success}</span>
-                </div>
-              )}
+                <form onSubmit={handleImportSubmit} className="sid-admin-import-form">
+                  {!selectedFile ? (
+                    <label className="sid-admin-file-dropzone">
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls, .csv"
+                        onChange={handleFileChange}
+                        className="sid-admin-file-input"
+                      />
+                      <Upload size={36} className="sid-admin-file-icon" />
+                      <p className="sid-admin-file-title">
+                        Klik atau seret file Excel / CSV ke sini
+                      </p>
+                      <p className="sid-admin-file-hint">
+                        Format yang didukung: .xlsx, .xls, .csv (maks. {IMPORT_MAX_MB} MB)
+                      </p>
+                    </label>
+                  ) : (
+                    // File lain juga bisa diseret ke kartu ini untuk mengganti.
+                    <div
+                      className={`sid-admin-file-card${fileDragging ? ' is-dragging' : ''}`}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setFileDragging(true)
+                      }}
+                      onDragLeave={() => setFileDragging(false)}
+                      onDrop={handleFileCardDrop}
+                    >
+                      <div className="sid-admin-file-selected">
+                        <FileText size={28} className="sid-admin-file-icon" />
+                        <div>
+                          <p className="sid-admin-file-title">{selectedFile.name}</p>
+                          <p className="sid-admin-file-hint">
+                            {(selectedFile.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <div className="sid-admin-file-actions">
+                        <button
+                          type="button"
+                          className="sid-button sid-button-outline"
+                          onClick={() => replaceFileInputRef.current?.click()}
+                          disabled={importStatus.loading}
+                        >
+                          <RefreshCw size={14} /> Ganti
+                        </button>
+                        <button
+                          type="button"
+                          className="sid-button sid-button-outline sid-admin-file-remove"
+                          onClick={clearImportFile}
+                          disabled={importStatus.loading}
+                        >
+                          <Trash2 size={14} /> Hapus
+                        </button>
+                      </div>
+                      <input
+                        ref={replaceFileInputRef}
+                        type="file"
+                        accept=".xlsx, .xls, .csv"
+                        onChange={handleFileChange}
+                        hidden
+                        aria-label="Ganti file impor"
+                      />
+                    </div>
+                  )}
 
-              {importStatus.result && importStatus.result.errors.length > 0 && (
-                <ul className="sid-admin-import-errors">
-                  {importStatus.result.errors.map((item, i) => (
-                    <li key={i}>
-                      Baris {item.row}: {item.message}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                  {importStatus.error && (
+                    <div className="sid-admin-import-alert sid-admin-alert-error" role="alert">
+                      <AlertCircle size={16} />
+                      <span>{importStatus.error}</span>
+                    </div>
+                  )}
 
-              <div className="sid-modal-actions">
-                <button
-                  type="button"
-                  onClick={() => requestCloseImport(closeImportModal)}
-                  className="sid-button sid-button-outline"
-                >
-                  {importStatus.result ? 'Tutup' : 'Batal'}
-                </button>
-                <button
-                  type="submit"
-                  disabled={!selectedFile || importStatus.loading}
-                  className="sid-button sid-button-primary"
-                >
-                  {importStatus.loading ? 'Mengimpor...' : 'Mulai Impor'}
-                </button>
-              </div>
-            </form>
+                  {importStatus.success && (
+                    <div className="sid-admin-import-alert sid-admin-alert-success" role="status">
+                      <CheckCircle size={16} />
+                      <span>{importStatus.success}</span>
+                    </div>
+                  )}
+
+                  {importStatus.result && importStatus.result.errors.length > 0 && (
+                    <ul className="sid-admin-import-errors">
+                      {importStatus.result.errors.map((item, i) => (
+                        <li key={i}>
+                          Baris {item.row}: {item.message}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {importStatus.result && (importStatus.result.warnings?.length ?? 0) > 0 && (
+                    <details className="sid-import-summary-messages">
+                      <summary>
+                        Peringatan: kolom dikosongkan ({importStatus.result.warnings?.length})
+                      </summary>
+                      <ul>
+                        {importStatus.result.warnings?.map((item, i) => (
+                          <li key={i}>
+                            <strong>Baris {item.row}:</strong> {item.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  <div className="sid-modal-actions">
+                    <button
+                      type="button"
+                      onClick={() => requestCloseImport(closeImportModal)}
+                      className="sid-button sid-button-outline"
+                    >
+                      {importStatus.result ? 'Tutup' : 'Batal'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!selectedFile || importStatus.loading}
+                      className="sid-button sid-button-primary"
+                    >
+                      {importStatus.loading ? 'Memproses...' : 'Periksa File'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
+
+      {importPreview && showConflicts && (
+        <ImportConflictDialog
+          conflicts={importPreview.conflicts}
+          newCount={importPreview.new_count}
+          errorCount={importPreview.error_count}
+          onCancel={() => setShowConflicts(false)}
+          onClose={() => {
+            closeImportModal()
+            notifySuccess('Tidak ada data baru atau perubahan untuk diimpor.')
+          }}
+          onConfirm={handleConflictConfirm}
+        />
+      )}
+
+      {importPhase && <ImportProgressOverlay {...IMPORT_PHASE_TEXT[importPhase]} />}
 
       <SiteFooter />
     </div>

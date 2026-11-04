@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Exports\CitizensTemplateExport;
+use App\Imports\Support\CitizenImportColumns;
 use App\Models\Citizen;
 use App\Models\Rt;
 use App\Models\User;
@@ -89,8 +90,10 @@ class CitizenDocumentFieldsTest extends TestCase
 
     public function test_import_reads_the_document_columns_of_the_template(): void
     {
-        $this->assertContains('birth_certificate_number', CitizensTemplateExport::HEADINGS);
-        $this->assertContains('disability', CitizensTemplateExport::HEADINGS);
+        $this->assertContains('birth_certificate_number', CitizenImportColumns::SYSTEM_FIELDS);
+        $this->assertContains('disability', CitizenImportColumns::SYSTEM_FIELDS);
+        $this->assertContains('NO AKTA LAHIR', CitizensTemplateExport::headings());
+        $this->assertContains('DISABILITAS', CitizensTemplateExport::headings());
 
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();

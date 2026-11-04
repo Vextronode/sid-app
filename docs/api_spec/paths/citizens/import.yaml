@@ -3,21 +3,89 @@ post:
   summary: Import data warga massal via Excel
   description: |
     Aktor: Staf SIDUTama atau Kasi Pemerintahan.
-    UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
-    Validasi per baris (format NIK, duplikat), baris error di-skip,
-    ringkasan hasil ditampilkan. Template diunduh dari
-    GET /citizens/import-template; header kolomnya dibuat dari daftar yang
-    sama dengan aturan `CitizensImport::rules()` (nik, name, date_of_birth,
-    ..., residency_type, origin_region, title_front, ..., has_disorder,
-    disability), jadi template dan validasi impor
-    selalu sinkron. Tidak all-or-nothing: satu baris gagal tidak
-    membatalkan baris lain yang valid (SID-ARCH-BE-001 S5.4).
+    UC-09 (Main Flow - Import Excel). Validasi per baris (format NIK,
+    duplikat), baris error di-skip, ringkasan hasil ditampilkan. Tidak
+    all-or-nothing: satu baris gagal tidak membatalkan baris lain yang
+    valid (SID-ARCH-BE-001 S5.4).
+
+    Dua cara memanggil:
+    - **Dari hasil preview (dipakai frontend):** JSON `token` dari
+      POST /citizens/import/preview + `overwrite_rows`. Baris di
+      `overwrite_rows` yang NIK-nya sudah terdaftar ditimpa: hanya kolom
+      yang terisi di file yang diganti (kolom lain dan NIK tetap); NKK
+      yang berbeda memindahkan warga ke KK itu (dibuat bila belum ada).
+      Baris lain yang NIK-nya terdaftar dilewati (`skipped_count`).
+      Penimpaan tercatat di Log Aktivitas sebagai `updated`. Token hanya
+      berlaku untuk user yang membuat preview, sekali pakai, 60 menit;
+      file sementaranya dihapus setelah impor.
+    - **Langsung dari file:** multipart `file`; NIK yang sudah terdaftar
+      dihitung sebagai baris gagal ("NIK sudah ada dalam database warga").
+
+    Pada kedua cara, NIK yang muncul dua kali di file yang sama gagal pada
+    baris kedua ("NIK sama dengan baris N di file ini.").
+
+    Dua bentuk file diterima:
+    1. Template dari GET /citizens/import-template; header kolomnya dibuat
+       dari daftar yang sama dengan aturan `CitizensImport::rules()` (nik,
+       name, date_of_birth, ..., has_disorder, disability).
+    2. File pemutakhiran data pemilih desa (disimpan sebagai .xlsx). Sheet
+       dan baris header dicari otomatis (baris berisi NIK dan NAMA dalam 20
+       baris pertama sheet mana pun). Kolom yang dipakai: NIK, NKK, NAMA,
+       TEMPAT LAHIR, TANGGAL LAHIR (dd|mm|yyyy), JENIS KELAMIN, STS KAWIN
+       (B -> belum_kawin, S -> kawin, P -> kosong), ALAMAT, RT, RW,
+       DISABILITAS (kode 1-6). RW dicari dari nomornya se-desa lalu RT di
+       dalam RW itu; dusun diambil dari nama dusun di ALAMAT (atau dusun
+       milik RW); NKK menautkan/membuat Kartu Keluarga. Karena file tidak
+       punya SHDK, SHDK ditebak per KK setelah semua baris diproses:
+       laki-laki tertua berstatus kawin -> kepala_keluarga, perempuan
+       tertua berstatus kawin -> istri, belum kawin -> anak, kawin lainnya
+       kosong; KK tanpa laki-laki kawin -> anggota tertua jadi kepala.
+       Kepala KK yang sudah ada tidak diganti.
+
+    3. File desa lain (buku induk, biodata Dukcapil): judul kolom bahasa
+       Indonesia dikenali lewat alias (NAMA LENGKAP, AGAMA, PENDIDIKAN,
+       SHDK, GOL DARAH, NAMA AYAH/IBU, DUSUN, RT/RW gabungan "002/006", ...).
+       Isi pilihan diterima sebagai label Dukcapil ("SLTA/SEDERAJAT"), kode
+       SIAK (agama 1-6, pendidikan 1-10, SHDK 1-11, ...), atau nilai sistem.
+       Kolom PEKERJAAN / JENIS PEKERJAAN dicocokkan persis (huruf besar/kecil
+       dan tanda baca diabaikan) ke Katalog Pekerjaan aktif desa; tidak ada
+       atau nonaktif -> dikosongkan dengan peringatan. Header "KK" tidak
+       dikenali karena ambigu.
+    4. Template GET /citizens/import-template: baris dengan NIK contoh
+       `3201019999990001` selalu dilewati (peringatan "Baris contoh dari
+       template dilewati."), jadi baris contoh boleh dibiarkan.
+
+    Isi kolom opsional yang tidak dikenali (mis. agama "KEPERCAYAAN", nama
+    ayah berisi NIK, dusun yang tidak ada) dikosongkan dan dicatat di
+    `warnings`; barisnya tetap diproses. Isi kolom wajib yang tidak dikenali
+    membuat baris gagal (`errors`).
+
+    Kolom lain diabaikan; field warga yang tidak ada di file dibiarkan
+    kosong/default. Warga hasil impor bertanda `data_source = import_excel`.
+    .xlsx dibaca baris demi baris (XlsxStreamReader), .xls/.csv lewat
+    `maatwebsite/excel`. File .xlsb ditolak dengan petunjuk konversi.
   operationId: importCitizensExcel
   security:
     - sanctumCookie: []
   requestBody:
     required: true
     content:
+      application/json:
+        schema:
+          type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+              format: uuid
+              description: Token dari POST /citizens/import/preview
+            overwrite_rows:
+              type: array
+              description: Nomor baris (sesuai file) yang ditimpa; konflik lain dilewati. Kosong = lewati semua.
+              items:
+                type: integer
+                minimum: 1
+              example: [12, 48]
       multipart/form-data:
         schema:
           type: object
@@ -26,7 +94,7 @@ post:
             file:
               type: string
               format: binary
-              description: File .xlsx, .xls, atau .csv (maks 10 MB) sesuai template dari GET /citizens/import-template
+              description: File .xlsx, .xls, atau .csv (maks 25 MB) - template GET /citizens/import-template atau file data pemilih desa. Tidak boleh dikirim bersama `token`.
   responses:
     '200':
       description: Import selesai diproses (bisa parsial - lihat error_count)
@@ -39,12 +107,16 @@ post:
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
     '422':
-      description: Format file tidak valid / header kolom tidak sesuai template
+      description: |
+        Format/ukuran file tidak valid, file .xlsb, kolom NIK dan Nama tidak
+        ditemukan, `file` dan `token` dikirim bersamaan, atau token tidak
+        ditemukan/kedaluwarsa/milik user lain ("Sesi impor tidak ditemukan
+        atau sudah kedaluwarsa. Unggah ulang file.").
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           example:
-            message: "Format file harus .xlsx atau .csv sesuai template"
+            message: "Format file harus .xlsx, .xls, atau .csv"
             errors:
-              file: ["Format file harus .xlsx atau .csv sesuai template"]
+              file: ["Format file harus .xlsx, .xls, atau .csv"]
