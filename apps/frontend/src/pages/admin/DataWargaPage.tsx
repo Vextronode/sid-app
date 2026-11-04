@@ -101,9 +101,14 @@ type ImportStatus = {
 const emptyImportStatus: ImportStatus = { loading: false, success: null, error: null, result: null }
 
 // Tahap yang sedang berjalan; selama itu halaman diblokir ImportProgressOverlay.
-type ImportPhase = 'checking' | 'importing'
+type ImportPhase = 'template' | 'checking' | 'importing'
 
 const IMPORT_PHASE_TEXT: Record<ImportPhase, { title: string; description: string }> = {
+  template: {
+    title: 'Menyiapkan template...',
+    description:
+      'Template dibuat dari data dusun, RW, RT, dan Katalog Pekerjaan desa terbaru. Unduhan dimulai otomatis setelah selesai.',
+  },
   checking: {
     title: 'Memeriksa file impor...',
     description:
@@ -333,7 +338,12 @@ export default function DataWargaPage() {
     }
   }
 
+  // Template dibuat server dari data desa terbaru (beberapa detik): overlay
+  // menandai prosesnya supaya tombol tidak terkesan diam.
   const handleDownloadTemplate = async () => {
+    if (importPhase) return
+
+    setImportPhase('template')
     try {
       await downloadFile('/api/citizens/import-template', 'template_impor_warga.xlsx')
     } catch (err) {
@@ -341,6 +351,8 @@ export default function DataWargaPage() {
         title: 'Unduhan gagal',
         message: await downloadErrorMessage(err, 'Gagal mengunduh templat Excel.'),
       })
+    } finally {
+      setImportPhase(null)
     }
   }
 
@@ -1313,6 +1325,7 @@ export default function DataWargaPage() {
                     type="button"
                     className="sid-admin-template-link"
                     onClick={handleDownloadTemplate}
+                    disabled={importPhase !== null}
                   >
                     <Download size={14} /> Templat
                   </button>
