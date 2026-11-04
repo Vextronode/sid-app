@@ -30,7 +30,7 @@ final class CitizenImportLayout
      * Kolom yang dibaca, yang diabaikan, dan kolom wajib yang tidak ada,
      * untuk ditampilkan di preview sebelum impor.
      *
-     * @return array{sheet: string, header_row: int, mapped: list<array{column: string, header: string, field: string, label: string}>, ignored: list<array{column: string, header: string, reason: string}>, missing_required: list<string>}
+     * @return array{sheet: string, header_row: int, mapped: list<array{column: string, header: string, field: string, label: string}>, ignored: list<array{column: string, header: string, reason: string, suggestion: string|null}>, missing_required: list<string>}
      */
     public function describe(): array
     {
@@ -59,6 +59,9 @@ final class CitizenImportLayout
                     ? 'Kolom '.CitizenImportColumns::label($duplicateOf).' sudah diambil dari kolom '
                         .array_search($duplicateOf, $this->columns, true).'.'
                     : 'Tidak dikenali.',
+                'suggestion' => $duplicateOf === null
+                    ? CitizenImportColumns::suggest($header, array_values($this->columns))
+                    : null,
             ];
         }
 

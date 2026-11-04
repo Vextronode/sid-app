@@ -152,6 +152,13 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows
             return;
         }
 
+        // Baris contoh template resmi boleh dibiarkan petugas.
+        if (trim((string) ($data['nik'] ?? '')) === CitizenImportColumns::TEMPLATE_EXAMPLE_NIK) {
+            $this->warn($rowNumber, ['Baris contoh dari template dilewati.']);
+
+            return;
+        }
+
         // Excel menyimpan angka hanya sampai 15 digit signifikan: NIK di sel
         // Angka bisa sudah berubah digit terakhirnya walau tampak 16 digit.
         // CSV dibaca sebagai teks, jadi tidak terkena pemeriksaan ini.
@@ -166,6 +173,7 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows
             $warnings = [];
             $data = CitizenImportValues::normalize($data, $warnings);
             $data = $this->resolver->region($data, $warnings);
+            $data = $this->resolver->occupation($data, $warnings);
             $validated = Validator::make($data, $this->rules())->validate();
             $noKk = $validated['no_kk'] ?? null;
             unset($validated['no_kk']);
@@ -400,7 +408,9 @@ class CitizensImport implements OnEachRow, SkipsEmptyRows
             'father_name_text' => ['nullable', 'string', 'max:255'],
             'mother_name_text' => ['nullable', 'string', 'max:255'],
             'marital_status' => ['nullable', Rule::in(array_keys(CitizenLabels::MARITAL_STATUS))],
-            // TODO: Resolve imported occupation labels to village-scoped occupation IDs.
+            // Dari kolom pekerjaan lewat CitizenImportResolver::occupation(); desa
+            // & status aktifnya dicek lagi CitizenService.
+            'occupation_id' => ['nullable', 'integer'],
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'last_education' => ['nullable', Rule::enum(LastEducation::class)],
             'domicile_status' => ['nullable', Rule::enum(DomicileStatus::class)],

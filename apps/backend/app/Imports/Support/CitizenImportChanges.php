@@ -4,6 +4,7 @@ namespace App\Imports\Support;
 
 use App\Models\Citizen;
 use App\Models\Hamlet;
+use App\Models\Occupation;
 use App\Models\Rt;
 use App\Support\CitizenLabels;
 use BackedEnum;
@@ -35,6 +36,9 @@ final class CitizenImportChanges
 
     /** @var array<int, string> */
     private array $hamletNames = [];
+
+    /** @var array<int, string> */
+    private array $occupationNames = [];
 
     /**
      * Data yang akan ditimpa: kolom terisi selain NIK dan KK.
@@ -111,6 +115,8 @@ final class CitizenImportChanges
             is_bool($value) => $value ? 'Ya' : 'Tidak',
             $field === 'rt_id' => $this->rtLabel((int) $value),
             $field === 'hamlet_id' => $this->hamletName((int) $value),
+            $field === 'occupation_id' => $this->occupationNames[(int) $value]
+                ??= Occupation::query()->whereKey($value)->value('name') ?? '-',
             isset(self::VALUE_LABELS[$field]) => self::VALUE_LABELS[$field][(string) $value] ?? (string) $value,
             default => (string) $value,
         };

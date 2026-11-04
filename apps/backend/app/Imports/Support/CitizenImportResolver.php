@@ -3,6 +3,7 @@
 namespace App\Imports\Support;
 
 use App\Models\Hamlet;
+use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
@@ -33,6 +34,9 @@ final class CitizenImportResolver
 
     /** @var array<string, string>|null id dusun => nama dusun ringkas (huruf saja) */
     private ?array $hamlets = null;
+
+    /** @var array<string, Occupation>|null nama pekerjaan ternormalisasi => pekerjaan */
+    private ?array $occupations = null;
 
     public function __construct(
         private readonly User $user,
@@ -77,6 +81,44 @@ final class CitizenImportResolver
         $data['rw_id'] = $rw->id;
         $data['hamlet_id'] ??= $this->hamletFromAddress((string) ($data['address'] ?? ''), $rw->hamlet_id)
             ?? $rw->hamlet_id;
+
+        return $data;
+    }
+
+    /**
+     * Isi occupation_id dari kolom pekerjaan. Nama dicocokkan persis ke
+     * Katalog Pekerjaan desa (huruf besar/kecil dan tanda baca diabaikan),
+     * tanpa menebak yang mirip: "Tani" tidak dipasang ke "Petani". Tidak
+     * ditemukan atau nonaktif -> dikosongkan dengan peringatan.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $warnings
+     * @return array<string, mixed>
+     */
+    public function occupation(array $data, array &$warnings = []): array
+    {
+        $name = $data['occupation'] ?? null;
+        unset($data['occupation']);
+
+        if ($name === null || isset($data['occupation_id'])) {
+            return $data;
+        }
+
+        $this->occupations ??= Occupation::query()
+            ->where('village_id', $this->user->village_id)
+            ->get()
+            ->keyBy(fn (Occupation $occupation) => self::occupationKey($occupation->name))
+            ->all();
+
+        $occupation = $this->occupations[self::occupationKey((string) $name)] ?? null;
+
+        if ($occupation === null) {
+            $warnings[] = "Pekerjaan \"{$name}\" tidak ada di Katalog Pekerjaan; kolom ini dikosongkan.";
+        } elseif (! $occupation->is_active) {
+            $warnings[] = "Pekerjaan \"{$name}\" nonaktif di Katalog Pekerjaan; kolom ini dikosongkan.";
+        } else {
+            $data['occupation_id'] = $occupation->id;
+        }
 
         return $data;
     }
@@ -241,6 +283,11 @@ final class CitizenImportResolver
         }
 
         return $best[1] ?? null;
+    }
+
+    private static function occupationKey(string $name): string
+    {
+        return trim((string) preg_replace('/[^A-Z0-9]+/', ' ', strtoupper($name)));
     }
 
     private static function letters(string $value): string

@@ -2,11 +2,9 @@
 
 namespace App\Imports\Support;
 
-use App\Exports\CitizensTemplateExport;
-
 /**
- * Pemetaan header kolom file impor ke field warga. Menerima header template
- * sistem (snake_case, CitizensTemplateExport::HEADINGS) dan header yang umum
+ * Pemetaan header kolom file impor ke field warga. Menerima nama field
+ * sistem (snake_case, SYSTEM_FIELDS; template lama) dan header yang umum
  * di file desa: data pemilih (NIK, NAMA, STS KAWIN, ...), buku induk, dan
  * biodata Dukcapil (AGAMA, PENDIDIKAN, SHDK, ...). Kolom yang tidak dikenal
  * diabaikan.
@@ -16,13 +14,34 @@ use App\Exports\CitizensTemplateExport;
  * tidak dikenali: bisa berarti Kartu Keluarga atau Kepala Keluarga.
  *
  * Kolom bantu yang bukan field warga, dipakai CitizenImportResolver:
- * `no_kk` (cari/buat KK), `rt`/`rw`/`rt_rw` (nomor RT/RW -> rt_id), dan
- * `hamlet` (nama dusun -> hamlet_id).
+ * `no_kk` (cari/buat KK), `rt`/`rw`/`rt_rw` (nomor RT/RW -> rt_id),
+ * `hamlet` (nama dusun -> hamlet_id), dan `occupation` (nama pekerjaan di
+ * Katalog Pekerjaan -> occupation_id).
  */
 final class CitizenImportColumns
 {
     /** Header dicari di baris-baris awal; file desa punya judul di atas tabel. */
     public const SCAN_ROWS = 20;
+
+    /**
+     * NIK baris contoh template resmi (GET /citizens/import-template); impor
+     * selalu melewati baris dengan NIK ini supaya contoh boleh dibiarkan.
+     */
+    public const TEMPLATE_EXAMPLE_NIK = '3201019999990001';
+
+    /**
+     * Nama field warga yang bisa diimpor, dipakai sebagai header oleh
+     * template lama (sebelum template berjudul bahasa Indonesia) dan tetap
+     * diterima. Sama dengan key CitizensImport::rules().
+     */
+    public const SYSTEM_FIELDS = [
+        'nik', 'name', 'date_of_birth', 'place_of_birth', 'gender', 'blood_type', 'address',
+        'rt_id', 'hamlet_id', 'family_id', 'family_role', 'father_id', 'mother_id',
+        'father_name_text', 'mother_name_text', 'marital_status', 'religion', 'last_education',
+        'domicile_status', 'current_domicile', 'residency_type', 'origin_region',
+        'title_front', 'title_back', 'birth_certificate_number', 'marriage_certificate_number',
+        'marriage_date', 'divorce_certificate_number', 'divorce_date', 'has_disorder', 'disability',
+    ];
 
     /** @var array<string, list<string>> field => header ternormalisasi */
     private const ALIASES = [
@@ -52,6 +71,7 @@ final class CitizenImportColumns
 
         // Data sosial
         'religion' => ['AGAMA'],
+        'occupation' => ['PEKERJAAN', 'JENIS PEKERJAAN', 'OCCUPATION'],
         'last_education' => ['PENDIDIKAN', 'PENDIDIKAN TERAKHIR', 'PENDIDIKAN DALAM KK', 'IJAZAH TERAKHIR'],
         'marital_status' => ['STS KAWIN', 'STATUS KAWIN', 'STATUS PERKAWINAN', 'STATUS NIKAH'],
         'blood_type' => ['GOLONGAN DARAH', 'GOL DARAH', 'GOL DRH'],
@@ -96,6 +116,8 @@ final class CitizenImportColumns
         'mother_name_text' => 'Nama Ibu',
         'marital_status' => 'Status Kawin',
         'religion' => 'Agama',
+        'occupation' => 'Pekerjaan',
+        'occupation_id' => 'Pekerjaan',
         'last_education' => 'Pendidikan Terakhir',
         'blood_type' => 'Golongan Darah',
         'disability' => 'Disabilitas',
@@ -120,6 +142,33 @@ final class CitizenImportColumns
     public static function fieldOf(mixed $header): ?string
     {
         return self::lookup()[self::normalizeHeader($header)] ?? null;
+    }
+
+    /**
+     * Saran untuk judul kolom yang tidak dikenali, mis. "Agama Warga" ->
+     * "Agama". Hanya bila judul memuat alias secara utuh per kata (bukan
+     * kemiripan huruf); alias terpanjang menang, field yang sudah terbaca
+     * dari kolom lain tidak disarankan. Hanya petunjuk: kolomnya tetap tidak
+     * dibaca sampai judulnya diganti.
+     *
+     * @param  list<string>  $mappedFields
+     */
+    public static function suggest(mixed $header, array $mappedFields): ?string
+    {
+        $words = ' '.self::normalizeHeader($header).' ';
+        $best = null;
+
+        foreach (self::lookup() as $alias => $field) {
+            if (in_array($field, $mappedFields, true) || ! str_contains($words, ' '.$alias.' ')) {
+                continue;
+            }
+
+            if ($best === null || strlen($alias) > strlen($best[0])) {
+                $best = [$alias, $field];
+            }
+        }
+
+        return $best !== null ? self::label($best[1]) : null;
     }
 
     /**
@@ -198,8 +247,8 @@ final class CitizenImportColumns
         if ($lookup === null) {
             $lookup = [];
 
-            foreach (CitizensTemplateExport::HEADINGS as $heading) {
-                $lookup[self::normalizeHeader($heading)] = $heading;
+            foreach (self::SYSTEM_FIELDS as $field) {
+                $lookup[self::normalizeHeader($field)] = $field;
             }
 
             foreach (self::ALIASES as $field => $aliases) {

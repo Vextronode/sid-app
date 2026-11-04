@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\Hamlet;
+use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
@@ -142,6 +143,86 @@ class CitizenAliasColumnImportTest extends TestCase
         $this->assertSame(0, Citizen::query()->count());
     }
 
+    public function test_occupation_column_is_matched_exactly_to_the_village_catalog(): void
+    {
+        $farmer = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani/Pekebun']);
+        Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Nelayan', 'is_active' => false]);
+        // Nama sama di desa lain tidak dipakai.
+        Occupation::factory()->create(['name' => 'Guru']);
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray(['NIK', 'NAMA', 'TGL LAHIR', 'JK', 'ALAMAT', 'RT', 'RW', 'Jenis Pekerjaan'], null, 'A1');
+        $people = [
+            ['3201012345670001', 'petani pekebun'],
+            ['3201012345670002', 'Nelayan'],
+            ['3201012345670003', 'Guru'],
+            ['3201012345670004', 'Tani'],
+        ];
+        foreach ($people as $index => [$nik, $occupation]) {
+            $row = $index + 2;
+            $sheet->getCell("A{$row}")->setValueExplicit($nik, DataType::TYPE_STRING);
+            $sheet->fromArray(['Warga '.$row, '12/05/1975', 'L', 'Kp. Patrol', '002', '006', $occupation], null, "B{$row}");
+        }
+        $path = tempnam(sys_get_temp_dir(), 'citizens_occupation_').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        $response = $this->actingAs($this->petugas)
+            ->postJson('/api/citizens/import', ['file' => new UploadedFile($path, 'pekerjaan.xlsx', null, null, true)])
+            ->assertOk()
+            ->assertJsonPath('data.success_count', 4)
+            ->assertJsonPath('data.warning_count', 3);
+
+        $this->assertSame([
+            ['row' => 3, 'message' => 'Pekerjaan "Nelayan" nonaktif di Katalog Pekerjaan; kolom ini dikosongkan.'],
+            ['row' => 4, 'message' => 'Pekerjaan "Guru" tidak ada di Katalog Pekerjaan; kolom ini dikosongkan.'],
+            ['row' => 5, 'message' => 'Pekerjaan "Tani" tidak ada di Katalog Pekerjaan; kolom ini dikosongkan.'],
+        ], $response->json('data.warnings'));
+
+        $occupationOf = fn (string $nik) => Citizen::query()->where('nik_hash', hash('sha256', $nik))->value('occupation_id');
+        // Huruf besar/kecil & tanda baca diabaikan: "petani pekebun" = "Petani/Pekebun".
+        $this->assertSame($farmer->id, $occupationOf('3201012345670001'));
+        $this->assertNull($occupationOf('3201012345670002'));
+        $this->assertNull($occupationOf('3201012345670004'));
+    }
+
+    public function test_overwrite_compares_and_sets_the_occupation_name(): void
+    {
+        $farmer = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani']);
+        $teacher = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Guru']);
+        $citizen = Citizen::factory()->create([
+            'village_id' => $this->village->id, 'nik' => '3201012345670001', 'name' => 'Engkos',
+            'date_of_birth' => '1975-05-12', 'gender' => 'L', 'address' => 'Kp. Patrol',
+            'rt_id' => $this->rt->id, 'hamlet_id' => $this->patrol->id, 'occupation_id' => $farmer->id,
+            'family_id' => null, 'family_role' => null,
+        ]);
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray(['NIK', 'NAMA', 'TGL LAHIR', 'JK', 'ALAMAT', 'RT', 'RW', 'PEKERJAAN'], null, 'A1');
+        $sheet->getCell('A2')->setValueExplicit('3201012345670001', DataType::TYPE_STRING);
+        $sheet->fromArray(['Engkos', '12/05/1975', 'L', 'Kp. Patrol', '002', '006', 'Guru'], null, 'B2');
+        $path = tempnam(sys_get_temp_dir(), 'citizens_occupation_').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        $preview = $this->actingAs($this->petugas)
+            ->postJson('/api/citizens/import/preview', ['file' => new UploadedFile($path, 'pekerjaan.xlsx', null, null, true)])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(
+            [['field' => 'occupation_id', 'label' => 'Pekerjaan', 'before' => 'Petani', 'after' => 'Guru']],
+            $preview['conflicts'][0]['changes'],
+        );
+
+        $this->actingAs($this->petugas)
+            ->postJson('/api/citizens/import', ['token' => $preview['token'], 'overwrite_rows' => [2]])
+            ->assertOk()
+            ->assertJsonPath('data.updated_count', 1);
+
+        $this->assertSame($teacher->id, $citizen->fresh()->occupation_id);
+    }
+
     public function test_preview_describes_read_ignored_and_missing_columns(): void
     {
         $response = $this->actingAs($this->petugas)
@@ -164,9 +245,28 @@ class CitizenAliasColumnImportTest extends TestCase
 
         // "IBU" juga alias nama ibu, tetapi "Nama Ibu" (kolom M) sudah dipakai.
         $this->assertSame(
-            [['column' => 'N', 'header' => 'IBU', 'reason' => 'Kolom Nama Ibu sudah diambil dari kolom M.']],
+            [['column' => 'N', 'header' => 'IBU', 'reason' => 'Kolom Nama Ibu sudah diambil dari kolom M.', 'suggestion' => null]],
             $response->json('data.columns.ignored'),
         );
+    }
+
+    public function test_preview_suggests_the_intended_column_without_reading_it(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray(['NIK', 'NAMA', 'TGL LAHIR', 'JK', 'ALAMAT', 'RT', 'RW', 'Agama Warga'], null, 'A1');
+        $sheet->getCell('A2')->setValueExplicit('3201012345670001', DataType::TYPE_STRING);
+        $sheet->fromArray(['Engkos', '12/05/1975', 'L', 'Kp. Patrol', '002', '006', 'ISLAM'], null, 'B2');
+        $path = tempnam(sys_get_temp_dir(), 'citizens_suggest_').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        $this->actingAs($this->petugas)
+            ->postJson('/api/citizens/import/preview', ['file' => new UploadedFile($path, 'saran.xlsx', null, null, true)])
+            ->assertOk()
+            ->assertJsonPath('data.columns.ignored', [
+                ['column' => 'H', 'header' => 'Agama Warga', 'reason' => 'Tidak dikenali.', 'suggestion' => 'Agama'],
+            ])
+            ->assertJsonPath('data.new_count', 1);
     }
 
     public function test_preview_lists_missing_required_columns(): void
@@ -185,6 +285,7 @@ class CitizenAliasColumnImportTest extends TestCase
             ->assertJsonPath('data.columns.missing_required', ['Jenis Kelamin', 'RT dan RW'])
             ->assertJsonPath('data.columns.ignored.0.header', 'KETERANGAN')
             ->assertJsonPath('data.columns.ignored.0.reason', 'Tidak dikenali.')
+            ->assertJsonPath('data.columns.ignored.0.suggestion', null)
             ->assertJsonPath('data.new_count', 0)
             ->assertJsonPath('data.error_count', 1);
     }

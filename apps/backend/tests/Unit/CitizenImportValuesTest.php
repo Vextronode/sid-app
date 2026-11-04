@@ -47,6 +47,25 @@ class CitizenImportValuesTest extends TestCase
         $this->assertSame([], CitizenImportColumns::map(['A' => 'KK']));
     }
 
+    /** @return iterable<string, array{string, list<string>, string|null}> */
+    public static function suggestions(): iterable
+    {
+        yield 'kata tambahan' => ['Agama Warga', [], 'Agama'];
+        yield 'alias terpanjang' => ['NAMA IBU KANDUNG ASLI', [], 'Nama Ibu'];
+        yield 'keterangan format' => ['TGL LAHIR (dd-mm-yyyy)', [], 'Tanggal Lahir'];
+        yield 'sudah terbaca' => ['Agama Warga', ['religion'], null];
+        yield 'bukan kata utuh' => ['AGAMAWARGA', [], null];
+        yield 'tidak ada alias' => ['KETERANGAN', [], null];
+    }
+
+    /** @param list<string> $mapped */
+    #[Test]
+    #[DataProvider('suggestions')]
+    public function it_suggests_a_column_only_for_whole_alias_words(string $header, array $mapped, ?string $expected): void
+    {
+        $this->assertSame($expected, CitizenImportColumns::suggest($header, $mapped));
+    }
+
     #[Test]
     public function missing_required_columns_are_listed(): void
     {

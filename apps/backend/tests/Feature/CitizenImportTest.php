@@ -102,7 +102,7 @@ class CitizenImportTest extends TestCase
         $this->assertSame(2, $summary->properties['summary']['success_count']);
     }
 
-    public function test_import_ignores_legacy_occupation_text_column(): void
+    public function test_occupation_not_in_the_catalog_is_blanked_with_a_warning(): void
     {
         $rt = Rt::factory()->create();
         $file = $this->makeXlsx(
@@ -114,7 +114,8 @@ class CitizenImportTest extends TestCase
             ->postJson('/api/citizens/import', ['file' => $file])
             ->assertOk()
             ->assertJsonPath('data.success_count', 1)
-            ->assertJsonPath('data.error_count', 0);
+            ->assertJsonPath('data.error_count', 0)
+            ->assertJsonPath('data.warnings.0.message', 'Pekerjaan "Petani" tidak ada di Katalog Pekerjaan; kolom ini dikosongkan.');
 
         $this->assertDatabaseHas('citizens', [
             'nik_hash' => hash('sha256', '3201012345670011'),
