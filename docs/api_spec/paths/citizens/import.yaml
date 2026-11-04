@@ -3,15 +3,33 @@ post:
   summary: Import data warga massal via Excel
   description: |
     Aktor: Staf SIDUTama atau Kasi Pemerintahan.
-    UC-09 (Main Flow - Import Excel). Library `maatwebsite/excel`.
-    Validasi per baris (format NIK, duplikat), baris error di-skip,
-    ringkasan hasil ditampilkan. Template diunduh dari
-    GET /citizens/import-template; header kolomnya dibuat dari daftar yang
-    sama dengan aturan `CitizensImport::rules()` (nik, name, date_of_birth,
-    ..., residency_type, origin_region, title_front, ..., has_disorder,
-    disability), jadi template dan validasi impor
-    selalu sinkron. Tidak all-or-nothing: satu baris gagal tidak
-    membatalkan baris lain yang valid (SID-ARCH-BE-001 S5.4).
+    UC-09 (Main Flow - Import Excel). Validasi per baris (format NIK,
+    duplikat), baris error di-skip, ringkasan hasil ditampilkan. Tidak
+    all-or-nothing: satu baris gagal tidak membatalkan baris lain yang
+    valid (SID-ARCH-BE-001 S5.4).
+
+    Dua bentuk file diterima:
+    1. Template dari GET /citizens/import-template; header kolomnya dibuat
+       dari daftar yang sama dengan aturan `CitizensImport::rules()` (nik,
+       name, date_of_birth, ..., has_disorder, disability).
+    2. File pemutakhiran data pemilih desa (disimpan sebagai .xlsx). Sheet
+       dan baris header dicari otomatis (baris berisi NIK dan NAMA dalam 20
+       baris pertama sheet mana pun). Kolom yang dipakai: NIK, NKK, NAMA,
+       TEMPAT LAHIR, TANGGAL LAHIR (dd|mm|yyyy), JENIS KELAMIN, STS KAWIN
+       (B -> belum_kawin, S -> kawin, P -> kosong), ALAMAT, RT, RW,
+       DISABILITAS (kode 1-6). RW dicari dari nomornya se-desa lalu RT di
+       dalam RW itu; dusun diambil dari nama dusun di ALAMAT (atau dusun
+       milik RW); NKK menautkan/membuat Kartu Keluarga. Karena file tidak
+       punya SHDK, SHDK ditebak per KK setelah semua baris diproses:
+       laki-laki tertua berstatus kawin -> kepala_keluarga, perempuan
+       tertua berstatus kawin -> istri, belum kawin -> anak, kawin lainnya
+       kosong; KK tanpa laki-laki kawin -> anggota tertua jadi kepala.
+       Kepala KK yang sudah ada tidak diganti.
+
+    Kolom lain diabaikan; field warga yang tidak ada di file dibiarkan
+    kosong/default. Warga hasil impor bertanda `data_source = import_excel`.
+    .xlsx dibaca baris demi baris (XlsxStreamReader), .xls/.csv lewat
+    `maatwebsite/excel`. File .xlsb ditolak dengan petunjuk konversi.
   operationId: importCitizensExcel
   security:
     - sanctumCookie: []
@@ -26,7 +44,7 @@ post:
             file:
               type: string
               format: binary
-              description: File .xlsx, .xls, atau .csv (maks 10 MB) sesuai template dari GET /citizens/import-template
+              description: File .xlsx, .xls, atau .csv (maks 25 MB) - template GET /citizens/import-template atau file data pemilih desa
   responses:
     '200':
       description: Import selesai diproses (bisa parsial - lihat error_count)
@@ -39,12 +57,12 @@ post:
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
     '422':
-      description: Format file tidak valid / header kolom tidak sesuai template
+      description: Format/ukuran file tidak valid, file .xlsb, atau kolom NIK dan Nama tidak ditemukan
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           example:
-            message: "Format file harus .xlsx atau .csv sesuai template"
+            message: "Format file harus .xlsx, .xls, atau .csv"
             errors:
-              file: ["Format file harus .xlsx atau .csv sesuai template"]
+              file: ["Format file harus .xlsx, .xls, atau .csv"]
