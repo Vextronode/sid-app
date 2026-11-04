@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\LetterFlowLogReason;
+use App\Models\AccountRegistration;
 use App\Models\ApprovalFlow;
 use App\Models\Citizen;
 use App\Models\FlowStep;
@@ -15,6 +16,7 @@ use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
+use App\Services\AccountActivationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -404,16 +406,22 @@ class EndToEndApprovalFlowTest extends TestCase
             'name' => 'Siti Aminah',
         ]);
 
-        $registration = $this->postJson('/register', [
+        Storage::fake('private_uploads');
+        $registration = $this->post('/register', [
             'nik' => '3201012345679991',
-            'date_of_birth' => $citizen->date_of_birth->format('Y-m-d'),
             'password' => 'RahasiaAman123!',
             'password_confirmation' => 'RahasiaAman123!',
-        ])->assertCreated()
+            'photo' => UploadedFile::fake()->image('wajah.jpg'),
+        ], ['Accept' => 'application/json'])->assertCreated()
             ->assertJsonPath('data.name', $citizen->name);
 
         $oldUsername = $registration->json('data.username');
-        $this->assertMatchesRegularExpression('/^siti\.\d{4}$/', $oldUsername);
+        $this->assertMatchesRegularExpression('/^siti\.aminah\.\d{4}$/', $oldUsername);
+
+        // Akun baru aktif setelah disetujui petugas pemegang aktivasi (D1).
+        $holder = app(AccountActivationService::class)->route(AccountRegistration::query()->sole())['users']->first()
+            ?? User::factory()->create(['role' => 'staf_sid', 'village_id' => $citizen->village_id]);
+        app(AccountActivationService::class)->approve($holder, AccountRegistration::query()->sole());
 
         Auth::shouldUse('web');
         $this->assertGuest('web');

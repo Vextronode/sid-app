@@ -243,8 +243,6 @@ export default function KelolaWilayahPage() {
       <div className="sid-kelola-wilayah-content">
         <div className="sid-kelola-wilayah-header">
           <div>
-            <span className="sid-kelola-wilayah-eyebrow">Master Data</span>
-
             <h1>Kelola Wilayah</h1>
 
             <p>Kelola data Dusun, RW, dan RT dalam satu sumber data wilayah.</p>

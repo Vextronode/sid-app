@@ -6,18 +6,18 @@ import type { User } from '@/types'
 import { officialAreaLabel } from './officialArea'
 
 describe('officialAreaLabel', () => {
-  it('uses the RT label for an RT official', () => {
+  it('builds the RT label from the RT, RW, and hamlet', () => {
     const user = partialFixture<User>({
-      official: { rt: { full_label: 'RT 01 / RW 02' }, rw: { full_label: 'RW 02' } },
+      official: { rt: { number: '001' }, rw: { number: '002' }, hamlet: { name: 'Patrol' } },
     })
 
-    expect(officialAreaLabel(user, 'RT')).toBe('RT 01 / RW 02')
+    expect(officialAreaLabel(user, 'RT')).toBe('RT 001 / RW 002, Dusun Patrol')
   })
 
-  it('uses the RW label for an RW official', () => {
-    const user = partialFixture<User>({ official: { rt: null, rw: { full_label: 'RW 02' } } })
+  it('builds the RW label without an RT', () => {
+    const user = partialFixture<User>({ official: { rt: null, rw: { number: '002' } } })
 
-    expect(officialAreaLabel(user, 'RW')).toBe('RW 02')
+    expect(officialAreaLabel(user, 'RW')).toBe('RW 002')
   })
 
   it('names the hamlet of a Kadus', () => {

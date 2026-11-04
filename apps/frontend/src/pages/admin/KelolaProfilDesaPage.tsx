@@ -191,9 +191,7 @@ export default function KelolaProfilDesaPage() {
 
         <div className="sid-profil-desa-header">
           <div className="sid-profil-desa-header-info">
-            <p className="sid-profil-desa-eyebrow">Profil Desa</p>
-
-            <h1>{formatValue(profile.name)}</h1>
+            <h1>Profil Desa</h1>
 
             <p>
               Kelola informasi resmi, visi dan misi, serta data perangkat Desa{' '}
@@ -328,7 +326,9 @@ export default function KelolaProfilDesaPage() {
             <div className="sid-profil-desa-info-item sid-profil-desa-info-item-full">
               <span className="sid-profil-desa-info-label">Sejarah Desa</span>
 
-              <p className="sid-profil-desa-info-description">{formatValue(profile.history)}</p>
+              <p className="sid-profil-desa-info-description text-justify">
+                {formatValue(profile.history)}
+              </p>
             </div>
           </div>
         </div>

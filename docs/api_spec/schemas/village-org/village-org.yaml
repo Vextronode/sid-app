@@ -43,8 +43,19 @@ VillageOrgMember:
     position_id:
       type: integer
       example: 1
+    citizen_id:
+      type: string
+      format: uuid
+      nullable: true
+      description: Warga desa pemegang jabatan.
+    nik_masked:
+      type: string
+      nullable: true
+      description: NIK tersamar; NIK utuh lewat GET /citizens/{id}/identity (tercatat).
+      example: "************0001"
     member_name:
       type: string
+      description: Salinan nama warga saat ditetapkan.
       example: "Budi Santoso"
     photo_img:
       type: string
@@ -76,10 +87,13 @@ VillageOrgMemberCreateRequest:
   type: object
   required: [started_at]
   properties:
-    member_name:
+    nik:
       type: string
-      description: Wajib bila from_member_id tidak diisi.
-      example: "Budi Santoso"
+      pattern: '^\d{16}$'
+      description: |
+        Wajib bila from_member_id tidak diisi. NIK warga aktif desa ini;
+        member_name diambil dari data warga tersebut.
+      example: "3201010101010001"
     from_member_id:
       type: integer
       nullable: true

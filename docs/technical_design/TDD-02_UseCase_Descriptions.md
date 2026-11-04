@@ -505,13 +505,13 @@ Main Flow:
 5. Jika NIK tidak ditemukan → error "NIK tidak terdaftar sebagai warga Desa Cibenda"
 6. Jika NIK ditemukan tapi sudah punya akun → error "NIK sudah terdaftar, silakan login"
 6a. Jika tanggal lahir tidak sama dengan `citizens.date_of_birth` → error "Tanggal lahir tidak sesuai dengan data kependudukan" (verifikasi kedua selain NIK)
-7. Jika NIK ditemukan, tanggal lahir cocok, dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.NNNN`, dan aktif
+7. Jika NIK ditemukan, tanggal lahir cocok, dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.namabelakang.NNNN` (nama satu kata: `namadepan.NNNN`; NNNN = 4 digit acak, selalu ditambahkan), dan aktif
 8. Sistem memicu event `Registered` dan mengembalikan 201 berisi `username` dan `name` (tanpa membuat sesi)
 9. User dapat mengganti username melalui `PATCH /api/profile`; email bersifat opsional. Password dapat diganti melalui `PUT /api/profile/password`.
 
 Alternatif Flow:
 - Format NIK salah → error "NIK harus 16 digit angka"
-- Benturan username otomatis → suffix acak dibuat ulang
+- Benturan username otomatis → 4 digit acak dibuat ulang (setelah 10 kali gagal, 5 digit)
 - Password terlalu lemah → error dengan panduan password
 
 > **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (baik lokal maupun pendatang) selalu punya NIK terverifikasi di `citizens` — pembeda lokal/pendatang murni kolom `residency_type`, bukan tabel/jalur terpisah. Warga yang belum tercatat di `citizens` (baik lokal maupun pendatang) harus dicatat lebih dulu oleh Staf SIDUTama (UC-09) sebelum bisa register.
@@ -592,7 +592,7 @@ Alternatif Flow:
 Main Flow:
 - Petugas membuka menu "Kelola Wilayah" — hierarki: Desa → Dusun → RW → RT
 - Petugas dapat tambah/edit/nonaktifkan unit wilayah (`hamlets`, `rws`, `rts`)
-- Sistem memvalidasi keunikan `code` (dusun) dan `full_label` per level
+- Sistem memvalidasi keunikan `code` (dusun) dan `number` per level (RW dalam dusun, RT dalam RW)
 - Sistem menyimpan ke `hamlets`/`rws`/`rts`
 - Menonaktifkan wilayah: `is_active = false` (guard: cek ada warga aktif di wilayah ini)
 

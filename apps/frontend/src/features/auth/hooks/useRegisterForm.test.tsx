@@ -39,7 +39,6 @@ describe('useRegisterForm', () => {
     const { result } = renderHook(() => useRegisterForm())
     const fields = {
       nik: '1234567890123456',
-      date_of_birth: '1990-05-14',
       password: 'strong-password',
       password_confirmation: 'strong-password',
     }
@@ -49,31 +48,49 @@ describe('useRegisterForm', () => {
         result.current.handleChange({ target: { name, value } })
       })
     }
+    act(() => {
+      result.current.setPhoto(new Blob(['foto'], { type: 'image/jpeg' }))
+    })
 
     await act(async () => {
       await result.current.handleSubmit({ preventDefault: vi.fn() })
     })
 
     expect(api.get).toHaveBeenCalledWith('/sanctum/csrf-cookie')
-    expect(api.post).toHaveBeenCalledWith('/register', fields)
+    // Multipart: data akun beserta foto wajah dari kamera.
+    const body = api.post.mock.calls[0][1] as FormData
+    expect(api.post.mock.calls[0][0]).toBe('/register')
+    for (const [name, value] of Object.entries(fields)) {
+      expect(body.get(name)).toBe(value)
+    }
+    expect(body.get('photo')).toBeInstanceOf(Blob)
     expect(result.current.isSuccess).toBe(true)
     expect(result.current.registeredUsername).toBe('warga-baru')
   })
 
-  it('shows the server validation error for a date of birth that does not match the citizen record', async () => {
+  it('requires a photo from the camera', async () => {
+    const { result } = renderHook(() => useRegisterForm())
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: vi.fn() })
+    })
+
+    expect(result.current.errors.photo).toBe('Foto wajah wajib diisi.')
+    expect(api.post).not.toHaveBeenCalled()
+  })
+
+  it('shows the single server message when registration cannot be processed', async () => {
+    const failed =
+      'Pendaftaran tidak dapat diproses. Periksa kembali NIK Anda, atau datang ke kantor desa.'
     api.post.mockRejectedValueOnce({
       response: {
         status: 422,
-        data: {
-          message: 'Tanggal lahir tidak sesuai dengan data warga.',
-          errors: { date_of_birth: ['Tanggal lahir tidak sesuai dengan data warga.'] },
-        },
+        data: { message: failed, errors: { nik: [failed] } },
       },
     })
     const { result } = renderHook(() => useRegisterForm())
     const fields = {
       nik: '1234567890123456',
-      date_of_birth: '1990-05-15',
       password: 'strong-password',
       password_confirmation: 'strong-password',
     }
@@ -83,14 +100,15 @@ describe('useRegisterForm', () => {
         result.current.handleChange({ target: { name, value } })
       })
     }
+    act(() => {
+      result.current.setPhoto(new Blob(['foto'], { type: 'image/jpeg' }))
+    })
 
     await act(async () => {
       await result.current.handleSubmit({ preventDefault: vi.fn() })
     })
 
-    expect(result.current.errors.date_of_birth).toBe(
-      'Tanggal lahir tidak sesuai dengan data warga.',
-    )
+    expect(result.current.errors.nik).toBe(failed)
     expect(result.current.isSuccess).toBe(false)
   })
 })

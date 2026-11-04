@@ -257,10 +257,6 @@ export default function KelolaBeritaPage() {
 
         <div className="sid-kelola-berita-header">
           <div className="sid-kelola-berita-header-info">
-            <p className="sid-kelola-berita-breadcrumb">
-              Admin / Dashboard / <span>Kelola Berita</span>
-            </p>
-
             <h1>Kelola Berita</h1>
 
             <p>Manajemen konten berita dan pengumuman Desa Cibenda.</p>

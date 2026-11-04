@@ -1,7 +1,7 @@
 get:
   tags: [Epic 1 - Struktur Wilayah]
   summary: Lihat daftar RT (opsional filter per RW)
-  description: "Aktor: Staf SIDUTama."
+  description: "Aktor: Staf SIDUTama (kelola) dan pembaca Data Penduduk (pilihan filter). Kadus/RW/RT hanya mendapat RT di dalam atau yang memuat wilayahnya (PopulationScope)."
   operationId: listRts
   security:
     - sanctumCookie: []
@@ -29,7 +29,6 @@ get:
               - id: 1
                 rw_id: 1
                 number: "001"
-                full_label: "RT 001/RW 001"
                 is_active: true
     '401':
       $ref: '../../responses/common.yaml#/Unauthenticated'
@@ -61,7 +60,7 @@ post:
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
     '422':
-      description: full_label sudah digunakan dalam RW ini / rw_id tidak valid
+      description: Nomor RT sudah digunakan dalam RW ini / rw_id tidak valid
       content:
         application/json:
           schema:

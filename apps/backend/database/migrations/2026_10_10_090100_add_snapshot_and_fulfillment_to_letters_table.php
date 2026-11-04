@@ -17,14 +17,16 @@ return new class extends Migration
         Schema::table('letters', function (Blueprint $table) use ($withForeignKeys) {
             // Data render yang dibekukan saat final approve, supaya surat
             // lama tidak berubah ketika Kades berganti, TTD diganti,
-            // template diedit, atau data warga diperbarui.
-            $table->json('snapshot')->nullable();
+            // template diedit, atau data warga diperbarui. Terenkripsi
+            // (memuat NIK anggota KK), jadi `text`, bukan `json`.
+            $table->text('snapshot')->nullable();
             $table->unsignedBigInteger('signed_by_official_id')->nullable();
 
             // Penanda aksi data (Terapkan) oleh Kasi/Kaur setelah final.
             $table->timestamp('fulfilled_at')->nullable();
             $table->uuid('fulfilled_by')->nullable();
-            $table->json('fulfillment')->nullable();
+            // Hasil Terapkan (nilai lama -> baru), terenkripsi.
+            $table->text('fulfillment')->nullable();
 
             if ($withForeignKeys) {
                 $table->foreign('signed_by_official_id')->references('id')->on('officials')->nullOnDelete();

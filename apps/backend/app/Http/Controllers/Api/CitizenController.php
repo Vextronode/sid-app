@@ -6,6 +6,7 @@ use App\Exports\CitizensTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportCitizensRequest;
 use App\Http\Requests\IndexCitizenRequest;
+use App\Http\Requests\PreviewCitizenImportRequest;
 use App\Http\Requests\StoreCitizenRequest;
 use App\Http\Requests\UpdateCitizenRequest;
 use App\Http\Resources\CitizenCollection;
@@ -49,10 +50,13 @@ class CitizenController extends Controller
 
     public function import(ImportCitizensRequest $request)
     {
-        $result = $this->citizenService->importFromExcel(
-            $request->file('file'),
-            $request->user()
-        );
+        $result = $request->filled('token')
+            ? $this->citizenService->importFromPreview(
+                $request->string('token')->toString(),
+                $request->validated('overwrite_rows') ?? [],
+                $request->user(),
+            )
+            : $this->citizenService->importFromExcel($request->file('file'), $request->user());
 
         return response()->json([
             'message' => 'Import selesai diproses',
@@ -61,11 +65,26 @@ class CitizenController extends Controller
     }
 
     /**
-     * Template Excel impor warga; header mengikuti CitizensImport.
+     * Tahap 1 impor: daftar baris yang NIK-nya sudah terdaftar beserta
+     * perubahannya, untuk dipilih "Timpa / Lewati" sebelum impor.
      */
-    public function importTemplate()
+    public function previewImport(PreviewCitizenImportRequest $request)
     {
-        return Excel::download(new CitizensTemplateExport, 'template_impor_warga.xlsx');
+        return response()->json([
+            'data' => $this->citizenService->previewImport($request->file('file'), $request->user()),
+        ]);
+    }
+
+    /**
+     * Template Excel impor warga, dibuat dari data wilayah & pekerjaan desa
+     * pengunduh saat ini (CitizensTemplateExport).
+     */
+    public function importTemplate(Request $request)
+    {
+        return Excel::download(
+            new CitizensTemplateExport($request->user()->village_id),
+            'template_impor_warga.xlsx',
+        );
     }
 
     public function destroy(Request $request, Citizen $citizen)

@@ -71,7 +71,10 @@ export function LetterTable({
           ) : (
             letters.map((surat) => (
               <tr key={surat.id}>
-                <td data-label="No. Surat" className="sid-letter-table-number">
+                <td
+                  data-label="No. Surat"
+                  className="sid-letter-table-number sid-letter-table-center"
+                >
                   <span>{surat.letter_number ? `#${surat.letter_number}` : '-'}</span>
                 </td>
 
@@ -81,11 +84,11 @@ export function LetterTable({
 
                 <td data-label="Jenis">{surat.letter_type?.name ?? '-'}</td>
 
-                <td data-label="Tanggal" className="sid-letter-table-date">
+                <td data-label="Tanggal" className="sid-letter-table-date sid-letter-table-center">
                   {formatDate(surat.submitted_at)}
                 </td>
 
-                <td data-label="Status">
+                <td data-label="Status" className="sid-letter-table-center">
                   <div className="sid-letter-table-status">
                     <StatusBadge status={surat.status} />
                     <OverdueBadge isOverdue={surat.is_overdue} />

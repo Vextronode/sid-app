@@ -15,7 +15,6 @@ class FamilySocioeconomicService
     public function __construct(
         private readonly FamilySocioeconomicRepository $repository,
         private readonly FamilyRepository $familyRepository,
-        private readonly PopulationAuditService $audit,
     ) {}
 
     public function get(User $user, string $familyId): FamilySocioeconomic
@@ -38,24 +37,13 @@ class FamilySocioeconomicService
     {
         $family = $this->familyRepository->findForVillageOrFail($familyId, $this->villageId($user));
 
-        return DB::transaction(function () use ($family, $familyId, $data, $user) {
-            $existing = $this->repository->findByFamilyId($familyId);
-            $before = $existing ? clone $existing : null;
-
-            $socioeconomic = $this->repository->upsertForFamily($familyId, [
-                ...$data,
-                'surveyed_by' => $user->id,
-                'surveyed_at' => now(),
-            ]);
-            // Riwayat dicatat atas nama KK-nya (S-05).
-            $socioeconomic->setRelation('family', $family);
-
-            $before === null
-                ? $this->audit->created($socioeconomic, $user, event: 'socioeconomic_updated')
-                : $this->audit->updated($before, $socioeconomic, $user, event: 'socioeconomic_updated');
-
-            return $socioeconomic;
-        });
+        // Riwayat dicatat PopulationAuditObserver atas nama KK-nya (S-05),
+        // di transaksi yang sama dengan datanya.
+        return DB::transaction(fn () => $this->repository->upsertForFamily($familyId, [
+            ...$data,
+            'surveyed_by' => $user->id,
+            'surveyed_at' => now(),
+        ])->setRelation('family', $family));
     }
 
     private function villageId(User $user): string

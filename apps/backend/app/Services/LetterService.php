@@ -571,12 +571,19 @@ class LetterService
      * $this->authorize()). Method ini tetap melakukan guard agar
      * pemanggil yang langsung memanggil service (mis. dari command,
      * job, atau test) tetap terlindungi walau tidak lewat controller.
+     *
+     * Baris surat dikunci lalu dicek ulang: keputusan RT yang masuk
+     * bersamaan tidak boleh ikut terhapus. Berkas lampiran baru dihapus
+     * setelah transaksi selesai.
      */
     public function delete(Letter $letter, User $user): bool
     {
-        $this->guardCanDelete($letter, $user);
+        $deleted = DB::transaction(function () use ($letter, $user): bool {
+            $locked = $this->letterRepository->findForUpdateOrFail($letter->id);
+            $this->guardCanDelete($locked, $user);
 
-        $deleted = $this->letterRepository->delete($letter);
+            return $this->letterRepository->delete($locked);
+        });
 
         if ($deleted) {
             $this->letterAttachmentService->deleteFilesFor($letter);
@@ -587,8 +594,12 @@ class LetterService
 
     private function guardCanDelete(Letter $letter, User $user): void
     {
-        if (! (new LetterPolicy)->delete($user, $letter)) {
+        if ($letter->submitted_by !== $user->id) {
             abort(403, 'Anda tidak berwenang menghapus surat ini.');
+        }
+
+        if (! (new LetterPolicy)->delete($user, $letter)) {
+            abort(409, 'Surat yang sudah diproses tidak dapat dihapus.');
         }
     }
 }

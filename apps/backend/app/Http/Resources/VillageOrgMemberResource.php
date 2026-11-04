@@ -18,6 +18,10 @@ class VillageOrgMemberResource extends JsonResource
         return [
             'id' => $this->id,
             'position_id' => $this->position_id,
+            // Warga pemegang jabatan; NIK utuh lewat /citizens/{id}/identity
+            // (tercatat), di sini hanya tersamar.
+            'citizen_id' => $this->citizen_id,
+            'nik_masked' => $this->citizen?->nik ? str_repeat('*', 12).substr($this->citizen->nik, -4) : null,
             'member_name' => $this->member_name,
             'photo_img' => $this->photo_img ? Storage::disk('public')->url($this->photo_img) : null,
             'phone_wa' => $this->phone_wa,

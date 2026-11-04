@@ -123,17 +123,41 @@ class LetterControllerTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_destroy_allowed_for_authorized_staff_role(): void
+    public function test_destroy_forbidden_for_staff(): void
     {
         $owner = User::factory()->create();
         $staff = $this->makeUserWithOfficialAssignment('kasi_pemerintahan', 'kasi_pemerintahan');
-        $letter = Letter::factory()->create(['submitted_by' => $owner->id]);
+        $letter = Letter::factory()->create(['submitted_by' => $owner->id, 'village_id' => $staff->village_id]);
 
         $this->actingAs($staff)
             ->deleteJson("/api/letters/{$letter->id}")
-            ->assertOk();
+            ->assertForbidden();
 
-        $this->assertDatabaseMissing('letters', ['id' => $letter->id]);
+        $this->assertDatabaseHas('letters', ['id' => $letter->id]);
+    }
+
+    public function test_destroy_keeps_processed_letters_and_their_history_for_owner_and_staff(): void
+    {
+        $owner = User::factory()->create();
+        $staff = $this->makeUserWithOfficialAssignment('kepala_desa', 'kepala_desa');
+
+        foreach (['inProgress', 'approved', 'rejected'] as $state) {
+            $letter = Letter::factory()->{$state}()->create(['submitted_by' => $owner->id, 'village_id' => $staff->village_id]);
+            $letter->statusLogs()->create([
+                'actor_id' => $owner->id,
+                'old_status' => 'pending',
+                'new_status' => $letter->status->value,
+            ]);
+
+            foreach ([$owner, $staff] as $actor) {
+                $this->actingAs($actor)
+                    ->deleteJson("/api/letters/{$letter->id}")
+                    ->assertForbidden();
+            }
+
+            $this->assertDatabaseHas('letters', ['id' => $letter->id]);
+            $this->assertDatabaseHas('letter_status_logs', ['letter_id' => $letter->id]);
+        }
     }
 
     public function test_index_requires_authentication(): void

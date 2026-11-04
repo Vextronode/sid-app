@@ -54,8 +54,10 @@ class DemoDataSeederTest extends TestCase
             ['Patrol', 'Sinargalih', 'Cibenda', 'Budiasih', 'Sucen'],
             Hamlet::query()->orderBy('code')->pluck('name')->all(),
         );
-        $this->assertSame(25, Rw::query()->count());
-        $this->assertSame(125, Rt::query()->count());
+        $this->assertSame(26, Rw::query()->count());
+        // Nomor RW urut se-desa (tidak mulai lagi di tiap dusun).
+        $this->assertSame(['001', '026'], [Rw::query()->min('number'), Rw::query()->max('number')]);
+        $this->assertSame(62, Rt::query()->count());
     }
 
     #[Test]
@@ -77,7 +79,7 @@ class DemoDataSeederTest extends TestCase
     #[Test]
     public function every_rt_and_rw_has_one_chair_with_an_account_and_no_photo(): void
     {
-        foreach (['rt' => 125, 'rw' => 25] as $position => $expected) {
+        foreach (['rt' => 62, 'rw' => 26] as $position => $expected) {
             $chairs = Official::query()->where('position', $position)->get();
 
             $this->assertCount($expected, $chairs);

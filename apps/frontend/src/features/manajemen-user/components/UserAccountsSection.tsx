@@ -1,8 +1,7 @@
 // ==========================================
-// ManajemenUserPage.tsx
-// Halaman kelola user & role.
-// Layout disamakan dengan OperatorSuratListPage.
-// Logic/API tidak diubah.
+// UserAccountsSection.tsx
+// Section "Manajemen Akun" di halaman Manajemen Akun (Staf SIDUTama):
+// kelola nama, foto, kata sandi, dan status akun.
 // ==========================================
 
 import { useRef, useState } from 'react'
@@ -19,8 +18,8 @@ import {
 
 import { useUserList } from '@/features/manajemen-user/hooks/useUserList'
 import { deleteUserPhoto, resetUserPassword, uploadUserPhoto } from '@/features/manajemen-user/api'
-import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
+import { PhotoCropDialog } from '@/components/ui/PhotoCropDialog'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
 import { formatPageRange } from '@/components/ui/pageRange'
 import { RefreshButton } from '@/components/ui/RefreshButton'
@@ -32,7 +31,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import type { User } from '@/types'
 
-export default function ManajemenUserPage() {
+export function UserAccountsSection() {
   const {
     data,
     loading,
@@ -125,6 +124,8 @@ export default function ManajemenUserPage() {
   // halaman Pejabat Desa.
   const photoInput = useRef<HTMLInputElement>(null)
   const photoTarget = useRef<User | null>(null)
+  // Berkas dari galeri yang sedang dipotong persegi sebelum diunggah.
+  const [cropping, setCropping] = useState<{ file: File; user: User } | null>(null)
 
   const runPhoto = async (
     request: () => Promise<{ data?: { data?: { photo_url?: string | null } } }>,
@@ -157,8 +158,17 @@ export default function ManajemenUserPage() {
     event.target.value = ''
     if (!file || !user) return
 
+    setCropping({ file, user })
+  }
+
+  const uploadCropped = (photo: File) => {
+    if (!cropping) return
+
+    const { user } = cropping
+
+    setCropping(null)
     runPhoto(
-      () => uploadUserPhoto(user.id, file),
+      () => uploadUserPhoto(user.id, photo),
       user,
       `Foto profil ${user.name} berhasil disimpan.`,
       'Gagal mengunggah foto.',
@@ -214,16 +224,12 @@ export default function ManajemenUserPage() {
   }
 
   return (
-    <div className="sid-operator-page sid-admin-users-page">
-      <div className="sid-operator-content">
-        {/* Breadcrumb */}
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Manajemen Pengguna</span>
-        </p>
-
-        {/* Header */}
+    <>
+      <div>
         <div className="sid-operator-header">
-          <h1>Manajemen Pengguna</h1>
+          <p className="sid-org-subtitle">
+            Kelola nama, foto, kata sandi, dan status akun warga dan pejabat desa.
+          </p>
           <RefreshButton onRefresh={reload} />
         </div>
 
@@ -340,7 +346,7 @@ export default function ManajemenUserPage() {
                       </td>
 
                       {/* Email */}
-                      <td className="center">{user.email}</td>
+                      <td>{user.email}</td>
 
                       {/* Jabatan */}
                       <td className="center">
@@ -463,8 +469,6 @@ export default function ManajemenUserPage() {
         </div>
       </div>
 
-      <SiteFooter />
-
       {passwordReset && (
         <div className="sid-modal-overlay">
           <div className="sid-modal" role="dialog" aria-labelledby="password-reset-heading">
@@ -537,6 +541,16 @@ export default function ManajemenUserPage() {
           </form>
         </div>
       )}
-    </div>
+
+      {cropping && (
+        <PhotoCropDialog
+          source={cropping.file}
+          title={`Atur Foto ${cropping.user.name}`}
+          confirmLabel="Simpan foto"
+          onCancel={() => setCropping(null)}
+          onConfirm={uploadCropped}
+        />
+      )}
+    </>
   )
 }

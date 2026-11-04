@@ -41,8 +41,9 @@ export type Hamlet = {
 export type Rw = {
   id: number
   hamlet_id: number
+  // Dusun RW, bila dimuat backend (mis. di daftar warga).
+  hamlet?: Hamlet
   number: string
-  full_label: string
   is_active: boolean
   created_at: IsoDateString | null
   updated_at: IsoDateString | null
@@ -52,7 +53,6 @@ export type Rt = {
   id: number
   rw_id: number
   number: string
-  full_label: string
   is_active: boolean
   created_at: IsoDateString | null
   updated_at: IsoDateString | null

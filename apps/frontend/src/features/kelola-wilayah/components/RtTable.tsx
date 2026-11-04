@@ -47,8 +47,8 @@ export default function RtTable({
 
       const matchesSearch =
         !keyword ||
-        String(rt.number).toLowerCase().includes(keyword) ||
-        String(rt.fullLabel).toLowerCase().includes(keyword)
+        // "001" maupun "RT 001" cocok.
+        `rt ${rt.number}`.toLowerCase().includes(keyword)
 
       return matchesHamlet && matchesRw && matchesSearch
     })
@@ -145,16 +145,16 @@ export default function RtTable({
 
                 return (
                   <tr key={rt.id}>
-                    <td>{index + 1}</td>
-                    <td className="sid-wilayah-name">RT {rt.number}</td>
-                    <td>{rw ? `RW ${rw.number}` : '-'}</td>
-                    <td>{getHamletName(rt.rwId)}</td>
-                    <td>
+                    <td className="center">{index + 1}</td>
+                    <td className="sid-wilayah-name center">RT {rt.number}</td>
+                    <td className="center">{rw ? `RW ${rw.number}` : '-'}</td>
+                    <td className="center">{getHamletName(rt.rwId)}</td>
+                    <td className="center">
                       <StatusPill active={rt.isActive}>
                         {rt.isActive ? 'Aktif' : 'Nonaktif'}
                       </StatusPill>
                     </td>
-                    <td>
+                    <td className="center">
                       <div className="sid-wilayah-actions">
                         <button
                           type="button"

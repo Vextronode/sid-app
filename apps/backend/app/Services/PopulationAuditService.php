@@ -2,32 +2,38 @@
 
 namespace App\Services;
 
+use App\Casts\EncryptedCast;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\FamilySocioeconomic;
 use App\Models\User;
-use App\Support\CitizenDocumentRules;
+use App\Support\AuditContext;
 use BackedEnum;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 /**
- * S-05. Jejak audit perubahan data kependudukan yang dilakukan langsung
- * oleh Staf SIDUTama (tambah/ubah/hapus/impor warga, KK, dan data
- * sosio-ekonomi KK). Perubahan lewat surat dicatat terpisah oleh
- * LetterFulfillmentService (event `letter_fulfilled`).
+ * S-05. Jejak audit perubahan data kependudukan (warga, KK, dan
+ * sosio-ekonomi KK). Dipanggil PopulationAuditObserver untuk setiap
+ * penyimpanan lewat Eloquent, sehingga jalur tulis baru tercatat tanpa
+ * pemanggilan manual. Keterangan tambahan (`source: import`, Terapkan
+ * surat sebagai `letter_fulfilled`) diberikan pemanggil lewat AuditContext.
+ *
+ * Pelaku diambil dari user yang login; tanpa user (CLI, queue) dicatat
+ * sebagai `actor: system` beserta `via`.
  *
  * Log name: `citizen` / `family`. Properties: `village_id` (scoping
  * halaman Log Aktivitas), `subject_label`, dan `changes` berbentuk
- * {field: {old, new}}. NIK, No KK, dan alamat KK tidak pernah dicatat
- * dalam bentuk asli.
+ * {field: {old, new}}. NIK, No KK, dan semua kolom bercast terenkripsi
+ * tidak pernah dicatat dalam bentuk asli.
  */
 class PopulationAuditService
 {
     public const REDACTED = '(disamarkan)';
 
-    /** Nilai yang disamarkan di log: NIK, No. KK, alamat KK, dan kolom terenkripsi lain warga. */
-    private const SENSITIVE_FIELDS = ['nik', 'no_kk', 'family_address', ...CitizenDocumentRules::ENCRYPTED];
+    /** Selalu disamarkan, apa pun cast-nya. */
+    private const ALWAYS_SENSITIVE = ['nik', 'no_kk'];
 
     /** Kolom teknis yang tidak bermakna sebagai perubahan data. */
     private const IGNORED_FIELDS = [
@@ -35,10 +41,7 @@ class PopulationAuditService
         'surveyed_at', 'surveyed_by',
     ];
 
-    /**
-     * @param  array<string, mixed>  $extra
-     */
-    public function created(Model $subject, User $actor, array $extra = [], string $event = 'created'): void
+    public function created(Model $subject): void
     {
         $changes = [];
 
@@ -50,41 +53,41 @@ class PopulationAuditService
             }
         }
 
-        $this->write($subject, $actor, $event, $changes, $extra);
+        $this->record($subject, 'created', $changes);
     }
 
     /**
-     * $before adalah salinan model sebelum disimpan (`clone $model`).
-     *
-     * @param  array<string, mixed>  $extra
+     * Dipanggil pada event `updated`: nilai lama dibaca dari original
+     * model, yang belum disinkronkan pada saat itu.
      */
-    public function updated(Model $before, Model $after, User $actor, array $extra = [], string $event = 'updated'): void
+    public function updated(Model $subject): void
     {
+        $before = (clone $subject)->setRawAttributes($subject->getRawOriginal());
         $changes = [];
 
-        foreach (array_keys($after->getChanges()) as $field) {
-            if ($this->ignored($after, $field)) {
+        foreach (array_keys($subject->getChanges()) as $field) {
+            if ($this->ignored($subject, $field)) {
                 continue;
             }
 
             $old = $this->value($before, $field);
-            $new = $this->value($after, $field);
+            $new = $this->value($subject, $field);
 
-            if ($old !== $new || in_array($field, self::SENSITIVE_FIELDS, true)) {
+            if ($old !== $new || $this->isSensitive($subject, $field)) {
                 $changes[$field] = ['old' => $old, 'new' => $new];
             }
         }
 
         if ($changes !== []) {
-            $this->write($after, $actor, $event, $changes, $extra);
+            $this->record($subject, 'updated', $changes);
         }
     }
 
     /**
-     * Dipanggil sebelum record dihapus; nilai terakhir disimpan sebagai
-     * `old` agar data dapat ditelusuri saat sengketa.
+     * Nilai terakhir disimpan sebagai `old` agar data dapat ditelusuri saat
+     * sengketa.
      */
-    public function deleted(Model $subject, User $actor): void
+    public function deleted(Model $subject): void
     {
         $changes = [];
 
@@ -96,7 +99,7 @@ class PopulationAuditService
             }
         }
 
-        $this->write($subject, $actor, 'deleted', $changes);
+        $this->record($subject, 'deleted', $changes);
     }
 
     /**
@@ -124,30 +127,93 @@ class PopulationAuditService
     }
 
     /**
-     * @param  array<string, array{old: mixed, new: mixed}>  $changes
-     * @param  array<string, mixed>  $extra
+     * Kolom yang nilainya disamarkan: NIK, No KK, dan setiap kolom bercast
+     * `encrypted*` atau cast kustom terenkripsi (EncryptedCast). Mengikuti
+     * cast model, sehingga kolom yang baru dienkripsi otomatis ikut.
      */
-    private function write(Model $subject, User $actor, string $event, array $changes, array $extra = []): void
+    public function isSensitive(Model $model, string $field): bool
+    {
+        if (in_array($field, self::ALWAYS_SENSITIVE, true)) {
+            return true;
+        }
+
+        $cast = $model->getCasts()[$field] ?? null;
+
+        if (! is_string($cast)) {
+            return false;
+        }
+
+        // Parameter cast (`Kelas:arg`) dibuang, kecuali nama kelasnya sendiri
+        // mengandung `:` (kelas anonim).
+        $cast = class_exists($cast) ? $cast : explode(':', $cast, 2)[0];
+
+        return str_starts_with($cast, 'encrypted')
+            || (class_exists($cast) && is_subclass_of($cast, EncryptedCast::class));
+    }
+
+    /**
+     * Menulis satu entri, atau menahannya bila sedang di dalam lingkup
+     * AuditContext `aggregate` (lihat AuditContext::hold()).
+     *
+     * @param  array<string, mixed>  $entry
+     */
+    public function write(array $entry): void
+    {
+        if (app(AuditContext::class)->hold($entry)) {
+            return;
+        }
+
+        activity($entry['log_name'])
+            ->performedOn($entry['subject'])
+            ->causedBy($entry['causer'])
+            ->event($entry['event'])
+            ->withProperties([...$entry['properties'], 'changes' => $entry['changes']])
+            ->log($this->description($entry['log_name'], $entry['event']));
+    }
+
+    /**
+     * @param  array<string, array{old: mixed, new: mixed}>  $changes
+     */
+    private function record(Model $subject, string $event, array $changes): void
     {
         [$logName, $subjectModel, $label] = $this->describe($subject);
 
-        activity($logName)
-            ->performedOn($subjectModel)
-            ->causedBy($actor)
-            ->event($event)
-            ->withProperties([
-                'village_id' => $subjectModel->getAttribute('village_id') ?? $actor->village_id,
+        if ($subjectModel === null) {
+            return;
+        }
+
+        $context = app(AuditContext::class)->context();
+        $actor = auth()->user();
+        $event = $context['event'] ?? ($subject instanceof FamilySocioeconomic ? 'socioeconomic_updated' : $event);
+        $extra = Arr::except($context, ['event']);
+
+        if ($event === 'created' && $actor !== null) {
+            $extra['source'] ??= 'manual';
+        }
+
+        if ($actor === null) {
+            $extra += ['actor' => 'system', 'via' => app()->runningInConsole() ? 'console' : 'http'];
+        }
+
+        $this->write([
+            'key' => $logName.':'.$subjectModel->getKey(),
+            'log_name' => $logName,
+            'subject' => $subjectModel,
+            'causer' => $actor,
+            'event' => $event,
+            'properties' => [
+                'village_id' => $subjectModel->getAttribute('village_id') ?? $actor?->village_id,
                 'subject_label' => $label,
                 ...$extra,
-                'changes' => $changes,
-            ])
-            ->log($this->description($logName, $event));
+            ],
+            'changes' => $changes,
+        ]);
     }
 
     /**
      * Data sosio-ekonomi tercatat sebagai riwayat KK-nya.
      *
-     * @return array{0: string, 1: Model, 2: string}
+     * @return array{0: string, 1: ?Model, 2: string}
      */
     private function describe(Model $subject): array
     {
@@ -168,6 +234,7 @@ class PopulationAuditService
             'created' => "{$subject} ditambahkan",
             'deleted' => "{$subject} dihapus",
             'socioeconomic_updated' => 'Data sosio-ekonomi KK diperbarui',
+            'letter_fulfilled' => 'Data kependudukan diubah berdasarkan surat',
             default => "{$subject} diubah",
         };
     }
@@ -187,7 +254,7 @@ class PopulationAuditService
             return null;
         }
 
-        if (in_array($field, self::SENSITIVE_FIELDS, true)) {
+        if ($this->isSensitive($model, $field)) {
             return self::REDACTED;
         }
 

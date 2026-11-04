@@ -10,6 +10,7 @@ use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\RwRepository;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class RwService
@@ -21,7 +22,7 @@ class RwService
 
     public function getAllOrderedByNumber(User $user, ?int $hamletId = null): Collection
     {
-        return $this->rwRepository->allOrderedByNumber($this->villageId($user), $hamletId);
+        return $this->rwRepository->allOrderedByNumber($this->readableVillageId($user), $hamletId, PopulationScope::for($user));
     }
 
     public function create(array $data, User $user): Rw
@@ -35,7 +36,6 @@ class RwService
             'hamlet_id' => $data['hamlet_id'],
             'village_id' => $hamlet->village_id,
             'number' => $data['number'],
-            'full_label' => "RW {$data['number']}",
             'is_active' => true,
         ]);
     }
@@ -53,10 +53,6 @@ class RwService
             throw new RegionHasActiveCitizensException('RW');
         }
 
-        if (isset($data['number'])) {
-            $data['full_label'] = "RW {$data['number']}";
-        }
-
         return $this->rwRepository->update($rw, $data);
     }
 
@@ -70,6 +66,20 @@ class RwService
         }
 
         return $this->rwRepository->delete($rw);
+    }
+
+    /**
+     * Membaca daftar wilayah: peran yang boleh dibatasi di route (Staf
+     * SIDUTama, Kasi Pemerintahan, Kaur TU & Umum); menulis tetap lewat
+     * villageId() yang khusus Staf SIDUTama.
+     */
+    private function readableVillageId(User $user): string
+    {
+        if (! $user->is_active || ! $user->village_id) {
+            abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        }
+
+        return $user->village_id;
     }
 
     private function villageId(User $user): string

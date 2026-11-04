@@ -174,7 +174,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
               <th>Keluaran</th>
               <th>Masa Berlaku (hari)</th>
               <th>Kategori</th>
-              <th>Aksi</th>
+              <th className="center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -202,11 +202,11 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
                       <strong>{letterType.name}</strong>
                       <small className="sid-admin-cell-meta">{letterType.code}</small>
                     </td>
-                    <td>
+                    <td className="center">
                       <StatusPill tone={statusTone}>{statusText}</StatusPill>
                     </td>
                     <td>{describeLetterTypeOutput(letterType)}</td>
-                    <td>
+                    <td className="center">
                       <form
                         id={`letter-type-${letterType.id}`}
                         onSubmit={(event) => saveLetterType(event, letterType)}
@@ -223,7 +223,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
                         />
                       </form>
                     </td>
-                    <td>
+                    <td className="center">
                       <select
                         aria-label={`Kategori ${letterType.name}`}
                         form={`letter-type-${letterType.id}`}
@@ -245,7 +245,7 @@ export default function LetterTypeSettingsPanel({ reloadKey = 0 }: { reloadKey?:
                         )?.[2] ?? '-'}
                       </small>
                     </td>
-                    <td>
+                    <td className="center">
                       <div className="sid-admin-letter-type-actions">
                         <button
                           type="submit"

@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Repositories\CitizenRepository;
 use App\Services\CitizenService;
 use App\Services\PopulationAuditService;
+use App\Support\AuditContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class CitizenServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new CitizenService(new CitizenRepository, new PopulationAuditService);
+        $this->service = new CitizenService(new CitizenRepository, new PopulationAuditService, new AuditContext);
     }
 
     public function test_get_all_with_wilayah_returns_all_citizens(): void

@@ -48,7 +48,7 @@ describe('OperatorDesaLayout role regression', () => {
       // Kasi/Kaur boleh melihat data penduduk (khusus-baca), tetapi tidak
       // mendapat menu pengelolaan milik Staf SIDUTama.
       expect(screen.getByRole('link', { name: 'Data Penduduk' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Manajemen Pengguna' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Manajemen Akun' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Kelola Wilayah' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Alur & Jenis Surat' })).toBeNull()
       expect(screen.queryByRole('link', { name: 'Log Aktivitas' })).toBeNull()
@@ -80,6 +80,58 @@ describe('OperatorDesaLayout role regression', () => {
       'href',
       '/admin/log-aktivitas',
     )
+  })
+})
+
+describe('OperatorDesaLayout for area officials and village heads', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useNotifications.mockReturnValue({ unreadCount: 0, reload })
+  })
+
+  const menuOf = (role: string, path: string) => {
+    useAuth.mockReturnValue({ user: { role, name: 'Pejabat', role_label: role }, logout: vi.fn() })
+
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <OperatorDesaLayout>Halaman</OperatorDesaLayout>
+      </MemoryRouter>,
+    )
+
+    return screen
+      .getAllByRole('link')
+      .filter((link) => link.classList.contains('sid-operator-menu-item'))
+      .map((link) => [link.textContent, link.getAttribute('href')])
+  }
+
+  it.each([
+    ['rt', '/admin/rt'],
+    ['rw', '/admin/rw'],
+    ['kadus', '/admin/kadus'],
+  ])('gives %s its own pages in the sidebar', (role, prefix) => {
+    expect(menuOf(role, prefix)).toEqual([
+      ['Ringkasan', prefix],
+      ['Permohonan Surat', `${prefix}/surat`],
+      ['Surat Saya', '/admin/surat-saya'],
+      ['Data Penduduk', `${prefix}/data-penduduk`],
+      ['Manajemen Akun', `${prefix}/manajemen-akun`],
+    ])
+  })
+
+  it.each(['kepala_desa', 'sekretaris_desa'])('gives %s the shared kades pages', (role) => {
+    expect(menuOf(role, '/admin/kades')).toEqual([
+      ['Ringkasan', '/admin/kades'],
+      ['Permohonan Surat', '/admin/kades/surat'],
+      ['Surat Saya', '/admin/surat-saya'],
+      ['Data Penduduk', '/admin/kades/data-penduduk'],
+    ])
+  })
+
+  it('marks the open page and links back to the public site', () => {
+    menuOf('rw', '/admin/rw/data-penduduk')
+
+    expect(screen.getByRole('link', { name: 'Data Penduduk' })).toHaveClass('active')
+    expect(screen.getByRole('link', { name: 'Situs Desa' })).toHaveAttribute('href', '/')
   })
 })
 

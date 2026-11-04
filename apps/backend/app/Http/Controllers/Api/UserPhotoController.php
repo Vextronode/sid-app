@@ -11,22 +11,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Foto profil akun warga: oleh pemilik akun (/profile/photo) atau oleh
- * Staf SIDUTama (/users/{user}/photo). Lihat UserPhotoService untuk aturan
- * akun yang sedang menjabat.
+ * Foto profil akun warga: dihapus pemilik akun (/profile/photo), atau
+ * diganti/dihapus Staf SIDUTama (/users/{user}/photo). Warga mengganti
+ * fotonya lewat permintaan (ProfilePhotoRequestController). Lihat
+ * UserPhotoService untuk aturan akun yang sedang menjabat.
  */
 class UserPhotoController extends Controller
 {
     public function __construct(
         private readonly UserPhotoService $service,
     ) {}
-
-    public function storeOwn(UploadUserPhotoRequest $request): JsonResponse
-    {
-        $user = $this->service->replaceOwn($request->user(), $request->file('photo'));
-
-        return $this->respond($user, 'Foto profil berhasil disimpan.');
-    }
 
     public function destroyOwn(Request $request): JsonResponse
     {

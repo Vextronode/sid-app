@@ -4,9 +4,13 @@ import type { IsoDateString } from '@/types'
 
 export type OrgSlot = 'ketua' | 'wakil_ketua' | 'anggota'
 
+// Pemegang jabatan: warga desa (dipilih lewat NIK). Baris yang berakhir
+// (is_active=false) adalah riwayat dan tidak dapat diubah/dihapus.
 export type OrgMember = {
   id: number
   position_id: number
+  citizen_id: string | null
+  nik_masked: string | null
   member_name: string
   photo_img: string | null
   phone_wa: string | null
@@ -30,10 +34,10 @@ export type OrgPosition = {
 
 export type OrgSlots = Record<OrgSlot, OrgPosition | null>
 
-// Mengisi slot: nama baru, atau promosi anggota (from_member_id).
+// Mengisi slot: warga desa lewat NIK, atau promosi anggota (from_member_id).
 // previous_holder: nasib pemegang Ketua/Wakil lama.
 export type AddOrgMemberPayload = {
-  member_name?: string | null
+  nik?: string | null
   from_member_id?: number | null
   previous_holder?: 'end' | 'to_member'
   phone_wa?: string | null
@@ -41,11 +45,13 @@ export type AddOrgMemberPayload = {
   notes?: string | null
 }
 
+// Nama mengikuti data warga; yang bisa diubah hanya kontak dan catatan.
 export type UpdateOrgMemberPayload = {
-  member_name?: string
   phone_wa?: string | null
   notes?: string | null
-  is_active?: boolean
 }
+
+// Warga desa pemilik NIK (pengisian nama otomatis di form).
+export type OrgCitizen = { citizen_id: string; name: string; nik_masked: string }
 
 export type EndOrgMemberPayload = { ended_at?: string | null; to_member?: boolean }

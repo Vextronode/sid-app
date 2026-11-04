@@ -19,8 +19,9 @@ export function deleteHamlet(id: Id) {
   return api.delete(`/api/hamlets/${id}`)
 }
 
-export function getRws() {
-  return api.get<CollectionResponse<Rw>>('/api/rws')
+// hamlet_id: hanya RW di dusun itu (pilihan Dusun -> RW -> RT).
+export function getRws(params: { hamlet_id?: number | string } = {}) {
+  return api.get<CollectionResponse<Rw>>('/api/rws', { params })
 }
 
 export function createRw(payload: Payload) {
@@ -35,8 +36,9 @@ export function deleteRw(id: Id) {
   return api.delete(`/api/rws/${id}`)
 }
 
-export function getRts() {
-  return api.get<CollectionResponse<Rt>>('/api/rts')
+// rw_id: hanya RT di RW itu (pilihan Dusun -> RW -> RT).
+export function getRts(params: { rw_id?: number | string } = {}) {
+  return api.get<CollectionResponse<Rt>>('/api/rts', { params })
 }
 
 export function createRt(payload: Payload) {

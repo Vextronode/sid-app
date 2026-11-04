@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Rw;
+use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
 class RwRepository
@@ -12,9 +13,12 @@ class RwRepository
         //
     }
 
-    public function allOrderedByNumber(string $villageId, ?int $hamletId = null): Collection
+    /** $scope (opsional): hanya RW di dalam/pemuat wilayah pembaca Data Penduduk. */
+    public function allOrderedByNumber(string $villageId, ?int $hamletId = null, ?PopulationScope $scope = null): Collection
     {
-        $query = Rw::query()->where('village_id', $villageId);
+        $query = Rw::query()
+            ->where('village_id', $villageId)
+            ->when($scope, fn ($query) => $scope->applyToRegions($query));
 
         if ($hamletId !== null) {
             $query->where('hamlet_id', $hamletId);

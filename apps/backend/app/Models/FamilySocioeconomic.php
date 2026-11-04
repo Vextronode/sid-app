@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedEnum;
 use App\Enums\ElectricitySource;
 use App\Enums\HouseOwnershipStatus;
 use App\Enums\IncomeRange;
@@ -25,14 +26,16 @@ class FamilySocioeconomic extends Model
 
     /**
      * household_income_range is the combined monthly income of all family members.
+     * Penghasilan dan aset produktif adalah data keuangan pribadi, jadi
+     * disimpan terenkripsi (kolom `text`).
      */
     protected $casts = [
-        'household_income_range' => IncomeRange::class,
+        'household_income_range' => EncryptedEnum::class.':'.IncomeRange::class,
         'house_ownership_status' => HouseOwnershipStatus::class,
         'water_source' => WaterSource::class,
         'electricity_source' => ElectricitySource::class,
         'dependents_count' => 'integer',
-        'productive_assets' => 'array',
+        'productive_assets' => 'encrypted:array',
         'surveyed_at' => 'datetime',
     ];
 

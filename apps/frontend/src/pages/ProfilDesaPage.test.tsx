@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -129,6 +129,23 @@ describe('ProfilDesaPage peraturan desa', () => {
 
     expect(await screen.findByRole('heading', { name: 'Peraturan Desa' })).toBeInTheDocument()
     expect(await screen.findByText('Pungutan Desa')).toBeInTheDocument()
+  })
+
+  it('opens a regulation and hides an empty number', async () => {
+    mockApi(() =>
+      Promise.resolve({
+        data: { data: [{ ...REGULATION, regulation_number: '', enacted_date: null }] },
+      }),
+    )
+    renderAt('/profil-desa')
+
+    const toggle = await screen.findByRole('button', { name: /Pungutan Desa/ })
+    expect(screen.queryByText(/^Nomor/)).toBeNull()
+
+    fireEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Isi peraturan.')).toBeInTheDocument()
   })
 
   it('shows the empty state when the backend has none (404)', async () => {

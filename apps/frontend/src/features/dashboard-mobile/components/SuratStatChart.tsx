@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { getLetterTypes } from '@/features/surat/api/letterTypeApi'
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -9,12 +10,19 @@ import { Calendar } from 'lucide-react'
 // GET /api/dashboard/letter-stats: label kategori dan jumlah per label.
 type LetterStatsChart = { labels?: string[]; values?: (number | string)[]; maxY?: number }
 
-export default function SuratStatChart({
-  letterTypes = [],
-}: {
-  letterTypes?: { id: number; name: string | null }[]
-}) {
+/**
+ * Grafik pengajuan surat per hari. Pilihan jenis surat diambil dari semua
+ * jenis surat aktif desa (bukan hanya yang sudah punya pengajuan), supaya
+ * daftar tetap terisi walau belum ada surat masuk.
+ */
+export default function SuratStatChart() {
   const dateInputRef = useRef<HTMLInputElement>(null)
+
+  const { data: letterTypes = [] } = useQuery({
+    queryKey: ['letter-types', 'active'],
+    queryFn: () => getLetterTypes(),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
 

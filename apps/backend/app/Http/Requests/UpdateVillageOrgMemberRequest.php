@@ -29,10 +29,10 @@ class UpdateVillageOrgMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'member_name' => ['sometimes', 'string', 'max:150'],
+            // Nama mengikuti data warga (dipilih lewat NIK); berakhirnya
+            // jabatan lewat endpoint /end, bukan is_active.
             'phone_wa' => ['nullable', 'string', 'max:20'],
             'notes' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Citizen;
 use App\Models\User;
 use App\Models\VillageOrgMember;
 use App\Models\VillageOrgPosition;
+use App\Repositories\CitizenRepository;
 use App\Repositories\VillageOrgMemberRepository;
 use App\Repositories\VillageOrgPositionRepository;
 use Illuminate\Http\UploadedFile;
@@ -12,30 +14,63 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * Pemegang jabatan organisasi desa (BPD, LPM, Karang Taruna, PKK). Setiap
+ * pemegang adalah warga desa yang dipilih lewat NIK; namanya disalin dari
+ * data warga. Baris tidak pernah dihapus: jabatan yang berakhir (dikosongkan,
+ * diganti, atau keanggotaan diakhiri) menjadi riwayat yang tidak dapat
+ * diubah.
+ */
 class VillageOrgMemberService
 {
     public function __construct(
         private readonly VillageOrgMemberRepository $repository,
         private readonly VillageOrgPositionRepository $positionRepository,
+        private readonly CitizenRepository $citizenRepository,
     ) {}
+
+    /**
+     * Warga aktif desa ini pemilik NIK, untuk mengisi nama otomatis di form.
+     * Hash NIK dihitung sama seperti di seluruh aplikasi.
+     */
+    public function findCitizenByNik(User $user, string $nik): Citizen
+    {
+        $citizen = $this->citizenRepository->findByNikHash(hash('sha256', $nik));
+
+        if (! $citizen || $citizen->village_id !== $user->village_id || ! $citizen->is_active) {
+            throw new HttpException(404, 'NIK tidak ditemukan di data warga desa ini.');
+        }
+
+        return $citizen;
+    }
 
     /**
      * Mengisi slot. Untuk Ketua/Wakil Ketua, pemegang lama diakhiri masa
      * jabatannya (masuk riwayat) atau, dengan previous_holder=to_member,
      * dipindah menjadi Anggota. Dengan from_member_id, yang diisikan adalah
      * anggota/wakil aktif organisasi yang sama (promosi): jabatan lamanya
-     * diakhiri dan datanya disalin ke slot ini.
+     * diakhiri dan datanya disalin ke slot ini. Tanpa from_member_id, yang
+     * diisikan adalah warga desa pemilik `nik`.
      */
     public function addOrRotate(User $user, VillageOrgPosition $position, array $data): VillageOrgMember
     {
         $this->guardBelongsToVillage($user, $position);
         $this->guardFeatureEnabled($position);
 
-        return DB::transaction(function () use ($position, $data) {
+        $citizen = isset($data['from_member_id']) ? null : $this->findCitizenByNik($user, (string) $data['nik']);
+
+        return DB::transaction(function () use ($position, $data, $citizen) {
             $startedAt = $data['started_at'];
             $source = isset($data['from_member_id'])
                 ? $this->resolvePromotionSource($position, (int) $data['from_member_id'])
                 : null;
+
+            if ($citizen !== null && $this->repository->citizenActiveInOrganization($citizen->id, $position->village_id, $position->org_type)) {
+                throw new HttpException(
+                    422,
+                    'Warga ini sudah aktif di organisasi ini. Untuk menaikkan jabatannya, pilih "Anggota yang sudah ada".'
+                );
+            }
 
             if ($position->is_single_occupant) {
                 foreach ($this->repository->activeForPosition($position->id) as $activeMember) {
@@ -53,7 +88,8 @@ class VillageOrgMemberService
 
             return $this->repository->create([
                 'position_id' => $position->id,
-                'member_name' => $source?->member_name ?? $data['member_name'],
+                'citizen_id' => $source?->citizen_id ?? $citizen?->id,
+                'member_name' => $source?->member_name ?? $citizen?->name,
                 'photo_img' => $source?->photo_img,
                 'phone_wa' => $source?->phone_wa ?? ($data['phone_wa'] ?? null),
                 'started_at' => $startedAt,
@@ -70,13 +106,15 @@ class VillageOrgMemberService
 
         $member = $this->repository->findByIdOrFail($id);
         $this->guardBelongsToPosition($member, $position);
+        $this->guardActive($member);
 
         return $this->repository->update($member, $data);
     }
 
     /**
-     * Mengakhiri pemegang Ketua/Wakil Ketua sehingga slotnya kosong, atau
-     * dengan to_member=true sekaligus menurunkannya menjadi Anggota.
+     * Mengakhiri pemegang Ketua/Wakil Ketua sehingga slotnya kosong (dengan
+     * to_member=true sekaligus menurunkannya menjadi Anggota), atau
+     * mengakhiri keanggotaan Anggota. Keduanya masuk riwayat.
      */
     public function end(User $user, VillageOrgPosition $position, int $id, array $data): VillageOrgMember
     {
@@ -85,8 +123,8 @@ class VillageOrgMemberService
         $member = $this->repository->findByIdOrFail($id);
         $this->guardBelongsToPosition($member, $position);
 
-        if (! $position->is_single_occupant) {
-            throw new HttpException(422, 'Anggota cukup dihapus, tidak perlu diakhiri.');
+        if (! $position->is_single_occupant && ($data['to_member'] ?? false)) {
+            throw new HttpException(422, 'Anggota tidak dapat diturunkan lagi; akhiri keanggotaannya.');
         }
 
         if (! $member->is_active) {
@@ -104,25 +142,6 @@ class VillageOrgMemberService
 
             return $member;
         });
-    }
-
-    public function delete(User $user, VillageOrgPosition $position, int $id): void
-    {
-        $this->guardBelongsToVillage($user, $position);
-
-        $member = $this->repository->findByIdOrFail($id);
-        $this->guardBelongsToPosition($member, $position);
-
-        if ($position->is_single_occupant && $member->is_active) {
-            throw new HttpException(
-                422,
-                'Pemegang jabatan aktif tidak bisa dihapus. Kosongkan atau ganti jabatannya terlebih dahulu.'
-            );
-        }
-
-        $photo = $member->photo_img;
-        $this->repository->delete($member);
-        $this->deletePhotoFile($photo, $member->id);
     }
 
     /**
@@ -165,6 +184,7 @@ class VillageOrgMemberService
 
         $member = $this->repository->findByIdOrFail($id);
         $this->guardBelongsToPosition($member, $position);
+        $this->guardActive($member);
 
         return $member;
     }
@@ -200,6 +220,7 @@ class VillageOrgMemberService
 
         return $this->repository->create([
             'position_id' => $anggota->id,
+            'citizen_id' => $from->citizen_id,
             'member_name' => $from->member_name,
             'photo_img' => $from->photo_img,
             'phone_wa' => $from->phone_wa,
@@ -221,6 +242,16 @@ class VillageOrgMemberService
     {
         if (! $this->repository->belongsToPosition($member, $position)) {
             throw new HttpException(404, 'Anggota organisasi tidak ditemukan pada jabatan ini.');
+        }
+    }
+
+    /**
+     * Riwayat (jabatan yang sudah berakhir) tidak dapat diubah.
+     */
+    private function guardActive(VillageOrgMember $member): void
+    {
+        if (! $member->is_active) {
+            throw new HttpException(422, 'Riwayat jabatan tidak dapat diubah.');
         }
     }
 

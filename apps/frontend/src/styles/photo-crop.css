@@ -1,0 +1,127 @@
+/* ==========================================
+   photo-crop.css
+   Potong foto profil/pejabat menjadi persegi 1:1 (PhotoCropDialog).
+   Semua warna lewat token --sid-* dari sid-global.css.
+   ========================================== */
+
+/* Dibuka di atas modal lain (mis. form Tetapkan Pejabat). */
+.sid-modal-overlay.sid-photo-crop-overlay {
+  z-index: 1100;
+}
+
+.sid-photo-crop-modal {
+  max-width: 380px;
+}
+
+/* Bingkai potong: persegi tetap, foto bergerak di dalamnya. */
+.sid-photo-crop-frame {
+  position: relative;
+
+  overflow: hidden;
+
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+
+  border-radius: var(--sid-radius-lg);
+
+  background: var(--sid-text-primary);
+
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sid-photo-crop-frame:active {
+  cursor: grabbing;
+}
+
+.sid-photo-crop-frame:focus-visible {
+  outline: 3px solid var(--sid-primary);
+  outline-offset: 3px;
+}
+
+.sid-photo-crop-frame img {
+  position: absolute;
+
+  max-width: none;
+
+  pointer-events: none;
+}
+
+/* Lingkaran: bagian yang tampil di avatar bulat; luar lingkaran diredupkan. */
+.sid-photo-crop-guide {
+  position: absolute;
+  inset: 0;
+
+  border: 2px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+
+  pointer-events: none;
+}
+
+.sid-photo-crop-error {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  margin: 0;
+
+  font-size: 13px;
+
+  color: #fff;
+}
+
+.sid-photo-crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  max-width: 320px;
+  margin: 14px auto 0;
+}
+
+.sid-photo-crop-zoom input {
+  flex: 1;
+
+  accent-color: var(--sid-primary);
+}
+
+.sid-photo-crop-zoom button {
+  display: inline-grid;
+  place-items: center;
+
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 50%;
+
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+
+  cursor: pointer;
+}
+
+.sid-photo-crop-zoom button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sid-photo-crop-note {
+  margin: 8px 0 0;
+
+  font-size: 12px;
+  text-align: center;
+
+  color: var(--sid-text-muted);
+}
+
+.sid-photo-crop-modal .sid-modal-actions {
+  margin-top: 1.25rem;
+}

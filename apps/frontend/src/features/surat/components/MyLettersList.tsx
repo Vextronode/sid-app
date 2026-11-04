@@ -55,6 +55,9 @@ function LetterRow({ letter, onDetail, onDelete, deleting }: LetterRowProps) {
   const progress = getLetterProgress(letter)
   const name = letter.letter_type?.name ?? 'Surat'
   const isApproved = letter.status === SURAT_STATUS.APPROVED
+  // Sama dengan aturan backend: hanya surat yang belum diputuskan siapa pun.
+  // Surat yang diproses, terbit, atau ditolak tetap tersimpan beserta riwayatnya.
+  const canDelete = letter.status === SURAT_STATUS.PENDING
 
   return (
     <li className={`sid-my-letters-row tone-${progress.tone}`}>
@@ -97,7 +100,7 @@ function LetterRow({ letter, onDetail, onDelete, deleting }: LetterRowProps) {
               letter.is_expired === true ? 'Masa berlaku surat telah habis' : undefined
             }
             extra={
-              !isApproved && (
+              canDelete && (
                 <button
                   type="button"
                   onClick={() => onDelete(letter)}

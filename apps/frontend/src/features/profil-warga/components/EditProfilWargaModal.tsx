@@ -119,9 +119,15 @@ export default function EditProfilWargaModal({
 
   return (
     <div className="sid-modal-overlay">
-      <div className="sid-modal sid-edit-profil-warga-modal">
-        <div className="sid-modal-header">
-          <h2>Pengaturan Akun</h2>
+      <div
+        className="sid-modal sid-edit-profil-warga-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-settings-heading"
+      >
+        <div className="sid-dialog-heading">
+          <h2 id="account-settings-heading">Pengaturan Akun</h2>
+          <p>Ubah username, email, atau kata sandi untuk masuk.</p>
         </div>
 
         {error && (
@@ -167,7 +173,9 @@ export default function EditProfilWargaModal({
           </div>
         </form>
 
-        <form onSubmit={handlePasswordSubmit}>
+        <form onSubmit={handlePasswordSubmit} className="sid-account-settings-section">
+          <h3>Ganti Kata Sandi</h3>
+
           <div className="sid-modal-field sid-profile-field">
             <label htmlFor="account-current-password">Kata sandi saat ini</label>
             <input

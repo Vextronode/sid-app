@@ -1,6 +1,7 @@
 // ==========================================
 // OperatorDesaLayout.tsx
-// Layout khusus Operator Desa
+// Layout sidebar untuk semua pejabat: RT, RW, Kadus, Kades, Sekdes,
+// Kasi Pemerintahan, Kaur TU & Umum, dan Staf SIDUTama.
 // Styling menggunakan Global CSS SID; sidebar dan topbar memakai token
 // publik (.bd-theme dari beranda.css) dengan lambang + nama desa.
 // ==========================================
@@ -17,6 +18,7 @@ import {
   LayoutGrid,
   FilePlus,
   FileText,
+  Globe,
   History,
   Users,
   UserCog,
@@ -35,6 +37,7 @@ import {
   UserCircle,
   Workflow,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { WilayahMasterProvider } from '@/features/kelola-wilayah/hooks/WilayahMasterProvider'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { useLogoutToBeranda } from '@/features/auth/hooks/useLogoutToBeranda'
@@ -44,10 +47,12 @@ import NotificationPopover from '@/features/notifikasi/components/NotificationPo
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 import {
   getOperatorAllowedRoles,
+  OPERATOR_ROUTE_CAPABILITIES,
   ROLE_NAVIGATION,
 } from '@/features/operator-desa/constants/roleNavigation'
 import { UserAvatar } from '@/components/ui/UserAvatar'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
+import { HAL_BERANDA } from '@/lib/constants/routes'
 
 // Lebar layar yang memakai sidebar ponsel (sama dengan breakpoint CSS).
 const MOBILE_QUERY = '(max-width: 639px)'
@@ -118,7 +123,18 @@ function useSidebarState(pathname: string) {
   }
 }
 
+// Halaman per peran pejabat berbilah atas sebelumnya (RT, RW, Kadus,
+// Kades & Sekdes), dengan label yang sama seperti menu operator.
+const AREA_PREFIXES = ['/admin/rt', '/admin/rw', '/admin/kadus', '/admin/kades']
+
+const areaItems = (label: string, suffix: string, icon: LucideIcon) =>
+  AREA_PREFIXES.map((prefix) => `${prefix}${suffix}`)
+    .filter((route) => route in OPERATOR_ROUTE_CAPABILITIES)
+    .map((route) => ({ label, route, allowedRoles: getOperatorAllowedRoles(route), icon }))
+
 const MENU_ITEMS = [
+  ...areaItems('Ringkasan', '', LayoutGrid),
+  ...areaItems('Permohonan Surat', '/surat', FileText),
   {
     label: 'Ringkasan',
     route: '/admin/operator-desa',
@@ -137,12 +153,14 @@ const MENU_ITEMS = [
     allowedRoles: getOperatorAllowedRoles('/admin/surat-saya'),
     icon: FilePlus,
   },
+  ...areaItems('Data Penduduk', '/data-penduduk', Users),
   {
     label: 'Data Penduduk',
     route: '/admin/data-warga',
     allowedRoles: getOperatorAllowedRoles('/admin/data-warga'),
     icon: Users,
   },
+  ...areaItems('Manajemen Akun', '/manajemen-akun', UserCog),
   {
     label: 'Kelola Wilayah',
     route: '/admin/kelola-wilayah',
@@ -156,7 +174,8 @@ const MENU_ITEMS = [
     icon: BriefcaseBusiness,
   },
   {
-    label: 'Manajemen Pengguna',
+    // Kelola akun, aktivasi akun, dan request ganti foto profil (?bagian=).
+    label: 'Manajemen Akun',
     route: '/admin/manajemen-user',
     allowedRoles: getOperatorAllowedRoles('/admin/manajemen-user'),
     icon: UserCog,
@@ -302,6 +321,12 @@ export function OperatorDesaLayout({ children }: { children: ReactNode }) {
           {/* SIDEBAR FOOTER */}
 
           <div className="sid-operator-sidebar-footer">
+            {/* Kembali ke situs publik desa (beranda, berita, profil). */}
+            <Link to={HAL_BERANDA} title="Situs Desa" className="sid-operator-sidebar-action">
+              <Globe size={16} />
+              <span>Situs Desa</span>
+            </Link>
+
             <button
               type="button"
               onClick={handleLogout}

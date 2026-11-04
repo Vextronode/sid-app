@@ -31,8 +31,8 @@ export default function RwTable({
 
       const matchesSearch =
         !keyword ||
-        String(rw.number).toLowerCase().includes(keyword) ||
-        String(rw.fullLabel).toLowerCase().includes(keyword)
+        // "001" maupun "RW 001" cocok.
+        `rw ${rw.number}`.toLowerCase().includes(keyword)
 
       return matchesHamlet && matchesSearch
     })
@@ -97,15 +97,15 @@ export default function RwTable({
             ) : (
               data.map((rw, index) => (
                 <tr key={rw.id}>
-                  <td>{index + 1}</td>
-                  <td className="sid-wilayah-name">RW {rw.number}</td>
-                  <td>{getHamletName(rw.hamletId)}</td>
-                  <td>
+                  <td className="center">{index + 1}</td>
+                  <td className="sid-wilayah-name center">RW {rw.number}</td>
+                  <td className="center">{getHamletName(rw.hamletId)}</td>
+                  <td className="center">
                     <StatusPill active={rw.isActive}>
                       {rw.isActive ? 'Aktif' : 'Nonaktif'}
                     </StatusPill>
                   </td>
-                  <td>
+                  <td className="center">
                     <div className="sid-wilayah-actions">
                       <button
                         type="button"

@@ -6,6 +6,8 @@ import {
   updateCitizen,
   deleteCitizen,
   importCitizensExcel,
+  importCitizensFromPreview,
+  previewCitizenImport,
 } from '../api'
 import { usePageSize } from '@/components/ui/usePageSize'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
@@ -15,12 +17,58 @@ import { getApiErrorMessage } from '@/shared/lib/apiError'
 
 type CitizenPayload = Record<string, unknown>
 
+export type CitizenImportRowError = { row: number; message: string }
+
 // Hasil impor Excel (POST /api/citizens/import).
 export type CitizenImportResult = {
   total_rows: number
   success_count: number
+  // Impor hasil preview: warga yang ditimpa / dilewati karena NIK sudah terdaftar.
+  updated_count?: number
+  skipped_count?: number
   error_count: number
-  errors: { row: number; message: string }[]
+  errors: CitizenImportRowError[]
+  // Isi kolom yang tidak dikenali lalu dikosongkan; barisnya tetap diproses.
+  warning_count?: number
+  warnings?: CitizenImportRowError[]
+}
+
+// Satu kolom yang berbeda; before/after sudah berupa teks tampilan.
+export type CitizenImportChange = { field: string; label: string; before: string; after: string }
+
+// Baris file yang NIK-nya sudah terdaftar. changes kosong = data sama persis.
+export type CitizenImportConflict = {
+  row: number
+  citizen_id: string
+  name: string
+  changes: CitizenImportChange[]
+  moves_family: boolean
+}
+
+// Pemetaan judul kolom file ke data warga (preview).
+export type CitizenImportColumns = {
+  sheet: string
+  header_row: number
+  mapped: { column: string; header: string; field: string; label: string }[]
+  // suggestion: kolom yang mungkin dimaksud (hanya petunjuk, kolom tetap tidak dibaca).
+  ignored: { column: string; header: string; reason: string; suggestion?: string | null }[]
+  // Label kolom wajib yang tidak ada; tanpa kolom ini setiap baris gagal.
+  missing_required: string[]
+}
+
+// Hasil POST /api/citizens/import/preview.
+export type CitizenImportPreview = {
+  token: string
+  expires_at: string
+  total_rows: number
+  new_count: number
+  conflict_count: number
+  error_count: number
+  errors: CitizenImportRowError[]
+  warning_count: number
+  warnings: CitizenImportRowError[]
+  conflicts: CitizenImportConflict[]
+  columns: CitizenImportColumns
 }
 
 export function useWargaList() {
@@ -110,6 +158,23 @@ export function useWargaList() {
     return res.data?.data
   }
 
+  async function previewWargaImport(file: File): Promise<CitizenImportPreview> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await previewCitizenImport(formData)
+    return res.data.data
+  }
+
+  async function importWargaFromPreview(
+    token: string,
+    overwriteRows: number[],
+  ): Promise<CitizenImportResult> {
+    const res = await importCitizensFromPreview(token, overwriteRows)
+    await loadData()
+    return res.data.data
+  }
+
   return {
     data,
     loading,
@@ -136,5 +201,7 @@ export function useWargaList() {
     editCitizen,
     deleteWarga: removeCitizen,
     importWargaExcel,
+    previewWargaImport,
+    importWargaFromPreview,
   }
 }

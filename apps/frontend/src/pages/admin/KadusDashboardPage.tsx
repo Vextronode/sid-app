@@ -181,7 +181,7 @@ export default function KadusDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart">
-            <SuratStatChart letterTypes={summary.by_type} />
+            <SuratStatChart />
           </div>
         </div>
 
@@ -250,7 +250,7 @@ export default function KadusDashboardPage() {
               ====================================== */}
 
           <div className="sid-dashboard-chart-mobile">
-            <SuratStatChart letterTypes={summary.by_type} />
+            <SuratStatChart />
           </div>
         </div>
 

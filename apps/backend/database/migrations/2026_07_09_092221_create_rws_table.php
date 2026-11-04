@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('hamlet_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             $table->string('number');
-            $table->string('full_label');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->index('village_id', 'idx_rws_village');

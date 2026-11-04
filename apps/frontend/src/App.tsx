@@ -103,7 +103,8 @@ const KadesListPage = lazy(() => import('@/pages/admin/KadesListPage'))
 // are restricted according to their backend capabilities.
 const OperatorDesaDashboardPage = lazy(() => import('@/pages/admin/OperatorDesaDashboardPage'))
 const DataWargaAccessPage = lazy(() => import('@/pages/admin/DataWargaAccessPage'))
-const ManajemenUserPage = lazy(() => import('@/pages/admin/ManajemenUserPage'))
+const DataWargaReadOnlyPage = lazy(() => import('@/pages/admin/DataWargaReadOnlyPage'))
+const ManajemenAkunPage = lazy(() => import('@/pages/admin/ManajemenAkunPage'))
 const PengajuanResetPage = lazy(() => import('@/pages/admin/PengajuanResetPage'))
 const KelolaBeritaPage = lazy(() => import('@/pages/admin/KelolaBeritaPage'))
 const KelolaProfilDesaPage = lazy(() => import('@/pages/admin/KelolaProfilDesaPage'))
@@ -321,6 +322,22 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/rt/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['rt']}>
+                    <ManajemenAkunPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/rt/data-penduduk"
+                element={
+                  <ProtectedRoute allowedRoles={['rt']}>
+                    <DataWargaReadOnlyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/rt/surat"
                 element={
                   <ProtectedRoute allowedRoles={['rt']}>
@@ -335,6 +352,22 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={['rw']}>
                     <RWDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/rw/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['rw']}>
+                    <ManajemenAkunPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/rw/data-penduduk"
+                element={
+                  <ProtectedRoute allowedRoles={['rw']}>
+                    <DataWargaReadOnlyPage />
                   </ProtectedRoute>
                 }
               />
@@ -357,6 +390,22 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/kadus/manajemen-akun"
+                element={
+                  <ProtectedRoute allowedRoles={['kadus']}>
+                    <ManajemenAkunPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kadus/data-penduduk"
+                element={
+                  <ProtectedRoute allowedRoles={['kadus']}>
+                    <DataWargaReadOnlyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/kadus/surat"
                 element={
                   <ProtectedRoute allowedRoles={['kadus']}>
@@ -371,6 +420,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
                     <KadesDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/kades/data-penduduk"
+                element={
+                  <ProtectedRoute allowedRoles={KADES_APPROVER_ROLES}>
+                    <DataWargaReadOnlyPage />
                   </ProtectedRoute>
                 }
               />
@@ -428,7 +485,7 @@ export default function App() {
                 path="/admin/manajemen-user"
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/manajemen-user')}>
-                    <ManajemenUserPage />
+                    <ManajemenAkunPage />
                   </ProtectedRoute>
                 }
               />

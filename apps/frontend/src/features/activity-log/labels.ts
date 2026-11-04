@@ -21,6 +21,29 @@ export const POPULATION_EVENT_OPTIONS = Object.entries(POPULATION_EVENT_LABELS).
   ([value, label]) => ({ value, label }),
 )
 
+// Tindakan atas akun (log `user`), keputusan permintaan atur ulang kata
+// sandi (log `password_reset_request`), aktivasi akun
+// (`account_registration`), dan ganti foto profil (`profile_photo_request`).
+export const ACCOUNT_EVENT_LABELS: Record<string, string> = {
+  activated: 'Akun diaktifkan',
+  deactivated: 'Akun dinonaktifkan',
+  updated: 'Data akun diubah',
+  password_reset_by_staff: 'Kata sandi diatur ulang petugas',
+  staf_sid_recovered: 'Pemulihan Staf SIDUTama',
+  approved: 'Permintaan atur ulang disetujui',
+  rejected: 'Permintaan atur ulang ditolak',
+  registration_approved: 'Pendaftaran akun disetujui',
+  registration_rejected: 'Pendaftaran akun ditolak',
+  registration_manual_activated: 'Akun diaktifkan manual',
+  profile_photo_approved: 'Ganti foto profil disetujui',
+  profile_photo_rejected: 'Ganti foto profil ditolak',
+}
+
+export const ACCOUNT_EVENT_OPTIONS = Object.entries(ACCOUNT_EVENT_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}))
+
 const FIELD_LABELS: Record<string, string> = {
   // Warga
   nik: 'NIK',

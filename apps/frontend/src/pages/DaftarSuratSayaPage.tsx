@@ -62,7 +62,7 @@ export default function DaftarSuratSayaPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
-  // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
+  // Hanya surat yang belum diputuskan siapa pun yang ditawarkan untuk dihapus.
   const handleDelete = async (item: LetterListItem) => {
     const confirmed = await confirmDialog({
       title: `Hapus permohonan ${item.letter_type?.name ?? 'surat'}?`,

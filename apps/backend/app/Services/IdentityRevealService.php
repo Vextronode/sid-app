@@ -2,25 +2,27 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Letter;
 use App\Models\User;
+use App\Support\LetterIdentityMask;
+use App\Support\PopulationScope;
 use Illuminate\Support\Facades\Gate;
 
 /**
  * Menampilkan NIK / No. KK utuh yang di daftar hanya tampil tersamar
  * (tombol "lihat" di UI). Yang boleh melihat:
- *  - Staf SIDUTama, Kasi Pemerintahan, Kaur TU & Umum: warga dan KK desanya;
+ *  - pembaca Data Penduduk: warga dan KK dalam cakupannya (PopulationScope:
+ *    seluruh desa untuk Staf/Kasi/Kaur/Kades/Sekdes, wilayahnya untuk
+ *    RT/RW/Kadus);
  *  - warga: dirinya dan anggota KK-nya sendiri;
- *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu.
+ *  - siapa pun yang boleh melihat sebuah surat: NIK pemohon surat itu dan
+ *    NIK/No. KK pihak lain di isian surat itu.
  * Setiap pembukaan data orang lain dicatat di Log Aktivitas.
  */
 class IdentityRevealService
 {
-    private const POPULATION_ROLES = [UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum];
-
     /**
      * @return array{nik: string|null, no_kk: string|null}
      */
@@ -32,7 +34,7 @@ class IdentityRevealService
             || ($actor->citizen->family_id !== null && $actor->citizen->family_id === $citizen->family_id)
         );
 
-        if (! $ownFamily && ! $this->managesPopulation($actor, $citizen->village_id)) {
+        if (! $ownFamily && ! $this->managesPopulation($actor, $citizen)) {
             abort(403, 'Anda tidak berhak melihat NIK warga ini.');
         }
 
@@ -50,7 +52,7 @@ class IdentityRevealService
     {
         $ownFamily = $actor->citizen?->family_id !== null && $actor->citizen->family_id === $family->id;
 
-        if (! $ownFamily && ! $this->managesPopulation($actor, $family->village_id)) {
+        if (! $ownFamily && ! $this->managesPopulation($actor, $family)) {
             abort(403, 'Anda tidak berhak melihat No. KK ini.');
         }
 
@@ -75,15 +77,43 @@ class IdentityRevealService
         return ['nik' => $letter->applicant_nik];
     }
 
-    private function managesPopulation(User $actor, ?string $villageId): bool
+    /**
+     * NIK / No. KK pihak lain di isian surat (ayah/ibu, saksi, anggota KK,
+     * dst.) yang di API tampil tersamar (LetterIdentityMask). Boleh dibuka
+     * siapa pun yang boleh melihat surat itu; selain pemohon, tercatat.
+     *
+     * @param  string  $path  path isian, mis. `nik_ayah` atau `kk_pendaftaran.1.nik`
+     * @return array{value: string}
+     */
+    public function letterPayload(User $actor, Letter $letter, string $path): array
     {
-        return $actor->is_active
-            && $actor->village_id !== null
-            && $actor->village_id === $villageId
-            && in_array(UserRole::tryFrom((string) $actor->role), self::POPULATION_ROLES, true);
+        Gate::forUser($actor)->authorize('view', $letter);
+
+        $value = LetterIdentityMask::valueAt($letter->payload, $path);
+
+        if ($value === null) {
+            abort(404, 'Isian NIK/No. KK ini tidak ditemukan pada surat.');
+        }
+
+        if (! $letter->isSubmittedBy($actor)) {
+            $label = collect($letter->letterType?->form_fields ?? [])
+                ->firstWhere('name', explode('.', $path)[0])['label'] ?? $path;
+
+            $this->log($actor, $letter, $letter->village_id, (string) $letter->applicant_name, "NIK/No. KK isian surat ({$label})", ['path' => $path]);
+        }
+
+        return ['value' => $value];
     }
 
-    private function log(User $actor, object $subject, ?string $villageId, string $label, string $field): void
+    private function managesPopulation(User $actor, Citizen|Family $record): bool
+    {
+        return PopulationScope::tryFor($actor)?->includes($record) ?? false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    private function log(User $actor, object $subject, ?string $villageId, string $label, string $field, array $extra = []): void
     {
         activity($subject instanceof Letter ? 'letter' : ($subject instanceof Family ? 'family' : 'citizen'))
             ->performedOn($subject)
@@ -94,6 +124,7 @@ class IdentityRevealService
                 'subject_label' => $label,
                 'actor_role' => $actor->role,
                 'field' => $field,
+                ...$extra,
             ])
             ->log("Melihat {$field}");
     }

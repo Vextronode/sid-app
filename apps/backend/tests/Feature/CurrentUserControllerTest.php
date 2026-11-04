@@ -31,7 +31,7 @@ class CurrentUserControllerTest extends TestCase
 
     public function test_show_returns_the_area_of_the_official_position(): void
     {
-        $rt = Rt::factory()->create(['full_label' => 'RT 001 / RW 002']);
+        $rt = Rt::factory()->create(['number' => '001']);
         $user = User::factory()->create(['role' => 'rt']);
         Official::factory()->forUser($user)->position('rt')->create([
             'rt_id' => $rt->id,
@@ -42,7 +42,7 @@ class CurrentUserControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/user')
             ->assertOk()
-            ->assertJsonPath('data.official.rt.full_label', 'RT 001 / RW 002')
+            ->assertJsonPath('data.official.rt.number', '001')
             ->assertJsonPath('data.official.rw.id', $rt->rw_id);
     }
 

@@ -14,6 +14,11 @@ return new class extends Migration
         Schema::create('village_org_members', function (Blueprint $table) {
             $table->id();
             $table->foreignId('position_id')->constrained('village_org_positions')->cascadeOnDelete();
+            // Warga desa pemegang jabatan (dipilih lewat NIK). member_name
+            // adalah salinan nama saat ditetapkan, supaya riwayat tetap
+            // terbaca walau data warga berubah atau dihapus. Baris tidak
+            // pernah dihapus: berakhirnya jabatan dicatat lewat ended_at.
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
             $table->string('member_name', 150);
             $table->string('photo_img')->nullable();
             $table->string('phone_wa', 20)->nullable();

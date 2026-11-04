@@ -27,6 +27,25 @@ describe('getNotificationTarget', () => {
     expect(getNotificationTarget('rt', request)).toBe('/admin/profil#permintaan-saksi')
   })
 
+  it('opens the matching Manajemen Akun section for account requests', () => {
+    const registration = { status: 'account_registration_submitted' }
+    const photo = { status: 'profile_photo_requested' }
+
+    expect(getNotificationTarget('rt', registration)).toBe(
+      '/admin/rt/manajemen-akun?bagian=aktivasi',
+    )
+    expect(getNotificationTarget('staf_sid', registration)).toBe(
+      '/admin/manajemen-user?bagian=aktivasi',
+    )
+    expect(getNotificationTarget('kadus', photo)).toBe('/admin/kadus/manajemen-akun?bagian=foto')
+    expect(getNotificationTarget('warga', photo)).toBeNull()
+  })
+
+  it('sends profile photo decisions to the profile page', () => {
+    expect(getNotificationTarget('warga', { status: 'profile_photo_rejected' })).toBe('/profil')
+    expect(getNotificationTarget('warga', { status: 'profile_photo_approved' })).toBe('/profil')
+  })
+
   it('no longer routes signature reset notifications (feature removed)', () => {
     expect(getNotificationTarget('staf_sid', { status: 'signature_reset_requested' })).toBeNull()
     expect(getNotificationTarget('warga', { status: 'signature_reset_approved' })).toBeNull()

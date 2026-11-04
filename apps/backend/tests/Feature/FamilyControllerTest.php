@@ -150,12 +150,17 @@ class FamilyControllerTest extends TestCase
             'family_id' => $family->id,
             'family_role' => 'kepala_keluarga',
             'name' => 'Engkos',
+            'gender' => 'L',
+            'religion' => 'islam',
+            'date_of_birth' => now()->subYears(45)->subDay()->toDateString(),
         ]);
         $child = Citizen::factory()->create([
             'village_id' => $village->id,
             'family_id' => $family->id,
             'family_role' => 'anak',
             'name' => 'Asep',
+            'gender' => 'P',
+            'date_of_birth' => now()->subYears(12)->subDay()->toDateString(),
         ]);
 
         // Daftar anggota di modal edit KK.
@@ -163,8 +168,9 @@ class FamilyControllerTest extends TestCase
             ->getJson("/api/families/{$family->id}")
             ->assertOk()
             ->assertJsonCount(2, 'data.members')
-            ->assertJsonFragment(['id' => $head->id, 'name' => 'Engkos', 'family_role' => 'kepala_keluarga'])
-            ->assertJsonFragment(['id' => $child->id, 'name' => 'Asep', 'family_role' => 'anak']);
+            ->assertJsonFragment(['id' => $head->id, 'name' => 'Engkos', 'family_role' => 'kepala_keluarga', 'gender' => 'L', 'age' => 45, 'religion' => 'islam'])
+            ->assertJsonFragment(['id' => $child->id, 'name' => 'Asep', 'family_role' => 'anak', 'gender' => 'P', 'age' => 12])
+            ->assertJsonMissingPath('data.members.0.date_of_birth');
 
         // Daftar KK cukup jumlah anggota.
         $this->actingAs($user)

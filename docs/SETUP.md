@@ -137,8 +137,8 @@ Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari 
 | Kasi Pemerintahan | `sakim.hidayat` |
 | Kaur TU & Umum | `tita.sutiasih` |
 | Kepala Dusun lain | `kadus.<dusun>`, mis. `kadus.sinargalih` |
-| RW lain | `rw.<dusun>.<nn>`, mis. `rw.sucen.03` |
-| RT lain | `rt.<dusun>.<nn>.<nn>` (RW lalu RT), mis. `rt.cibenda.02.05` |
+| RW lain | `rw.<dusun>.<nn>`, mis. `rw.sucen.21` (nomor RW urut se-desa) |
+| RT lain | `rt.<dusun>.<nn>.<nn>` (RW lalu RT), mis. `rt.cibenda.12.03` |
 
 **Password semua akun:** `Password123!`
 

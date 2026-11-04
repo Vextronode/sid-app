@@ -3,25 +3,39 @@ get:
   summary: Unduh template Excel impor warga
   description: |
     Aktor: Staf SIDUTama (`staf_sid`) atau Kasi Pemerintahan.
-    UC-09. Template dibuat server (`CitizensTemplateExport`) sehingga
-    header kolomnya selalu sama dengan key yang divalidasi
-    `CitizensImport::rules()` (heading row, snake_case). Dipakai sebagai
-    file untuk POST /citizens/import.
+    UC-09. Template resmi dibuat server (`CitizensTemplateExport`) **setiap
+    kali diunduh**, dari data desa pengunduh saat itu (dusun, RW, RT,
+    Katalog Pekerjaan aktif). Formatnya langsung sesuai kriteria impor, jadi
+    file dari template ini tidak membutuhkan alias atau pencocokan longgar.
+    Dipakai untuk POST /citizens/import/preview dan POST /citizens/import.
 
-    Header (urut): nik, name, date_of_birth, place_of_birth, gender,
-    blood_type, address, rt_id, hamlet_id, family_id, family_role,
-    father_id, mother_id, father_name_text, mother_name_text,
-    marital_status, religion, last_education, domicile_status,
-    current_domicile, residency_type, origin_region, title_front,
-    title_back, birth_certificate_number, marriage_certificate_number,
-    marriage_date, divorce_certificate_number, divorce_date, has_disorder
-    (1/0), disability.
+    Tiga sheet:
+    - **Data Warga**: judul kolom (kolom wajib bertanda ` *`): NIK *, NO KK,
+      NAMA LENGKAP *, GELAR DEPAN, GELAR BELAKANG, TEMPAT LAHIR, TANGGAL
+      LAHIR *, JENIS KELAMIN *, AGAMA, PENDIDIKAN TERAKHIR, PEKERJAAN, STATUS
+      PERKAWINAN, SHDK, GOLONGAN DARAH, NAMA AYAH, NAMA IBU, ALAMAT *, DUSUN,
+      RW *, RT *, STATUS DOMISILI, DOMISILI SEKARANG, JENIS PENDUDUK, DAERAH
+      ASAL, NO AKTA LAHIR, NO AKTA KAWIN, TANGGAL PERKAWINAN, NO AKTA CERAI,
+      TANGGAL PERCERAIAN, DISABILITAS.
+      - Pilihan tetap sistem (jenis kelamin, agama, pendidikan, status kawin,
+        SHDK, golongan darah, status domisili, jenis penduduk): dropdown
+        ketat (Stop).
+      - DUSUN, RW, PEKERJAAN: dropdown dari data desa; RT: dropdown yang
+        mengikuti RW (`INDIRECT("RW_"&<sel RW>)`, named range per RW).
+        Jenisnya peringatan (Warning): data yang baru ditambahkan di sistem
+        setelah template diunduh tetap bisa diketik dan dicocokkan server ke
+        database terbaru saat impor.
+      - NIK, NO KK, RW, RT berformat Teks; kolom tanggal berupa sel tanggal
+        (dd/mm/yyyy).
+      - Baris 2: contoh isian (wilayah & pekerjaan nyata desa) dengan NIK
+        `3201019999990001`; impor selalu melewati baris ini.
+    - **Petunjuk**: tanggal pembuatan, cara mengisi, daftar kolom (wajib,
+      isian yang diterima, contoh).
+    - **Daftar Pilihan**: tabel Dusun - RW - RT dan daftar pekerjaan aktif
+      per tanggal unduh; sumber dropdown sheet Data Warga.
 
-    Baris kedua berisi satu contoh isian (NIK fiktif `3201010101900001`,
-    `Contoh Nama Warga`, `1990-01-01`, gender `L`, family_role
-    `kepala_keluarga`, marital_status `kawin`, religion `islam`,
-    last_education `sma`, domicile_status `menetap`, residency_type
-    `lokal`, dst). Hapus baris contoh sebelum mengimpor data asli.
+    File template lama ber-header snake_case (nik, name, date_of_birth,
+    rt_id, ...) tetap diterima impor.
   operationId: downloadCitizenImportTemplate
   security:
     - sanctumCookie: []

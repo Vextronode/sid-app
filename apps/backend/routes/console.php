@@ -30,5 +30,7 @@ Schedule::command('announcements:prune')
     ->everyMinute()
     ->withoutOverlapping();
 
-// Retensi activity log (config activitylog.delete_records_older_than_days).
-Schedule::command('activitylog:clean')->daily();
+// Activity log sengaja tidak dibersihkan otomatis (`activitylog:clean` tidak
+// dijadwalkan): riwayat data warga/KK, jabatan, akun, dan akses identitas
+// menjadi bukti bila ada sengketa bertahun-tahun kemudian. Retensi baru
+// diatur bila desa punya kebijakan masa simpan arsip.

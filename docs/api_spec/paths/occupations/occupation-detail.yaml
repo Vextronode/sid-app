@@ -1,6 +1,7 @@
 patch:
   tags: [Epic 2 - Users, Citizens, Officials]
   summary: Ubah pekerjaan desa
+  description: "Bila sort_order baru sudah dipakai pekerjaan lain di desa ini, keduanya bertukar posisi (pekerjaan lain mendapat urutan lama pekerjaan ini)."
   operationId: updateOccupation
   security:
     - sanctumCookie: []

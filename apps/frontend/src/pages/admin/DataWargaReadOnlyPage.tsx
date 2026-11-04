@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getCitizens } from '@/features/data-warga/api'
 import FamilyManagementPanel from '@/features/data-warga/components/FamilyManagementPanel'
+import { WilayahFilterSelects } from '@/features/data-warga/components/WilayahFilterSelects'
 import { useFamilyList } from '@/features/data-warga/hooks/useFamilyList'
+import { useWilayahFilter, wilayahFilterLevels } from '@/features/data-warga/hooks/useWilayahFilter'
 import { useDebouncedValue } from '@/features/surat/hooks/useSuratListQuery'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageNumbers } from '@/components/ui/PageNumbers'
@@ -24,13 +27,20 @@ const SECTIONS = [
   { value: 'kk', label: 'Kartu Keluarga' },
 ]
 
+// Peran pembaca yang cakupannya hanya wilayahnya sendiri.
+const AREA_ROLES = ['rt', 'rw', 'kadus']
+
 /**
- * Data penduduk dan KK khusus-baca untuk Kaur TU & Umum sebagai bahan
- * pertimbangan saat memproses surat. Perubahan data olehnya hanya lewat
- * aksi "Terapkan" pada surat; tambah, ubah, hapus, dan impor ada di
- * halaman kelola milik Staf SIDUTama dan Kasi Pemerintahan.
+ * Data penduduk dan KK khusus-baca untuk Kaur TU & Umum (bahan pertimbangan
+ * saat memproses surat; perubahan datanya hanya lewat aksi "Terapkan" pada
+ * surat), Kepala Desa, Sekretaris Desa, Kepala Dusun, RW, dan RT. Isi
+ * daftar dibatasi backend ke cakupan peran (PopulationScope); filter
+ * wilayah hanya menampilkan tingkat di bawah wilayah peran. Tambah, ubah,
+ * hapus, dan impor ada di halaman kelola Staf SIDUTama dan Kasi Pemerintahan.
  */
 export default function DataWargaReadOnlyPage() {
+  const { user } = useAuth()
+  const filterLevels = wilayahFilterLevels(user?.role)
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
   const switchSection = (value: string) =>
@@ -43,6 +53,9 @@ export default function DataWargaReadOnlyPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSizeState] = usePageSize('data-penduduk')
   const [totalItems, setTotalItems] = useState(0)
+  // Filter bertingkat Dusun -> RW -> RT; mengubahnya kembali ke halaman 1.
+  const wilayahFilter = useWilayahFilter(() => setPage(1))
+  const { params: wilayahParams } = wilayahFilter
   // Dinaikkan tombol Refresh untuk memuat ulang halaman warga yang sama.
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -52,7 +65,7 @@ export default function DataWargaReadOnlyPage() {
   useEffect(() => {
     let active = true
 
-    getCitizens({ page, per_page: pageSize, ...(search ? { search } : {}) })
+    getCitizens({ page, per_page: pageSize, ...(search ? { search } : {}), ...wilayahParams })
       .then((response) => {
         if (!active) return
 
@@ -70,7 +83,7 @@ export default function DataWargaReadOnlyPage() {
     return () => {
       active = false
     }
-  }, [page, pageSize, search, reloadKey])
+  }, [page, pageSize, search, wilayahParams, reloadKey])
 
   const refreshCitizens = () => {
     setLoading(true)
@@ -89,12 +102,17 @@ export default function DataWargaReadOnlyPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Data Penduduk</span>
-        </p>
-
         <div className="sid-operator-header">
-          <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+          <div>
+            <h1>Data Penduduk &amp; Kartu Keluarga</h1>
+            <p>
+              {user?.role === 'kaur_tu_umum'
+                ? 'Halaman ini hanya untuk melihat data. Perubahan data warga dilakukan lewat tombol Terapkan pada surat yang sudah disetujui.'
+                : `Halaman ini hanya untuk melihat data warga dan Kartu Keluarga ${
+                    AREA_ROLES.includes(user?.role ?? '') ? 'di wilayah Anda' : 'seluruh desa'
+                  }.`}
+            </p>
+          </div>
           {/* Memuat ulang tab yang sedang dibuka. */}
           {activeSection === 'kk' ? (
             <RefreshButton onRefresh={familyList.reload} />
@@ -102,11 +120,6 @@ export default function DataWargaReadOnlyPage() {
             <RefreshButton onRefresh={refreshCitizens} refreshing={loading} />
           )}
         </div>
-
-        <p className="sid-admin-alert" role="note">
-          Halaman ini hanya untuk melihat data. Perubahan data warga dilakukan lewat tombol Terapkan
-          pada surat yang sudah disetujui.
-        </p>
 
         <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih bagian data">
           {SECTIONS.map((section) => (
@@ -127,28 +140,40 @@ export default function DataWargaReadOnlyPage() {
 
         {activeSection === 'kk' && (
           <div id="data-panel-kk" role="tabpanel" aria-labelledby="data-tab-kk">
-            <FamilyManagementPanel familyList={familyList} canEdit={false} canViewHistory={false} />
+            <FamilyManagementPanel
+              familyList={familyList}
+              canEdit={false}
+              canViewHistory={false}
+              filterLevels={filterLevels}
+            />
           </div>
         )}
 
         {activeSection === 'penduduk' && (
           <div id="data-panel-penduduk" role="tabpanel" aria-labelledby="data-tab-penduduk">
             <div className="sid-operator-filter-card">
-              <div className="sid-operator-filter-field">
-                <p>Pencarian Cepat</p>
-                <div className="sid-operator-search">
-                  <Search size={16} />
-                  <input
-                    value={keyword}
-                    onChange={(event) => {
-                      setKeyword(event.target.value)
-                      setPage(1)
-                    }}
-                    placeholder="Cari NIK (16 digit) atau nama warga..."
-                    aria-label="Cari NIK (16 digit) atau nama warga"
-                  />
+              <form
+                className="sid-operator-filter-grid warga-filter"
+                onSubmit={(event) => event.preventDefault()}
+              >
+                <div className="sid-operator-filter-field">
+                  <p>Pencarian Cepat</p>
+                  <div className="sid-operator-search">
+                    <Search size={16} />
+                    <input
+                      value={keyword}
+                      onChange={(event) => {
+                        setKeyword(event.target.value)
+                        setPage(1)
+                      }}
+                      placeholder="Cari NIK (16 digit) atau nama warga..."
+                      aria-label="Cari NIK (16 digit) atau nama warga"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <WilayahFilterSelects {...wilayahFilter} levels={filterLevels} />
+              </form>
             </div>
 
             <div className="sid-operator-table-card">
@@ -158,6 +183,7 @@ export default function DataWargaReadOnlyPage() {
                     <tr>
                       <th>Nama</th>
                       <th className="center">NIK</th>
+                      <th className="center">Dusun</th>
                       <th className="center">RT/RW</th>
                       <th className="center">Jenis Kelamin</th>
                       <th className="center">Tempat, Tanggal Lahir</th>
@@ -170,19 +196,19 @@ export default function DataWargaReadOnlyPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={9} className="empty sid-admin-error" role="alert">
+                        <td colSpan={10} className="empty sid-admin-error" role="alert">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="empty">
+                        <td colSpan={10} className="empty">
                           Tidak ada data warga.
                         </td>
                       </tr>
@@ -197,7 +223,11 @@ export default function DataWargaReadOnlyPage() {
                             />
                           </td>
                           <td className="center">
-                            RT {warga.rt?.number ?? '-'} / RW {warga.rw?.number ?? '-'}
+                            {warga.rw?.hamlet?.name ?? warga.hamlet?.name ?? '-'}
+                          </td>
+                          <td className="center sid-nowrap">
+                            {/* Judul kolom sudah "RT/RW": cukup nomornya, satu baris. */}
+                            {warga.rt?.number ?? '-'}/{warga.rw?.number ?? '-'}
                           </td>
                           <td className="center">
                             {warga.gender === 'L'
@@ -206,7 +236,7 @@ export default function DataWargaReadOnlyPage() {
                                 ? 'Perempuan'
                                 : '-'}
                           </td>
-                          <td className="center">
+                          <td>
                             {[
                               warga.place_of_birth,
                               warga.date_of_birth

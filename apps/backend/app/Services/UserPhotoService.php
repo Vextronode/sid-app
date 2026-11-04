@@ -6,12 +6,15 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Foto profil akun warga. Warga mengelola fotonya sendiri, dan Staf SIDUTama
- * boleh mengganti atau menghapusnya. Selama akun berperan pejabat (RT
+ * Foto profil akun warga. Warga mengganti fotonya lewat permintaan yang
+ * disetujui petugas wilayah (ProfilePhotoRequestService) dan boleh
+ * menghapusnya sendiri; Staf SIDUTama boleh langsung mengganti (termasuk
+ * dari galeri) atau menghapusnya. Selama akun berperan pejabat (RT
  * sampai Kepala Desa, termasuk Staf SIDUTama), foto yang dipakai adalah
  * foto pejabat (officials.photo_img) yang hanya dikelola Staf SIDUTama lewat
  * halaman Pejabat Desa; setelah kembali menjadi warga, foto akun bisa
@@ -22,13 +25,6 @@ class UserPhotoService
     public function __construct(
         private readonly UserRepository $userRepository,
     ) {}
-
-    public function replaceOwn(User $user, UploadedFile $photo): User
-    {
-        $this->assertWarga($user, 'Foto pejabat dikelola '.UserRole::stafSidLabel().' lewat halaman Pejabat Desa.', 403);
-
-        return $this->replace($user, $photo);
-    }
 
     public function deleteOwn(User $user): User
     {
@@ -49,6 +45,33 @@ class UserPhotoService
         $this->assertManageable($target, $actor);
 
         return $this->delete($target);
+    }
+
+    /**
+     * Foto kamera yang disetujui petugas (aktivasi akun atau permintaan
+     * ganti foto) dipindah dari disk privat menjadi foto profil akun.
+     * Dipanggil di dalam transaksi keputusan; foto lama dihapus setelah
+     * commit, berkas privat dihapus pemanggil.
+     */
+    public function adoptApproved(User $user, string $privatePath): User
+    {
+        $oldPath = $user->photo_img;
+        $newPath = "user-photos/{$user->village_id}/".basename($privatePath);
+
+        Storage::disk('public')->writeStream($newPath, Storage::disk('private_uploads')->readStream($privatePath));
+
+        try {
+            $user = $this->userRepository->update($user, ['photo_img' => $newPath]);
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($newPath);
+            throw $exception;
+        }
+
+        if ($oldPath && $oldPath !== $newPath) {
+            DB::afterCommit(fn () => Storage::disk('public')->delete($oldPath));
+        }
+
+        return $user;
     }
 
     private function replace(User $user, UploadedFile $photo): User

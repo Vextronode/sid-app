@@ -9,6 +9,8 @@ import { FulfillmentPanel } from './FulfillmentPanel'
 import { LetterResultPanel } from './LetterResultPanel'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
+import { revealLetterPayloadIdentity } from '@/shared/lib/identityApi'
+import { RevealableValue } from '@/components/ui/RevealableValue'
 
 // Terapkan hanya oleh Kasi/Kaur yang ditugaskan; Staf SIDUTama mengubah
 // data lewat Data Penduduk.
@@ -177,6 +179,22 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
         const value = `Dusun ${p[`${field.name}_dusun`]}, RW ${p[`${field.name}_rw`]}, RT ${p[`${field.name}_rt`]}`
 
         return { name: field.name, label: field.label, value }
+      }
+
+      // NIK / No. KK pihak lain tampil tersamar; nilai utuh lewat reveal
+      // yang tercatat di Log Aktivitas.
+      if (raw && letter.masked_payload_paths?.includes(field.name)) {
+        return {
+          name: field.name,
+          label: field.label,
+          value: (
+            <RevealableValue
+              masked={String(raw)}
+              label={field.label}
+              reveal={() => revealLetterPayloadIdentity(letter.id, field.name)}
+            />
+          ),
+        }
       }
 
       const option = (field.options ?? []).find((item) => String(item.value) === String(raw))

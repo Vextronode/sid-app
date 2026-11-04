@@ -5,6 +5,7 @@ import { History, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 import { getFamily, getFamilySocioeconomic, saveFamilySocioeconomic } from '../api'
 import type { useFamilyList } from '../hooks/useFamilyList'
+import type { WilayahFilters } from '../hooks/useWilayahFilter'
 import { WilayahFilterSelects } from './WilayahFilterSelects'
 import { PageNumbers } from '@/components/ui/PageNumbers'
 import { PageSizeSelect } from '@/components/ui/PageSizeSelect'
@@ -14,7 +15,9 @@ import {
   ELECTRICITY_SOURCE_LABELS,
   FAMILY_ROLE_LABELS,
   FAMILY_STATUS_LABELS,
+  GENDER_LABELS,
   HOUSE_OWNERSHIP_LABELS,
+  RELIGION_LABELS,
   WATER_SOURCE_LABELS,
   labelOf,
   optionsOf,
@@ -45,7 +48,7 @@ const EMPTY_FAMILY = {
   family_status: 'aktif',
 }
 
-// Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Pengguna.
+// Warna badge status KK, mengikuti badge Aktif/Nonaktif Manajemen Akun.
 const FAMILY_STATUS_TONE: Record<string, StatusTone> = {
   aktif: 'active',
   pindah: 'inactive',
@@ -74,7 +77,7 @@ const EMPTY_SOCIOECONOMIC: SocioeconomicForm = {
 const fieldStyle = {
   width: '100%',
   padding: '8px 12px',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: 'var(--sid-radius-control)',
   border: '1px solid var(--sid-border)',
   background: 'var(--sid-surface-card)',
   color: 'var(--sid-text-primary)',
@@ -88,9 +91,24 @@ function responseData<T>(response: { data?: unknown }): Partial<T> {
   return ((body as { data?: T })?.data ?? body ?? {}) as Partial<T>
 }
 
+// Urutan SHDK seperti di lembar KK; anggota tanpa SHDK di akhir. Urutan asal
+// dipertahankan untuk SHDK yang sama (sort stabil).
+const FAMILY_ROLE_ORDER = Object.keys(FAMILY_ROLE_LABELS)
+
+function sortMembersByRole(members: FamilyMember[]): FamilyMember[] {
+  const rank = (role: string | null) => {
+    const index = role ? FAMILY_ROLE_ORDER.indexOf(role) : -1
+    return index === -1 ? FAMILY_ROLE_ORDER.length : index
+  }
+
+  return [...members].sort((a, b) => rank(a.family_role) - rank(b.family_role))
+}
+
 /**
  * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
- * (Kaur TU & Umum); `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
+ * (Kaur TU & Umum dan pejabat pembaca lain); `canViewHistory` hanya untuk
+ * Staf SIDUTama (Log Aktivitas). `filterLevels` = tingkat filter wilayah
+ * yang tampil (lihat wilayahFilterLevels).
  * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
 export type FamilyManagementPanelHandle = { openCreate: () => void }
@@ -99,6 +117,7 @@ type FamilyManagementPanelProps = {
   familyList: ReturnType<typeof useFamilyList>
   canEdit?: boolean
   canViewHistory?: boolean
+  filterLevels?: (keyof WilayahFilters)[]
   ref?: Ref<FamilyManagementPanelHandle>
 }
 
@@ -106,6 +125,7 @@ export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
   canViewHistory = true,
+  filterLevels,
   ref,
 }: FamilyManagementPanelProps) {
   const navigate = useNavigate()
@@ -301,7 +321,7 @@ export default function FamilyManagementPanel({
           <p>
             {canEdit
               ? 'Kelola data KK dan survei sosio-ekonomi rumah tangga.'
-              : 'Daftar Kartu Keluarga desa (hanya lihat).'}
+              : 'Daftar Kartu Keluarga (hanya lihat).'}
           </p>
         </div>
       </div>
@@ -330,7 +350,7 @@ export default function FamilyManagementPanel({
             </div>
           </div>
 
-          <WilayahFilterSelects {...wilayahFilter} />
+          <WilayahFilterSelects {...wilayahFilter} levels={filterLevels} />
         </form>
       </div>
 
@@ -350,7 +370,7 @@ export default function FamilyManagementPanel({
           <thead>
             <tr>
               <th>No. KK</th>
-              <th>Kepala Keluarga</th>
+              <th className="left">Kepala Keluarga</th>
               <th>Anggota</th>
               <th>Alamat KK</th>
               <th>Status</th>
@@ -373,7 +393,7 @@ export default function FamilyManagementPanel({
             ) : (
               families.map((family) => (
                 <tr key={family.id}>
-                  <td>
+                  <td className="center">
                     <RevealableValue
                       masked={family.no_kk_masked}
                       reveal={() => revealFamilyNumber(family.id)}
@@ -381,9 +401,9 @@ export default function FamilyManagementPanel({
                     />
                   </td>
                   <td>{family.head_of_family?.name ?? '-'}</td>
-                  <td>{family.members_count ?? 0}</td>
+                  <td className="center">{family.members_count ?? 0}</td>
                   <td>{family.family_address ?? '-'}</td>
-                  <td>
+                  <td className="center">
                     {family.family_status ? (
                       <StatusPill tone={FAMILY_STATUS_TONE[family.family_status] ?? 'inactive'}>
                         {labelOf(FAMILY_STATUS_LABELS, family.family_status)}
@@ -553,17 +573,66 @@ export default function FamilyManagementPanel({
                   </select>
                 </label>
                 {members.length > 0 && (
-                  <div>
-                    <strong>Anggota KK</strong>
-                    <ul>
-                      {members.map((member) => (
-                        <li key={member.id}>
-                          {member.name} -{' '}
-                          {labelOf(FAMILY_ROLE_LABELS, member.family_role ?? 'anggota')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <section
+                    className="sid-admin-family-members"
+                    aria-labelledby="family-members-title"
+                  >
+                    <div className="sid-admin-family-members-heading">
+                      <strong id="family-members-title">Anggota KK</strong>
+                      <span>{members.length} orang</span>
+                    </div>
+                    <div className="sid-operator-table-wrapper">
+                      <table className="sid-operator-table">
+                        <thead>
+                          <tr>
+                            <th className="center">No</th>
+                            <th>Nama</th>
+                            <th className="center">L/P</th>
+                            <th className="center">Umur</th>
+                            <th className="center">Agama</th>
+                            <th>Hubungan (SHDK)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortMembersByRole(members).map((member, index) => (
+                            <tr key={member.id}>
+                              <td className="center">{index + 1}</td>
+                              <td className="sid-admin-family-member-name">{member.name}</td>
+                              <td
+                                className="center"
+                                title={
+                                  member.gender ? labelOf(GENDER_LABELS, member.gender) : undefined
+                                }
+                              >
+                                {member.gender ?? '-'}
+                              </td>
+                              <td className="center sid-admin-family-member-age">
+                                {member.age == null ? '-' : `${member.age} th`}
+                              </td>
+                              <td className="center">
+                                {labelOf(RELIGION_LABELS, member.religion)}
+                              </td>
+                              <td>
+                                {member.family_role ? (
+                                  <span
+                                    className={`sid-admin-family-role${
+                                      member.family_role === 'kepala_keluarga' ? ' is-head' : ''
+                                    }`}
+                                  >
+                                    {labelOf(FAMILY_ROLE_LABELS, member.family_role)}
+                                  </span>
+                                ) : (
+                                  <span className="sid-admin-family-role is-empty">
+                                    Belum ditentukan
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
                 )}
               </>
             ) : (

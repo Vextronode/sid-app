@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\LetterResultStage;
 use App\Models\LetterAttachment;
 use App\Support\LetterDocuments;
+use App\Support\LetterIdentityMask;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,10 @@ class LetterResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // NIK/No. KK pihak lain di isian surat dikirim tersamar (K3); nilai
+        // utuh lewat GET /letters/{letter}/payload-identity yang tercatat.
+        [$payload, $maskedPaths] = LetterIdentityMask::apply($this->payload);
+
         return [
             'id' => $this->id,
             'village_id' => $this->village_id,
@@ -29,7 +34,8 @@ class LetterResource extends JsonResource
             // NIK tidak pernah dikirim plaintext (UU PDP, TDD-04, kontrak Letter).
             'applicant_nik_masked' => $this->mask($this->applicant_nik),
             'purpose' => $this->purpose,
-            'payload' => $this->payload,
+            'payload' => $payload,
+            'masked_payload_paths' => $maskedPaths,
             'notes' => $this->notes,
             'status' => $this->status,
             'flow_id' => $this->flow_id,

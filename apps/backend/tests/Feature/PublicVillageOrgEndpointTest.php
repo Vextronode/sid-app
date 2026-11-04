@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Citizen;
 use App\Models\User;
 use App\Models\Village;
 use App\Models\VillageOrgMember;
@@ -107,8 +108,10 @@ class PublicVillageOrgEndpointTest extends TestCase
 
         $this->getJson('/api/public/village-orgs/lpm')->assertJsonPath('data.ketua', null);
 
+        Citizen::factory()->create(['village_id' => $village->id, 'nik' => '3201010101030001', 'name' => 'Ketua Baru']);
+
         $this->actingAs($petugas)->postJson("/api/village-org-positions/{$slots['ketua']->id}/members", [
-            'member_name' => 'Ketua Baru',
+            'nik' => '3201010101030001',
             'started_at' => '2026-10-01',
         ])->assertCreated();
 

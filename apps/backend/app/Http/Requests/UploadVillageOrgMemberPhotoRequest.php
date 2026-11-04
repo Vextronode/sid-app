@@ -27,7 +27,7 @@ class UploadVillageOrgMemberPhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+            'photo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120', 'dimensions:ratio=1/1'],
         ];
     }
 
@@ -41,6 +41,7 @@ class UploadVillageOrgMemberPhotoRequest extends FormRequest
             'photo.image' => 'Foto harus berupa gambar.',
             'photo.mimes' => 'Foto harus berformat PNG, JPG, atau WEBP.',
             'photo.max' => 'Ukuran foto maksimal 5 MB.',
+            'photo.dimensions' => 'Foto harus persegi (1:1). Potong foto lewat tombol unggah di aplikasi.',
         ];
     }
 }

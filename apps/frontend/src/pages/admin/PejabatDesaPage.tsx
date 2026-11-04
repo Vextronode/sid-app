@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getHamlets, getRts, getRws } from '@/features/kelola-wilayah/api'
+import { WilayahCascadeFields } from '@/features/kelola-wilayah/components/WilayahCascadeFields'
 import OfficialPositionTypeManager from '@/features/profil-desa-admin/components/OfficialPositionTypeManager'
 import { TermEndBadge } from '@/features/profil-desa-admin/components/TermEndBadge'
 import {
@@ -27,6 +28,7 @@ import {
   uploadOfficialPhoto,
 } from '@/features/profil-desa-admin/api'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PhotoCropDialog } from '@/components/ui/PhotoCropDialog'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
@@ -235,6 +237,9 @@ type PhotoFieldProps = {
 
 function PhotoField({ file, onChange, disabled }: PhotoFieldProps) {
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  const input = useRef<HTMLInputElement>(null)
+  // Berkas pilihan yang sedang dipotong persegi sebelum dipakai.
+  const [picked, setPicked] = useState<File | null>(null)
 
   useEffect(
     () => () => {
@@ -256,10 +261,30 @@ function PhotoField({ file, onChange, disabled }: PhotoFieldProps) {
           type="file"
           accept={PHOTO_TYPES}
           disabled={disabled}
-          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+          ref={input}
+          onChange={(event) => setPicked(event.target.files?.[0] ?? null)}
         />
       </div>
-      <small className="sid-admin-cell-meta">PNG, JPG, atau WEBP. Maksimal 5 MB.</small>
+      <small className="sid-admin-cell-meta">
+        PNG, JPG, atau WEBP. Maksimal 5 MB. Foto dipotong persegi sebelum disimpan.
+      </small>
+
+      {picked && (
+        <PhotoCropDialog
+          source={picked}
+          title="Atur Foto Pejabat"
+          onCancel={() => {
+            // Batal memotong: kosongkan pilihan supaya form tidak terkirim tanpa foto.
+            setPicked(null)
+            if (input.current) input.current.value = ''
+            onChange(null)
+          }}
+          onConfirm={(photo) => {
+            setPicked(null)
+            onChange(photo)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -374,6 +399,8 @@ export default function PejabatDesaPage() {
   // Satu input berkas tersembunyi dipakai bersama oleh tombol "Ganti foto"
   // tiap baris; pejabat yang dituju disimpan di ref.
   const photoInput = useRef<HTMLInputElement>(null)
+  // Berkas dari galeri yang sedang dipotong persegi sebelum diunggah.
+  const [cropping, setCropping] = useState<{ file: File; official: Official } | null>(null)
   const photoTarget = useRef<Official | null>(null)
 
   const loadData = useCallback(async () => {
@@ -561,7 +588,16 @@ export default function PejabatDesaPage() {
     event.target.value = ''
     if (!file || !official) return undefined
 
-    return run(() => uploadOfficialPhoto(official.id, file), 'Foto pejabat berhasil diperbarui.')
+    setCropping({ file, official })
+  }
+
+  const uploadCropped = (photo: File) => {
+    if (!cropping) return undefined
+
+    const { official } = cropping
+
+    setCropping(null)
+    return run(() => uploadOfficialPhoto(official.id, photo), 'Foto pejabat berhasil diperbarui.')
   }
 
   const handleDeletePhoto = async (official: Official) => {
@@ -654,12 +690,11 @@ export default function PejabatDesaPage() {
   return (
     <div className="sid-operator-page">
       <div className="sid-operator-content">
-        <p className="sid-operator-breadcrumb">
-          Admin / <span>Pejabat Desa</span>
-        </p>
-
         <div className="sid-operator-header">
-          <h1>Pejabat Desa</h1>
+          <div>
+            <h1>Pejabat Desa</h1>
+            <p>Kelola pejabat desa yang memiliki akun beserta masa jabatannya.</p>
+          </div>
           <div className="sid-admin-page-actions">
             <RefreshButton onRefresh={loadData} disabled={processing} />
             <button
@@ -700,6 +735,16 @@ export default function PejabatDesaPage() {
           aria-label="Unggah foto pejabat"
           onChange={handlePhotoChange}
         />
+
+        {cropping && (
+          <PhotoCropDialog
+            source={cropping.file}
+            title={`Atur Foto ${cropping.official.citizen?.name ?? 'Pejabat'}`}
+            confirmLabel="Simpan foto"
+            onCancel={() => setCropping(null)}
+            onConfirm={(photo) => void uploadCropped(photo)}
+          />
+        )}
 
         {!modalOpen && errorAlert}
         {warnings.map((warning) => (
@@ -780,7 +825,7 @@ export default function PejabatDesaPage() {
                               </div>
                             </div>
                           </td>
-                          <td>
+                          <td className={group.areaLabel === 'Dusun' ? undefined : 'center'}>
                             {group.areaLabel
                               ? describeArea(official, rwNumbers)
                               : positionLabel(official)}
@@ -942,37 +987,36 @@ export default function PejabatDesaPage() {
               onChange={(photo) => setPromotion((current) => current && { ...current, photo })}
             />
 
-            {promotionScope === 'rt_id' && (
-              <label className="sid-form-group">
-                <span className="sid-form-label">Wilayah RT *</span>
-                <select
-                  required
-                  value={promotion.rt_id}
-                  onChange={(event) => setPromotion({ ...promotion, rt_id: event.target.value })}
-                >
-                  <option value="">Pilih RT</option>
-                  {areas.rts.map((rt) =>
-                    areaOption(
-                      rt.id,
-                      `RT ${rt.number} / RW ${rwNumbers.get(String(rt.rw_id)) ?? '-'}`,
-                    ),
-                  )}
-                </select>
-              </label>
-            )}
-
-            {promotionScope === 'rw_id' && (
-              <label className="sid-form-group">
-                <span className="sid-form-label">Wilayah RW *</span>
-                <select
-                  required
-                  value={promotion.rw_id}
-                  onChange={(event) => setPromotion({ ...promotion, rw_id: event.target.value })}
-                >
-                  <option value="">Pilih RW</option>
-                  {areas.rws.map((rw) => areaOption(rw.id, `RW ${rw.number}`))}
-                </select>
-              </label>
+            {(promotionScope === 'rt_id' || promotionScope === 'rw_id') && (
+              <WilayahCascadeFields
+                depth={promotionScope === 'rt_id' ? 'rt' : 'rw'}
+                idPrefix="promosi-wilayah"
+                required
+                value={{
+                  hamletId: promotion.hamlet_id,
+                  rwId: promotion.rw_id,
+                  rtId: promotion.rt_id,
+                }}
+                onChange={(area) =>
+                  setPromotion({
+                    ...promotion,
+                    hamlet_id: area.hamletId,
+                    rw_id: area.rwId,
+                    rt_id: area.rtId,
+                  })
+                }
+                // Hanya tingkat jabatan yang dicek; dusun/RW di atasnya penyaring.
+                isTaken={(level, areaId) =>
+                  level === (promotionScope === 'rt_id' ? 'rt' : 'rw') &&
+                  occupied.has(`${promotion.position}:${areaId}`)
+                }
+                renderField={({ id, label, control }) => (
+                  <label key={id} className="sid-form-group" htmlFor={id}>
+                    <span className="sid-form-label">{label} *</span>
+                    {control}
+                  </label>
+                )}
+              />
             )}
 
             {promotionScope === 'hamlet_id' && (

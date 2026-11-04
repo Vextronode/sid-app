@@ -157,13 +157,11 @@ export default function PengajuanResetPage() {
       <div className="sid-kelola-wilayah-content">
         <div className="sid-kelola-wilayah-header">
           <div>
-            <span className="sid-kelola-wilayah-eyebrow">Akun Pengguna</span>
-
             <h1>Pengajuan Reset</h1>
 
             <p>
               Tinjau pengajuan reset kata sandi dari pemilik akun. Reset juga dapat dilakukan
-              langsung di Manajemen Pengguna.
+              langsung di Manajemen Akun.
             </p>
           </div>
 
@@ -178,7 +176,7 @@ export default function PengajuanResetPage() {
               <h3>Reset Kata Sandi</h3>
               <p>
                 Bila disetujui, pemilik akun dapat membuat kata sandi baru sendiri dalam 24 jam.
-                Reset juga dapat dilakukan langsung di Manajemen Pengguna.
+                Reset juga dapat dilakukan langsung di Manajemen Akun.
               </p>
             </div>
           </div>
@@ -231,17 +229,19 @@ export default function PengajuanResetPage() {
 
                     return (
                       <tr key={item.id}>
-                        <td>{(passwordMeta.current_page - 1) * passwordPageSize + index + 1}</td>
+                        <td className="center">
+                          {(passwordMeta.current_page - 1) * passwordPageSize + index + 1}
+                        </td>
                         <td>
                           <span className="sid-wilayah-name">{item.user?.name ?? '-'}</span>
                           {account && <small className="sid-admin-cell-meta">{account}</small>}
                         </td>
-                        <td>{wilayah || '-'}</td>
-                        <td>{formatDateTime(item.created_at)}</td>
-                        <td>
+                        <td className="center">{wilayah || '-'}</td>
+                        <td className="center">{formatDateTime(item.created_at)}</td>
+                        <td className="center">
                           <StatusPill tone={status.tone}>{status.label}</StatusPill>
                         </td>
-                        <td>
+                        <td className="center">
                           {pending ? (
                             '-'
                           ) : (
@@ -258,7 +258,7 @@ export default function PengajuanResetPage() {
                             </>
                           )}
                         </td>
-                        <td>
+                        <td className="center">
                           {pending ? (
                             <div className="sid-wilayah-actions">
                               <button
