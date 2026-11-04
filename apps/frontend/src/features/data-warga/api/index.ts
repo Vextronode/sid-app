@@ -35,6 +35,16 @@ export function importCitizensExcel(formData: FormData) {
   return api.post('/api/citizens/import', formData)
 }
 
+// Tahap 1 impor: periksa file tanpa menyimpan; NIK terdaftar jadi daftar konflik.
+export function previewCitizenImport(formData: FormData) {
+  return api.post('/api/citizens/import/preview', formData)
+}
+
+// Tahap 2 impor: file hasil preview; baris di overwrite_rows ditimpa, konflik lain dilewati.
+export function importCitizensFromPreview(token: string, overwriteRows: number[]) {
+  return api.post('/api/citizens/import', { token, overwrite_rows: overwriteRows })
+}
+
 export function getFamilies(params: ListParams = {}) {
   return api.get<LaravelPaginatedResponse<Family>>('/api/families', { params })
 }

@@ -14,6 +14,8 @@ vi.mock('../api', () => ({
   updateCitizen: vi.fn(),
   deleteCitizen: vi.fn(),
   importCitizensExcel: vi.fn(),
+  previewCitizenImport: vi.fn(),
+  importCitizensFromPreview: vi.fn(),
 }))
 
 vi.mock('@/features/kelola-wilayah/api', () => ({
