@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Imports\CitizensImport;
+use App\Imports\CitizensWorkbookImport;
+use App\Imports\Support\CitizenImportColumns;
+use App\Imports\Support\CitizenImportLayout;
+use App\Imports\Support\XlsxStreamReader;
 use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\Hamlet;
@@ -18,6 +22,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CitizenService
@@ -44,7 +49,7 @@ class CitizenService
      * dari rt_id (request tidak mengirim rw_id). Log Aktivitas (S-05)
      * ditulis PopulationAuditObserver.
      */
-    public function create(array $data, User $user): Citizen
+    public function create(array $data, User $user, string $dataSource = 'manual_input_desa'): Citizen
     {
         if (! $user->village_id) {
             abort(403, 'Data wilayah desa tidak ditemukan.');
@@ -55,10 +60,10 @@ class CitizenService
         $this->guardRelatedRecords($data, $user);
 
         try {
-            return DB::transaction(function () use ($data, $user) {
+            return DB::transaction(function () use ($data, $user, $dataSource) {
                 $citizen = $this->citizenRepository->create(array_merge($data, [
                     'village_id' => $user->village_id,
-                    'data_source' => 'manual_input_desa',
+                    'data_source' => $dataSource,
                 ]));
                 $citizen->refresh();
 
@@ -113,10 +118,47 @@ class CitizenService
      */
     public function importFromExcel(UploadedFile $file, User $user): array
     {
-        $import = new CitizensImport($this, $user);
+        $readerType = match (strtolower($file->getClientOriginalExtension())) {
+            'csv' => ExcelFormat::CSV,
+            'xls' => ExcelFormat::XLS,
+            default => ExcelFormat::XLSX,
+        };
 
-        // Setiap baris tercatat sebagai `created` dengan `source = import`.
-        $this->auditContext->with(['source' => 'import'], fn () => Excel::import($import, $file));
+        // Template sistem maupun file pemutakhiran data pemilih desa (tabel
+        // di bawah judul, di salah satu dari banyak sheet).
+        $xlsx = $readerType === ExcelFormat::XLSX ? new XlsxStreamReader($file->getRealPath()) : null;
+        $layout = $xlsx !== null
+            ? CitizenImportLayout::detectXlsx($xlsx)
+            : CitizenImportLayout::detect($file->getRealPath(), $readerType);
+
+        if ($layout === null) {
+            throw ValidationException::withMessages([
+                'file' => ['Kolom NIK dan Nama tidak ditemukan. Pastikan baris judul kolom ada di '.CitizenImportColumns::SCAN_ROWS.' baris pertama.'],
+            ]);
+        }
+
+        $import = new CitizensImport($this, $user, $layout);
+
+        // Satu file desa berisi ribuan warga; tiap baris dienkripsi, divalidasi,
+        // dan dicatat di Log Aktivitas (±2 menit untuk ±6.000 baris).
+        set_time_limit(600);
+
+        // .xlsx dibaca baris demi baris (sheet file desa bisa puluhan MB);
+        // CSV/XLS lewat Maatwebsite, hanya sheet tabel warga yang dimuat.
+        $run = $xlsx !== null
+            ? function () use ($xlsx, $layout, $import) {
+                foreach ($xlsx->rows($layout->sheet, $import->wantsColumn(...)) as $row => $cells) {
+                    $import->importRow($row, $cells);
+                }
+            }
+        : fn () => Excel::import(new CitizensWorkbookImport($layout->sheet, $import), $file, null, $readerType);
+
+        // Setiap baris tercatat sebagai `created` dengan `source = import`;
+        // SHDK yang ditebak setelahnya tercatat sebagai `updated`.
+        $this->auditContext->with(['source' => 'import'], function () use ($run, $import) {
+            $run();
+            $import->finish();
+        });
 
         $summary = [
             'total_rows' => $import->successCount() + count($import->errorList()),
