@@ -22160,6 +22160,637 @@ button.sid-operator-profile {
   font-style: italic;
 }
 
+/* Pop-up NIK bentrok saat impor: menggantikan modal impor, tetap di bawah
+   dialog konfirmasi (DialogHost, z-index 1100). */
+.sid-import-conflict-overlay {
+  z-index: 1000;
+}
+
+.sid-import-conflict-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+
+  width: min(960px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100vh - 2rem);
+}
+
+.sid-import-conflict-intro {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* Ringkasan pemeriksaan file impor (sebelum impor dijalankan). */
+.sid-import-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  min-width: 0;
+}
+
+.sid-import-summary-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+}
+
+.sid-import-summary-file svg {
+  flex-shrink: 0;
+
+  color: var(--sid-primary);
+}
+
+.sid-import-summary-file span {
+  min-width: 0;
+
+  overflow-wrap: anywhere;
+}
+
+.sid-import-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+
+  margin: 0;
+}
+
+.sid-import-summary-stats > div {
+  padding: 0.625rem 0.75rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md, 8px);
+  background: var(--sid-surface-page);
+}
+
+.sid-import-summary-stats dt {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+}
+
+.sid-import-summary-stats dd {
+  margin: 0.125rem 0 0;
+
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sid-import-summary-stats .is-success dd {
+  color: var(--sid-status-done-text);
+}
+
+.sid-import-summary-stats .is-info dd {
+  color: var(--sid-primary);
+}
+
+.sid-import-summary-stats .is-danger dd {
+  color: var(--sid-danger);
+}
+
+.sid-import-summary-stats .is-warning dd {
+  color: var(--sid-warning);
+}
+
+.sid-import-summary-stats .is-zero dd {
+  color: var(--sid-text-muted);
+}
+
+.sid-import-summary-section h3 {
+  margin: 0 0 0.5rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-import-column-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+
+  max-height: 9.5rem;
+  margin: 0;
+  padding: 0;
+
+  overflow-y: auto;
+
+  list-style: none;
+}
+
+.sid-import-column {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3125rem;
+
+  max-width: 100%;
+  padding: 0.1875rem 0.625rem 0.1875rem 0.25rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 999px;
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+}
+
+.sid-import-column strong {
+  color: var(--sid-primary);
+  font-weight: 600;
+}
+
+.sid-import-column svg {
+  color: var(--sid-text-muted);
+}
+
+.sid-import-column-letter {
+  display: inline-grid;
+  place-items: center;
+
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.25rem;
+
+  border-radius: 999px;
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-primary);
+
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.sid-import-column.is-ignored {
+  border-style: dashed;
+  background: transparent;
+
+  color: var(--sid-text-muted);
+}
+
+.sid-import-column.is-ignored .sid-import-column-letter {
+  background: var(--sid-surface-page);
+
+  color: var(--sid-text-muted);
+}
+
+.sid-import-column-reason {
+  font-size: 0.6875rem;
+}
+
+.sid-import-summary-messages {
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md, 8px);
+}
+
+.sid-import-summary-messages summary {
+  padding: 0.5rem 0.75rem;
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-import-summary-messages ul {
+  max-height: 10rem;
+  margin: 0;
+  padding: 0 0.75rem 0.625rem 1.875rem;
+
+  overflow-y: auto;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.sid-import-summary-messages .is-more {
+  color: var(--sid-text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 560px) {
+  .sid-import-summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sid-import-conflict-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+
+  padding: 0.75rem 1rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md, 8px);
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-text-primary);
+
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.sid-import-conflict-notice svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+
+  color: var(--sid-primary);
+}
+
+.sid-import-conflict-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sid-import-conflict-table {
+  flex: 1 1 auto;
+  min-height: 8rem;
+  max-height: 55vh;
+  overflow-y: auto;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md, 8px);
+}
+
+.sid-import-conflict-table .sid-operator-table > thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
+  padding: 0.5rem 0.875rem;
+
+  background: var(--sid-surface-page);
+}
+
+.sid-import-conflict-table .sid-operator-table td {
+  padding: 0.5rem 0.875rem;
+
+  vertical-align: middle;
+}
+
+.sid-import-conflict-table .sid-operator-table tr.is-expanded td {
+  background: var(--sid-primary-soft);
+}
+
+.sid-import-conflict-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  padding: 0;
+
+  border: 0;
+  background: none;
+
+  color: var(--sid-primary);
+
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.sid-import-conflict-toggle:hover span {
+  text-decoration: underline;
+}
+
+.sid-import-conflict-toggle:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.sid-import-conflict-muted {
+  color: var(--sid-text-muted);
+
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+.sid-import-conflict-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.5rem;
+
+  border: 1px solid var(--sid-warning-border);
+  border-radius: 999px;
+  background: var(--sid-warning-soft);
+
+  color: var(--sid-warning);
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Timpa / Lewati sebagai tombol segmen; radio asli tetap untuk keyboard. */
+.sid-import-conflict-choice {
+  display: inline-flex;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 999px;
+
+  overflow: hidden;
+}
+
+.sid-import-conflict-choice label {
+  position: relative;
+
+  padding: 0.25rem 0.75rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.sid-import-conflict-choice label + label {
+  border-left: 1px solid var(--sid-border);
+}
+
+.sid-import-conflict-choice input {
+  position: absolute;
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sid-import-conflict-choice label.is-selected {
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.sid-import-conflict-choice label:first-child.is-selected {
+  background: var(--sid-danger);
+}
+
+.sid-import-conflict-choice label:has(input:focus-visible) {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: -2px;
+}
+
+.sid-import-conflict-detail td {
+  padding-top: 0;
+  padding-bottom: 0.75rem;
+
+  background: var(--sid-primary-soft);
+}
+
+/* Tabel Lama/Baru di dalam tabel konflik. Selektor dua kelas supaya
+   mengalahkan aturan .sid-operator-table th (rata tengah, huruf besar,
+   sticky) yang ikut mengenai tabel bersarang ini. */
+.sid-import-conflict-detail .sid-import-diff-table {
+  width: 100%;
+
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  font-size: 0.8125rem;
+}
+
+.sid-import-conflict-detail .sid-import-diff-label-col {
+  width: 28%;
+}
+
+.sid-import-conflict-detail .sid-import-diff-table th,
+.sid-import-conflict-detail .sid-import-diff-table td {
+  position: static;
+
+  padding: 0.4375rem 0.75rem;
+
+  border-bottom: 1px solid var(--sid-border);
+  background: transparent;
+
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.sid-import-conflict-detail .sid-import-diff-table thead th {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sid-import-conflict-detail .sid-import-diff-table tbody th {
+  color: var(--sid-text-secondary);
+  font-weight: 500;
+}
+
+.sid-import-conflict-detail .sid-import-diff-table td {
+  color: var(--sid-text-secondary);
+}
+
+.sid-import-conflict-detail .sid-import-diff-table td.is-new {
+  color: var(--sid-text-primary);
+  font-weight: 600;
+}
+
+.sid-import-conflict-detail .sid-import-diff-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.sid-import-conflict-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+}
+
+.sid-import-conflict-footer .sid-modal-actions {
+  margin-top: 0;
+}
+
+/* Lapisan proses impor: memblokir seluruh halaman sampai selesai. */
+.sid-import-progress {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+
+  background: color-mix(in srgb, var(--sid-text-primary) 45%, transparent);
+  backdrop-filter: blur(4px);
+
+  animation: sid-import-progress-in 0.2s ease-out;
+}
+
+.sid-import-progress-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+
+  width: min(420px, 100%);
+  padding: 2rem 1.75rem 1.5rem;
+
+  border-radius: var(--sid-radius-xl, 16px);
+  background: var(--sid-surface-card);
+  box-shadow: var(--sid-shadow-lg);
+
+  text-align: center;
+}
+
+.sid-import-progress-panel:focus {
+  outline: none;
+}
+
+.sid-import-progress-panel h2 {
+  margin: 0.25rem 0 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 1.125rem;
+}
+
+.sid-import-progress-panel p {
+  margin: 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sid-import-progress-visual {
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.sid-import-progress-ring {
+  position: absolute;
+  inset: 0;
+
+  border: 3px solid color-mix(in srgb, var(--sid-primary) 15%, transparent);
+  border-top-color: var(--sid-primary);
+  border-right-color: var(--sid-primary);
+  border-radius: 50%;
+
+  animation: sid-page-loader-spin 1s linear infinite;
+}
+
+.sid-import-progress-icon {
+  color: var(--sid-primary);
+
+  animation: sid-import-progress-pulse 1.6s ease-in-out infinite;
+}
+
+.sid-import-progress-bar {
+  position: relative;
+
+  width: 100%;
+  height: 4px;
+  margin-top: 0.25rem;
+
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sid-primary) 15%, transparent);
+
+  overflow: hidden;
+}
+
+.sid-import-progress-bar span {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 40%;
+  height: 100%;
+
+  border-radius: inherit;
+  background: var(--sid-primary);
+
+  animation: sid-import-progress-slide 1.4s ease-in-out infinite;
+}
+
+.sid-import-progress-panel .sid-import-progress-meta {
+  color: var(--sid-text-muted);
+
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes sid-import-progress-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sid-import-progress-pulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes sid-import-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-import-progress,
+  .sid-import-progress-icon {
+    animation: none;
+  }
+
+  .sid-import-progress-ring {
+    animation-duration: 3s;
+  }
+
+  .sid-import-progress-bar span {
+    animation-duration: 4s;
+  }
+}
+
 .sid-admin-modal-header {
   display: flex;
   align-items: center;
@@ -22297,6 +22928,65 @@ button.sid-operator-profile {
   margin: 0;
   color: var(--sid-text-muted);
   font-size: 0.75rem;
+}
+
+.sid-admin-file-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+
+  margin-bottom: 0.25rem;
+  padding: 1rem 1.25rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md);
+  background: var(--sid-surface-page);
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sid-admin-file-card.is-dragging {
+  border-color: var(--sid-primary);
+  border-style: dashed;
+  background: var(--sid-status-progress-bg);
+}
+
+.sid-admin-file-card .sid-admin-file-selected {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.sid-admin-file-card .sid-admin-file-title {
+  overflow-wrap: anywhere;
+}
+
+.sid-admin-file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sid-admin-file-actions .sid-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
+
+  font-size: 0.8125rem;
+}
+
+.sid-admin-file-remove {
+  border-color: var(--sid-danger-border);
+
+  color: var(--sid-danger);
+}
+
+.sid-admin-file-remove:hover:not(:disabled) {
+  background: var(--sid-danger-soft);
 }
 
 .sid-admin-file-selected {
