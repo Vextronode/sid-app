@@ -76,11 +76,15 @@ class CitizenController extends Controller
     }
 
     /**
-     * Template Excel impor warga; header mengikuti CitizensImport.
+     * Template Excel impor warga, dibuat dari data wilayah & pekerjaan desa
+     * pengunduh saat ini (CitizensTemplateExport).
      */
-    public function importTemplate()
+    public function importTemplate(Request $request)
     {
-        return Excel::download(new CitizensTemplateExport, 'template_impor_warga.xlsx');
+        return Excel::download(
+            new CitizensTemplateExport($request->user()->village_id),
+            'template_impor_warga.xlsx',
+        );
     }
 
     public function destroy(Request $request, Citizen $citizen)
