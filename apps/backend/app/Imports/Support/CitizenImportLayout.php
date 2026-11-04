@@ -17,12 +17,78 @@ final class CitizenImportLayout
 {
     /**
      * @param  array<string, string>  $columns  huruf kolom => field
+     * @param  array<string, string>  $headers  huruf kolom => teks header asli (sel tidak kosong)
      */
     public function __construct(
         public readonly string $sheet,
         public readonly int $headerRow,
         public readonly array $columns,
+        public readonly array $headers = [],
     ) {}
+
+    /**
+     * Kolom yang dibaca, yang diabaikan, dan kolom wajib yang tidak ada,
+     * untuk ditampilkan di preview sebelum impor.
+     *
+     * @return array{sheet: string, header_row: int, mapped: list<array{column: string, header: string, field: string, label: string}>, ignored: list<array{column: string, header: string, reason: string}>, missing_required: list<string>}
+     */
+    public function describe(): array
+    {
+        $mapped = [];
+        $ignored = [];
+
+        foreach ($this->headers as $column => $header) {
+            $field = $this->columns[$column] ?? null;
+
+            if ($field !== null) {
+                $mapped[] = [
+                    'column' => $column,
+                    'header' => $header,
+                    'field' => $field,
+                    'label' => CitizenImportColumns::label($field),
+                ];
+
+                continue;
+            }
+
+            $duplicateOf = CitizenImportColumns::fieldOf($header);
+            $ignored[] = [
+                'column' => $column,
+                'header' => $header,
+                'reason' => $duplicateOf !== null
+                    ? 'Kolom '.CitizenImportColumns::label($duplicateOf).' sudah diambil dari kolom '
+                        .array_search($duplicateOf, $this->columns, true).'.'
+                    : 'Tidak dikenali.',
+            ];
+        }
+
+        return [
+            'sheet' => $this->sheet,
+            'header_row' => $this->headerRow,
+            'mapped' => $mapped,
+            'ignored' => $ignored,
+            'missing_required' => CitizenImportColumns::missingRequired($this->columns),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $cells  huruf kolom => isi sel header
+     * @return array<string, string>
+     */
+    private static function headerTexts(array $cells): array
+    {
+        $headers = [];
+
+        foreach ($cells as $column => $value) {
+            $text = trim(explode("\n", str_replace("\r", '', (string) $value))[0]);
+
+            if ($text !== '') {
+                $headers[$column] = $text;
+            }
+        }
+
+        return $headers;
+    }
 
     /**
      * @param  string  $readerType  ExcelFormat::XLSX / XLS / CSV
@@ -43,10 +109,11 @@ final class CitizenImportLayout
                     break;
                 }
 
-                $columns = CitizenImportColumns::map(array_map(fn (array $cell) => $cell['value'], $cells));
+                $values = array_map(fn (array $cell) => $cell['value'], $cells);
+                $columns = CitizenImportColumns::map($values);
 
                 if (CitizenImportColumns::isHeader($columns)) {
-                    return new self($name, $row, $columns);
+                    return new self($name, $row, $columns, self::headerTexts($values));
                 }
             }
         }
@@ -85,7 +152,7 @@ final class CitizenImportLayout
                 if (CitizenImportColumns::isHeader($columns)) {
                     $spreadsheet->disconnectWorksheets();
 
-                    return new self($name, $row, $columns);
+                    return new self($name, $row, $columns, self::headerTexts($cells));
                 }
             }
 

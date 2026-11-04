@@ -15,8 +15,10 @@ use Illuminate\Validation\ValidationException;
  * Menurunkan wilayah dan KK warga impor dari kolom file desa:
  * - RW dicari dari nomornya di seluruh desa (penomoran RW tidak mulai lagi
  *   di tiap dusun), lalu RT dicari di dalam RW itu. "001" sama dengan "1".
- * - Dusun diambil dari nama dusun di ALAMAT; bila ALAMAT tidak menyebut
- *   dusun (mis. nama perumahan), ikut dusun milik RW.
+ * - Kolom RT/RW gabungan ("001/003") dipecah menjadi RT dan RW.
+ * - Dusun diambil dari kolom DUSUN bila ada; kalau tidak, dari nama dusun
+ *   di ALAMAT; bila ALAMAT tidak menyebut dusun (mis. nama perumahan), ikut
+ *   dusun milik RW.
  * - NKK dipakai untuk menautkan ke KK yang ada atau membuat KK baru.
  *
  * Data wilayah dimuat sekali per impor.
@@ -39,17 +41,32 @@ final class CitizenImportResolver
     ) {}
 
     /**
-     * Isi rt_id, rw_id, dan hamlet_id dari kolom rt/rw/address. Baris yang
-     * sudah membawa rt_id (template sistem) tidak diubah; hamlet_id yang
-     * sudah diisi tidak ditimpa.
+     * Isi rt_id, rw_id, dan hamlet_id dari kolom rt/rw/rt_rw/hamlet/address.
+     * Baris yang sudah membawa rt_id (template sistem) tidak dicari lagi;
+     * hamlet_id yang sudah diisi tidak ditimpa.
      *
      * @param  array<string, mixed>  $data
+     * @param  list<string>  $warnings  nama dusun yang tidak ditemukan
      * @return array<string, mixed>
      *
      * @throws ValidationException RW/RT tidak ditemukan
      */
-    public function region(array $data): array
+    public function region(array $data, array &$warnings = []): array
     {
+        if (isset($data['rt_rw']) && ! isset($data['rt']) && ! isset($data['rw'])) {
+            // "001/003", "1-3", "001 003": RT lalu RW.
+            $numbers = preg_split('/\D+/', (string) $data['rt_rw'], -1, PREG_SPLIT_NO_EMPTY);
+            if (count($numbers) === 2) {
+                [$data['rt'], $data['rw']] = $numbers;
+            }
+        }
+
+        if (isset($data['hamlet'])) {
+            $data['hamlet_id'] ??= $this->hamletByName((string) $data['hamlet'], $warnings);
+        }
+
+        unset($data['rt_rw'], $data['hamlet']);
+
         // Template sistem memakai rt_id langsung; jalur ini untuk file desa.
         if (isset($data['rt_id']) || (! isset($data['rw']) && ! isset($data['rt']))) {
             return $data;
@@ -129,6 +146,46 @@ final class CitizenImportResolver
     }
 
     /**
+     * Dusun dari kolom DUSUN: nama sama persis (huruf saja, "SINAR GALIH" =
+     * "Sinargalih") atau beda salah ketik kecil. Tidak ditemukan -> null,
+     * lalu dusun diambil dari ALAMAT/RW seperti biasa.
+     *
+     * @param  list<string>  $warnings
+     */
+    private function hamletByName(string $name, array &$warnings): ?int
+    {
+        $wanted = self::letters((string) preg_replace('/^\s*(DUSUN|DSN|DUSUNN)\b\.?/i', '', $name));
+        $best = null;
+
+        foreach ($this->hamletNames() as $id => $hamlet) {
+            $distance = levenshtein($wanted, $hamlet);
+
+            if ($distance <= (strlen($hamlet) >= 7 ? 2 : 1) && ($best === null || $distance < $best[0])) {
+                $best = [$distance, $id];
+            }
+        }
+
+        if ($best === null) {
+            $warnings[] = "Dusun \"{$name}\" tidak ditemukan; dusun diambil dari ALAMAT atau RW.";
+
+            return null;
+        }
+
+        return (int) $best[1];
+    }
+
+    /** @return array<int|string, string> id dusun => nama dusun ringkas (huruf saja) */
+    private function hamletNames(): array
+    {
+        return $this->hamlets ??= Hamlet::query()
+            ->where('village_id', $this->user->village_id)
+            ->pluck('name', 'id')
+            ->map(fn (string $name) => self::letters($name))
+            ->filter()
+            ->all();
+    }
+
+    /**
      * Cari nama dusun di dalam ALAMAT. Pembanding hanya huruf ("DUSUN SINAR
      * GALIH" -> "DUSUNSINARGALIH"), dengan toleransi salah ketik kecil
      * ("SIRNAGALIH"). Nama desa/kecamatan dibuang dulu karena bisa sama
@@ -137,13 +194,6 @@ final class CitizenImportResolver
      */
     private function hamletFromAddress(string $address, int $rwHamletId): ?int
     {
-        $this->hamlets ??= Hamlet::query()
-            ->where('village_id', $this->user->village_id)
-            ->pluck('name', 'id')
-            ->map(fn (string $name) => self::letters($name))
-            ->filter()
-            ->all();
-
         $text = preg_replace('/\b(DESA|DS|KEL|KELURAHAN|KEC|KECAMATAN|KAB|KABUPATEN)\b\.?\s*[A-Z]+/', ' ', strtoupper($address));
         $compact = self::letters((string) $text);
 
@@ -153,7 +203,7 @@ final class CitizenImportResolver
 
         $positions = [];
 
-        foreach ($this->hamlets as $id => $name) {
+        foreach ($this->hamletNames() as $id => $name) {
             $position = strpos($compact, $name);
             $positions[$id] = $position !== false ? $position : self::fuzzyPosition($compact, $name);
         }
