@@ -92,6 +92,14 @@ type ImportStatus = {
 
 const emptyImportStatus: ImportStatus = { loading: false, success: null, error: null, result: null }
 
+// Sama dengan ImportCitizensRequest (max:25600) dan upload_max_filesize PHP.
+const IMPORT_MAX_MB = 25
+const IMPORT_MAX_BYTES = IMPORT_MAX_MB * 1024 * 1024
+
+// .xlsb (Excel Binary) tidak bisa dibaca server; pesan sama dengan backend.
+const XLSB_IMPORT_MESSAGE =
+  'File .xlsb belum didukung. Buka file di Excel, pilih Simpan Sebagai (Save As) "Excel Workbook (*.xlsx)", lalu unggah file .xlsx tersebut.'
+
 // Dua bagian halaman, ditampilkan sebagai tab seperti halaman Lembaga
 // Kemasyarakatan. Tab aktif disimpan di ?tab= agar tetap saat kembali
 // dari halaman lain.
@@ -294,17 +302,27 @@ export default function DataWargaPage() {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
-        setSelectedFile(file)
-        setImportStatus(emptyImportStatus)
-      } else {
-        setImportStatus({
-          ...emptyImportStatus,
-          error: 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv)',
-        })
-      }
+    if (!file) return
+
+    const name = file.name.toLowerCase()
+    let error: string | null = null
+
+    if (name.endsWith('.xlsb')) {
+      error = XLSB_IMPORT_MESSAGE
+    } else if (!['.xlsx', '.xls', '.csv'].some((ext) => name.endsWith(ext))) {
+      error = 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv)'
+    } else if (file.size > IMPORT_MAX_BYTES) {
+      error = `Ukuran file maksimal ${IMPORT_MAX_MB} MB.`
     }
+
+    if (error) {
+      setSelectedFile(null)
+      setImportStatus({ ...emptyImportStatus, error })
+      return
+    }
+
+    setSelectedFile(file)
+    setImportStatus(emptyImportStatus)
   }
 
   const closeImportModal = () => {
@@ -486,6 +504,7 @@ export default function DataWargaPage() {
                       <th className="center">Dusun</th>
                       <th className="center">RT/RW</th>
                       <th className="center">Jenis Kelamin</th>
+                      <th className="center">Agama</th>
                       <th className="center">Status Domisili</th>
                       <th className="center">No. KK</th>
                       <th className="center">Peran KK</th>
@@ -497,19 +516,19 @@ export default function DataWargaPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={11} className="empty">
+                        <td colSpan={12} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={11} className="empty sid-admin-error">
+                        <td colSpan={12} className="empty sid-admin-error">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="empty">
+                        <td colSpan={12} className="empty">
                           Belum ada data warga.
                         </td>
                       </tr>
@@ -538,6 +557,7 @@ export default function DataWargaPage() {
                                 ? 'Perempuan'
                                 : '-'}
                           </td>
+                          <td className="center">{labelOf(RELIGION_LABELS, warga.religion)}</td>
                           <td className="center">{formatResidencyType(warga.residency_type)}</td>
                           <td className="center">
                             <FamilyNumberValue family={warga.family} />
@@ -1139,7 +1159,10 @@ export default function DataWargaPage() {
             <div className="sid-admin-import-template">
               <div>
                 <strong>Belum punya formatnya?</strong>
-                <p>Unduh templat Excel standar di sini.</p>
+                <p>
+                  Unduh templat Excel standar di sini. File data pemilih desa juga bisa langsung
+                  diunggah; kolom yang tidak dikenali diabaikan.
+                </p>
               </div>
               <button
                 type="button"
@@ -1163,7 +1186,9 @@ export default function DataWargaPage() {
                   <>
                     <Upload size={36} className="sid-admin-file-icon" />
                     <p className="sid-admin-file-title">Klik atau seret file Excel / CSV ke sini</p>
-                    <p className="sid-admin-file-hint">Format yang didukung: .xlsx, .xls, .csv</p>
+                    <p className="sid-admin-file-hint">
+                      Format yang didukung: .xlsx, .xls, .csv (maks. {IMPORT_MAX_MB} MB)
+                    </p>
                   </>
                 ) : (
                   <div className="sid-admin-file-selected">
@@ -1177,6 +1202,15 @@ export default function DataWargaPage() {
                   </div>
                 )}
               </label>
+
+              {importStatus.loading && (
+                <div className="sid-admin-import-alert" role="status">
+                  <span>
+                    Sedang mengimpor. File berisi ribuan warga bisa memakan beberapa menit; jangan
+                    tutup halaman ini.
+                  </span>
+                </div>
+              )}
 
               {importStatus.error && (
                 <div className="sid-admin-import-alert sid-admin-alert-error" role="alert">
