@@ -164,7 +164,7 @@ class CitizenImportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.success_count', 1)
             ->assertJsonPath('data.error_count', 1)
-            ->assertJsonPath('data.errors.0.message', 'NIK sudah ada dalam database warga');
+            ->assertJsonPath('data.errors.0.message', 'NIK sama dengan baris 2 di file ini.');
 
         $this->assertSame(1, Citizen::query()->where('nik_hash', hash('sha256', '3201012345670001'))->count());
     }

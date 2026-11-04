@@ -171,6 +171,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::post('/', [CitizenController::class, 'store']);
             Route::post('/import', [CitizenController::class, 'import']);
+            Route::post('/import/preview', [CitizenController::class, 'previewImport']);
             Route::get('/import-template', [CitizenController::class, 'importTemplate']);
             //            Route::put('/{citizen}', [CitizenController::class, 'update']);
             Route::patch('/{citizen}', [CitizenController::class, 'update']);
