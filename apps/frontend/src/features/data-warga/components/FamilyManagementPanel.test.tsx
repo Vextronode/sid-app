@@ -1,6 +1,6 @@
 import { createRef } from 'react'
 import type { ComponentProps } from 'react'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -97,8 +97,30 @@ describe('FamilyManagementPanel', () => {
         data: {
           id: 'family-1',
           members: [
-            { id: 'citizen-11', name: 'Kepala Rumah', family_role: 'kepala_keluarga' },
-            { id: 'citizen-12', name: 'Asep', family_role: 'anak' },
+            {
+              id: 'citizen-12',
+              name: 'Asep',
+              family_role: 'anak',
+              gender: 'L',
+              age: 12,
+              religion: 'islam',
+            },
+            {
+              id: 'citizen-13',
+              name: 'Menantu Baru',
+              family_role: null,
+              gender: 'P',
+              age: null,
+              religion: null,
+            },
+            {
+              id: 'citizen-11',
+              name: 'Kepala Rumah',
+              family_role: 'kepala_keluarga',
+              gender: 'L',
+              age: 45,
+              religion: 'islam',
+            },
           ],
         },
       },
@@ -108,7 +130,30 @@ describe('FamilyManagementPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit KK' }))
 
     expect(await screen.findByText('Anggota KK')).toBeTruthy()
-    expect(screen.getByText(/Asep/)).toBeTruthy()
+    expect(screen.getByText('3 orang')).toBeTruthy()
+
+    // Tabel anggota: kepala keluarga dulu, anggota tanpa SHDK di akhir.
+    const table = screen.getByRole('columnheader', { name: 'Hubungan (SHDK)' }).closest('table')!
+    const rows = within(table).getAllByRole('row').slice(1)
+    expect(rows.map((row) => within(row).getAllByRole('cell')[1].textContent)).toEqual([
+      'Kepala Rumah',
+      'Asep',
+      'Menantu Baru',
+    ])
+    expect(within(rows[2]).getByText('Belum ditentukan')).toBeTruthy()
+
+    // Kolom L/P, Umur, dan Agama; nilai kosong tampil "-".
+    const genderAgeReligion = (row: HTMLElement) =>
+      within(row)
+        .getAllByRole('cell')
+        .slice(2, 5)
+        .map((cell) => cell.textContent)
+    expect(rows.map(genderAgeReligion)).toEqual([
+      ['L', '45 th', 'Islam'],
+      ['L', '12 th', 'Islam'],
+      ['P', '-', '-'],
+    ])
+    expect(within(rows[2]).getByTitle('Perempuan')).toBeTruthy()
   })
 
   it('is read-only for Kaur TU & Umum', () => {

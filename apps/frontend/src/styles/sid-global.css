@@ -22072,6 +22072,94 @@ button.sid-operator-profile {
   max-height: 90vh;
 }
 
+/* Anggota KK di modal Edit KK: tabel ringkas dalam kartu bergaris. */
+.sid-admin-family-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sid-admin-family-members-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sid-admin-family-members-heading span {
+  color: var(--sid-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sid-admin-family-members .sid-operator-table-wrapper {
+  /* KK besar tetap muat: tabel menggulir, judul kolom tetap terlihat. */
+  max-height: 260px;
+  overflow-y: auto;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.sid-admin-family-members .sid-operator-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
+  padding: 0.5rem 0.875rem;
+
+  background: var(--sid-surface-page);
+}
+
+.sid-admin-family-members .sid-operator-table td {
+  padding: 0.625rem 0.875rem;
+}
+
+.sid-admin-family-members .sid-operator-table th.center,
+.sid-admin-family-members .sid-operator-table td.center {
+  width: 3rem;
+}
+
+.sid-admin-family-member-age {
+  width: 4.5rem;
+  white-space: nowrap;
+}
+
+.sid-admin-family-member-name {
+  color: var(--sid-text-primary);
+  font-weight: 500;
+}
+
+.sid-admin-family-role {
+  display: inline-block;
+
+  padding: 0.125rem 0.625rem;
+
+  border: 1px solid var(--sid-border);
+  border-radius: 999px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sid-admin-family-role.is-head {
+  border-color: transparent;
+
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-primary);
+  font-weight: 600;
+}
+
+.sid-admin-family-role.is-empty {
+  border-style: dashed;
+
+  color: var(--sid-text-muted);
+  font-style: italic;
+}
+
 .sid-admin-modal-header {
   display: flex;
   align-items: center;

@@ -15,7 +15,9 @@ import {
   ELECTRICITY_SOURCE_LABELS,
   FAMILY_ROLE_LABELS,
   FAMILY_STATUS_LABELS,
+  GENDER_LABELS,
   HOUSE_OWNERSHIP_LABELS,
+  RELIGION_LABELS,
   WATER_SOURCE_LABELS,
   labelOf,
   optionsOf,
@@ -87,6 +89,19 @@ function responseData<T>(response: { data?: unknown }): Partial<T> {
   const body = response?.data as { data?: T } | T | undefined
 
   return ((body as { data?: T })?.data ?? body ?? {}) as Partial<T>
+}
+
+// Urutan SHDK seperti di lembar KK; anggota tanpa SHDK di akhir. Urutan asal
+// dipertahankan untuk SHDK yang sama (sort stabil).
+const FAMILY_ROLE_ORDER = Object.keys(FAMILY_ROLE_LABELS)
+
+function sortMembersByRole(members: FamilyMember[]): FamilyMember[] {
+  const rank = (role: string | null) => {
+    const index = role ? FAMILY_ROLE_ORDER.indexOf(role) : -1
+    return index === -1 ? FAMILY_ROLE_ORDER.length : index
+  }
+
+  return [...members].sort((a, b) => rank(a.family_role) - rank(b.family_role))
 }
 
 /**
@@ -558,17 +573,66 @@ export default function FamilyManagementPanel({
                   </select>
                 </label>
                 {members.length > 0 && (
-                  <div>
-                    <strong>Anggota KK</strong>
-                    <ul>
-                      {members.map((member) => (
-                        <li key={member.id}>
-                          {member.name} -{' '}
-                          {labelOf(FAMILY_ROLE_LABELS, member.family_role ?? 'anggota')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <section
+                    className="sid-admin-family-members"
+                    aria-labelledby="family-members-title"
+                  >
+                    <div className="sid-admin-family-members-heading">
+                      <strong id="family-members-title">Anggota KK</strong>
+                      <span>{members.length} orang</span>
+                    </div>
+                    <div className="sid-operator-table-wrapper">
+                      <table className="sid-operator-table">
+                        <thead>
+                          <tr>
+                            <th className="center">No</th>
+                            <th>Nama</th>
+                            <th className="center">L/P</th>
+                            <th className="center">Umur</th>
+                            <th className="center">Agama</th>
+                            <th>Hubungan (SHDK)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortMembersByRole(members).map((member, index) => (
+                            <tr key={member.id}>
+                              <td className="center">{index + 1}</td>
+                              <td className="sid-admin-family-member-name">{member.name}</td>
+                              <td
+                                className="center"
+                                title={
+                                  member.gender ? labelOf(GENDER_LABELS, member.gender) : undefined
+                                }
+                              >
+                                {member.gender ?? '-'}
+                              </td>
+                              <td className="center sid-admin-family-member-age">
+                                {member.age == null ? '-' : `${member.age} th`}
+                              </td>
+                              <td className="center">
+                                {labelOf(RELIGION_LABELS, member.religion)}
+                              </td>
+                              <td>
+                                {member.family_role ? (
+                                  <span
+                                    className={`sid-admin-family-role${
+                                      member.family_role === 'kepala_keluarga' ? ' is-head' : ''
+                                    }`}
+                                  >
+                                    {labelOf(FAMILY_ROLE_LABELS, member.family_role)}
+                                  </span>
+                                ) : (
+                                  <span className="sid-admin-family-role is-empty">
+                                    Belum ditentukan
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
                 )}
               </>
             ) : (

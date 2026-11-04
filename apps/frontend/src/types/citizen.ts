@@ -73,6 +73,9 @@ export type FamilyMember = {
   id: Uuid
   name: string
   family_role: string | null
+  gender?: 'L' | 'P' | null
+  age?: number | null
+  religion?: string | null
 }
 
 export type Family = {
