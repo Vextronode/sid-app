@@ -37,6 +37,10 @@ class FamilyResource extends JsonResource
                 'id' => $member->id,
                 'name' => $member->name,
                 'family_role' => $member->family_role,
+                'gender' => $member->gender,
+                // Umur saja, bukan tanggal lahir (data terenkripsi).
+                'age' => $member->date_of_birth?->age,
+                'religion' => $member->religion,
             ])->values()),
             'village' => new VillageResource($this->whenLoaded('village')),
             'rt' => new RtResource($this->whenLoaded('rt')),
