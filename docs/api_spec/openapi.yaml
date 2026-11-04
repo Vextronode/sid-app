@@ -183,6 +183,8 @@ paths:
     $ref: 'paths/citizens/citizen-detail.yaml'
   /citizens/import:
     $ref: 'paths/citizens/import.yaml'
+  /citizens/import/preview:
+    $ref: 'paths/citizens/import-preview.yaml'
   /citizens/import-template:
     $ref: 'paths/citizens/import-template.yaml'
   /citizens/wilayah:

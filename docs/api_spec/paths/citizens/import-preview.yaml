@@ -1,0 +1,64 @@
+post:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Periksa file impor warga dan daftar NIK yang sudah terdaftar
+  description: |
+    Aktor: Staf SIDUTama atau Kasi Pemerintahan.
+    Tahap 1 impor dengan pilihan "Timpa / Lewati". Semua baris diperiksa
+    dengan aturan yang sama seperti POST /citizens/import (format, wilayah
+    RT/RW, NIK ganda di file), tetapi **tidak ada data yang disimpan**.
+
+    Baris yang NIK-nya sudah terdaftar di desa ini dikembalikan di
+    `conflicts` beserta kolom yang berbeda (`changes`). Yang dibandingkan
+    hanya kolom yang terisi di file, sama dengan kolom yang akan ditimpa;
+    NIK tidak pernah berubah. `before`/`after` sudah berupa teks tampilan
+    (tanggal dd/mm/yyyy, label agama/status kawin, "RT 001 / RW 003", nama
+    dusun); No. KK tersamar (`************1234`). `changes` kosong berarti
+    data sama persis. `moves_family = true` bila NKK di file berbeda dengan
+    KK warga sekarang.
+
+    `columns` menjelaskan pembacaan file: sheet dan baris judul kolom yang
+    dipakai, kolom yang dibaca (judul asli -> data warga), kolom yang
+    diabaikan beserta alasannya (tidak dikenali / datanya sudah diambil dari
+    kolom lain), dan kolom wajib yang tidak ada (`missing_required`; tanpa
+    kolom ini setiap baris gagal). `warnings` berisi isi kolom yang
+    dikosongkan pada baris yang tetap diproses.
+
+    File disimpan sementara (60 menit) di balik `token`; lanjutkan dengan
+    POST /citizens/import `{ token, overwrite_rows }` tanpa mengunggah ulang.
+    Tidak menulis Log Aktivitas.
+  operationId: previewCitizenImport
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [file]
+          properties:
+            file:
+              type: string
+              format: binary
+              description: File .xlsx, .xls, atau .csv (maks 25 MB), sama dengan POST /citizens/import
+  responses:
+    '200':
+      description: File selesai diperiksa
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/citizens/citizens.yaml#/CitizenImportPreviewResponse'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      description: Format/ukuran file tidak valid, file .xlsb, atau kolom NIK dan Nama tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "Kolom NIK dan Nama tidak ditemukan. Pastikan baris judul kolom ada di 20 baris pertama."
+            errors:
+              file: ["Kolom NIK dan Nama tidak ditemukan. Pastikan baris judul kolom ada di 20 baris pertama."]
