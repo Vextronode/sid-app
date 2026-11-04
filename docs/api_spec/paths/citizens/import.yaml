@@ -47,7 +47,13 @@ post:
        SHDK, GOL DARAH, NAMA AYAH/IBU, DUSUN, RT/RW gabungan "002/006", ...).
        Isi pilihan diterima sebagai label Dukcapil ("SLTA/SEDERAJAT"), kode
        SIAK (agama 1-6, pendidikan 1-10, SHDK 1-11, ...), atau nilai sistem.
-       Header "KK" tidak dikenali karena ambigu.
+       Kolom PEKERJAAN / JENIS PEKERJAAN dicocokkan persis (huruf besar/kecil
+       dan tanda baca diabaikan) ke Katalog Pekerjaan aktif desa; tidak ada
+       atau nonaktif -> dikosongkan dengan peringatan. Header "KK" tidak
+       dikenali karena ambigu.
+    4. Template GET /citizens/import-template: baris dengan NIK contoh
+       `3201019999990001` selalu dilewati (peringatan "Baris contoh dari
+       template dilewati."), jadi baris contoh boleh dibiarkan.
 
     Isi kolom opsional yang tidak dikenali (mis. agama "KEPERCAYAAN", nama
     ayah berisi NIK, dusun yang tidak ada) dikosongkan dan dicatat di

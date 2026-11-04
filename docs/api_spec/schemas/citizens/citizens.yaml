@@ -520,6 +520,11 @@ CitizenImportPreviewResponse:
                   reason:
                     type: string
                     example: "Tidak dikenali."
+                  suggestion:
+                    type: string
+                    nullable: true
+                    description: Kolom yang mungkin dimaksud; hanya petunjuk, kolom tetap tidak dibaca
+                    example: "Agama"
             missing_required:
               type: array
               description: Kolom wajib yang tidak ada di file

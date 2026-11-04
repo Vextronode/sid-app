@@ -19,7 +19,9 @@ post:
     `columns` menjelaskan pembacaan file: sheet dan baris judul kolom yang
     dipakai, kolom yang dibaca (judul asli -> data warga), kolom yang
     diabaikan beserta alasannya (tidak dikenali / datanya sudah diambil dari
-    kolom lain), dan kolom wajib yang tidak ada (`missing_required`; tanpa
+    kolom lain) dan saran kolom yang mungkin dimaksud (`suggestion`, hanya
+    bila judul memuat nama kolom secara utuh per kata, mis. "Agama Warga" ->
+    "Agama"; kolomnya tetap tidak dibaca), dan kolom wajib yang tidak ada (`missing_required`; tanpa
     kolom ini setiap baris gagal). `warnings` berisi isi kolom yang
     dikosongkan pada baris yang tetap diproses.
 
