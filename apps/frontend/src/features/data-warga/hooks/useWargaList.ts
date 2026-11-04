@@ -50,7 +50,8 @@ export type CitizenImportColumns = {
   sheet: string
   header_row: number
   mapped: { column: string; header: string; field: string; label: string }[]
-  ignored: { column: string; header: string; reason: string }[]
+  // suggestion: kolom yang mungkin dimaksud (hanya petunjuk, kolom tetap tidak dibaca).
+  ignored: { column: string; header: string; reason: string; suggestion?: string | null }[]
   // Label kolom wajib yang tidak ada; tanpa kolom ini setiap baris gagal.
   missing_required: string[]
 }

@@ -22352,6 +22352,14 @@ button.sid-operator-profile {
   font-size: 0.6875rem;
 }
 
+.sid-import-column-reason.is-suggestion {
+  color: var(--sid-warning);
+}
+
+.sid-import-column-reason.is-suggestion strong {
+  color: inherit;
+}
+
 .sid-import-summary-messages {
   border: 1px solid var(--sid-border);
   border-radius: var(--sid-radius-md, 8px);

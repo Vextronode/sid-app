@@ -127,6 +127,12 @@ export function ImportPreviewSummary({
                 {column.reason !== 'Tidak dikenali.' && (
                   <em className="sid-import-column-reason">{column.reason}</em>
                 )}
+                {column.suggestion && (
+                  <em className="sid-import-column-reason is-suggestion">
+                    mungkin maksudnya <strong>{column.suggestion}</strong>? Ganti judul kolomnya
+                    agar terbaca.
+                  </em>
+                )}
               </li>
             ))}
           </ul>

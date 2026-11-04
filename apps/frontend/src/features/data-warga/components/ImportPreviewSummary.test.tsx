@@ -24,6 +24,7 @@ function makePreview(overrides: Partial<CitizenImportPreview> = {}): CitizenImpo
       ],
       ignored: [
         { column: 'A', header: 'NO', reason: 'Tidak dikenali.' },
+        { column: 'P', header: 'Agama Warga', reason: 'Tidak dikenali.', suggestion: 'Agama' },
         { column: 'N', header: 'IBU', reason: 'Kolom Nama Ibu sudah diambil dari kolom M.' },
       ],
       missing_required: [],
@@ -62,8 +63,12 @@ describe('ImportPreviewSummary', () => {
     )
     expect(within(read).getByText('NIK').parentElement?.textContent).toBe('DNIK')
 
-    const ignored = screen.getByRole('heading', { name: 'Kolom yang diabaikan (2)' }).parentElement!
+    const ignored = screen.getByRole('heading', { name: 'Kolom yang diabaikan (3)' }).parentElement!
     expect(within(ignored).getByText('Kolom Nama Ibu sudah diambil dari kolom M.')).toBeTruthy()
+    // Saran hanya petunjuk untuk kolom yang tidak dikenali.
+    expect(within(ignored).getByText('Agama Warga').parentElement?.textContent).toContain(
+      'mungkin maksudnya Agama?',
+    )
 
     expect(screen.getByText('Baris gagal (1)')).toBeTruthy()
     expect(screen.getByText('Peringatan (kolom dikosongkan) (1)')).toBeTruthy()
