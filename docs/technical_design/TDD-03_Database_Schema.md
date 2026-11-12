@@ -385,7 +385,8 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | payload | JSON | NULL | Isian form sesuai `letter_types.form_fields` |
 | notes | TEXT | NULL | Kolom legacy; pengajuan baru selalu NULL |
 | is_overdue | BOOLEAN | DEFAULT false | Saat daftar dimuat, true bila deadline approval pending pada step aktif terlewati; surat terminal dan step sebelumnya tidak dihitung |
-| expires_at | TIMESTAMP | NULL | Dihitung saat `status = 'approved'` + `validity_days`. NULL = tidak expire |
+| expires_at | TIMESTAMP | NULL | Dicap saat `status = 'approved'`: tanggal persetujuan + `validity_days`, dibulatkan ke **akhir hari (23:59:59 WIB)** agar sama dengan tulisan "Berlaku sampai <tanggal>". NULL = tidak expire |
+| expiry_notified_days | UNSIGNED SMALLINT | NULL | Titik pengingat masa berlaku terakhir yang sudah diproses: 30/14/7/3/1, atau 0 untuk hari H. NULL = belum ada. Diisi `letters:send-expiry-reminders` tanpa menyentuh `updated_at`; tidak ada di `$fillable` |
 | status | ENUM | NOT NULL, DEFAULT 'pending' | `pending` \| `in_progress` \| `approved` \| `rejected` |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | **Snapshot** dari `letter_types.flow_id` saat submit, dikunci |
 | current_step_order | INT | NOT NULL, DEFAULT 1 | Step aktif, dicocokkan ke `flow_steps`; **0 = menunggu tanda tangan pihak terkait** |
@@ -406,6 +407,8 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 - `in_progress`: minimal 1 step approve, belum sampai step `is_final=true`
 - `approved`: step `is_final=true` sudah di-approve → trigger `letter_number` + `expires_at`
 - `rejected`: TERMINAL — ada satu step yang reject, `rejected_at_step` dicatat
+
+**Kedaluwarsa surat.** Status tidak berubah saat surat kedaluwarsa; tetap `approved`. Kedaluwarsa dihitung saat dibaca (`Letter::isExpired()`: `now() > expires_at`), dan hanya pemohon yang diblokir mengunduh. Pengingat ke pemohon (H-30, H-14, H-7, H-3, H-1, dan hari H = sehari setelah tanggal `expires_at`) dikirim scheduler; jejaknya di `expiry_notified_days`, riwayat lengkapnya di `notifications` (`context.reminder_days`, `context.days_left`). Titik H-n yang aktif diatur di `letter_expiry_reminder_settings`.
 
 **Tabel: letter_number_counters**
 
@@ -557,6 +560,23 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 Constraint: `UNIQUE(village_id, approval_level)`
 
 > ENUM kolom tetap berisi lima nilai untuk kompatibilitas skema. Service/repository dan seeder hanya memakai tahap aktif (`rt`, `kepala_desa`). Nilai `sekretaris_desa`/Kasi/Kaur tetap di enum DB, tetapi tidak ditampilkan, di-seed, atau dapat diubah lewat endpoint settings.
+
+**Tabel: letter_expiry_reminder_settings**
+
+Titik pengingat masa berlaku surat untuk pemohon, satu baris per titik per desa. Berlaku untuk semua jenis surat. Hari H tidak punya baris karena selalu dikirim.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK, AUTO INCREMENT | Primary key |
+| village_id | UUID | FK → villages.id, NOT NULL, ON DELETE CASCADE | |
+| days_before | UNSIGNED SMALLINT | NOT NULL | Titik tetap: 30, 14, 7, 3, 1 (H-1 = hari terakhir masa berlaku) |
+| is_active | BOOLEAN | DEFAULT true | Satu-satunya kolom yang bisa diubah lewat API (Staf SIDUTama) |
+| activated_at | TIMESTAMP | NULL | Diisi setiap kali titik berubah dari nonaktif ke aktif. Jatuh tempo sebelum waktu ini tidak dikirim, agar menyalakan titik tidak memicu pengingat serentak |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Constraint: `UNIQUE(village_id, days_before)` (`uq_letter_expiry_reminder_settings_village_days`). Seeder `LetterExpiryReminderSettingSeeder` mengisi kelima titik dalam keadaan aktif; menjalankannya ulang tidak mengubah baris yang sudah ada.
+
+Jam kirim (`send_at`, default 09:00) dan masa tenggang hari H (`expired_notice_grace_days`, default 3) tidak disimpan di tabel ini, tetapi di `config/letters.php` blok `expiry_reminder`.
 
 ### 2.5. Organisasi Non-Struktural, Notifikasi, Konten Publik
 
@@ -724,7 +744,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **32 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **35 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -735,15 +755,15 @@ Alur Approval (2): approval_flows, flow_steps
 Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
-Konfigurasi (1): approval_settings
+Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 7 + 1 = 31 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 2 + 7 + 1 = 32 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 34 tabel
+Total aplikasi non-framework: 35 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 
@@ -763,6 +783,7 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | idx_letters_village_status | (village_id, status) | ✅ Aktif | Ringkasan surat desa per status |
 | idx_letters_flow_step | (flow_id, current_step_order) | ✅ Aktif | Resolve step aktif, paling kritis |
 | idx_letters_overdue | is_overdue | ✅ Aktif | Filter overdue |
+| idx_letters_status_expires | (status, expires_at) | ✅ Aktif | Kandidat pengingat masa berlaku (`approved`, `expires_at` ≤ sekarang + 31 hari) |
 | (auto) | applicant_nik_hash | ✅ Aktif | Pencarian NIK pemohon |
 | (auto unique) | letter_number | ✅ Aktif | Nomor surat unik |
 | idx_letters_submitter_created | (submitted_by, created_at) | ✅ Aktif (performa) | Daftar "surat saya" terbaru |

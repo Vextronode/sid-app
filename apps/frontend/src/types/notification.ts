@@ -26,4 +26,8 @@ export type NotificationContext = {
   status?: string
   // Penerima adalah pemohon surat itu sendiri.
   is_applicant?: boolean
+  // Pengingat masa berlaku: titik yang dikirim (30/14/7/3/1, 0 = hari H)
+  // dan sisa hari sebenarnya sampai surat terkunci.
+  reminder_days?: number
+  days_left?: number
 }

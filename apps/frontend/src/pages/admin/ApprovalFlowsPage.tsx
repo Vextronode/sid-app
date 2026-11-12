@@ -4,6 +4,7 @@ import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApprovalFlows } from '@/features/approval/api'
 import LetterTypeSettingsPanel from '@/features/surat/components/LetterTypeSettingsPanel'
+import ExpiryReminderSettingsPanel from '@/features/surat/components/ExpiryReminderSettingsPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import type { ApprovalFlow } from '@/features/approval/api'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
@@ -156,6 +157,9 @@ export default function ApprovalFlowsPage() {
         </section>
 
         <LetterTypeSettingsPanel reloadKey={letterTypesKey} />
+
+        {/* Dekat kolom masa berlaku, dasar perhitungan pengingat. */}
+        <ExpiryReminderSettingsPanel reloadKey={letterTypesKey} />
       </div>
 
       <SiteFooter />

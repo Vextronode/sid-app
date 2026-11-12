@@ -9,6 +9,7 @@ use App\Models\Letter;
 use App\Models\LetterApproval;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\LazyCollection;
 
 class LetterRepository
 {
@@ -74,6 +75,39 @@ class LetterRepository
         $letter->update($data);
 
         return $letter;
+    }
+
+    /**
+     * Kandidat pengingat masa berlaku: surat terbit yang hari H-nya paling
+     * jauh ~30 hari lagi dan belum diproses sampai hari H, milik akun
+     * pemohon yang masih aktif.
+     *
+     * @return LazyCollection<int, Letter>
+     */
+    public function lazyExpiringForReminder(Carbon $horizon): LazyCollection
+    {
+        return Letter::query()
+            ->where('status', LetterStatus::Approved)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', $horizon)
+            ->where(function (Builder $query) {
+                $query->whereNull('expiry_notified_days')
+                    ->orWhere('expiry_notified_days', '>', 0);
+            })
+            ->whereHas('user', fn (Builder $query) => $query->where('is_active', true))
+            ->with(['letterType:id,name', 'user'])
+            ->lazyById(100);
+    }
+
+    /**
+     * Mencatat titik pengingat yang sudah diproses tanpa menyentuh
+     * updated_at: ini bukan perubahan isi surat.
+     */
+    public function markExpiryNotified(Letter $letter, int $daysBefore): void
+    {
+        $letter->expiry_notified_days = $daysBefore;
+
+        Letter::withoutTimestamps(fn () => $letter->save());
     }
 
     public function createApprovalForLetter(Letter $letter, array $data): LetterApproval

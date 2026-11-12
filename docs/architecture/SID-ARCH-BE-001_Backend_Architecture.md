@@ -39,15 +39,15 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 
 | Lapisan | Komponen |
 |---|---|
-| Controller API (`app/Http/Controllers/Api`) | ApprovalFlow, ApprovalSetting, Citizen, CurrentUser, Dashboard, Family, FamilySocioeconomic, Hamlet, KadesApproval, LetterAttachment, Letter, LetterDownload, LetterFulfillment, LetterSignature, LetterType, NewsCategory, News, Notification, Occupation, Official, OfficialPositionType, Profile, PublicPage, PushSubscription, Regulation, RtApproval, Rt, Rw, SignatureRequest, User, VillageOrgMember, VillageOrgPosition, VillageProfile |
-| Service domain surat | `LetterService`, `LetterFlowService`, `RtApprovalService`, `KadesApprovalService`, `LetterNumberGenerator`, `LetterSnapshotService`, `PdfService`, `LetterAttachmentService`, `LetterSignatureService`, `LetterFulfillmentService`, `LetterTypeService`, `ApprovalFlowService`, `ApprovalSettingService` |
+| Controller API (`app/Http/Controllers/Api`) | ApprovalFlow, ApprovalSetting, Citizen, CurrentUser, Dashboard, Family, FamilySocioeconomic, Hamlet, KadesApproval, LetterAttachment, Letter, LetterDownload, LetterExpiryReminderSetting, LetterFulfillment, LetterSignature, LetterType, NewsCategory, News, Notification, Occupation, Official, OfficialPositionType, Profile, PublicPage, PushSubscription, Regulation, RtApproval, Rt, Rw, SignatureRequest, User, VillageOrgMember, VillageOrgPosition, VillageProfile |
+| Service domain surat | `LetterService`, `LetterFlowService`, `RtApprovalService`, `KadesApprovalService`, `LetterNumberGenerator`, `LetterSnapshotService`, `PdfService`, `LetterAttachmentService`, `LetterSignatureService`, `LetterFulfillmentService`, `LetterTypeService`, `ApprovalFlowService`, `ApprovalSettingService`, `LetterExpiryReminderService`, `LetterExpiryReminderSettingService` |
 | Service domain lain | `CitizenService`, `FamilyService`, `FamilySocioeconomicService`, `OccupationService`, `OfficialService`, `OfficialAssignmentService`, `OfficialPositionTypeService`, `UserService`, `ProfileService`, `Auth\AuthService`, `Auth\UsernameGenerator`, `HamletService`, `RtService`, `RwService`, `NewsService`, `NewsCategoryService`, `RegulationService`, `VillageProfileService`, `PublicPageService`, `DashboardService`, `NotificationService`, `PushSubscriptionService`, `VillageOrgPositionService`, `VillageOrgMemberService` |
 | Support | `LetterFormSchema` (aturan validasi dari `form_fields`), `LetterValueFormatter` (format nilai isian di PDF), `OfficialPositionCatalog` (label jabatan), `PublicPageCache`, `VillageImageOptimizer` |
 | Policy | `LetterPolicy` (view, create, download, fulfill, delete), `OfficialPolicy`, `RegionPolicy` |
 | Middleware | `account.active`, `password.changed`, `role`, `verified` |
 | Rule | `ValidOfficialPosition` |
 | Notifikasi | `LetterStatusNotification` (kanal database + WebPush) |
-| Console | `staf-sid:first`, `letters:backfill-snapshots` |
+| Console | `staf-sid:first`, `letters:backfill-snapshots`, `letters:send-expiry-reminders` |
 | Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
 ---
@@ -140,7 +140,7 @@ Keputusan dijalankan di dalam transaksi: `SELECT ... FOR UPDATE` pada surat, cek
 ### 3.4 Final approve: nomor surat & snapshot
 
 1. `LetterNumberGenerator`: `{classification_code}/{NNN}/Des/{bulan Romawi}/{tahun}` (mis. `470/001/Des/X/2026`). Counter `letter_number_counters` per desa + kode klasifikasi + tahun (unique `uq_letter_counters_classification`); baris lama per jenis surat tetap sebagai riwayat.
-2. `expires_at` dari `validity_days`, `processed_at`.
+2. `expires_at` = waktu persetujuan + `validity_days`, dibulatkan ke akhir hari (23:59:59 zona waktu aplikasi, WIB); `processed_at`.
 3. `LetterSnapshotService::captureOnFinalApproval()` membekukan konteks render ke `letters.snapshot` dan `signed_by_official_id` (Kepala Desa aktif saat itu, juga bila Sekdes yang menyetujui). Bila belum ada Kades aktif, snapshot ditunda sampai unduhan pertama. Untuk formulir Layanan Kependudukan, snapshot juga membekukan `service_officials`: nama dan NIK Kepala Desa serta Ketua RT/RW wilayah tiap isian `village_area` (placeholder `{{ pejabat_kepala_desa_nama }}`, `{{ pejabat_rt_<area>_nama }}`, `{{ pejabat_rt_<area>_nik }}`, juga `rw`). Tidak ada gambar TTD: ruang tanda tangan dibiarkan kosong untuk TTD basah. Command `letters:backfill-snapshots` (dijalankan migration `2026_10_11_090300`) membekukan surat approved lama.
 4. Notifikasi: pemohon `letter_approved_final`; Kasi/Kaur sesuai `assigned_role` mendapat `letter_needs_fulfillment` (bila ada `data_action`) atau `letter_ready_for_print`.
 
@@ -212,7 +212,7 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 - **Tanpa TTD digital dan stempel**: satu view `pdf.templates.letter`, semua ruang tanda tangan (`{{ signature_img }}`, `{{ tanda_tangan_* }}`, `{{ ttd_* }}`) dikosongkan dan nama penanda tangan tetap tercetak. Alur: surat terbit → petugas desa mencetak, menandatangani, dan menstempel basah → pemohon mengambil di kantor desa; unduhan pemohon adalah salinan tanpa TTD.
 - Placeholder: data pemohon, kop desa (`village_*`, dari profil desa), nomor & tanggal surat, isian form (diformat `LetterValueFormatter`: tanggal, rupiah + terbilang, pilihan), nama/NIK pejabat formulir (`pejabat_*`). Nilai teks di-escape; placeholder tak terpetakan diganti garis.
 - Dokumen pendukung (`supporting_template`) dirender dengan cara yang sama.
-- Pemohon ditolak mengunduh bila `expires_at` lewat.
+- Pemohon ditolak mengunduh bila `expires_at` lewat. Status surat tetap `approved`; kedaluwarsa dihitung saat dibaca (`Letter::isExpired()`).
 
 ---
 
@@ -220,8 +220,13 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 
 - `LetterStatusNotification` → kanal `database` (koneksi `sync`, in-app) dan `WebPushChannel` (diantrekan). Payload memuat `context.letter_id`, `letter_no`, `status`, `applicant`, `is_applicant`; Web Push membawa URL `/buka-notifikasi?...`.
 - Langganan Web Push disimpan per perangkat lewat `POST/DELETE /push-subscriptions` (VAPID dari `.env`).
-- Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `handler_vacant`, `letter_fulfilled`, `signature_requested`, `signature_accepted`, `signature_rejected`.
+- Kode status: `pending`, `approver_vacant`, `approval_reminder`, `rt_approved`, `rt_rejected`, `rt_approved_rw_fyi`, `rt_approved_kadus_fyi`, `kepala_desa_approved`, `kepala_desa_rejected`, `letter_approved_final`, `letter_ready_for_print`, `letter_needs_fulfillment`, `handler_vacant`, `letter_fulfilled`, `letter_expiring_soon`, `letter_expired`, `signature_requested`, `signature_accepted`, `signature_rejected`.
 - Pengingat approval: `ApprovalReminderService` lewat command `approvals:send-reminders` yang dijadwalkan tiap 5 menit di `routes/console.php` (butuh `php artisan schedule:work`; di Docker service `sid_scheduler`). Dikirim sekali per tahap per surat ke approver berwenang (in-app + Web Push) saat `now() >= deadline_at - reminder_hours` (0 = tepat saat deadline); `reminded_at` diisi.
+- Pengingat masa berlaku surat: `LetterExpiryReminderService` lewat command `letters:send-expiry-reminders` yang dijadwalkan tiap jam (`withoutOverlapping`). Penerima: pemohon (`letters.submitted_by`, termasuk pejabat yang mengajukan surat pribadi, `is_applicant = true`) yang akunnya aktif. Hari H = sehari setelah tanggal `expires_at`; titik H-n jatuh tempo (H - n hari) pukul `letters.expiry_reminder.send_at` (09:00). Titik H-30/H-14/H-7/H-3/H-1 dinyalakan atau dimatikan Staf SIDUTama (`letter_expiry_reminder_settings`, `GET/PATCH /letter-expiry-reminder-settings`); hari H selalu dikirim.
+  - Titik sah: aktif, sudah jatuh tempo, lebih kecil dari `expiry_notified_days`, jatuh temponya setelah `processed_at` dan setelah `activated_at` titik itu. Satu run mengirim satu notifikasi per surat dari titik sah terdekat ke hari H; titik yang lebih jauh dianggap selesai.
+  - `letter_expiring_soon` (ikon `clock`, warna `amber`) sebelum surat terkunci; tidak dikirim antara pukul 00.00 dan 09.00 hari H. `letter_expired` (ikon `clock`, warna `red`) di hari H. Pesan menyebut sisa hari sebenarnya; `context` ditambah `reminder_days` (titik) dan `days_left` (sisa hari). Tag Web Push tetap `letter-{id}`.
+  - Hari H lewat lebih dari `expired_notice_grace_days` (3): kolom diisi 0 tanpa notifikasi.
+  - Klaim memakai row lock (`findForUpdateOrFail`) karena mass update ke `letters` dilarang (`EloquentOnlyWritesTest`); kolom diisi lewat model tanpa menyentuh `updated_at`.
 - Pengumuman beranda: command `announcements:prune` dijadwalkan tiap menit di `routes/console.php` dan menghapus pengumuman yang lewat `expires_at` per model (event `deleted` ikut menggugurkan cache publik). Pembacaan memakai scope `active()`, jadi pengumuman basi tidak tampil walau scheduler terlambat.
 - Tidak ada notifikasi email status surat.
 

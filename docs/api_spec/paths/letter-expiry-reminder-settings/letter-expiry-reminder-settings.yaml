@@ -1,0 +1,36 @@
+get:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Lihat titik pengingat masa berlaku surat
+  description: |
+    Aktor: Staf SIDUTama.
+    Lima titik pengingat masa berlaku surat milik desa user, urut dari yang
+    terjauh (H-30) ke hari terakhir (H-1). Berlaku untuk semua jenis surat.
+    Hari H (surat sudah kedaluwarsa) tidak punya baris karena selalu dikirim.
+    Pengingat dikirim ke pemohon oleh command terjadwal
+    `letters:send-expiry-reminders` (tiap jam) pukul 09.00 WIB.
+  operationId: listLetterExpiryReminderSettings
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Titik pengingat berhasil diambil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/letter-expiry-reminder-settings/letter-expiry-reminder-settings.yaml#/LetterExpiryReminderSetting'
+          example:
+            data:
+              - { id: 1, days_before: 30, is_active: true, activated_at: "2026-11-01T10:00:00+07:00" }
+              - { id: 2, days_before: 14, is_active: true, activated_at: "2026-11-01T10:00:00+07:00" }
+              - { id: 3, days_before: 7, is_active: true, activated_at: "2026-11-01T10:00:00+07:00" }
+              - { id: 4, days_before: 3, is_active: false, activated_at: "2026-11-01T10:00:00+07:00" }
+              - { id: 5, days_before: 1, is_active: true, activated_at: "2026-11-01T10:00:00+07:00" }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'

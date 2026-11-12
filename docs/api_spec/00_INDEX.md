@@ -35,7 +35,7 @@ api_spec/
 │   ├── rt/, kades/   aksi keputusan saja
 │   ├── signatures/   permintaan saksi/persetujuan, blokir
 │   ├── notifications/, push-subscriptions/
-│   ├── approval-settings/, dashboard/
+│   ├── approval-settings/, letter-expiry-reminder-settings/, dashboard/
 │   ├── public/, villages/, news/, regulations/
 │   └── village-org/
 └── schemas/
@@ -60,7 +60,7 @@ api_spec/
 | Permintaan saksi | `GET /signature-requests`, `POST /signature-requests/{id}/accept\|reject`, `GET /signature-blocks`, `DELETE /signature-blocks/{id}` | Pemilik NIK yang dituju |
 | Surat | `GET/POST /letters`, `GET /letters/summary`, `GET /letters/export` (Excel, filter sama dengan daftar), `GET/DELETE /letters/{id}`, `GET /letters/{letter}/download\|preview\|supporting-document`, `GET /letters/{letter}/attachments/{attachment}`, `POST /letters/{letter}/signatures/{slot}`, `GET/POST /letters/{letter}/fulfillment` | Sesuai LetterPolicy |
 | Keputusan | `PATCH /rt/letters/{letter}/decision`, `PATCH /kades/letters/{letter}/decision` | RT; Kades/Sekdes |
-| Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings` | Staf SIDUTama (GET letter-types lintas-role) |
+| Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings`, `GET/PATCH /letter-expiry-reminder-settings` | Staf SIDUTama (GET letter-types lintas-role) |
 | Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `POST /citizens/import/preview`, `GET /citizens/import-template`, `/citizens/wilayah`, `/families` (berhalaman), `GET /families/options`, `/families/{id}/socioeconomic`, `/occupations` (GET daftar aktif juga untuk semua role, dipakai isian pekerjaan form surat) | Staf SIDUTama dan Kasi Pemerintahan (kelola); Kaur TU & Umum, Kades, Sekdes (seluruh desa) serta Kadus, RW, RT (wilayahnya, `PopulationScope`) hanya GET `/citizens` dan `/families` |
 | Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, photo POST/DELETE), `/official-position-types` | Staf SIDUTama (`staf_sid`, satu per desa) |
 | Wilayah | `/hamlets`, `/rws`, `/rts`; `GET /village-areas` (pohon Dusun -> RW -> RT aktif untuk isian `village_area` form surat) | Staf SIDUTama; `/village-areas` semua role |

@@ -83,7 +83,8 @@ LetterStatusContext:
         rt_approved_rw_fyi, rt_approved_kadus_fyi, kepala_desa_approved,
         kepala_desa_rejected, letter_approved_final, letter_ready_for_print,
         letter_needs_fulfillment, handler_vacant, letter_fulfilled, signature_requested,
-        signature_accepted, signature_rejected.
+        signature_accepted, signature_rejected, approval_reminder, letter_expiring_soon
+        (ikon clock, warna amber), letter_expired (ikon clock, warna red).
       example: "rt_approved"
     applicant:
       type: string
@@ -91,6 +92,16 @@ LetterStatusContext:
     is_applicant:
       type: boolean
       description: "True bila penerima adalah pemohon surat (frontend membuka 'Surat Saya')."
+    reminder_days:
+      type: integer
+      enum: [30, 14, 7, 3, 1, 0]
+      description: "Hanya letter_expiring_soon/letter_expired: titik pengingat yang dikirim (0 = hari H)."
+      example: 7
+    days_left:
+      type: integer
+      minimum: 0
+      description: "Hanya letter_expiring_soon/letter_expired: sisa hari sebenarnya sampai surat terkunci (0 di hari H). Bisa lebih kecil dari reminder_days bila pengingat terkirim terlambat."
+      example: 5
 
 MarkReadResponse:
   type: object

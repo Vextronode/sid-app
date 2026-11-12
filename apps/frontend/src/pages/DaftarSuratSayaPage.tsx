@@ -16,6 +16,7 @@ import { DetailSuratModal } from '@/features/surat/components/DetailSuratModal'
 import { MyLettersList } from '@/features/surat/components/MyLettersList'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { HAL_PENGAJUAN_SURAT } from '@/lib/constants/routes'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
@@ -152,7 +153,11 @@ export default function DaftarSuratSayaPage() {
       ========================================== */}
 
       {selectedSurat && (
-        <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
+        <DetailSuratModal
+          data={selectedSurat}
+          onClose={() => setSelectedSurat(null)}
+          onReapply={(code) => navigate(`${HAL_PENGAJUAN_SURAT}/${encodeURIComponent(code)}`)}
+        />
       )}
     </WargaLayout>
   )
