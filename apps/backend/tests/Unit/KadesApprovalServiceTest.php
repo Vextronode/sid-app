@@ -12,12 +12,14 @@ use App\Models\User;
 use App\Models\Village;
 use App\Repositories\ApprovalFlowRepository;
 use App\Repositories\ApprovalSettingRepository;
+use App\Repositories\CitizenBusinessRepository;
 use App\Repositories\LetterNumberCounterRepository;
 use App\Repositories\LetterRepository;
 use App\Repositories\LetterStatusLogRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\ApprovalSettingService;
+use App\Services\CitizenBusinessService;
 use App\Services\KadesApprovalService;
 use App\Services\LetterFlowService;
 use App\Services\LetterNumberGenerator;
@@ -54,6 +56,7 @@ class KadesApprovalServiceTest extends TestCase
             new LetterNumberGenerator(new LetterNumberCounterRepository),
             new ApprovalSettingService(new ApprovalSettingRepository),
             new LetterSnapshotService(new OfficialRepository, $letterRepository),
+            new CitizenBusinessService(new CitizenBusinessRepository),
         );
     }
 

@@ -365,6 +365,29 @@ export function DynamicSuratForm({
                   />
                 )}
 
+                {field.type === 'email' && (
+                  <input
+                    id={field.name}
+                    type="email"
+                    autoComplete="email"
+                    {...register(field.name)}
+                    placeholder={field.placeholder}
+                    className={inputClass}
+                  />
+                )}
+
+                {field.type === 'phone' && (
+                  <input
+                    id={field.name}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    {...register(field.name)}
+                    placeholder={field.placeholder}
+                    className={inputClass}
+                  />
+                )}
+
                 {field.type === 'nik' && (
                   <input
                     id={field.name}

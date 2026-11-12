@@ -1,0 +1,32 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Detail usaha warga (baca saja)
+  description: |
+    Aktor sama dengan `GET /citizen-businesses`; usaha desa lain 403.
+    Memuat pemilik, SKU sumber (id, nomor, masa berlaku), dan status Cimart.
+  operationId: showCitizenBusiness
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: citizenBusiness
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Detail usaha
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/citizen-businesses/citizen-businesses.yaml#/CitizenBusiness'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'

@@ -141,6 +141,16 @@ class Letter extends Model
         return $this->hasMany(LetterAttachment::class);
     }
 
+    /**
+     * Data usaha yang dicatat dari SKU ini (A01).
+     *
+     * @return HasOne<CitizenBusiness, $this>
+     */
+    public function business(): HasOne
+    {
+        return $this->hasOne(CitizenBusiness::class);
+    }
+
     /** @return HasMany<LetterSignature, $this> */
     public function signatures(): HasMany
     {

@@ -1,0 +1,98 @@
+parameters:
+  - name: citizenBusiness
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Daftarkan (atau daftar ulang) usaha ke Cimart
+  description: |
+    Hanya warga pemilik usaha (lainnya 403). Status menjadi `pending`;
+    alasan penolakan dan waktu pembatalan sebelumnya dikosongkan. Diproses
+    dengan kunci baris usaha yang sama dengan laporan status dari Cimart.
+  operationId: requestCimartApplication
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Usaha didaftarkan ke Cimart
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Usaha didaftarkan ke Cimart. Cimart akan memproses pendaftaran Anda."
+              data:
+                $ref: '../../schemas/citizen-businesses/citizen-businesses.yaml#/CitizenBusiness'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Status masih `pending` atau sudah `accepted`
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          examples:
+            pending:
+              value:
+                message: "Usaha ini sudah didaftarkan dan sedang menunggu diproses Cimart."
+            accepted:
+              value:
+                message: "Akun pedagang Cimart untuk usaha ini sudah dibuat."
+    '422':
+      description: SKU sudah kedaluwarsa
+      content:
+        application/json:
+          example:
+            message: "Surat Keterangan Usaha ini sudah tidak berlaku. Ajukan SKU baru untuk mendaftar ke Cimart."
+delete:
+  tags: [Epic 3 - Autentikasi]
+  summary: Batalkan pendaftaran Cimart yang masih menunggu
+  description: |
+    Hanya warga pemilik usaha (lainnya 403) dan hanya saat status `pending`.
+    Status menjadi `cancelled`, dicatat di activity log (`log_name`
+    `citizen_business`, event `cimart_cancelled`). Warga bisa mendaftar lagi
+    selama SKU berlaku.
+  operationId: cancelCimartApplication
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Pendaftaran dibatalkan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Pendaftaran Cimart dibatalkan."
+              data:
+                $ref: '../../schemas/citizen-businesses/citizen-businesses.yaml#/CitizenBusiness'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      description: Status bukan `pending`
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ConflictResponse'
+          examples:
+            accepted:
+              value:
+                message: "Akun pedagang sudah dibuat Cimart. Hubungi Cimart untuk menghapus akun."
+            not_pending:
+              value:
+                message: "Pendaftaran ini tidak sedang menunggu diproses Cimart."

@@ -1,4 +1,4 @@
-import type { UserRole } from '@/types'
+import type { User, UserRole } from '@/types'
 
 // Menu sidebar semua pejabat (OperatorDesaLayout): route -> peran yang boleh
 // membukanya. Juga dipakai ProtectedRoute di App.tsx agar menu dan akses
@@ -34,6 +34,10 @@ export const OPERATOR_ROUTE_CAPABILITIES: Record<string, UserRole[]> = {
   '/admin/kades/data-penduduk': ['kepala_desa', 'sekretaris_desa'],
   // Staf SIDUTama dan Kasi Pemerintahan mengelola; Kaur TU & Umum hanya melihat.
   '/admin/data-warga': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
+  // Data Usaha Warga (baca saja): Staf SIDUTama dan petugas SKU. Petugas SKU
+  // mengikuti jenis surat, jadi menu juga butuh flag dari GET /api/user
+  // (lihat FLAG_GATED_ROUTES).
+  '/admin/data-usaha': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
   '/admin/kelola-wilayah': ['staf_sid'],
   '/admin/kelola-pekerjaan': ['staf_sid'],
   // Aktivasi akun dan request ganti foto profil warga (petugas wilayah).
@@ -76,4 +80,17 @@ export function getOperatorAllowedRoles(route: string) {
   }
 
   return allowedRoles
+}
+
+// Route yang selain peran juga butuh hak akses dinamis dari GET /api/user.
+const FLAG_GATED_ROUTES: Record<string, (user: User) => boolean> = {
+  '/admin/data-usaha': (user) => user.can_view_citizen_businesses === true,
+}
+
+// Menu dan route yang boleh dibuka akun ini: peran cocok dan, bila route
+// memerlukannya, flag akses dari backend bernilai true.
+export function canOpenOperatorRoute(user: User | null | undefined, route: string) {
+  if (!user || !(ROLE_NAVIGATION[user.role] ?? []).includes(route)) return false
+
+  return FLAG_GATED_ROUTES[route]?.(user) ?? true
 }

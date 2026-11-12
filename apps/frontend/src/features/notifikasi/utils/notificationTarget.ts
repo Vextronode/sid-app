@@ -78,14 +78,21 @@ export function getNotificationTarget(
     return profileRoute(role)
   }
 
-  // Pejabat yang menjadi pemohon surat itu: buka di "Surat Saya", bukan
-  // di daftar surat warga yang ia proses.
+  if (!context.letter_id) return null
+
+  return letterDetailPath(role, context.letter_id, Boolean(context.is_applicant))
+}
+
+/**
+ * Halaman yang membuka detail surat untuk peran ini, atau null untuk peran
+ * yang tidak dikenal. Pejabat yang menjadi pemohon surat itu membukanya di
+ * "Surat Saya", bukan di daftar surat warga yang ia proses.
+ */
+export function letterDetailPath(role: UserRole, letterId: string, isApplicant: boolean) {
   const listRoute =
-    context.is_applicant && SELF_LETTER_ROLES.includes(role)
-      ? SELF_LETTER_ROUTE
-      : LETTER_LIST_ROUTES[role]
+    isApplicant && SELF_LETTER_ROLES.includes(role) ? SELF_LETTER_ROUTE : LETTER_LIST_ROUTES[role]
 
-  if (!listRoute || !context.letter_id) return null
+  if (!listRoute) return null
 
-  return `${listRoute}?surat=${encodeURIComponent(context.letter_id)}`
+  return `${listRoute}?surat=${encodeURIComponent(letterId)}`
 }

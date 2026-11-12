@@ -12,6 +12,8 @@
 
 > **v5.3:** `letter_categories` di-drop beserta `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type`. Jenis surat kini membawa definisi isian, aksi data, slot tanda tangan, dokumen pendukung, dan kode klasifikasi. Tabel baru: `letter_attachments`, `user_signatures`, `letter_signatures`, `signature_blocks`, `official_position_types`, `news_categories`, `news_category_news`, `push_subscriptions`. `letters` mendapat snapshot & kolom fulfillment; `villages` mendapat kolom kop surat & tampilan publik; `officials.position` menjadi VARCHAR.
 
+> **2026-11-12:** Tabel baru `citizen_businesses` (data usaha dari SKU A01 dan status pendaftaran pedagang Cimart).
+
 > **2026-10-31:** TTD digital dihapus: tabel `user_signatures` dan `signature_reset_requests` di-drop; kolom `villages.stamp_img`, `officials.signature_img`, `officials.stamp_img`, `letter_types.signature_slots`, `letter_signatures.user_signature_id`/`attachment_id` dihapus; `letter_signatures` kini hanya saksi (`signer_type = witness`, method `consent`/`rt_check`/`manual`); kind `wet_signature` di `letter_attachments` tidak dipakai lagi.
 
 ---
@@ -546,6 +548,31 @@ Index: `idx_letter_signatures_slot (letter_id, slot_key)`, `idx_letter_signature
 
 Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 
+**Tabel: citizen_businesses**
+
+Data usaha warga, dicatat sekali saat Surat Keterangan Usaha (A01) final approve dari isian form SKU, dan tidak diubah sesudahnya. Kalau pencatatan gagal, final approve ikut batal (satu transaksi). Status berlaku/kedaluwarsa dihitung dari `letters.expires_at`. `id` menjadi `business_ref` di API integrasi Cimart.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | UUID | PK | `business_ref` untuk Cimart |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | |
+| citizen_id | UUID | FK → citizens.id, NULL, ON DELETE SET NULL | Tidak unik: satu warga boleh punya beberapa usaha |
+| letter_id | UUID | FK → letters.id, UNIQUE, ON DELETE CASCADE | Satu SKU satu usaha |
+| business_name | VARCHAR(255) | NOT NULL | Isian `nama_usaha` |
+| business_activity | VARCHAR(255) | NOT NULL | Isian `kegiatan_usaha` (tercetak di SKU) |
+| category | VARCHAR(30) | NOT NULL | `kelontong` \| `kuliner` \| `non_kuliner` (`BusinessCategory`) |
+| email | TEXT | NOT NULL, terenkripsi | Isian `email_usaha` |
+| phone | TEXT | NOT NULL, terenkripsi | Isian `telepon_usaha`, dinormalisasi ke `08...` |
+| address | TEXT | NOT NULL | Isian `alamat_usaha` |
+| cimart_status | VARCHAR(20) | NULL | NULL (tidak mendaftar) \| `pending` \| `accepted` \| `rejected` \| `cancelled` |
+| cimart_requested_at | TIMESTAMP | NULL | Waktu mendaftar; diperbarui saat daftar ulang |
+| cimart_decided_at | TIMESTAMP | NULL | Waktu Cimart melaporkan hasil |
+| cimart_note | TEXT | NULL | Alasan penolakan dari Cimart (tampil ke warga) |
+| cimart_cancelled_at | TIMESTAMP | NULL | Waktu warga membatalkan pendaftaran |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `idx_citizen_businesses_village_category (village_id, category)`, `idx_citizen_businesses_cimart_queue (cimart_status, cimart_requested_at)` (antrean Cimart).
+
 **Tabel: approval_settings**
 
 | Kolom | Tipe | Constraint | Keterangan |
@@ -745,7 +772,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **32 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **35 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **33 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **36 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -756,15 +783,16 @@ Alur Approval (2): approval_flows, flow_steps
 Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
+Usaha Warga (1): citizen_businesses
 Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 2 + 7 + 1 = 32 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 2 + 7 + 1 = 33 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 35 tabel
+Total aplikasi non-framework: 36 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 
@@ -908,6 +936,7 @@ Sistem mengelola data kependudukan warga (NIK, alamat) yang termasuk kategori da
 | letters | applicant_address | Alamat pemohon dalam permohonan surat |
 | users | password | Hash Argon2id (one-way hash, bukan enkripsi) |
 | letter_signatures | target_nik_hash | SHA-256 NIK target permintaan saksi (NIK plaintext tidak disimpan) |
+| citizen_businesses | email, phone | Kontak usaha warga, dikirim ke Cimart bila warga mendaftar |
 
 Berkas privat (lampiran surat, hasil dari instansi) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan nama pejabat (dan NIK pejabat formulir Layanan Kependudukan yang memang tercetak), tanpa gambar TTD/stempel.
 

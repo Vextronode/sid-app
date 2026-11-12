@@ -12,6 +12,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { WargaLayout } from '@/components/layout/WargaLayout'
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
 import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
+import { UsahaSayaCard } from '@/features/data-usaha/components/UsahaSayaCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
 export default function ProfilePage() {
@@ -113,6 +114,8 @@ export default function ProfilePage() {
         </div>
 
         <SignatureRequestsCard />
+
+        <UsahaSayaCard />
 
         {/* ======================================
             EDIT MODAL
