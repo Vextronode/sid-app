@@ -84,6 +84,14 @@ CurrentUser:
     must_change_password:
       type: boolean
       example: false
+    can_view_citizen_businesses:
+      type: boolean
+      description: |
+        Boleh membuka Data Usaha Warga (`GET /citizen-businesses`): Staf
+        SIDUTama, atau Kasi/Kaur yang cocok dengan `assigned_role` jenis surat
+        SKU (A01) desanya (NULL = keduanya). Menu frontend mengikuti flag ini
+        karena petugas SKU berpindah bila kategori SKU diubah.
+      example: false
     official:
       type: object
       nullable: true

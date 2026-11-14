@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\ApprovalSettingController;
+use App\Http\Controllers\Api\CitizenBusinessController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
@@ -113,6 +114,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/profile/photo-request', [ProfilePhotoRequestController::class, 'showOwn']);
     Route::post('/profile/photo-request', [ProfilePhotoRequestController::class, 'storeOwn']);
     Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
+    // Usaha Saya: usaha dari SKU warga sendiri dan pendaftaran Cimart-nya;
+    // pemilik dicek CitizenBusinessPolicy.
+    Route::get('/profile/businesses', [CitizenBusinessController::class, 'ownIndex']);
+    Route::post('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'requestCimart']);
+    Route::delete('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'cancelCimart']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
     // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
@@ -166,6 +172,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::patch('/send-at', [LetterExpiryReminderSettingController::class, 'updateSendTime']);
             Route::patch('/{id}', [LetterExpiryReminderSettingController::class, 'update'])->whereNumber('id');
         });
+
+    /*
+    |----------------------------------------------------------------------
+    | Data Usaha Warga
+    |----------------------------------------------------------------------
+    | Baca saja. Staf SIDUTama dan petugas SKU (assigned_role milik A01);
+    | role petugas dinamis, jadi dicek CitizenBusinessPolicy, bukan `role:`.
+    */
+    Route::prefix('citizen-businesses')->group(function () {
+        Route::get('/', [CitizenBusinessController::class, 'index']);
+        Route::get('/{citizenBusiness}', [CitizenBusinessController::class, 'show']);
+    });
 
     /*
     |----------------------------------------------------------------------

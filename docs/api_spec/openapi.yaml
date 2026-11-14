@@ -153,6 +153,10 @@ paths:
     $ref: 'paths/auth/profile-password-v51.yaml'
   /profile/photo:
     $ref: 'paths/auth/profile-photo.yaml'
+  /profile/businesses:
+    $ref: 'paths/citizen-businesses/profile-businesses.yaml'
+  /profile/businesses/{citizenBusiness}/cimart-application:
+    $ref: 'paths/citizen-businesses/cimart-application.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
@@ -203,6 +207,10 @@ paths:
     $ref: 'paths/activity-logs/population.yaml'
   /activity-logs/letters:
     $ref: 'paths/activity-logs/letters.yaml'
+  /citizen-businesses:
+    $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
+  /citizen-businesses/{citizenBusiness}:
+    $ref: 'paths/citizen-businesses/citizen-business-detail.yaml'
   /occupations:
     $ref: 'paths/occupations/occupations.yaml'
   /occupations/{id}:

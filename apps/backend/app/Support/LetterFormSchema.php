@@ -136,7 +136,13 @@ use Illuminate\Validation\Rule;
  */
 class LetterFormSchema
 {
-    public const FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area', 'family_member', 'family_roster'];
+    public const FIELD_TYPES = ['text', 'textarea', 'date', 'time', 'number', 'nik', 'select', 'file', 'occupation', 'repeater', 'family_members', 'village_area', 'family_member', 'family_roster', 'email', 'phone'];
+
+    /**
+     * Nomor HP Indonesia: 08..., 628..., atau +628..., 10-13 digit setelah
+     * awalan 0. Disamakan dengan PHONE_PATTERN di frontend (suratSchema.ts).
+     */
+    public const PHONE_PATTERN = '/^(\+62|62|0)8[0-9]{8,11}$/';
 
     /**
      * Tipe sub-isian di dalam repeater. `family_member` memilih satu anggota
@@ -1181,6 +1187,8 @@ class LetterFormSchema
                 ...(isset($field['min_value']) ? ['min:'.$field['min_value']] : []),
             ],
             'nik' => ['digits:16'],
+            'email' => ['string', 'email', 'max:255'],
+            'phone' => ['string', 'regex:'.self::PHONE_PATTERN],
             'select' => ['string', Rule::in(array_column($field['options'] ?? [], 'value'))],
             default => ['string', 'max:255'],
         };

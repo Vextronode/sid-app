@@ -179,12 +179,20 @@ Joni baru membuka warung kopi di depan rumahnya. Ia ingin mengajukan pinjaman mo
 
 - **Pilih di web:** Persuratan Desa → **Surat Keterangan Usaha** (berlaku 365 hari). Bagian *Siapkan:* meminta **foto usaha terkini**.
 - **Yang diisi:**
-  - Jenis Usaha: `Warung kopi`
+  - Kegiatan Usaha: `Warung kopi`
+  - Nama Usaha: `Warung Kopi Joni`
+  - Kategori Usaha: `Toko Kuliner` (pilihan: Toko Kelontong, Toko Kuliner, Toko Non Kuliner)
+  - Alamat Usaha: `Jl. Raya Cibenda No. 12, RT 01/RW 02`
+  - Email Usaha: `warkopjoni@example.com`
+  - Nomor HP Usaha: `081234567890`
   - Foto Usaha Terkini: foto warung Joni
-- **Proses:** Ketua RT melihat foto warung sebagai bahan pertimbangan, lalu menyetujui. Kepala Desa ikut menyetujui. Foto tidak dicetak di surat.
+  - Daftarkan sebagai pedagang Cimart?: `Tidak` (wajib dipilih; bila `Ya`, nama, NIK, dan data usaha dikirim ke Cimart setelah surat terbit)
+- **Proses:** Ketua RT melihat foto warung dan data usaha sebagai bahan pertimbangan, lalu menyetujui. Kepala Desa ikut menyetujui. Yang tercetak di surat hanya Kegiatan Usaha; data usaha lain, foto, dan pilihan Cimart tidak dicetak.
 - **Hasil:** Surat keterangan bahwa Joni menjalankan usaha "Warung kopi" di wilayah desa. Joni mengambil surat yang sudah ditandatangani dan distempel di kantor desa, lalu membawanya ke bank.
 
-**Skenario lain:** Siti, penjahit rumahan, butuh SKU untuk mendaftar UMKM binaan dinas koperasi. Alurnya sama, Jenis Usaha diisi `Jasa jahit pakaian`.
+**Skenario lain:** Siti, penjahit rumahan, butuh SKU untuk mendaftar UMKM binaan dinas koperasi. Alurnya sama, Kegiatan Usaha diisi `Jasa jahit pakaian`.
+
+**Skenario Cimart:** Rina ingin berjualan kue di Cimart. Ia mengajukan SKU dengan Kategori Usaha `Toko Kuliner` dan memilih `Ya` pada "Daftarkan sebagai pedagang Cimart?". Setelah surat terbit, data usahanya diteruskan ke Cimart untuk dibuatkan akun pedagang.
 
 ### 5.2 Surat Keterangan Tidak Memiliki Rumah
 

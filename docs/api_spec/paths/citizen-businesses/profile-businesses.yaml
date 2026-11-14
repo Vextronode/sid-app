@@ -1,0 +1,25 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Usaha Saya
+  description: |
+    Usaha milik warga akun login (`users.citizen_id`), terbaru dulu, beserta
+    status Cimart, alasan penolakan, dan flag tombol `can_request_cimart` /
+    `can_cancel_cimart`. Semua role ber-akun; akun tanpa data warga
+    mendapat daftar kosong. Tanpa paginasi.
+  operationId: listOwnBusinesses
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Usaha milik akun ini
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/citizen-businesses/citizen-businesses.yaml#/CitizenBusiness'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

@@ -31,6 +31,19 @@ trait DefinesLetterTypes
         return $this->field($name, $label, 'textarea', $required, $placeholder);
     }
 
+    private function email(string $name, string $label, bool $required = true, ?string $placeholder = null): array
+    {
+        return $this->field($name, $label, 'email', $required, $placeholder);
+    }
+
+    /**
+     * Nomor HP Indonesia (LetterFormSchema::PHONE_PATTERN).
+     */
+    private function phone(string $name, string $label, bool $required = true, ?string $placeholder = null): array
+    {
+        return $this->field($name, $label, 'phone', $required, $placeholder);
+    }
+
     private function number(string $name, string $label, bool $required = true, ?string $placeholder = null): array
     {
         return $this->field($name, $label, 'number', $required, $placeholder);

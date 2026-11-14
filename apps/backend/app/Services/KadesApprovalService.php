@@ -23,6 +23,7 @@ class KadesApprovalService
         protected LetterNumberGenerator $letterNumberGenerator,
         protected ApprovalSettingService $approvalSettingService,
         protected LetterSnapshotService $letterSnapshotService,
+        protected CitizenBusinessService $citizenBusinessService,
     ) {}
 
     /**
@@ -184,6 +185,10 @@ class KadesApprovalService
         ]);
 
         $this->letterSnapshotService->captureOnFinalApproval($letter);
+
+        // SKU: data usaha (dan pendaftaran Cimart bila dipilih) dicatat di
+        // transaksi yang sama, jadi bila gagal surat juga batal terbit.
+        $this->citizenBusinessService->recordFromLetter($letter);
     }
 
     private function notifyApplicantRejected(Letter $letter, string $approvalLevel): void

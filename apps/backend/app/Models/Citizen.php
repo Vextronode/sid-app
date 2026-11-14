@@ -171,4 +171,10 @@ class Citizen extends Model
     {
         return $this->hasMany(Official::class);
     }
+
+    /** @return HasMany<CitizenBusiness, $this> */
+    public function businesses(): HasMany
+    {
+        return $this->hasMany(CitizenBusiness::class);
+    }
 }

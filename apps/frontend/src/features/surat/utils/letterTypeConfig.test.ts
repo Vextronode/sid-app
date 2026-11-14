@@ -201,6 +201,36 @@ describe('getSuratSchema', () => {
     expect(schema.safeParse({ pukul_lahir: '' }).success).toBe(false)
     expect(schema.safeParse({ pukul_lahir: '25:00' }).success).toBe(false)
   })
+
+  it('checks business email and phone with the same rules as the backend', () => {
+    const contacts = formConfig({
+      ...letterType,
+      form_fields: [
+        { name: 'email_usaha', label: 'Email Usaha', type: 'email', required: true },
+        { name: 'telepon_usaha', label: 'Nomor HP Usaha', type: 'phone', required: true },
+      ],
+    })
+    const messages = (values: SuratFormValues) =>
+      (getSuratSchema(contacts).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
+
+    expect(messages({ email_usaha: 'warkop@example.com', telepon_usaha: '081234567890' })).toEqual(
+      [],
+    )
+    expect(messages({ email_usaha: 'a@b.co', telepon_usaha: '+6281234567890' })).toEqual([])
+    expect(messages({ email_usaha: 'a@b.co', telepon_usaha: '6281234567890' })).toEqual([])
+    expect(messages({ email_usaha: '', telepon_usaha: '' })).toEqual([
+      'Email Usaha wajib diisi',
+      'Nomor HP Usaha wajib diisi',
+    ])
+    expect(messages({ email_usaha: 'bukan-email', telepon_usaha: '0221234567' })).toEqual([
+      'Email Usaha tidak valid',
+      'Nomor HP Usaha harus nomor HP, mis. 081234567890',
+    ])
+
+    for (const phone of ['0812', '81234567890', '08-1234-5678', '+6281234567890123']) {
+      expect(messages({ email_usaha: 'a@b.co', telepon_usaha: phone })).toHaveLength(1)
+    }
+  })
 })
 
 describe('buildLetterFormData', () => {
