@@ -82,20 +82,25 @@ class LetterRepository
      * jauh ~30 hari lagi dan belum diproses sampai hari H, milik akun
      * pemohon yang masih aktif.
      *
+     * $floor membuang surat yang sudah lama kedaluwarsa. Tanpa batas ini,
+     * surat milik akun nonaktif (yang tidak pernah ditandai selesai) ikut
+     * diperiksa setiap run tanpa akhir.
+     *
      * @return LazyCollection<int, Letter>
      */
-    public function lazyExpiringForReminder(Carbon $horizon): LazyCollection
+    public function lazyExpiringForReminder(Carbon $horizon, Carbon $floor): LazyCollection
     {
         return Letter::query()
             ->where('status', LetterStatus::Approved)
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', $horizon)
+            ->where('expires_at', '>=', $floor)
             ->where(function (Builder $query) {
                 $query->whereNull('expiry_notified_days')
                     ->orWhere('expiry_notified_days', '>', 0);
             })
             ->whereHas('user', fn (Builder $query) => $query->where('is_active', true))
-            ->with(['letterType:id,name', 'user'])
+            ->with(['letterType:id,name', 'user', 'village:id,expiry_reminder_send_at'])
             ->lazyById(100);
     }
 

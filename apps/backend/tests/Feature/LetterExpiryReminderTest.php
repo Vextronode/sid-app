@@ -8,10 +8,14 @@ use App\Models\LetterType;
 use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
 use Database\Seeders\LetterExpiryReminderSettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Notification;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
@@ -137,6 +141,32 @@ class LetterExpiryReminderTest extends TestCase
 
         $this->at('2026-11-13 09:00');
         $this->runReminders(expectedSent: 1);
+    }
+
+    public function test_due_time_follows_village_send_time(): void
+    {
+        $this->village->update(['expiry_reminder_send_at' => '16:00:00']);
+
+        $this->at('2026-11-13 09:00');
+        $this->runReminders(expectedSent: 0);
+        $this->at('2026-11-13 15:00');
+        $this->runReminders(expectedSent: 0);
+        Notification::assertNothingSent();
+
+        $this->at('2026-11-13 16:00');
+        $this->runReminders(expectedSent: 1);
+    }
+
+    public function test_changing_send_time_after_sending_does_not_resend(): void
+    {
+        $this->at('2026-11-13 09:00');
+        $this->runReminders(expectedSent: 1);
+
+        $this->village->update(['expiry_reminder_send_at' => '16:00:00']);
+        $this->at('2026-11-13 16:00');
+        $this->runReminders(expectedSent: 0);
+
+        $this->assertCount(1, $this->sentTo($this->applicant));
     }
 
     public function test_catch_up_after_downtime_sends_only_the_closest_point(): void
@@ -282,6 +312,35 @@ class LetterExpiryReminderTest extends TestCase
         $this->assertSame(0, $this->letter->fresh()->expiry_notified_days);
     }
 
+    public function test_letters_past_the_search_window_are_left_untouched(): void
+    {
+        // Masa tenggang hari H (13 Des) habis 16 Des 09:00; jendela pencarian
+        // (masa tenggang + 1 hari) membuang surat ini mulai 17 Des 00:00.
+        $this->at('2026-12-17 10:00');
+        $this->runReminders(expectedSent: 0);
+
+        Notification::assertNothingSent();
+        // Tidak lagi diambil, jadi tidak ditandai juga.
+        $this->assertNull($this->letter->fresh()->expiry_notified_days);
+    }
+
+    public function test_search_window_includes_grace_period_and_excludes_older_letters(): void
+    {
+        ['user' => $inactive] = $this->makeCitizenAccount($this->village, null);
+        $inactive->update(['is_active' => false]);
+        $inactiveLetter = $this->makeLetter($inactive, $inactive->citizen_id);
+        $repository = app(LetterRepository::class);
+
+        $this->at('2026-12-16 09:01');
+        $inWindow = $repository->lazyExpiringForReminder(now()->addDays(31), now()->subDays(4))->pluck('id');
+        $this->assertContains($this->letter->id, $inWindow);
+        $this->assertNotContains($inactiveLetter->id, $inWindow);
+
+        $this->at('2026-12-17 00:01');
+        $pastWindow = $repository->lazyExpiringForReminder(now()->addDays(31), now()->subDays(4))->pluck('id');
+        $this->assertNotContains($this->letter->id, $pastWindow);
+    }
+
     public function test_letters_without_expiry_unfinished_or_with_inactive_applicant_are_skipped(): void
     {
         $this->letter->delete();
@@ -333,6 +392,44 @@ class LetterExpiryReminderTest extends TestCase
         $this->runReminders(expectedSent: 1);
 
         $this->assertTrue($this->letter->fresh()->updated_at->equalTo($updatedAt));
+    }
+
+    public function test_one_failing_letter_does_not_stop_the_others(): void
+    {
+        Exceptions::fake();
+        ['user' => $otherApplicant, 'citizen' => $otherCitizen] = $this->makeCitizenAccount($this->village, null);
+        $this->makeLetter($otherApplicant, $otherCitizen->id);
+        $failingId = $this->letter->id;
+
+        // Koneksi database "putus" saat surat pertama diklaim.
+        $this->partialMock(LetterRepository::class, function (MockInterface $mock) use ($failingId) {
+            $mock->shouldReceive('findForUpdateOrFail')->andReturnUsing(function (string $id) use ($failingId) {
+                if ($id === $failingId) {
+                    throw new RuntimeException('Koneksi database terputus.');
+                }
+
+                return Letter::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+            });
+        });
+
+        $this->at('2026-11-13 09:00');
+        $this->artisan('letters:send-expiry-reminders')
+            ->expectsOutput('Pengingat masa berlaku surat terkirim: 1.')
+            ->expectsOutput('Gagal diproses: 1 (lihat log).')
+            ->assertFailed();
+
+        Exceptions::assertReported(RuntimeException::class);
+        Notification::assertSentToTimes($otherApplicant, LetterStatusNotification::class, 1);
+        Notification::assertNotSentTo($this->applicant, LetterStatusNotification::class);
+        // Belum ditandai, jadi dicoba lagi di run berikutnya.
+        $this->assertNull($this->letter->fresh()->expiry_notified_days);
+
+        $this->app->forgetInstance(LetterRepository::class);
+        $this->travel(1)->hours();
+        $this->runReminders(expectedSent: 1);
+
+        Notification::assertSentToTimes($this->applicant, LetterStatusNotification::class, 1);
+        Notification::assertSentToTimes($otherApplicant, LetterStatusNotification::class, 1);
     }
 
     public function test_command_is_scheduled_hourly(): void

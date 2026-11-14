@@ -8,11 +8,13 @@ use App\Models\Village;
 use Database\Seeders\LetterExpiryReminderSettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * GET /letter-expiry-reminder-settings dan
- * PATCH /letter-expiry-reminder-settings/{id}.
+ * GET /letter-expiry-reminder-settings,
+ * PATCH /letter-expiry-reminder-settings/{id}, dan
+ * PATCH /letter-expiry-reminder-settings/send-at.
  */
 class LetterExpiryReminderSettingEndpointTest extends TestCase
 {
@@ -59,9 +61,84 @@ class LetterExpiryReminderSettingEndpointTest extends TestCase
             $this->actingAs($user)
                 ->patchJson("/api/letter-expiry-reminder-settings/{$setting->id}", ['is_active' => false])
                 ->assertForbidden();
+
+            $this->actingAs($user)
+                ->patchJson('/api/letter-expiry-reminder-settings/send-at', ['send_at' => '16:00'])
+                ->assertForbidden();
         }
 
         $this->assertTrue($setting->fresh()->is_active);
+        $this->assertSame('09:00', $this->village->fresh()->expiryReminderSendTime());
+    }
+
+    public function test_new_village_defaults_to_nine_oclock_send_time(): void
+    {
+        $this->assertTrue(Schema::hasColumn('villages', 'expiry_reminder_send_at'));
+        $this->assertSame('09:00', Village::factory()->create()->fresh()->expiryReminderSendTime());
+
+        $options = array_map(fn (int $hour) => sprintf('%02d:00', $hour), range(6, 21));
+
+        $this->actingAs($this->staf)
+            ->getJson('/api/letter-expiry-reminder-settings')
+            ->assertOk()
+            ->assertJsonPath('meta.send_at', '09:00')
+            ->assertJsonPath('meta.send_at_options', $options);
+    }
+
+    public function test_patch_send_at_updates_own_village_only(): void
+    {
+        $otherVillage = Village::factory()->create();
+
+        $this->actingAs($this->staf)
+            ->patchJson('/api/letter-expiry-reminder-settings/send-at', ['send_at' => '16:00'])
+            ->assertOk()
+            ->assertJsonPath('data.send_at', '16:00');
+
+        $this->assertSame('16:00', $this->village->fresh()->expiryReminderSendTime());
+        $this->assertSame('09:00', $otherVillage->fresh()->expiryReminderSendTime());
+
+        $this->actingAs($this->staf)
+            ->getJson('/api/letter-expiry-reminder-settings')
+            ->assertJsonPath('meta.send_at', '16:00');
+    }
+
+    public function test_send_at_must_be_a_whole_hour_within_allowed_range(): void
+    {
+        foreach (['16:30', '05:00', '22:00', '6:00', '25:00', 'pagi', '', null] as $invalid) {
+            $this->actingAs($this->staf)
+                ->patchJson('/api/letter-expiry-reminder-settings/send-at', ['send_at' => $invalid])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['send_at']);
+        }
+
+        $this->assertSame('09:00', $this->village->fresh()->expiryReminderSendTime());
+
+        foreach (['06:00', '21:00'] as $edge) {
+            $this->actingAs($this->staf)
+                ->patchJson('/api/letter-expiry-reminder-settings/send-at', ['send_at' => $edge])
+                ->assertOk()
+                ->assertJsonPath('data.send_at', $edge);
+        }
+    }
+
+    public function test_send_at_rejects_other_fields(): void
+    {
+        $this->actingAs($this->staf)
+            ->patchJson('/api/letter-expiry-reminder-settings/send-at', [
+                'send_at' => '16:00',
+                'name' => 'Desa Lain',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+
+        $this->assertSame('09:00', $this->village->fresh()->expiryReminderSendTime());
+    }
+
+    public function test_send_time_is_not_exposed_in_public_village_profile(): void
+    {
+        $this->getJson('/api/public/village-profile')
+            ->assertOk()
+            ->assertJsonMissingPath('data.expiry_reminder_send_at');
     }
 
     public function test_index_lists_five_points_of_own_village_from_farthest(): void

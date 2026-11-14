@@ -17,9 +17,17 @@ class SendLetterExpiryRemindersCommand extends Command
 
     public function handle(LetterExpiryReminderService $reminders): int
     {
-        $sent = $reminders->sendDueReminders();
+        ['sent' => $sent, 'failed' => $failed] = $reminders->sendDueReminders();
 
         $this->info("Pengingat masa berlaku surat terkirim: {$sent}.");
+
+        // Surat yang gagal sudah dicatat ke log dan dicoba lagi di run
+        // berikutnya; status gagal membuatnya terlihat di log scheduler.
+        if ($failed > 0) {
+            $this->error("Gagal diproses: {$failed} (lihat log).");
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }

@@ -4,17 +4,19 @@ namespace App\Services;
 
 use App\Enums\LetterStatus;
 use App\Models\Letter;
+use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
 use App\Repositories\LetterExpiryReminderSettingRepository;
 use App\Repositories\LetterRepository;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Pengingat masa berlaku surat untuk pemohon: titik H-30/H-14/H-7/H-3/H-1
  * yang diaktifkan Staf SIDUTama, dan hari H yang selalu dikirim. Hari H
  * adalah sehari setelah tanggal `expires_at`; setiap titik H-n jatuh tempo
- * pada (H - n hari) pukul `letters.expiry_reminder.send_at`.
+ * pada (H - n hari) pukul `villages.expiry_reminder_send_at` desa surat itu.
  *
  * Satu run mengirim paling banyak satu notifikasi per surat, dari titik
  * sah yang paling dekat ke hari H; titik yang lebih jauh dianggap selesai.
@@ -34,30 +36,40 @@ class LetterExpiryReminderService
     ) {}
 
     /**
-     * @return int jumlah notifikasi yang dikirim
+     * Surat yang gagal diproses (mis. koneksi database putus sesaat) dicatat
+     * ke log lalu dilewati, agar surat berikutnya tetap diproses. Surat yang
+     * gagal belum ditandai, jadi dicoba lagi di run berikutnya.
+     *
+     * @return array{sent: int, failed: int} jumlah notifikasi terkirim dan surat yang gagal diproses
      */
-    public function sendDueReminders(): int
+    public function sendDueReminders(): array
     {
         /** @var array<string, array<int, Carbon|null>> $pointsByVillage */
         $pointsByVillage = [];
         $sent = 0;
+        $failed = 0;
         $now = now();
+        // Surat yang hari H-nya lewat lebih dari masa tenggang tidak perlu
+        // diproses lagi. Tambahan 1 hari menjaga surat yang masih dalam masa
+        // tenggang tetap terambil, berapa pun jam kirimnya.
+        $floor = $now->copy()->subDays($this->graceDays() + 1);
 
-        foreach ($this->letterRepository->lazyExpiringForReminder($now->copy()->addDays(self::LOOKAHEAD_DAYS)) as $letter) {
-            $pointsByVillage[$letter->village_id] ??= $this->settingRepository->activePointsForVillage($letter->village_id);
+        foreach ($this->letterRepository->lazyExpiringForReminder($now->copy()->addDays(self::LOOKAHEAD_DAYS), $floor) as $letter) {
+            try {
+                $pointsByVillage[$letter->village_id] ??= $this->settingRepository->activePointsForVillage($letter->village_id);
 
-            $point = $this->resolvePoint($letter, $pointsByVillage[$letter->village_id], $now);
+                $point = $this->resolvePoint($letter, $pointsByVillage[$letter->village_id], $now);
 
-            if ($point === null) {
-                continue;
-            }
-
-            if ($this->claimAndNotify($letter, $point['days'], $point['notify'])) {
-                $sent++;
+                if ($point !== null && $this->claimAndNotify($letter, $point['days'], $point['notify'])) {
+                    $sent++;
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+                $failed++;
             }
         }
 
-        return $sent;
+        return ['sent' => $sent, 'failed' => $failed];
     }
 
     /**
@@ -70,7 +82,7 @@ class LetterExpiryReminderService
 
         // Hari H yang sudah lama lewat (scheduler mati lama atau data
         // lama): ditandai selesai tanpa mengirim apa pun.
-        if ($now->greaterThan($expiredDueAt->copy()->addDays(config('letters.expiry_reminder.expired_notice_grace_days')))) {
+        if ($now->greaterThan($expiredDueAt->copy()->addDays($this->graceDays()))) {
             return ['days' => self::EXPIRED_POINT, 'notify' => false];
         }
 
@@ -106,10 +118,16 @@ class LetterExpiryReminderService
         return null;
     }
 
-    /** Jatuh tempo titik H-n: tanggal (hari H - n) pukul jam kirim. */
+    private function graceDays(): int
+    {
+        return (int) config('letters.expiry_reminder.expired_notice_grace_days');
+    }
+
+    /** Jatuh tempo titik H-n: tanggal (hari H - n) pada jam kirim desa surat itu. */
     private function dueAt(Letter $letter, int $daysBefore): Carbon
     {
-        [$hour, $minute] = array_map('intval', explode(':', config('letters.expiry_reminder.send_at')));
+        $sendTime = $letter->village?->expiryReminderSendTime() ?? Village::DEFAULT_EXPIRY_REMINDER_SEND_AT;
+        [$hour, $minute] = array_map('intval', explode(':', $sendTime));
 
         return $this->expiryDay($letter)->subDays($daysBefore)->setTime($hour, $minute);
     }

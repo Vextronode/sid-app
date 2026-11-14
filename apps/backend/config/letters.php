@@ -26,16 +26,15 @@ return [
     | Pengingat masa berlaku surat
     |--------------------------------------------------------------------------
     |
-    | send_at: jam kirim (zona waktu aplikasi) untuk setiap titik H-n dan
-    | hari H. expired_notice_grace_days: bila hari H sudah lewat lebih dari
-    | sekian hari (mis. scheduler lama mati), surat ditandai selesai tanpa
-    | mengirim notifikasi. Titik mana yang aktif diatur Staf SIDUTama di
-    | tabel letter_expiry_reminder_settings.
+    | expired_notice_grace_days: bila hari H sudah lewat lebih dari sekian
+    | hari (mis. scheduler lama mati), surat ditandai selesai tanpa mengirim
+    | notifikasi. Titik mana yang aktif (tabel letter_expiry_reminder_settings)
+    | dan jam kirimnya (villages.expiry_reminder_send_at) diatur Staf
+    | SIDUTama di halaman Alur & Jenis Surat, bukan di sini.
     |
     */
 
     'expiry_reminder' => [
-        'send_at' => env('LETTER_EXPIRY_REMINDER_SEND_AT', '09:00'),
         'expired_notice_grace_days' => (int) env('LETTER_EXPIRY_REMINDER_GRACE_DAYS', 3),
     ],
 

@@ -157,12 +157,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Pengingat Masa Berlaku Surat
     |----------------------------------------------------------------------
-    | Nyala/mati titik H-30 s.d. H-1. Eksklusif Staf SIDUTama.
+    | Nyala/mati titik H-30 s.d. H-1 dan jam kirimnya. Eksklusif Staf SIDUTama.
     */
     Route::middleware(UserRole::middleware(UserRole::StafSid))
         ->prefix('letter-expiry-reminder-settings')
         ->group(function () {
             Route::get('/', [LetterExpiryReminderSettingController::class, 'index']);
+            Route::patch('/send-at', [LetterExpiryReminderSettingController::class, 'updateSendTime']);
             Route::patch('/{id}', [LetterExpiryReminderSettingController::class, 'update'])->whereNumber('id');
         });
 
