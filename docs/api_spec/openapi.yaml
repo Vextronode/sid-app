@@ -321,6 +321,8 @@ paths:
     $ref: 'paths/approval-settings/approval-setting-detail.yaml'
   /letter-expiry-reminder-settings:
     $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-settings.yaml'
+  /letter-expiry-reminder-settings/send-at:
+    $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-send-at.yaml'
   /letter-expiry-reminder-settings/{id}:
     $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-setting-detail.yaml'
 

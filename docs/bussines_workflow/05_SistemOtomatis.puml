@@ -68,16 +68,18 @@ belum diproses sampai hari H,
 akun pemohon aktif;
 note right
   Hari H = sehari setelah tanggal expires_at.
-  Titik H-n jatuh tempo (H - n hari) pukul 09.00 WIB.
+  Titik H-n jatuh tempo (H - n hari) pada jam kirim desa
+  (villages.expiry_reminder_send_at, nilai awal 09.00 WIB,
+  diatur Staf SIDUTama).
   Titik H-30..H-1 aktif diatur Staf SIDUTama
   (letter_expiry_reminder_settings); hari H selalu.
 end note
 if (hari H lewat > 3 hari?) then (ya)
   :Isi expiry_notified_days = 0
 tanpa notifikasi;
-elseif (hari H sudah 09.00?) then (ya)
+elseif (hari H sudah jam kirim?) then (ya)
   :Kirim "Surat Sudah Kedaluwarsa";
-elseif (surat sudah terkunci\n(00.00-09.00 hari H)?) then (ya)
+elseif (surat sudah terkunci\n(00.00 s.d. jam kirim hari H)?) then (ya)
   :Tunggu pemberitahuan hari H;
 else (belum)
   :Pilih titik sah terdekat ke hari H:

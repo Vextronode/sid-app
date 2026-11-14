@@ -46,6 +46,7 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | welcome_message | TEXT | NULL | Sambutan Kepala Desa di beranda; NULL = blok tidak tampil |
 | latitude | DECIMAL(10,7) | NULL | Lintang titik kantor desa (link "Buka di peta" Google Maps) |
 | longitude | DECIMAL(10,7) | NULL | Bujur titik kantor desa |
+| expiry_reminder_send_at | TIME | NOT NULL, DEFAULT 09:00:00 | Jam kirim pengingat masa berlaku surat (jam bulat 06:00–21:00), diatur Staf SIDUTama di halaman Alur & Jenis Surat. Bukan data profil publik: tidak ikut `VillageResource` |
 | history | TEXT | NULL | Sejarah desa untuk profil publik |
 | vision | TEXT | NULL | Visi desa |
 | mission | TEXT | NULL | Misi desa |
@@ -576,7 +577,7 @@ Titik pengingat masa berlaku surat untuk pemohon, satu baris per titik per desa.
 
 Constraint: `UNIQUE(village_id, days_before)` (`uq_letter_expiry_reminder_settings_village_days`). Seeder `LetterExpiryReminderSettingSeeder` mengisi kelima titik dalam keadaan aktif; menjalankannya ulang tidak mengubah baris yang sudah ada.
 
-Jam kirim (`send_at`, default 09:00) dan masa tenggang hari H (`expired_notice_grace_days`, default 3) tidak disimpan di tabel ini, tetapi di `config/letters.php` blok `expiry_reminder`.
+Jam kirim tidak disimpan di tabel ini, tetapi di `villages.expiry_reminder_send_at` (satu nilai per desa, default 09:00). Masa tenggang hari H (`expired_notice_grace_days`, default 3) ada di `config/letters.php` blok `expiry_reminder`.
 
 ### 2.5. Organisasi Non-Struktural, Notifikasi, Konten Publik
 

@@ -43,6 +43,7 @@ entity "villages" as VIL {
   office_hours : VARCHAR(100)
   welcome_message : TEXT
   latitude / longitude : DECIMAL(10,7)
+  * expiry_reminder_send_at : TIME (default 09:00)
   history / vision / mission : TEXT
   district / regency / province : VARCHAR(100)
   postal_code : VARCHAR(10)
