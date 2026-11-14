@@ -8,13 +8,19 @@ const { notifySuccess, notifyError } = vi.hoisted(() => ({
 }))
 vi.mock('@/shared/lib/toast', () => ({ notifySuccess, notifyError }))
 
-const { getLetterExpiryReminderSettings, updateLetterExpiryReminderSetting } = vi.hoisted(() => ({
+const {
+  getLetterExpiryReminderSettings,
+  updateLetterExpiryReminderSetting,
+  updateLetterExpiryReminderSendTime,
+} = vi.hoisted(() => ({
   getLetterExpiryReminderSettings: vi.fn(),
   updateLetterExpiryReminderSetting: vi.fn(),
+  updateLetterExpiryReminderSendTime: vi.fn(),
 }))
 vi.mock('../api/letterExpiryReminderSettingApi', () => ({
   getLetterExpiryReminderSettings,
   updateLetterExpiryReminderSetting,
+  updateLetterExpiryReminderSendTime,
 }))
 
 import ExpiryReminderSettingsPanel from './ExpiryReminderSettingsPanel'
@@ -27,10 +33,81 @@ const SETTINGS = [
   { id: 4, days_before: 3, is_active: false, activated_at: '2026-11-01T10:00:00+07:00' },
 ]
 
+const SEND_AT_OPTIONS = ['06:00', '07:00', '08:00', '09:00', '16:00', '21:00']
+
 describe('ExpiryReminderSettingsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getLetterExpiryReminderSettings.mockResolvedValue(SETTINGS)
+    getLetterExpiryReminderSettings.mockResolvedValue({
+      points: SETTINGS,
+      sendAt: '09:00',
+      sendAtOptions: SEND_AT_OPTIONS,
+    })
+  })
+
+  it('shows the send time and options from the API', async () => {
+    render(<ExpiryReminderSettingsPanel />)
+
+    const select = await screen.findByRole('combobox', { name: 'Jam kirim' })
+    expect(select).toHaveValue('09:00')
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['06.00 WIB', '07.00 WIB', '08.00 WIB', '09.00 WIB', '16.00 WIB', '21.00 WIB'])
+    // Jam tidak lagi ditulis langsung di keterangan kartu.
+    expect(screen.queryByText(/Dikirim pukul/)).not.toBeInTheDocument()
+  })
+
+  it('saves the send time immediately when another hour is chosen', async () => {
+    const user = userEvent.setup()
+    updateLetterExpiryReminderSendTime.mockResolvedValue('16:00')
+    render(<ExpiryReminderSettingsPanel />)
+
+    const select = await screen.findByRole('combobox', { name: 'Jam kirim' })
+    await user.selectOptions(select, '16:00')
+
+    expect(updateLetterExpiryReminderSendTime).toHaveBeenCalledWith('16:00')
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith('Jam kirim pengingat diubah ke 16.00 WIB.'),
+    )
+    expect(select).toHaveValue('16:00')
+    expect(notifyError).not.toHaveBeenCalled()
+  })
+
+  it('reverts the send time and shows an error toast when saving fails', async () => {
+    const user = userEvent.setup()
+    let rejectRequest: (reason: unknown) => void = () => {}
+    updateLetterExpiryReminderSendTime.mockReturnValue(
+      new Promise((_, reject) => {
+        rejectRequest = reject
+      }),
+    )
+    render(<ExpiryReminderSettingsPanel />)
+
+    const select = await screen.findByRole('combobox', { name: 'Jam kirim' })
+    await user.selectOptions(select, '16:00')
+
+    expect(select).toHaveValue('16:00')
+    expect(select).toBeDisabled()
+
+    rejectRequest(new Error('Network Error'))
+
+    await waitFor(() => expect(select).toHaveValue('09:00'))
+    expect(select).toBeEnabled()
+    expect(notifyError).toHaveBeenCalledTimes(1)
+    expect(notifySuccess).not.toHaveBeenCalled()
+  })
+
+  it('keeps showing a stored send time that is outside the options', async () => {
+    getLetterExpiryReminderSettings.mockResolvedValue({
+      points: SETTINGS,
+      sendAt: '23:00',
+      sendAtOptions: SEND_AT_OPTIONS,
+    })
+    render(<ExpiryReminderSettingsPanel />)
+
+    expect(await screen.findByRole('combobox', { name: 'Jam kirim' })).toHaveValue('23:00')
   })
 
   it('shows the five points from the API, farthest first, plus a locked day-H row', async () => {
@@ -106,6 +183,7 @@ describe('ExpiryReminderSettingsPanel', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.queryByText('Hari H')).not.toBeInTheDocument()
   })
 })
