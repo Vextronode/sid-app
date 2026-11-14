@@ -128,10 +128,15 @@ export function UsahaSayaCard() {
               </p>
 
               {business.cimart_status === 'rejected' && (
-                <p className="sid-upload-description">
-                  Alasan penolakan: {business.cimart_note ?? '-'}. Bila penolakan karena kesalahan
-                  data usaha, perbaiki dengan mengajukan SKU baru.
-                </p>
+                <>
+                  {/* Alasan dari Cimart ditampilkan apa adanya, termasuk tanda bacanya. */}
+                  <p className="sid-upload-description">
+                    Alasan penolakan: {business.cimart_note ?? '-'}
+                  </p>
+                  <p className="sid-upload-description">
+                    Bila penolakan karena kesalahan data usaha, perbaiki dengan mengajukan SKU baru.
+                  </p>
+                </>
               )}
               {business.cimart_status === 'accepted' && (
                 <p className="sid-upload-description">

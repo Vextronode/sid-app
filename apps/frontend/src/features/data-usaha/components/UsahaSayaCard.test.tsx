@@ -74,10 +74,11 @@ describe('UsahaSayaCard', () => {
       business({
         cimart_status: 'rejected',
         cimart_status_label: 'Ditolak',
-        cimart_note: 'Foto tidak sesuai',
+        // Alasan dari Cimart sudah diakhiri titik: tidak boleh jadi titik ganda.
+        cimart_note: 'Foto tidak sesuai.',
       }),
       'Daftar ulang',
-      /Alasan penolakan: Foto tidak sesuai.*SKU baru/,
+      'Alasan penolakan: Foto tidak sesuai.',
     ],
     [
       'cancelled',
@@ -96,7 +97,14 @@ describe('UsahaSayaCard', () => {
       'href',
       '/surat-saya/daftar?surat=l-1',
     )
-    if (note) expect(screen.getByText(note)).toBeInTheDocument()
+    if (note) {
+      expect(screen.getByText(note)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'Bila penolakan karena kesalahan data usaha, perbaiki dengan mengajukan SKU baru.',
+        ),
+      ).toBeInTheDocument()
+    }
   })
 
   it('offers only cancellation while pending', async () => {
