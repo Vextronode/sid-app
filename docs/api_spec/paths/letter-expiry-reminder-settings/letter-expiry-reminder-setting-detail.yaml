@@ -1,0 +1,57 @@
+patch:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Nyalakan atau matikan satu titik pengingat masa berlaku surat
+  description: |
+    Aktor: Staf SIDUTama.
+    Hanya `is_active` yang dapat diubah; field lain ditolak (422). Titik
+    milik desa lain menghasilkan 404.
+    Saat titik berubah dari nonaktif ke aktif, `activated_at` diisi waktu
+    sekarang: jatuh tempo sebelum waktu itu tidak dikirim, sehingga
+    menyalakan titik tidak memicu pengingat serentak ke banyak warga.
+    Menyalakan titik yang sudah aktif tidak mengubah `activated_at`.
+    Perubahan dibaca saat command `letters:send-expiry-reminders` berjalan:
+    mematikan titik langsung berlaku untuk surat yang belum melewatinya.
+  operationId: updateLetterExpiryReminderSetting
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 4
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/letter-expiry-reminder-settings/letter-expiry-reminder-settings.yaml#/LetterExpiryReminderSettingUpdateRequest'
+  responses:
+    '200':
+      description: Titik pengingat berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/letter-expiry-reminder-settings/letter-expiry-reminder-settings.yaml#/LetterExpiryReminderSetting'
+          example:
+            data: { id: 4, days_before: 3, is_active: true, activated_at: "2026-11-12T09:30:00+07:00" }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: is_active kosong/bukan boolean, atau ada field selain is_active
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "Field ini tidak dapat diubah."
+            errors:
+              days_before: ["Field ini tidak dapat diubah."]

@@ -34,6 +34,7 @@ import {
   PanelLeftOpen,
   RotateCcw,
   Settings,
+  Store,
   UserCircle,
   Workflow,
 } from 'lucide-react'
@@ -46,9 +47,9 @@ import { BerandaBrand } from '@/features/beranda/components/BerandaBrand'
 import NotificationPopover from '@/features/notifikasi/components/NotificationPopover'
 import useNotifications from '@/features/notifikasi/hooks/useNotifications'
 import {
+  canOpenOperatorRoute,
   getOperatorAllowedRoles,
   OPERATOR_ROUTE_CAPABILITIES,
-  ROLE_NAVIGATION,
 } from '@/features/operator-desa/constants/roleNavigation'
 import { UserAvatar } from '@/components/ui/UserAvatar'
 import { STAF_APP_LABEL } from '@/lib/constants/app'
@@ -160,6 +161,12 @@ const MENU_ITEMS = [
     allowedRoles: getOperatorAllowedRoles('/admin/data-warga'),
     icon: Users,
   },
+  {
+    label: 'Data Usaha Warga',
+    route: '/admin/data-usaha',
+    allowedRoles: getOperatorAllowedRoles('/admin/data-usaha'),
+    icon: Store,
+  },
   ...areaItems('Manajemen Akun', '/manajemen-akun', UserCog),
   {
     label: 'Kelola Wilayah',
@@ -257,7 +264,6 @@ const MENU_ITEMS = [
 export function OperatorDesaLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const { user } = useAuth()
-  const visibleRoutes = (user ? ROLE_NAVIGATION[user.role] : undefined) ?? []
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -298,7 +304,7 @@ export function OperatorDesaLayout({ children }: { children: ReactNode }) {
           {/* MENU */}
 
           <nav className="sid-operator-sidebar-nav">
-            {MENU_ITEMS.filter((item) => visibleRoutes.includes(item.route)).map((item) => {
+            {MENU_ITEMS.filter((item) => canOpenOperatorRoute(user, item.route)).map((item) => {
               const isActive = location.pathname === item.route
 
               const Icon = item.icon

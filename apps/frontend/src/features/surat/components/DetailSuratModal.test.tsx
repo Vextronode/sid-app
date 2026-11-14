@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { getLetterDetail, downloadSuratPDF } = vi.hoisted(() => ({
@@ -7,7 +8,10 @@ const { getLetterDetail, downloadSuratPDF } = vi.hoisted(() => ({
   downloadSuratPDF: vi.fn(),
 }))
 
+const { getLetterTypes } = vi.hoisted(() => ({ getLetterTypes: vi.fn() }))
+
 vi.mock('../api/letterExtrasApi', () => ({ getLetterDetail }))
+vi.mock('../api/letterTypeApi', () => ({ getLetterTypes }))
 vi.mock('./LetterExtrasPanel', () => ({ LetterExtrasPanel: (): null => null }))
 vi.mock('@/features/cetak-surat/utils/generateSuratPDF', () => ({ downloadSuratPDF }))
 vi.mock('@/features/cetak-surat/components/PdfCanvasPreview', () => ({
@@ -22,12 +26,19 @@ import { partialFixture } from '@/test/fixtures'
 import type { DeepPartial } from '@/test/fixtures'
 
 // Baris daftar; approvals ikut bila detail surat sudah digabung.
-function renderModal(data: DeepPartial<LetterListItem & Pick<Letter, 'approvals'>>) {
+function renderModal(
+  data: DeepPartial<LetterListItem & Pick<Letter, 'approvals'>>,
+  onReapply?: (code: string) => void,
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
     <QueryClientProvider client={client}>
-      <DetailSuratModal data={partialFixture<LetterListItem>(data)} onClose={vi.fn()} />
+      <DetailSuratModal
+        data={partialFixture<LetterListItem>(data)}
+        onClose={vi.fn()}
+        onReapply={onReapply}
+      />
     </QueryClientProvider>,
   )
 }
@@ -37,13 +48,14 @@ const approvedLetter = {
   status: 'approved' as const,
   letter_number: '470/001',
   current_step_order: 3,
-  letter_type: { name: 'Surat Keterangan Domisili' },
+  letter_type: { name: 'Surat Keterangan Domisili', code: 'SKD' },
 }
 
 describe('DetailSuratModal (pemohon)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getLetterDetail.mockImplementation(() => new Promise(() => {}))
+    getLetterTypes.mockResolvedValue([{ id: 1, code: 'SKD', name: 'Surat Keterangan Domisili' }])
   })
 
   it('keeps the download disabled and hides the preview for an expired letter', () => {
@@ -93,5 +105,42 @@ describe('DetailSuratModal (pemohon)', () => {
     expect(screen.getByRole('heading', { name: 'Progres' })).toBeInTheDocument()
     expect(screen.queryByText(/Rudi Nugraha/)).toBeNull()
     expect(screen.queryByRole('button', { name: /Unduh surat/ })).toBeNull()
+  })
+
+  it('offers "Ajukan lagi" for an expired letter whose type can still be applied for', async () => {
+    const user = userEvent.setup()
+    const onReapply = vi.fn()
+    renderModal(
+      { ...approvedLetter, expires_at: '2026-01-10T00:00:00Z', is_expired: true },
+      onReapply,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Ajukan lagi' }))
+
+    expect(onReapply).toHaveBeenCalledWith('SKD')
+    expect(getLetterTypes).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides "Ajukan lagi" when the letter type is no longer available', async () => {
+    getLetterTypes.mockResolvedValue([{ id: 2, code: 'SKU', name: 'Surat Keterangan Usaha' }])
+    renderModal(
+      { ...approvedLetter, expires_at: '2026-01-10T00:00:00Z', is_expired: true },
+      vi.fn(),
+    )
+
+    await waitFor(() => expect(getLetterTypes).toHaveBeenCalled())
+    // Tunggu daftar jenis surat selesai dimuat sebelum memastikan tombol tidak ada.
+    await act(() => getLetterTypes.mock.results[0].value)
+    expect(screen.queryByRole('button', { name: 'Ajukan lagi' })).toBeNull()
+  })
+
+  it('does not load letter types or offer "Ajukan lagi" for a valid letter', () => {
+    renderModal(
+      { ...approvedLetter, expires_at: '2099-01-10T00:00:00Z', is_expired: false },
+      vi.fn(),
+    )
+
+    expect(screen.queryByRole('button', { name: 'Ajukan lagi' })).toBeNull()
+    expect(getLetterTypes).not.toHaveBeenCalled()
   })
 })

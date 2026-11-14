@@ -3,7 +3,7 @@
 // bisa dipanggil dari mana saja dan tetap tampil walau halaman berpindah
 // (mis. setelah mengajukan surat). <ToastHost /> di main.tsx yang merender.
 
-export type ToastTone = 'success' | 'info'
+export type ToastTone = 'success' | 'info' | 'error'
 
 export type Toast = {
   id: number
@@ -63,4 +63,11 @@ export function notifySuccess(
   options: Omit<NotifyOptions, 'message' | 'tone'> = {},
 ) {
   return notify({ ...options, message, tone: 'success' })
+}
+
+export function notifyError(
+  message: string,
+  options: Omit<NotifyOptions, 'message' | 'tone'> = {},
+) {
+  return notify({ duration: 5000, ...options, message, tone: 'error' })
 }

@@ -491,7 +491,7 @@ class SeededLetterRenderingTest extends TestCase
             ->post('/api/letters', [
                 'letter_type_id' => $this->letterType('A01')->id,
                 'purpose' => 'Pengajuan pinjaman',
-                'payload' => ['jenis_usaha' => 'Warung'],
+                'payload' => $this->businessPayload(),
                 ...$files,
             ], ['Accept' => 'application/json']);
 
@@ -511,11 +511,84 @@ class SeededLetterRenderingTest extends TestCase
             ->getJson("/api/letters/{$letterId}")
             ->assertOk()
             ->assertJsonCount(1, 'data.attachments')
-            ->assertJsonPath('data.attachments.0.field', 'foto_usaha')
-            ->assertJsonPath('data.letter_type.form_fields.1.label', 'Foto Usaha Terkini');
+            ->assertJsonPath('data.attachments.0.field', 'foto_usaha');
+        $this->assertSame(
+            'Foto Usaha Terkini',
+            collect($detail->json('data.letter_type.form_fields'))->firstWhere('name', 'foto_usaha')['label'],
+        );
         $this->actingAs($this->rtApprover['user'])
             ->get($detail->json('data.attachments.0.url'))
             ->assertOk();
+    }
+
+    public function test_business_letter_prints_the_activity_but_not_the_business_data(): void
+    {
+        Storage::fake('private_uploads');
+
+        $html = $this->issue('A01', $this->businessPayload(), files: [
+            'foto_usaha' => UploadedFile::fake()->image('usaha.jpg'),
+        ]);
+
+        $this->assertStringContainsString('mempunyai kegiatan usaha &ldquo;Warung kopi&rdquo;', $html);
+        $this->assertStringNotContainsString('________', $html);
+
+        // Data usaha dan pilihan Cimart hanya dicatat, tidak tercetak.
+        foreach (['Warung Kopi Joni', 'Toko Kuliner', 'Jl. Raya Cibenda No. 12', 'warkopjoni@example.com', '081234567890', 'Cimart'] as $unprinted) {
+            $this->assertStringNotContainsString($unprinted, $html);
+        }
+    }
+
+    public function test_business_letter_validates_business_contacts_and_the_cimart_choice(): void
+    {
+        Storage::fake('private_uploads');
+        $submit = fn (array $payload) => $this->actingAs($this->applicant['user'])
+            ->post('/api/letters', [
+                'letter_type_id' => $this->letterType('A01')->id,
+                'payload' => $payload,
+                'files' => ['foto_usaha' => UploadedFile::fake()->image('usaha.jpg')],
+            ], ['Accept' => 'application/json']);
+
+        // Semua isian data usaha wajib, termasuk pilihan Cimart (tanpa nilai bawaan).
+        $submit(['kegiatan_usaha' => 'Warung kopi'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'payload.nama_usaha',
+                'payload.kategori_usaha',
+                'payload.alamat_usaha',
+                'payload.email_usaha',
+                'payload.telepon_usaha',
+                'payload.daftar_cimart',
+            ]);
+
+        $submit($this->businessPayload([
+            'kategori_usaha' => 'grosir',
+            'email_usaha' => 'bukan-email',
+            'telepon_usaha' => '0221234567',
+            'daftar_cimart' => 'mungkin',
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'payload.kategori_usaha',
+                'payload.email_usaha',
+                'payload.telepon_usaha',
+                'payload.daftar_cimart',
+            ]);
+
+        foreach (['0812', '+6281234567890123', '81234567890', '08-1234-5678'] as $phone) {
+            $submit($this->businessPayload(['telepon_usaha' => $phone]))
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['payload.telepon_usaha']);
+        }
+
+        $this->assertDatabaseCount('letters', 0);
+
+        // Nomor HP 08..., 628..., +628...; pilihan Cimart boleh "tidak".
+        foreach (['081234567890', '6281234567890', '+6281234567890'] as $phone) {
+            $submit($this->businessPayload(['telepon_usaha' => $phone, 'daftar_cimart' => 'tidak']))
+                ->assertCreated();
+        }
+
+        $this->assertDatabaseCount('letters', 3);
     }
 
     public function test_forms_follow_the_physical_templates_without_a_general_purpose_field(): void
@@ -728,18 +801,42 @@ class SeededLetterRenderingTest extends TestCase
     }
 
     /**
+     * Isian SKU (A01) yang lengkap dan valid.
+     *
+     * @param  array<string, string>  $overrides
+     * @return array<string, string>
+     */
+    private function businessPayload(array $overrides = []): array
+    {
+        return [
+            'kegiatan_usaha' => 'Warung kopi',
+            'nama_usaha' => 'Warung Kopi Joni',
+            'kategori_usaha' => 'kuliner',
+            'alamat_usaha' => 'Jl. Raya Cibenda No. 12, RT 01/RW 02',
+            'email_usaha' => 'warkopjoni@example.com',
+            'telepon_usaha' => '081234567890',
+            'daftar_cimart' => 'ya',
+            ...$overrides,
+        ];
+    }
+
+    /**
      * Mengajukan surat, menyetujuinya sampai final, lalu mengembalikan
      * HTML yang dikirim ke PDF.
+     *
+     * @param  array<string, UploadedFile>  $files  berkas isian (mis. foto usaha A01)
      */
-    private function issue(string $code, array $payload, ?string &$letterId = null): string
+    private function issue(string $code, array $payload, ?string &$letterId = null, array $files = []): string
     {
-        $letterId = $this->actingAs($this->applicant['user'])
-            ->postJson('/api/letters', [
-                'letter_type_id' => $this->letterType($code)->id,
-                ...($payload === [] ? [] : ['payload' => $payload]),
-            ])
-            ->assertCreated()
-            ->json('data.id');
+        $data = [
+            'letter_type_id' => $this->letterType($code)->id,
+            ...($payload === [] ? [] : ['payload' => $payload]),
+        ];
+        // Berkas hanya bisa lewat multipart; selain itu tetap JSON.
+        $response = $files === []
+            ? $this->actingAs($this->applicant['user'])->postJson('/api/letters', $data)
+            : $this->actingAs($this->applicant['user'])->post('/api/letters', [...$data, 'files' => $files], ['Accept' => 'application/json']);
+        $letterId = $response->assertCreated()->json('data.id');
 
         $this->actingAs($this->rtApprover['user'])
             ->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])

@@ -8,6 +8,7 @@ use App\Models\LetterType;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends Factory<Letter>
@@ -64,6 +65,23 @@ class LetterFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'approved',
+        ]);
+    }
+
+    /**
+     * Helper state: surat terbit yang berlaku sampai akhir hari $lastValidDay
+     * (seperti hasil persetujuan final). processed_at default 90 hari
+     * sebelumnya agar semua titik pengingat jatuh setelah persetujuan.
+     */
+    public function approvedExpiringOn(\DateTimeInterface $lastValidDay, ?\DateTimeInterface $processedAt = null): static
+    {
+        $expiresAt = Carbon::instance($lastValidDay)->setTimezone(config('app.timezone'))->endOfDay();
+
+        return $this->state(fn (array $attributes) => [
+            'status' => 'approved',
+            'expires_at' => $expiresAt,
+            'processed_at' => $processedAt ?? $expiresAt->copy()->subDays(90)->setTime(10, 0),
+            'expiry_notified_days' => null,
         ]);
     }
 

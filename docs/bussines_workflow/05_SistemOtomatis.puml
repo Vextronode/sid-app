@@ -1,5 +1,5 @@
 @startuml
-title SID - Proses Otomatis Sistem (aktif di source 2026-10-18)
+title SID - Proses Otomatis Sistem (aktif di source 2026-11-12)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -33,7 +33,7 @@ fork again
   :Saat RT ditetapkan → notifikasi RT baru;
 fork again
   :Final approve;
-  :Nomor surat, expires_at, snapshot render;
+  :Nomor surat, expires_at (akhir hari WIB),\nsnapshot render;
 fork again
   :Data publik berubah (desa, berita, kategori,\nperaturan, jenis surat, pejabat, dusun,\njenis jabatan, pengumuman, halaman informasi);
   :Gugurkan cache halaman publik desa;
@@ -58,6 +58,45 @@ note right
   Sekali per tahap per surat.
   Tahap tanpa pejabat aktif tetap
   ditandai agar tidak dicoba ulang.
+end note
+
+|#LightBlue|Scheduler (tiap jam)|
+:letters:send-expiry-reminders;
+:Ambil surat approved dengan expires_at,
+hari H paling jauh ~30 hari lagi,
+belum diproses sampai hari H,
+akun pemohon aktif;
+note right
+  Hari H = sehari setelah tanggal expires_at.
+  Titik H-n jatuh tempo (H - n hari) pada jam kirim desa
+  (villages.expiry_reminder_send_at, nilai awal 09.00 WIB,
+  diatur Staf SIDUTama).
+  Titik H-30..H-1 aktif diatur Staf SIDUTama
+  (letter_expiry_reminder_settings); hari H selalu.
+end note
+if (hari H lewat > 3 hari?) then (ya)
+  :Isi expiry_notified_days = 0
+tanpa notifikasi;
+elseif (hari H sudah jam kirim?) then (ya)
+  :Kirim "Surat Sudah Kedaluwarsa";
+elseif (surat sudah terkunci\n(00.00 s.d. jam kirim hari H)?) then (ya)
+  :Tunggu pemberitahuan hari H;
+else (belum)
+  :Pilih titik sah terdekat ke hari H:
+aktif, jatuh tempo, belum diproses,
+setelah processed_at & activated_at;
+  if (ada?) then (ya)
+    :Kirim "Surat Akan Kedaluwarsa"
+dengan sisa hari sebenarnya;
+  else (tidak)
+  endif
+endif
+note right
+  Klaim dengan row lock: cek ulang
+  expiry_notified_days, isi tanpa
+  menyentuh updated_at. Satu notifikasi
+  per surat per run; titik yang lebih jauh
+  dianggap selesai (mengejar ketertinggalan).
 end note
 
 |#LightYellow|Scheduler (tiap menit)|

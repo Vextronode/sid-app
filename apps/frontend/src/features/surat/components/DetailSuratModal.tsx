@@ -24,6 +24,7 @@ import { DossierFacts, DossierQuote, DossierSection } from './dossier/DossierPar
 import { formatDossierDateTime } from './dossier/dossierFormat'
 import { FlowTimeline } from './dossier/FlowTimeline'
 import { getLetterDetail } from '../api/letterExtrasApi'
+import { useLetterReapply } from '../hooks/useLetterReapply'
 import { getApplicantAddress, getApplicantNik } from '../utils/letterDetails'
 import {
   FORM_DOWNLOAD_HINT,
@@ -87,17 +88,27 @@ function DocumentArea({ surat, state }: { surat: PrintableLetter; state: LetterS
 type DetailSuratModalProps = {
   data: LetterListItem | null
   onClose: () => void
+  // Tujuan "Ajukan lagi" pada surat kedaluwarsa, menerima kode jenis surat.
+  onReapply?: (letterTypeCode: string) => void
 }
 
-export function DetailSuratModal({ data, onClose }: DetailSuratModalProps) {
+export function DetailSuratModal({ data, onClose, onReapply }: DetailSuratModalProps) {
   if (!data) {
     return null
   }
 
-  return <DetailSuratModalContent row={data} onClose={onClose} />
+  return <DetailSuratModalContent row={data} onClose={onClose} onReapply={onReapply} />
 }
 
-function DetailSuratModalContent({ row, onClose }: { row: LetterListItem; onClose: () => void }) {
+function DetailSuratModalContent({
+  row,
+  onClose,
+  onReapply,
+}: {
+  row: LetterListItem
+  onClose: () => void
+  onReapply?: (letterTypeCode: string) => void
+}) {
   // Baris daftar hanya memuat kolom ringkas; NIK, alamat, dan keperluan
   // dilengkapi dari detail surat begitu tersedia.
   const { data: detail } = useQuery({
@@ -108,6 +119,7 @@ function DetailSuratModalContent({ row, onClose }: { row: LetterListItem; onClos
   const surat = detail ? { ...row, ...detail } : row
   const state = getLetterState(surat)
   const isApproved = surat.status === SURAT_STATUS.APPROVED
+  const reapply = useLetterReapply(surat, onReapply)
 
   return (
     <LetterDossierModal
@@ -140,7 +152,7 @@ function DetailSuratModalContent({ row, onClose }: { row: LetterListItem; onClos
 
       {isApproved && surat.expires_at && (
         <DossierSection title="Masa berlaku">
-          <LetterValidityNote surat={surat} />
+          <LetterValidityNote surat={surat} onReapply={reapply} />
         </DossierSection>
       )}
 

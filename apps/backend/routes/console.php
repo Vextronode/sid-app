@@ -24,6 +24,13 @@ Schedule::command('approvals:send-reminders')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Pengingat masa berlaku surat ke pemohon (H-30 s.d. H-1 dan hari H).
+// Jam kirim di config letters.expiry_reminder.send_at; run tiap jam
+// mengejar ketertinggalan bila scheduler sempat mati.
+Schedule::command('letters:send-expiry-reminders')
+    ->hourly()
+    ->withoutOverlapping();
+
 // Pengumuman beranda yang lewat waktu tayang dihapus (cache beranda ikut
 // segar lewat event deleted).
 Schedule::command('announcements:prune')

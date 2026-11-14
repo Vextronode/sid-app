@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\ApprovalSettingController;
+use App\Http\Controllers\Api\CitizenBusinessController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
+use App\Http\Controllers\Api\LetterExpiryReminderSettingController;
 use App\Http\Controllers\Api\LetterFulfillmentController;
 use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
@@ -112,6 +114,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/profile/photo-request', [ProfilePhotoRequestController::class, 'showOwn']);
     Route::post('/profile/photo-request', [ProfilePhotoRequestController::class, 'storeOwn']);
     Route::delete('/profile/photo', [UserPhotoController::class, 'destroyOwn']);
+    // Usaha Saya: usaha dari SKU warga sendiri dan pendaftaran Cimart-nya;
+    // pemilik dicek CitizenBusinessPolicy.
+    Route::get('/profile/businesses', [CitizenBusinessController::class, 'ownIndex']);
+    Route::post('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'requestCimart']);
+    Route::delete('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'cancelCimart']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
     // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
@@ -151,6 +158,32 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/', [ApprovalSettingController::class, 'index']);
             Route::patch('/{id}', [ApprovalSettingController::class, 'update']);
         });
+
+    /*
+    |----------------------------------------------------------------------
+    | Pengingat Masa Berlaku Surat
+    |----------------------------------------------------------------------
+    | Nyala/mati titik H-30 s.d. H-1 dan jam kirimnya. Eksklusif Staf SIDUTama.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('letter-expiry-reminder-settings')
+        ->group(function () {
+            Route::get('/', [LetterExpiryReminderSettingController::class, 'index']);
+            Route::patch('/send-at', [LetterExpiryReminderSettingController::class, 'updateSendTime']);
+            Route::patch('/{id}', [LetterExpiryReminderSettingController::class, 'update'])->whereNumber('id');
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Data Usaha Warga
+    |----------------------------------------------------------------------
+    | Baca saja. Staf SIDUTama dan petugas SKU (assigned_role milik A01);
+    | role petugas dinamis, jadi dicek CitizenBusinessPolicy, bukan `role:`.
+    */
+    Route::prefix('citizen-businesses')->group(function () {
+        Route::get('/', [CitizenBusinessController::class, 'index']);
+        Route::get('/{citizenBusiness}', [CitizenBusinessController::class, 'show']);
+    });
 
     /*
     |----------------------------------------------------------------------

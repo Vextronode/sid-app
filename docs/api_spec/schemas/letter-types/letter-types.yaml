@@ -169,8 +169,11 @@ LetterFormField:
       example: "Nama Usaha"
     type:
       type: string
-      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member, family_roster]
+      enum: [text, textarea, date, time, number, nik, select, file, occupation, repeater, family_members, village_area, family_member, family_roster, email, phone]
       description: |
+        `email` = alamat email (maks. 255 karakter). `phone` = nomor HP
+        Indonesia: `08...`, `628...`, atau `+628...`
+        (`^(\+62|62|0)8[0-9]{8,11}$`). Keduanya dicetak apa adanya seperti `text`.
         `family_roster` = tidak diisi pemohon; saat pengajuan sistem mencatat
         susunan KK tanpa anggota di isian `exclude`, dengan anggota di isian
         `head` sebagai kepala keluarga: `<nama>_<n>_<kolom>` (n = 1..10) dan

@@ -1,0 +1,101 @@
+CitizenBusiness:
+  type: object
+  description: |
+    Data usaha warga dari Surat Keterangan Usaha (A01) yang terbit, beserta
+    status pendaftaran pedagang Cimart. Dicatat otomatis saat SKU final
+    approve; tidak bisa diubah atau dihapus lewat API (perubahan data lewat
+    SKU baru).
+  properties:
+    id:
+      type: string
+      format: uuid
+    business_name:
+      type: string
+      example: "Warung Kopi Joni"
+    business_activity:
+      type: string
+      example: "Warung kopi"
+    category:
+      type: string
+      enum: [kelontong, kuliner, non_kuliner]
+    category_label:
+      type: string
+      enum: [Toko Kelontong, Toko Kuliner, Toko Non Kuliner]
+    address:
+      type: string
+    email:
+      type: string
+      description: Email usaha (terenkripsi di database), terpisah dari email akun.
+    phone:
+      type: string
+      description: Nomor HP usaha, dinormalisasi ke format 08...
+      example: "081234567890"
+    citizen:
+      type: object
+      nullable: true
+      description: Pemilik usaha. Hanya di Data Usaha Warga (bukan Usaha Saya).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    letter:
+      type: object
+      nullable: true
+      description: SKU sumber data usaha.
+      properties:
+        id:
+          type: string
+          format: uuid
+        letter_number:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    letter_status:
+      type: string
+      enum: [berlaku, kedaluwarsa]
+      description: Dari `letters.expires_at`; tanpa tanggal = berlaku.
+    cimart_status:
+      type: string
+      nullable: true
+      enum: [pending, accepted, rejected, cancelled, null]
+      description: NULL = belum pernah didaftarkan ke Cimart.
+    cimart_status_label:
+      type: string
+      enum:
+        - Belum mendaftar
+        - Menunggu diproses Cimart
+        - Akun pedagang sudah dibuat
+        - Ditolak
+        - Pendaftaran dibatalkan
+    cimart_note:
+      type: string
+      nullable: true
+      description: Alasan penolakan dari Cimart.
+    cimart_requested_at:
+      type: string
+      format: date-time
+      nullable: true
+    cimart_decided_at:
+      type: string
+      format: date-time
+      nullable: true
+    cimart_cancelled_at:
+      type: string
+      format: date-time
+      nullable: true
+    can_request_cimart:
+      type: boolean
+      description: |
+        Hanya untuk pemilik usaha. True bila SKU berlaku dan status Cimart
+        belum mendaftar, ditolak, atau dibatalkan.
+    can_cancel_cimart:
+      type: boolean
+      description: Hanya untuk pemilik usaha. True bila status Cimart `pending`.
+    created_at:
+      type: string
+      format: date-time

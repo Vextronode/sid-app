@@ -6,6 +6,7 @@
 ' CATATAN: Menggantikan 04_UC_PetugasDesa_KontenKonfigurasi_v5.puml. Tambah: kop
 '          surat, logo, foto beranda, kategori berita, lihat flow (read-only).
 '          Revisi 2026-10-31: upload stempel dihapus (stempel basah).
+'          Revisi 2026-11-12: atur titik pengingat masa berlaku surat.
 '==================================================================================
 @startuml UC_PetugasDesa_Konten_v6
 left to right direction
@@ -47,6 +48,7 @@ rectangle "SIDUTama" {
   rectangle "UC-21: Konfigurasi Jenis Surat" #FDF2F8 {
     usecase "Ubah masa berlaku,\npenugasan Kasi/Kaur,\nstatus aktif" as UC_LT
     usecase "Lihat Flow Approval\n(read-only)" as UC_FLOW
+    usecase "Nyalakan / matikan titik\npengingat masa berlaku\n(H-30, H-14, H-7, H-3, H-1)" as UC_EXP
   }
 }
 
@@ -60,12 +62,19 @@ PD -- UC_ANN
 PD -- UC_INFO
 PD -- UC_LT
 PD -- UC_FLOW
+PD -- UC_EXP
 UC_NEWS ..> UC_NEWSCAT : <<include>>
 
 note bottom of UC_LT
   Template, isian form, aksi data,
   flow, dan kode klasifikasi diset developer
   lewat seeder (tidak ada endpoint).
+end note
+note bottom of UC_EXP
+  Kartu di halaman Alur & Jenis Surat; berlaku
+  untuk semua jenis surat, tersimpan langsung.
+  Hari H selalu dikirim. Pengingat dikirim ke
+  pemohon oleh letters:send-expiry-reminders.
 end note
 note bottom of UC_ANN
   Satu pengumuman per desa. Lewat expires_at

@@ -1,0 +1,30 @@
+LetterExpiryReminderSetting:
+  type: object
+  description: Satu titik pengingat masa berlaku surat (H-n) milik desa.
+  properties:
+    id:
+      type: integer
+      example: 3
+    days_before:
+      type: integer
+      enum: [30, 14, 7, 3, 1]
+      example: 7
+      description: Hari sebelum hari H (hari pertama surat tidak bisa diunduh). 1 = hari terakhir masa berlaku.
+    is_active:
+      type: boolean
+      example: true
+    activated_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-11-01T10:00:00+07:00"
+      description: Waktu titik terakhir dinyalakan. Jatuh tempo sebelum waktu ini tidak dikirim.
+
+LetterExpiryReminderSettingUpdateRequest:
+  type: object
+  required: [is_active]
+  additionalProperties: false
+  properties:
+    is_active:
+      type: boolean
+      example: false

@@ -43,6 +43,7 @@ entity "villages" as VIL {
   office_hours : VARCHAR(100)
   welcome_message : TEXT
   latitude / longitude : DECIMAL(10,7)
+  * expiry_reminder_send_at : TIME (default 09:00)
   history / vision / mission : TEXT
   district / regency / province : VARCHAR(100)
   postal_code : VARCHAR(10)
@@ -221,6 +222,16 @@ entity "approval_settings" as APS {
   UNIQUE(village_id, approval_level)
 }
 
+entity "letter_expiry_reminder_settings" as LER {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK CASCADE>>
+  * days_before : USMALLINT (30, 14, 7, 3, 1)
+  is_active : BOOLEAN = true
+  activated_at : TIMESTAMP
+  UNIQUE(village_id, days_before)
+}
+
 ' ─────────────── SURAT ───────────────
 entity "letter_types" as LT {
   * id : BIGINT <<PK>>
@@ -263,6 +274,7 @@ entity "letters" as LET {
   rejected_at_step : INT
   is_overdue : BOOLEAN
   expires_at / submitted_at / processed_at
+  expiry_notified_days : USMALLINT (titik pengingat terakhir, 0 = hari H)
   snapshot : JSON
   signed_by_official_id : BIGINT <<FK officials>>
   fulfilled_at : TIMESTAMP
@@ -344,7 +356,7 @@ entity "letter_number_counters" as LNC {
 note bottom of LET
   Final approve: letter_number
   {classification_code}/{NNN}/Des/{Romawi}/{tahun},
-  expires_at, snapshot render (TTD & stempel Kades saat itu),
+  expires_at (akhir hari WIB), snapshot render (TTD & stempel Kades saat itu),
   signed_by_official_id. data_action != none -> Terapkan
   mengisi fulfilled_* (UC-26).
 end note
@@ -361,6 +373,7 @@ VIL ||--o{ OPT
 VIL ||--o{ AFL
 VIL ||--o{ LT
 VIL ||--o{ APS
+VIL ||--o{ LER
 VIL ||--o{ LNC
 CIT |o--o| USR : "akun"
 CIT ||--o{ OFF : "menjabat"
@@ -409,5 +422,10 @@ USR ||--o{ SBL
 ' - villages.stamp_img, officials.signature_img/stamp_img, letter_types.signature_slots,
 '   letter_signatures.user_signature_id/attachment_id dihapus.
 ' - letter_signatures hanya saksi (signer_type witness; method consent|rt_check|manual).
+'
+' REVISI 2026-11-12 (pengingat masa berlaku surat)
+' - letters: expiry_notified_days; index (status, expires_at); expires_at dibulatkan
+'   ke akhir hari WIB saat final approve.
+' - Tabel baru: letter_expiry_reminder_settings (titik H-30..H-1 per desa).
 ' ==================================================================================
 @enduml

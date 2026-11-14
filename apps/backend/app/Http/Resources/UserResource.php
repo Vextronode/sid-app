@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\UserRole;
+use App\Models\CitizenBusiness;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,12 @@ class UserResource extends JsonResource
             'nik' => $this->when(
                 $request->user()?->is($this->resource),
                 fn () => $this->citizen?->nik,
+            ),
+            // Menu Data Usaha Warga: petugas SKU ditentukan jenis surat, bukan
+            // role tetap, jadi frontend membaca hak aksesnya dari sini.
+            'can_view_citizen_businesses' => $this->when(
+                $request->user()?->is($this->resource),
+                fn () => $this->resource->can('viewAny', CitizenBusiness::class),
             ),
             'is_active' => $this->is_active,
             'must_change_password' => $this->must_change_password,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\AssignedRole;
+use App\Enums\BusinessCategory;
 use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
@@ -18,7 +19,7 @@ use Illuminate\Database\Seeder;
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
  * aksi data. Isian form hanya yang ada di template fisik (kecuali
- * foto usaha di A01). Nama isian = nama placeholder di template. Kop surat dan
+ * data usaha, foto usaha, dan pilihan Cimart di A01). Nama isian = nama placeholder di template. Kop surat dan
  * wilayah administratif diambil dari profil desa, bukan ditulis tetap.
  * Semua surat bawaan ditangani Kaur TU & Umum (surat selesai dan Terapkan).
  */
@@ -91,14 +92,30 @@ class LetterTypeSeeder extends Seeder
                 'requirement_info' => 'Foto usaha terkini.',
                 'validity_days' => 365,
                 'form_fields' => [
-                    $this->text('jenis_usaha', 'Jenis Usaha', true, 'Masukkan jenis usaha'),
+                    $this->text('kegiatan_usaha', 'Kegiatan Usaha', true, 'Contoh: Warung kopi'),
+                    // Data usaha (sampai daftar_cimart) tidak dicetak di surat;
+                    // dicatat sebagai data usaha warga saat SKU terbit.
+                    $this->text('nama_usaha', 'Nama Usaha', true, 'Contoh: Warung Kopi Joni'),
+                    $this->select('kategori_usaha', 'Kategori Usaha', BusinessCategory::options()),
+                    $this->textarea('alamat_usaha', 'Alamat Usaha', true, 'Alamat tempat usaha'),
+                    $this->email('email_usaha', 'Email Usaha', true, 'nama@email.com'),
+                    $this->phone('telepon_usaha', 'Nomor HP Usaha', true, 'Contoh: 081234567890'),
                     // Bukti usaha untuk pertimbangan RT dan Kepala Desa saat
-                    // menyetujui; tidak dicetak di surat.
+                    // menyetujui.
                     $this->image('foto_usaha', 'Foto Usaha Terkini'),
+                    // Persetujuan warga membagikan data usahanya ke Cimart:
+                    // wajib dipilih, tanpa nilai bawaan.
+                    [
+                        ...$this->select('daftar_cimart', 'Daftarkan sebagai pedagang Cimart?', [
+                            'ya' => 'Ya',
+                            'tidak' => 'Tidak',
+                        ]),
+                        'help' => 'Bila memilih "Ya", nama, NIK, dan data usaha di atas akan dikirim ke Cimart setelah surat ini terbit, untuk pendaftaran akun pedagang.',
+                    ],
                 ],
                 'sections' => [
                     $applicant,
-                    $this->paragraph('Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo;{{ jenis_usaha }}&rdquo; di wilayah {{ village_region }}.'),
+                    $this->paragraph('Orang tersebut diatas benar-benar warga kami dan perlu kami terangkan bahwa orang tersebut diatas benar-benar mempunyai kegiatan usaha &ldquo;{{ kegiatan_usaha }}&rdquo; di wilayah {{ village_region }}.'),
                     $this->paragraph(self::CLOSING),
                 ],
             ],

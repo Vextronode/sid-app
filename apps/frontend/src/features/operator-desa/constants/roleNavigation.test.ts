@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import type { User, UserRole } from '@/types'
 import {
+  canOpenOperatorRoute,
   getOperatorAllowedRoles,
   OPERATOR_ROUTE_CAPABILITIES,
   ROLE_NAVIGATION,
@@ -13,6 +15,7 @@ describe('operator role navigation', () => {
       '/admin/operator-desa/surat',
       '/admin/surat-saya',
       '/admin/data-warga',
+      '/admin/data-usaha',
     ]
 
     expect(ROLE_NAVIGATION.kasi_pemerintahan).toEqual(expectedRoutes)
@@ -61,6 +64,22 @@ describe('operator role navigation', () => {
       expect(petugasRoutes).toContain(route)
       expect(getOperatorAllowedRoles(route)).toEqual(['staf_sid'])
     }
+  })
+
+  it('shows Data Usaha Warga only when GET /api/user grants it', () => {
+    const user = (role: UserRole, can_view_citizen_businesses?: boolean) =>
+      ({ role, can_view_citizen_businesses }) as User
+
+    expect(canOpenOperatorRoute(user('kaur_tu_umum', true), '/admin/data-usaha')).toBe(true)
+    expect(canOpenOperatorRoute(user('staf_sid', true), '/admin/data-usaha')).toBe(true)
+    // Kasi/Kaur yang bukan petugas SKU, atau flag belum dimuat.
+    expect(canOpenOperatorRoute(user('kasi_pemerintahan', false), '/admin/data-usaha')).toBe(false)
+    expect(canOpenOperatorRoute(user('staf_sid'), '/admin/data-usaha')).toBe(false)
+    // Peran di luar operator tidak pernah mendapat menunya.
+    expect(canOpenOperatorRoute(user('kepala_desa', true), '/admin/data-usaha')).toBe(false)
+    expect(canOpenOperatorRoute(null, '/admin/data-usaha')).toBe(false)
+    // Route lain tetap mengikuti peran saja.
+    expect(canOpenOperatorRoute(user('kaur_tu_umum'), '/admin/data-warga')).toBe(true)
   })
 
   it('keeps route capabilities and role navigation in sync', () => {

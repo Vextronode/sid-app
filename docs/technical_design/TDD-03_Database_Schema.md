@@ -12,6 +12,8 @@
 
 > **v5.3:** `letter_categories` di-drop beserta `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type`. Jenis surat kini membawa definisi isian, aksi data, slot tanda tangan, dokumen pendukung, dan kode klasifikasi. Tabel baru: `letter_attachments`, `user_signatures`, `letter_signatures`, `signature_blocks`, `official_position_types`, `news_categories`, `news_category_news`, `push_subscriptions`. `letters` mendapat snapshot & kolom fulfillment; `villages` mendapat kolom kop surat & tampilan publik; `officials.position` menjadi VARCHAR.
 
+> **2026-11-12:** Tabel baru `citizen_businesses` (data usaha dari SKU A01 dan status pendaftaran pedagang Cimart).
+
 > **2026-10-31:** TTD digital dihapus: tabel `user_signatures` dan `signature_reset_requests` di-drop; kolom `villages.stamp_img`, `officials.signature_img`, `officials.stamp_img`, `letter_types.signature_slots`, `letter_signatures.user_signature_id`/`attachment_id` dihapus; `letter_signatures` kini hanya saksi (`signer_type = witness`, method `consent`/`rt_check`/`manual`); kind `wet_signature` di `letter_attachments` tidak dipakai lagi.
 
 ---
@@ -46,6 +48,7 @@ ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/ba
 | welcome_message | TEXT | NULL | Sambutan Kepala Desa di beranda; NULL = blok tidak tampil |
 | latitude | DECIMAL(10,7) | NULL | Lintang titik kantor desa (link "Buka di peta" Google Maps) |
 | longitude | DECIMAL(10,7) | NULL | Bujur titik kantor desa |
+| expiry_reminder_send_at | TIME | NOT NULL, DEFAULT 09:00:00 | Jam kirim pengingat masa berlaku surat (jam bulat 06:00–21:00), diatur Staf SIDUTama di halaman Alur & Jenis Surat. Bukan data profil publik: tidak ikut `VillageResource` |
 | history | TEXT | NULL | Sejarah desa untuk profil publik |
 | vision | TEXT | NULL | Visi desa |
 | mission | TEXT | NULL | Misi desa |
@@ -385,7 +388,8 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | payload | JSON | NULL | Isian form sesuai `letter_types.form_fields` |
 | notes | TEXT | NULL | Kolom legacy; pengajuan baru selalu NULL |
 | is_overdue | BOOLEAN | DEFAULT false | Saat daftar dimuat, true bila deadline approval pending pada step aktif terlewati; surat terminal dan step sebelumnya tidak dihitung |
-| expires_at | TIMESTAMP | NULL | Dihitung saat `status = 'approved'` + `validity_days`. NULL = tidak expire |
+| expires_at | TIMESTAMP | NULL | Dicap saat `status = 'approved'`: tanggal persetujuan + `validity_days`, dibulatkan ke **akhir hari (23:59:59 WIB)** agar sama dengan tulisan "Berlaku sampai <tanggal>". NULL = tidak expire |
+| expiry_notified_days | UNSIGNED SMALLINT | NULL | Titik pengingat masa berlaku terakhir yang sudah diproses: 30/14/7/3/1, atau 0 untuk hari H. NULL = belum ada. Diisi `letters:send-expiry-reminders` tanpa menyentuh `updated_at`; tidak ada di `$fillable` |
 | status | ENUM | NOT NULL, DEFAULT 'pending' | `pending` \| `in_progress` \| `approved` \| `rejected` |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | **Snapshot** dari `letter_types.flow_id` saat submit, dikunci |
 | current_step_order | INT | NOT NULL, DEFAULT 1 | Step aktif, dicocokkan ke `flow_steps`; **0 = menunggu tanda tangan pihak terkait** |
@@ -406,6 +410,8 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 - `in_progress`: minimal 1 step approve, belum sampai step `is_final=true`
 - `approved`: step `is_final=true` sudah di-approve → trigger `letter_number` + `expires_at`
 - `rejected`: TERMINAL — ada satu step yang reject, `rejected_at_step` dicatat
+
+**Kedaluwarsa surat.** Status tidak berubah saat surat kedaluwarsa; tetap `approved`. Kedaluwarsa dihitung saat dibaca (`Letter::isExpired()`: `now() > expires_at`), dan hanya pemohon yang diblokir mengunduh. Pengingat ke pemohon (H-30, H-14, H-7, H-3, H-1, dan hari H = sehari setelah tanggal `expires_at`) dikirim scheduler; jejaknya di `expiry_notified_days`, riwayat lengkapnya di `notifications` (`context.reminder_days`, `context.days_left`). Titik H-n yang aktif diatur di `letter_expiry_reminder_settings`.
 
 **Tabel: letter_number_counters**
 
@@ -542,6 +548,31 @@ Index: `idx_letter_signatures_slot (letter_id, slot_key)`, `idx_letter_signature
 
 Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 
+**Tabel: citizen_businesses**
+
+Data usaha warga, dicatat sekali saat Surat Keterangan Usaha (A01) final approve dari isian form SKU, dan tidak diubah sesudahnya. Kalau pencatatan gagal, final approve ikut batal (satu transaksi). Status berlaku/kedaluwarsa dihitung dari `letters.expires_at`. `id` menjadi `business_ref` di API integrasi Cimart.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | UUID | PK | `business_ref` untuk Cimart |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | |
+| citizen_id | UUID | FK → citizens.id, NULL, ON DELETE SET NULL | Tidak unik: satu warga boleh punya beberapa usaha |
+| letter_id | UUID | FK → letters.id, UNIQUE, ON DELETE CASCADE | Satu SKU satu usaha |
+| business_name | VARCHAR(255) | NOT NULL | Isian `nama_usaha` |
+| business_activity | VARCHAR(255) | NOT NULL | Isian `kegiatan_usaha` (tercetak di SKU) |
+| category | VARCHAR(30) | NOT NULL | `kelontong` \| `kuliner` \| `non_kuliner` (`BusinessCategory`) |
+| email | TEXT | NOT NULL, terenkripsi | Isian `email_usaha` |
+| phone | TEXT | NOT NULL, terenkripsi | Isian `telepon_usaha`, dinormalisasi ke `08...` |
+| address | TEXT | NOT NULL | Isian `alamat_usaha` |
+| cimart_status | VARCHAR(20) | NULL | NULL (tidak mendaftar) \| `pending` \| `accepted` \| `rejected` \| `cancelled` |
+| cimart_requested_at | TIMESTAMP | NULL | Waktu mendaftar; diperbarui saat daftar ulang |
+| cimart_decided_at | TIMESTAMP | NULL | Waktu Cimart melaporkan hasil |
+| cimart_note | TEXT | NULL | Alasan penolakan dari Cimart (tampil ke warga) |
+| cimart_cancelled_at | TIMESTAMP | NULL | Waktu warga membatalkan pendaftaran |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `idx_citizen_businesses_village_category (village_id, category)`, `idx_citizen_businesses_cimart_queue (cimart_status, cimart_requested_at)` (antrean Cimart).
+
 **Tabel: approval_settings**
 
 | Kolom | Tipe | Constraint | Keterangan |
@@ -557,6 +588,23 @@ Unique `uq_signature_blocks_pair (user_id, blocked_user_id)`.
 Constraint: `UNIQUE(village_id, approval_level)`
 
 > ENUM kolom tetap berisi lima nilai untuk kompatibilitas skema. Service/repository dan seeder hanya memakai tahap aktif (`rt`, `kepala_desa`). Nilai `sekretaris_desa`/Kasi/Kaur tetap di enum DB, tetapi tidak ditampilkan, di-seed, atau dapat diubah lewat endpoint settings.
+
+**Tabel: letter_expiry_reminder_settings**
+
+Titik pengingat masa berlaku surat untuk pemohon, satu baris per titik per desa. Berlaku untuk semua jenis surat. Hari H tidak punya baris karena selalu dikirim.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK, AUTO INCREMENT | Primary key |
+| village_id | UUID | FK → villages.id, NOT NULL, ON DELETE CASCADE | |
+| days_before | UNSIGNED SMALLINT | NOT NULL | Titik tetap: 30, 14, 7, 3, 1 (H-1 = hari terakhir masa berlaku) |
+| is_active | BOOLEAN | DEFAULT true | Satu-satunya kolom yang bisa diubah lewat API (Staf SIDUTama) |
+| activated_at | TIMESTAMP | NULL | Diisi setiap kali titik berubah dari nonaktif ke aktif. Jatuh tempo sebelum waktu ini tidak dikirim, agar menyalakan titik tidak memicu pengingat serentak |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Constraint: `UNIQUE(village_id, days_before)` (`uq_letter_expiry_reminder_settings_village_days`). Seeder `LetterExpiryReminderSettingSeeder` mengisi kelima titik dalam keadaan aktif; menjalankannya ulang tidak mengubah baris yang sudah ada.
+
+Jam kirim tidak disimpan di tabel ini, tetapi di `villages.expiry_reminder_send_at` (satu nilai per desa, default 09:00). Masa tenggang hari H (`expired_notice_grace_days`, default 3) ada di `config/letters.php` blok `expiry_reminder`.
 
 ### 2.5. Organisasi Non-Struktural, Notifikasi, Konten Publik
 
@@ -724,7 +772,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **31 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **34 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **33 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **36 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -735,15 +783,16 @@ Alur Approval (2): approval_flows, flow_steps
 Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
-Konfigurasi (1): approval_settings
+Usaha Warga (1): citizen_businesses
+Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 7 + 1 = 31 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 2 + 7 + 1 = 33 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 34 tabel
+Total aplikasi non-framework: 36 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 
@@ -763,6 +812,7 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | idx_letters_village_status | (village_id, status) | ✅ Aktif | Ringkasan surat desa per status |
 | idx_letters_flow_step | (flow_id, current_step_order) | ✅ Aktif | Resolve step aktif, paling kritis |
 | idx_letters_overdue | is_overdue | ✅ Aktif | Filter overdue |
+| idx_letters_status_expires | (status, expires_at) | ✅ Aktif | Kandidat pengingat masa berlaku (`approved`, `expires_at` ≤ sekarang + 31 hari) |
 | (auto) | applicant_nik_hash | ✅ Aktif | Pencarian NIK pemohon |
 | (auto unique) | letter_number | ✅ Aktif | Nomor surat unik |
 | idx_letters_submitter_created | (submitted_by, created_at) | ✅ Aktif (performa) | Daftar "surat saya" terbaru |
@@ -886,6 +936,7 @@ Sistem mengelola data kependudukan warga (NIK, alamat) yang termasuk kategori da
 | letters | applicant_address | Alamat pemohon dalam permohonan surat |
 | users | password | Hash Argon2id (one-way hash, bukan enkripsi) |
 | letter_signatures | target_nik_hash | SHA-256 NIK target permintaan saksi (NIK plaintext tidak disimpan) |
+| citizen_businesses | email, phone | Kontak usaha warga, dikirim ke Cimart bila warga mendaftar |
 
 Berkas privat (lampiran surat, hasil dari instansi) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan nama pejabat (dan NIK pejabat formulir Layanan Kependudukan yang memang tercetak), tanpa gambar TTD/stempel.
 

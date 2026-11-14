@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock, FileText, X } from 'lucide-react'
 
@@ -30,6 +31,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { SURAT_STATUS } from '@/constants/suratStatus'
 
 import { useLetters } from '@/features/surat/hooks/useLetters'
+import { useLetterReapply } from '@/features/surat/hooks/useLetterReapply'
+import { HAL_PENGAJUAN_SURAT } from '@/lib/constants/routes'
 import type { Id, LetterListItem } from '@/types'
 
 // ==========================================
@@ -308,6 +311,7 @@ function localDayRange(dateString: string) {
 // ==========================================
 
 export default function SuratDateTracker() {
+  const navigate = useNavigate()
   const [selectedDate, setSelectedDate] = useState('')
 
   const [slideIndex, setSlideIndex] = useState(0)
@@ -360,6 +364,11 @@ export default function SuratDateTracker() {
   // ==========================================
 
   const activeSurat = letters[0]
+
+  // Surat kedaluwarsa: pintasan ke form pengajuan jenis surat yang sama.
+  const reapply = useLetterReapply(activeSurat, (code) =>
+    navigate(`${HAL_PENGAJUAN_SURAT}/${encodeURIComponent(code)}`),
+  )
 
   // ==========================================
   // FORMAT TANGGAL
@@ -488,7 +497,7 @@ export default function SuratDateTracker() {
           {/* PREVIEW PDF */}
 
           {activeSurat?.status === SURAT_STATUS.APPROVED && (
-            <LetterValidityNote surat={activeSurat} />
+            <LetterValidityNote surat={activeSurat} onReapply={reapply} />
           )}
           <SuratPreview
             suratId={activeSurat?.id}

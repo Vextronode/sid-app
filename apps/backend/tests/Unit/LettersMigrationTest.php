@@ -55,6 +55,37 @@ class LettersMigrationTest extends TestCase
     }
 
     #[Test]
+    public function expiry_notified_days_column_exists_and_is_nullable(): void
+    {
+        $this->assertTrue(Schema::hasColumn('letters', 'expiry_notified_days'));
+
+        $flow = ApprovalFlow::factory()->create();
+        $id = $this->insertLetterRow($flow->id);
+
+        $this->assertNull(DB::table('letters')->find($id)->expiry_notified_days);
+    }
+
+    #[Test]
+    public function expiry_notified_days_is_cast_to_integer_and_not_mass_assignable(): void
+    {
+        $letter = Letter::factory()->create();
+        $letter->fill(['expiry_notified_days' => 7])->save();
+
+        $this->assertNull($letter->fresh()->expiry_notified_days);
+
+        $letter->forceFill(['expiry_notified_days' => '7'])->save();
+
+        $this->assertSame(7, $letter->fresh()->expiry_notified_days);
+    }
+
+    #[Test]
+    public function status_and_expires_at_index_exists(): void
+    {
+        $this->assertTrue(Schema::hasIndex('letters', 'idx_letters_status_expires'));
+        $this->assertTrue(Schema::hasIndex('letters', ['status', 'expires_at']));
+    }
+
+    #[Test]
     public function letter_number_counter_table_and_columns_exist(): void
     {
         $this->assertTrue(Schema::hasColumns('letter_number_counters', [

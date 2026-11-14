@@ -101,7 +101,7 @@ tags:
   - name: Epic 6 - Sistem Notifikasi
     description: Notifikasi in-app (database) dan Web Push.
   - name: Epic 7 - Deadline & Reminder Approval
-    description: Setting deadline & pengingat per level approver. UC-22. Pengingat dikirim scheduler (approvals:send-reminders) reminder_hours sebelum deadline.
+    description: Setting deadline & pengingat per level approver. UC-22. Pengingat dikirim scheduler (approvals:send-reminders) reminder_hours sebelum deadline. Juga titik pengingat masa berlaku surat untuk pemohon (H-30..H-1, letters:send-expiry-reminders).
   - name: Epic 8 - Dashboard & Statistik
     description: Dashboard adaptif per role. UC-15.
   - name: Epic 9 - Halaman Publik & Konten
@@ -153,6 +153,10 @@ paths:
     $ref: 'paths/auth/profile-password-v51.yaml'
   /profile/photo:
     $ref: 'paths/auth/profile-photo.yaml'
+  /profile/businesses:
+    $ref: 'paths/citizen-businesses/profile-businesses.yaml'
+  /profile/businesses/{citizenBusiness}/cimart-application:
+    $ref: 'paths/citizen-businesses/cimart-application.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
@@ -203,6 +207,10 @@ paths:
     $ref: 'paths/activity-logs/population.yaml'
   /activity-logs/letters:
     $ref: 'paths/activity-logs/letters.yaml'
+  /citizen-businesses:
+    $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
+  /citizen-businesses/{citizenBusiness}:
+    $ref: 'paths/citizen-businesses/citizen-business-detail.yaml'
   /occupations:
     $ref: 'paths/occupations/occupations.yaml'
   /occupations/{id}:
@@ -319,6 +327,12 @@ paths:
     $ref: 'paths/approval-settings/approval-settings.yaml'
   /approval-settings/{id}:
     $ref: 'paths/approval-settings/approval-setting-detail.yaml'
+  /letter-expiry-reminder-settings:
+    $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-settings.yaml'
+  /letter-expiry-reminder-settings/send-at:
+    $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-send-at.yaml'
+  /letter-expiry-reminder-settings/{id}:
+    $ref: 'paths/letter-expiry-reminder-settings/letter-expiry-reminder-setting-detail.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 8 - Dashboard & Statistik

@@ -68,6 +68,9 @@ class Letter extends Model
 
         'is_overdue' => 'boolean',
         'expires_at' => 'datetime',
+        // Sengaja tidak masuk $fillable: hanya diisi pengirim pengingat
+        // masa berlaku, tidak pernah dari request.
+        'expiry_notified_days' => 'integer',
         'submitted_at' => 'datetime',
         'processed_at' => 'datetime',
         'snapshot' => 'encrypted:array',
@@ -136,6 +139,16 @@ class Letter extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(LetterAttachment::class);
+    }
+
+    /**
+     * Data usaha yang dicatat dari SKU ini (A01).
+     *
+     * @return HasOne<CitizenBusiness, $this>
+     */
+    public function business(): HasOne
+    {
+        return $this->hasOne(CitizenBusiness::class);
     }
 
     /** @return HasMany<LetterSignature, $this> */

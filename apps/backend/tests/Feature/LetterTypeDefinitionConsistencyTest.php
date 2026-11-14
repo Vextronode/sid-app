@@ -41,6 +41,14 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     /** Baris sistem {{#each kk_anggota}}: rincian KK pemohon. */
     private const SYSTEM_LOOP_PLACEHOLDERS = ['no', 'nama', 'nik', 'shdk'];
 
+    /**
+     * Isian yang tidak dicetak karena dicatat sebagai data usaha warga saat
+     * SKU terbit, termasuk pilihan mendaftar ke Cimart.
+     */
+    private const BUSINESS_DATA_FIELDS = [
+        'A01' => ['nama_usaha', 'kategori_usaha', 'alamat_usaha', 'email_usaha', 'telepon_usaha', 'daftar_cimart'],
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -96,6 +104,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                     $letterType->form_fields ?? [],
                     fn (array $field): bool => isset($field['from_nik']) && isset(collect($letterType->form_fields)->firstWhere('name', $field['from_nik'])['witness']),
                 ), 'name'),
+                ...self::BUSINESS_DATA_FIELDS[$letterType->code] ?? [],
             ];
             $templates = $this->templatesOf($letterType);
 

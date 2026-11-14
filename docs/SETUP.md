@@ -175,7 +175,7 @@ Jalankan di `apps\backend`, masing-masing di **terminal terpisah** dan biarkan t
 | Terminal | Perintah | Fungsi | Wajib? |
 |---|---|---|---|
 | 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
-| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap menit `announcements:prune`, tiap hari `activitylog:clean` | Untuk pengingat approval |
+| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari `activitylog:clean` | Untuk pengingat approval dan pengingat masa berlaku surat |
 | 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (bila `QUEUE_CONNECTION=database`) |
 
 ```powershell
@@ -191,6 +191,25 @@ Pengingat approval dipicu oleh **waktu**, bukan oleh klik pengguna. `schedule:wo
 ```powershell
 php artisan approvals:send-reminders
 ```
+
+Pengingat **masa berlaku surat** juga dijalankan scheduler, tiap jam lewat `letters:send-expiry-reminders`. Pemohon surat yang sudah terbit menerima notifikasi pada H-30, H-14, H-7, H-3, dan H-1 sebelum suratnya kedaluwarsa, serta pada hari H (hari pertama surat tidak bisa diunduh). Di halaman **Alur & Jenis Surat**, tab **Pengingat Masa Berlaku**, Staf SIDUTama mengatur **jam kirim** (jam bulat 06.00–21.00 WIB, nilai awal 09.00, disimpan di `villages.expiry_reminder_send_at`) dan menyalakan atau mematikan titik H-30 sampai H-1; hari H selalu dikirim. Masa tenggang hari H diatur di `config/letters.php` (`LETTER_EXPIRY_REMINDER_GRACE_DAYS`, default `3`).
+
+Bila scheduler sempat mati, run berikutnya hanya mengirim satu pengingat terdekat per surat dengan sisa hari yang benar, bukan semua yang terlewat. Bila sebuah surat gagal diproses (misalnya koneksi database putus sesaat), surat lain tetap diproses, error-nya dicatat di log, dan surat itu dicoba lagi di run berikutnya. Untuk uji manual:
+
+```powershell
+# Hasilnya: "Pengingat masa berlaku surat terkirim: N."
+# Bila ada yang gagal, ditambah "Gagal diproses: M (lihat log)." dan command keluar dengan status gagal.
+php artisan letters:send-expiry-reminders
+```
+
+Untuk melihat pengingat terkirim tanpa menunggu berbulan-bulan, buat surat yang sudah disetujui lalu majukan masa berlakunya lewat `php artisan tinker`, misalnya agar hari terakhirnya hari ini (titik H-1 jatuh tempo hari ini pada jam kirim desa):
+
+```php
+$letter = App\Models\Letter::query()->where('status', 'approved')->latest()->first();
+$letter->forceFill(['expires_at' => now()->endOfDay(), 'expiry_notified_days' => null])->save();
+```
+
+Lalu jalankan `php artisan letters:send-expiry-reminders` setelah jam kirim desa (lihat tab Pengingat Masa Berlaku di halaman Alur & Jenis Surat) dan lihat lonceng notifikasi akun pemohon. Pengingat hanya dikirim untuk titik yang jatuh tempo setelah `processed_at` surat, jadi surat yang baru disetujui hari ini tidak menerima titik yang tanggalnya sudah lewat.
 
 ### Kenapa ada worker antrean?
 
@@ -310,6 +329,7 @@ npm run build
 | Foto perangkat/berita tidak tampil | Link storage belum dibuat | `php artisan storage:link` |
 | Push browser tidak muncul, lonceng muncul | Worker tidak jalan (`QUEUE_CONNECTION=database`) atau VAPID kosong | Jalankan `php artisan queue:work`; cek `VAPID_*` dan `VITE_VAPID_PUBLIC_KEY` |
 | Pengingat approval tidak pernah datang | `schedule:work` tidak jalan, atau setting tahap nonaktif | Jalankan `php artisan schedule:work`; uji dengan `php artisan approvals:send-reminders` |
+| Pengingat masa berlaku surat tidak datang | `schedule:work` tidak jalan, belum jam kirim desa, titik dimatikan di tab Pengingat Masa Berlaku (Alur & Jenis Surat), akun pemohon nonaktif, atau jatuh tempo titik sebelum surat disetujui | Jalankan `php artisan schedule:work`; uji dengan `php artisan letters:send-expiry-reminders` |
 | Perubahan kode tidak berefek di push/pengingat | Worker/scheduler memakai kode lama | Restart `queue:work` dan `schedule:work` |
 | Staf SIDUTama lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
 

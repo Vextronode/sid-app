@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Village;
 use App\Notifications\LetterStatusNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -255,6 +256,37 @@ class KadesApprovalControllerTest extends TestCase
         $this->assertNotSame($first->letter_number, $second->letter_number);
         $this->assertNotNull($first->expires_at);
         $this->assertTrue($first->expires_at->isSameDay(now()->addDays(30)));
+    }
+
+    public function test_final_approval_sets_expires_at_to_end_of_day_in_app_timezone(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-13 14:37:00', 'Asia/Jakarta'));
+
+        $village = Village::factory()->create();
+        $letterType = LetterType::factory()->create(['validity_days' => 90]);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+        $letter = $this->makeFinalLetter($village, $letterType);
+
+        $this->actingAs($kades)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertOk();
+
+        $expiresAt = $letter->fresh()->expires_at->setTimezone('Asia/Jakarta');
+        $this->assertSame('2026-12-12 23:59:59', $expiresAt->format('Y-m-d H:i:s'));
+    }
+
+    public function test_final_approval_leaves_expires_at_null_without_validity_days(): void
+    {
+        $village = Village::factory()->create();
+        $letterType = LetterType::factory()->create(['validity_days' => null]);
+        $kades = $this->makeUserWithPosition('kepala_desa', $village);
+        $letter = $this->makeFinalLetter($village, $letterType);
+
+        $this->actingAs($kades)
+            ->patchJson("/api/kades/letters/{$letter->id}/decision", ['status' => 'approved'])
+            ->assertOk();
+
+        $this->assertNull($letter->fresh()->expires_at);
     }
 
     public function test_final_approval_notifies_applicant_and_assigned_kasi(): void

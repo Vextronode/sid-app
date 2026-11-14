@@ -26,6 +26,27 @@ const optionalNik = (label: string) =>
     )
     .optional()
 
+// Nomor HP Indonesia; sama dengan LetterFormSchema::PHONE_PATTERN di backend.
+export const PHONE_PATTERN = /^(\+62|62|0)8[0-9]{8,11}$/
+
+const emailText = (label: string, required: boolean) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => (required ? value !== '' : true), `${label} wajib diisi`)
+    .refine((value) => value === '' || z.email().safeParse(value).success, `${label} tidak valid`)
+    .refine((value) => value.length <= 255, `${label} maksimal 255 karakter`)
+
+const phoneText = (label: string, required: boolean) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => (required ? value !== '' : true), `${label} wajib diisi`)
+    .refine(
+      (value) => value === '' || PHONE_PATTERN.test(value),
+      `${label} harus nomor HP, mis. 081234567890`,
+    )
+
 // Nilai input waktu: HH:MM (24 jam).
 const requiredTime = (label: string) =>
   z
@@ -109,6 +130,10 @@ function fieldSchema(field: SuratField): z.ZodType {
       return required ? requiredNik(label) : optionalNik(label)
     case 'number':
       return required ? numberText(field, true) : numberText(field, false).optional()
+    case 'email':
+      return required ? emailText(label, true) : emailText(label, false).optional()
+    case 'phone':
+      return required ? phoneText(label, true) : phoneText(label, false).optional()
     case 'occupation':
     case 'village_area':
     case 'family_member':

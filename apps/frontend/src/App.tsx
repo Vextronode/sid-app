@@ -44,6 +44,10 @@ import {
   SELF_LETTER_ROLES,
   SELF_LETTER_ROUTE,
 } from '@/features/notifikasi/utils/notificationTarget'
+import {
+  CitizenBusinessAccessGate,
+  DATA_USAHA_ROUTE,
+} from '@/features/data-usaha/components/CitizenBusinessAccessGate'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
 import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
@@ -104,6 +108,8 @@ const KadesListPage = lazy(() => import('@/pages/admin/KadesListPage'))
 const OperatorDesaDashboardPage = lazy(() => import('@/pages/admin/OperatorDesaDashboardPage'))
 const DataWargaAccessPage = lazy(() => import('@/pages/admin/DataWargaAccessPage'))
 const DataWargaReadOnlyPage = lazy(() => import('@/pages/admin/DataWargaReadOnlyPage'))
+const DataUsahaWargaPage = lazy(() => import('@/pages/admin/DataUsahaWargaPage'))
+const DataUsahaWargaDetailPage = lazy(() => import('@/pages/admin/DataUsahaWargaDetailPage'))
 const ManajemenAkunPage = lazy(() => import('@/pages/admin/ManajemenAkunPage'))
 const PengajuanResetPage = lazy(() => import('@/pages/admin/PengajuanResetPage'))
 const KelolaBeritaPage = lazy(() => import('@/pages/admin/KelolaBeritaPage'))
@@ -481,6 +487,24 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Data Usaha Warga: peran operator, lalu hak akses petugas SKU dari backend. */}
+              {[DATA_USAHA_ROUTE, `${DATA_USAHA_ROUTE}/:id`].map((path) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <ProtectedRoute allowedRoles={getOperatorAllowedRoles(DATA_USAHA_ROUTE)}>
+                      <CitizenBusinessAccessGate>
+                        {path === DATA_USAHA_ROUTE ? (
+                          <DataUsahaWargaPage />
+                        ) : (
+                          <DataUsahaWargaDetailPage />
+                        )}
+                      </CitizenBusinessAccessGate>
+                    </ProtectedRoute>
+                  }
+                />
+              ))}
               <Route
                 path="/admin/manajemen-user"
                 element={

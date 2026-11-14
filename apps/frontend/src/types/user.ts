@@ -25,6 +25,8 @@ export type User = {
   email: string | null
   // NIK utuh hanya dikirim untuk akun milik sendiri (GET /api/user).
   nik?: string | null
+  // Menu Data Usaha Warga (Staf SIDUTama dan petugas SKU); hanya GET /api/user.
+  can_view_citizen_businesses?: boolean
   is_active: boolean
   must_change_password: boolean
   created_at: IsoDateString | null

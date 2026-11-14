@@ -44,6 +44,9 @@ return new class extends Migration
             $table->integer('rejected_at_step')->nullable();
             $table->boolean('is_overdue')->default(false);
             $table->timestamp('expires_at')->nullable();
+            // Titik pengingat masa berlaku terakhir yang sudah diproses
+            // (30/14/7/3/1, atau 0 untuk hari H). Null: belum ada.
+            $table->unsignedSmallInteger('expiry_notified_days')->nullable();
             $table->timestamp('submitted_at')->useCurrent();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
@@ -51,6 +54,7 @@ return new class extends Migration
             $table->index(['flow_id', 'current_step_order'], 'idx_letters_flow_step');
             $table->index(['village_id', 'status'], 'idx_letters_village_status');
             $table->index('status', 'idx_letters_status');
+            $table->index(['status', 'expires_at'], 'idx_letters_status_expires');
             $table->index('is_overdue', 'idx_letters_overdue');
             $table->index('rt_id', 'idx_letters_rt');
             $table->index('rw_id', 'idx_letters_rw');
