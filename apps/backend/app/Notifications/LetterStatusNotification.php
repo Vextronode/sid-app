@@ -18,6 +18,9 @@ class LetterStatusNotification extends Notification implements ShouldQueue
         protected string $title,
         protected string $message,
         protected string $status,
+        // Tambahan untuk context, mis. reminder_days/days_left pada
+        // pengingat masa berlaku surat.
+        protected array $extraContext = [],
     ) {
         // Notifikasi dibuat di dalam transaksi surat; jangan dikirim
         // sebelum datanya benar-benar tersimpan.
@@ -62,17 +65,7 @@ class LetterStatusNotification extends Notification implements ShouldQueue
 
             'color' => $this->resolveColor(),
 
-            'context' => [
-
-                'letter_id' => $this->letter->id,
-
-                'letter_no' => $this->letter->letter_number,
-
-                'status' => $this->status,
-
-                'applicant' => $this->letter->applicant_name,
-                'is_applicant' => $this->isApplicant($notifiable),
-            ],
+            'context' => $this->context($notifiable),
 
         ];
     }
@@ -94,14 +87,23 @@ class LetterStatusNotification extends Notification implements ShouldQueue
                 'category' => 'pelayanan',
                 'icon' => $this->resolveIcon(),
                 'color' => $this->resolveColor(),
-                'context' => [
-                    'letter_id' => $this->letter->id,
-                    'letter_no' => $this->letter->letter_number,
-                    'status' => $this->status,
-                    'applicant' => $this->letter->applicant_name,
-                    'is_applicant' => $this->isApplicant($notifiable),
-                ],
+                'context' => $this->context($notifiable),
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function context(object $notifiable): array
+    {
+        return [
+            'letter_id' => $this->letter->id,
+            'letter_no' => $this->letter->letter_number,
+            'status' => $this->status,
+            'applicant' => $this->letter->applicant_name,
+            'is_applicant' => $this->isApplicant($notifiable),
+            ...$this->extraContext,
+        ];
     }
 
     /**
@@ -127,6 +129,9 @@ class LetterStatusNotification extends Notification implements ShouldQueue
 
             'approval_reminder' => 'bell',
 
+            'letter_expiring_soon',
+            'letter_expired' => 'clock',
+
             default => 'document',
         };
     }
@@ -145,8 +150,10 @@ class LetterStatusNotification extends Notification implements ShouldQueue
             'letter_awaiting_result',
             'approval_reminder' => 'blue',
 
-            'waiting_revision_warga' => 'amber',
+            'waiting_revision_warga',
+            'letter_expiring_soon' => 'amber',
 
+            'letter_expired',
             'rt_rejected',
             'rw_rejected',
             'kasi_rejected' => 'red',

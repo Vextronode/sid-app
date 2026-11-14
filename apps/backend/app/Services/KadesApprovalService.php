@@ -167,8 +167,10 @@ class KadesApprovalService
     private function finalizeApproval(Letter $letter): void
     {
         $letterType = $letter->letterType;
+        // Berlaku sampai akhir hari (zona waktu aplikasi), sesuai tulisan
+        // "Berlaku sampai <tanggal>" di UI, bukan sampai jam persetujuan.
         $expiresAt = $letterType->validity_days
-            ? now()->addDays($letterType->validity_days)
+            ? now()->addDays($letterType->validity_days)->endOfDay()
             : null;
 
         $this->letterRepository->update($letter, [

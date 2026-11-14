@@ -21,4 +21,21 @@ return [
         'rejection_window_hours' => (int) env('LETTER_SIGNATURE_REJECTION_WINDOW_HOURS', 24),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Pengingat masa berlaku surat
+    |--------------------------------------------------------------------------
+    |
+    | expired_notice_grace_days: bila hari H sudah lewat lebih dari sekian
+    | hari (mis. scheduler lama mati), surat ditandai selesai tanpa mengirim
+    | notifikasi. Titik mana yang aktif (tabel letter_expiry_reminder_settings)
+    | dan jam kirimnya (villages.expiry_reminder_send_at) diatur Staf
+    | SIDUTama di halaman Alur & Jenis Surat, bukan di sini.
+    |
+    */
+
+    'expiry_reminder' => [
+        'expired_notice_grace_days' => (int) env('LETTER_EXPIRY_REMINDER_GRACE_DAYS', 3),
+    ],
+
 ];

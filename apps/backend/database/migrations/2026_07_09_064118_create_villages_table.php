@@ -32,6 +32,9 @@ return new class extends Migration
             // Titik kantor desa (WGS84) untuk link "Buka di peta" (Google Maps).
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
+            // Jam kirim pengingat masa berlaku surat (jam bulat), diatur Staf
+            // SIDUTama di halaman Alur & Jenis Surat. Bukan data profil publik.
+            $table->time('expiry_reminder_send_at')->default('09:00:00');
             $table->timestamps();
         });
     }

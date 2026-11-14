@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             DemoNewsSeeder::class,
             ApprovalFlowSeeder::class,
             ApprovalSettingSeeder::class,
+            LetterExpiryReminderSettingSeeder::class,
             LetterTypeSeeder::class,
             ServiceLetterTypeSeeder::class,
             VillageOrgPositionSeeder::class,

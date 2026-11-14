@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\LetterDownloadController;
+use App\Http\Controllers\Api\LetterExpiryReminderSettingController;
 use App\Http\Controllers\Api\LetterFulfillmentController;
 use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
@@ -150,6 +151,20 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [ApprovalSettingController::class, 'index']);
             Route::patch('/{id}', [ApprovalSettingController::class, 'update']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Pengingat Masa Berlaku Surat
+    |----------------------------------------------------------------------
+    | Nyala/mati titik H-30 s.d. H-1 dan jam kirimnya. Eksklusif Staf SIDUTama.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('letter-expiry-reminder-settings')
+        ->group(function () {
+            Route::get('/', [LetterExpiryReminderSettingController::class, 'index']);
+            Route::patch('/send-at', [LetterExpiryReminderSettingController::class, 'updateSendTime']);
+            Route::patch('/{id}', [LetterExpiryReminderSettingController::class, 'update'])->whereNumber('id');
         });
 
     /*

@@ -60,6 +60,16 @@ describe('getNotificationTarget', () => {
     expect(getNotificationTarget('staf_sid', own)).toBe('/admin/surat-saya?surat=abc-123')
   })
 
+  it.each(['letter_expiring_soon', 'letter_expired'])(
+    'opens the expiring letter %s for its applicant',
+    (status) => {
+      const reminder = { letter_id: 'abc-123', status, is_applicant: true, reminder_days: 7 }
+
+      expect(getNotificationTarget('warga', reminder)).toBe('/surat-saya/daftar?surat=abc-123')
+      expect(getNotificationTarget('kepala_desa', reminder)).toBe('/admin/surat-saya?surat=abc-123')
+    },
+  )
+
   it('returns null when there is nothing to open', () => {
     expect(getNotificationTarget('warga', { status: 'info' })).toBeNull()
     expect(getNotificationTarget('warga', undefined)).toBeNull()

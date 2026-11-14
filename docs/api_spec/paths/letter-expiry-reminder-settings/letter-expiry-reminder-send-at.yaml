@@ -1,0 +1,59 @@
+patch:
+  tags: [Epic 7 - Deadline & Reminder Approval]
+  summary: Ubah jam kirim pengingat masa berlaku surat
+  description: |
+    Aktor: Staf SIDUTama.
+    Mengubah jam kirim desa user (`villages.expiry_reminder_send_at`). Jam ini
+    dipakai untuk semua titik pengingat (H-30 s.d. H-1) dan hari H.
+    Hanya jam bulat 06:00 s.d. 21:00 (lihat `meta.send_at_options` di
+    `GET /letter-expiry-reminder-settings`), karena scheduler berjalan tiap
+    jam di menit :00. Hanya `send_at` yang dapat dikirim; field lain ditolak
+    (422). Perubahan dibaca saat command `letters:send-expiry-reminders`
+    berjalan. Pengingat yang sudah terkirim hari itu tidak dikirim ulang.
+  operationId: updateLetterExpiryReminderSendTime
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [send_at]
+          properties:
+            send_at:
+              type: string
+              description: Jam bulat format HH:mm, 06:00 s.d. 21:00
+              example: "16:00"
+  responses:
+    '200':
+      description: Jam kirim berhasil diperbarui
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  send_at:
+                    type: string
+                    example: "16:00"
+          example:
+            data: { send_at: "16:00" }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      description: send_at kosong, bukan jam bulat 06:00 s.d. 21:00, atau ada field selain send_at
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
+          example:
+            message: "Jam kirim harus jam bulat antara 06.00 dan 21.00."
+            errors:
+              send_at: ["Jam kirim harus jam bulat antara 06.00 dan 21.00."]

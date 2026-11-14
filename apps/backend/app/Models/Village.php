@@ -35,13 +35,47 @@ class Village extends Model
         'history',
         'vision',
         'mission',
+        // Aman di $fillable: request Kelola Profil Desa hanya meneruskan
+        // field yang divalidasinya.
+        'expiry_reminder_send_at',
     ];
+
+    /** Nilai awal jam kirim pengingat masa berlaku, sama dengan default kolom. */
+    public const DEFAULT_EXPIRY_REMINDER_SEND_AT = '09:00';
+
+    /** Rentang jam kirim yang boleh dipilih Staf SIDUTama (jam bulat). */
+    public const EXPIRY_REMINDER_EARLIEST_HOUR = 6;
+
+    public const EXPIRY_REMINDER_LATEST_HOUR = 21;
 
     protected $casts = [
         'area_ha' => 'float',
         'latitude' => 'float',
         'longitude' => 'float',
     ];
+
+    /**
+     * Jam kirim pengingat masa berlaku surat dalam format H:i. Kolom time
+     * dikembalikan PostgreSQL dengan detik ("16:00:00").
+     */
+    public function expiryReminderSendTime(): string
+    {
+        return substr((string) ($this->expiry_reminder_send_at ?? self::DEFAULT_EXPIRY_REMINDER_SEND_AT), 0, 5);
+    }
+
+    /**
+     * Pilihan jam kirim untuk Staf SIDUTama: jam bulat saja, karena scheduler
+     * berjalan tiap jam di menit :00 (jam 16:30 baru terkirim 17:00).
+     *
+     * @return list<string> format H:i, mis. ['06:00', ..., '21:00']
+     */
+    public static function expiryReminderSendTimeOptions(): array
+    {
+        return array_map(
+            fn (int $hour) => sprintf('%02d:00', $hour),
+            range(self::EXPIRY_REMINDER_EARLIEST_HOUR, self::EXPIRY_REMINDER_LATEST_HOUR),
+        );
+    }
 
     /**
      * Logo dan foto hero berisi path aset frontend (/assets/..., dari seeder),

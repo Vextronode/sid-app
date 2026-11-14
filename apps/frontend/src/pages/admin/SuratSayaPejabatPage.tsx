@@ -60,6 +60,14 @@ export default function SuratSayaPejabatPage() {
     setSelectedCode('')
   }
 
+  // "Ajukan lagi" dari surat kedaluwarsa: form pengajuan pribadi dengan
+  // jenis surat yang sama, isian kosong (tidak disalin dari surat lama).
+  const reapply = (letterTypeCode: string) => {
+    setSelectedSurat(null)
+    setSelectedCode(letterTypeCode)
+    setApplying(true)
+  }
+
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Surat yang sudah disetujui adalah dokumen terbit, jadi tidak ditawarkan untuk dihapus.
@@ -205,7 +213,11 @@ export default function SuratSayaPejabatPage() {
       </div>
 
       {selectedSurat && (
-        <DetailSuratModal data={selectedSurat} onClose={() => setSelectedSurat(null)} />
+        <DetailSuratModal
+          data={selectedSurat}
+          onClose={() => setSelectedSurat(null)}
+          onReapply={reapply}
+        />
       )}
     </>
   )
