@@ -248,6 +248,9 @@ MAIL_FROM_NAME="SIDUTama Desa Cibenda"
 VAPID_SUBJECT="mailto:<email_admin_desa>"
 VAPID_PUBLIC_KEY=<public_key_produksi>
 VAPID_PRIVATE_KEY=<private_key_produksi>
+
+# Peringatan bencana SIGAP: domain situs SIGAP untuk link_url (dari tim SIGAP).
+SIGAP_LINK_HOSTS=<domain_sigap>
 ```
 
 Cara mendapatkan nilainya:
@@ -281,7 +284,8 @@ VITE_VAPID_PUBLIC_KEY=<public_key_produksi>
 1. Deploy dengan skrip di `deploy/scripts/` (menjalankan `migrate --force`; entrypoint container menjalankan `config:cache`, jadi perubahan env butuh restart container). Detail di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
 2. Data awal: stack **expo/demo** memakai golden DB dari seed demo (`make-golden.sh`, lihat runbook). Untuk desa **sungguhan**, jangan pakai data demo (seeder demo menolak `APP_ENV=production`); buat Staf SIDUTama pertama dengan `php artisan staf-sid:first`.
 3. Uji email: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan mail:test <email_admin>`, lalu pantau **Email Logs** Mailtrap.
-4. Pastikan `sid_worker` berjalan (push) dan situs disajikan lewat HTTPS.
+4. Pastikan `sid_worker` berjalan (push, dan seluruh notifikasi peringatan SIGAP) dan situs disajikan lewat HTTPS.
+5. Integrasi pihak ketiga: buat client sekali per aplikasi dengan `php artisan integration:create` (lihat [`docs/SETUP.md`](docs/SETUP.md#integrasi-pihak-ketiga-cimart-sigap)), lalu serahkan domain production SID dan token ke tim Cimart/SIGAP lewat jalur aman. Penggantian dan pencabutan token berikutnya dari menu **Integrasi**.
 
 ## Test dan pemeriksaan kode
 
@@ -311,6 +315,9 @@ npm run build
 | `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
 | `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |
 | `php artisan mail:test <email>` | Kirim email uji lewat mailer aktif (`MAIL_MAILER`), jalur yang sama dengan email reset kata sandi |
+| `php artisan integration:create <slug> --name=... --abilities=...` | Buat client integrasi pihak ketiga (Cimart, SIGAP) beserta token pertamanya (ditampilkan sekali) |
+| `php artisan integration:{enable,disable,rotate,tokens,revoke,abilities} <slug>` | Kelola client integrasi dari terminal (cadangan menu **Integrasi**); mengubah hak akses hanya lewat `integration:abilities` |
+| `php artisan disaster-alerts:prune` | Hapus peringatan SIGAP yang berakhir lebih dari 30 hari (normalnya otomatis harian lewat `schedule:work`) |
 
 ## Konvensi penting
 

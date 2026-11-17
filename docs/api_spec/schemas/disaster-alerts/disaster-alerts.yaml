@@ -1,0 +1,100 @@
+PublicDisasterAlert:
+  type: object
+  description: |
+    Peringatan bencana dari SIGAP yang sedang tampil di bar merah halaman
+    publik. Hanya isi dari SIGAP; kolom staf tidak pernah ikut.
+  properties:
+    id:
+      type: string
+      format: uuid
+    type:
+      type: string
+      enum: [gempa, tsunami]
+    type_label:
+      type: string
+      example: Tsunami
+    level:
+      type: string
+      enum: [info, waspada, siaga, awas]
+      description: Urutan dari terendah ke tertinggi.
+    level_label:
+      type: string
+      example: Awas
+    title:
+      type: string
+      example: Peringatan dini tsunami pesisir selatan
+    message:
+      type: string
+      nullable: true
+    magnitude:
+      type: number
+      nullable: true
+      example: 7.1
+    depth_km:
+      type: number
+      nullable: true
+      example: 10
+    location:
+      type: string
+      nullable: true
+      example: 23 km barat daya Cibenda
+    link_url:
+      type: string
+      nullable: true
+      description: Link detail di SIGAP (https, domain SIGAP terdaftar).
+    occurred_at:
+      type: string
+      format: date-time
+    expires_at:
+      type: string
+      format: date-time
+      description: Frontend menyembunyikan peringatan tepat saat waktu ini lewat.
+
+DisasterAlert:
+  description: Peringatan untuk tab Peringatan SIGAP (Staf SIDUTama).
+  allOf:
+    - $ref: '#/PublicDisasterAlert'
+    - type: object
+      properties:
+        external_id:
+          type: string
+          example: tsunami-882
+        status:
+          type: string
+          enum: [active, dismissed, ended, expired]
+        source:
+          type: string
+          nullable: true
+          description: Nama client integrasi pengirim.
+          example: SIGAP
+        sent_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+          description: Waktu SID pertama kali menerima peringatan ini.
+        dismissed_at:
+          type: string
+          format: date-time
+          nullable: true
+        dismissed_by:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        dismiss_reason:
+          type: string
+          nullable: true
+
+DisasterAlertMessage:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/DisasterAlert'

@@ -102,6 +102,8 @@ MAILTRAP_INBOX_ID=
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
 | `MAIL_MAILER`, `MAILTRAP_*`, `MAIL_FROM_*` | Email tautan lupa kata sandi dan `php artisan mail:test` | Template memakai `mailtrap-sdk` + `sandbox.api.mailtrap.io`. Tanpa token Mailtrap, ganti ke `MAIL_MAILER=log` (email ditulis ke `storage/logs/laravel.log`). Notifikasi email status surat belum diimplementasi |
 | `FRONTEND_URL` | Asal frontend untuk CORS/Sanctum dan alamat tautan di email reset (`<FRONTEND_URL>/reset-password/<token>`) | Harus sama dengan alamat yang dibuka di browser |
+| `SIGAP_LINK_HOSTS` | Domain SIGAP yang boleh dipakai `link_url` peringatan bencana (https), dipisah koma, mis. `sigap.example.id` | Diisi SID setelah SIGAP memberi tahu domainnya. SID tidak pernah memanggil SIGAP; daftar ini hanya untuk memeriksa link yang tampil di bar merah. Kosong = peringatan yang membawa `link_url` ditolak `422` |
+| `DISASTER_ALERT_DEFAULT_HOURS`, `DISASTER_ALERT_MAX_DAYS` | Masa tayang peringatan SIGAP bila `expires_at` kosong, dan batas maksimalnya | Default `6` jam dan `3` hari (`config/disaster_alerts.php`), menunggu konfirmasi SIGAP |
 
 ### Migrate & isi data
 
@@ -166,6 +168,27 @@ php artisan staf-sid:recover --username=<username_staf>
 
 Command meminta konfirmasi (tambahkan `--force` untuk eksekusi non-interaktif), hanya berlaku untuk akun `staf_sid` aktif yang memegang jabatan aktif, mencetak kata sandi sementara sekali, mewajibkan ganti kata sandi saat login, mengeluarkan semua sesi dan token lama, dan tercatat di activity log. Bila login terkunci karena 5 kali gagal, kunci terbuka sendiri dalam 1 jam. Pergantian pemegang jabatan tetap lewat Rotasi.
 
+### Integrasi pihak ketiga (Cimart, SIGAP)
+
+Aplikasi pihak ketiga memanggil `https://<domain-sid>/api/integrations/v1` dari server mereka dengan token miliknya sendiri, bukan akun SID. Arahnya selalu dari pihak ketiga ke SID; SID tidak pernah memanggil mereka. Kontrak dan kewajiban mereka ada di `docs/thirdparty/cimart/` dan `docs/thirdparty/sigap/`.
+
+Client dibuat **sekali per aplikasi** lewat terminal. Command mencetak token pertama sekali saja (SID hanya menyimpan hash-nya):
+
+```powershell
+php artisan integration:create cimart --name="Cimart" --abilities=seller-applications:read,seller-applications:update
+php artisan integration:create sigap --name="SIGAP" --abilities=alerts:write
+```
+
+Bila ada lebih dari satu desa, tambahkan `--village=<UUID_DESA>`. Setelah itu Staf SIDUTama mengelola dari menu **Integrasi**: menonaktifkan atau mengaktifkan aplikasi, menerbitkan token baru (token lama tetap berlaku sampai dicabut), dan mencabut token. Command cadangan: `integration:enable`, `integration:disable`, `integration:rotate`, `integration:tokens`, `integration:revoke`, dan `integration:abilities` (mengubah hak akses, hanya lewat terminal).
+
+Yang diserahkan ke tim pihak ketiga lewat jalur aman (jangan grup chat): **domain production SID** dan **token**. Untuk SIGAP, minta juga domain situs mereka untuk `SIGAP_LINK_HOSTS`.
+
+Uji koneksi dengan token yang baru dibuat:
+
+```powershell
+curl.exe -H "Authorization: Bearer <token>" -H "Accept: application/json" http://localhost:8000/api/integrations/v1/ping
+```
+
 ---
 
 ## 3. Menjalankan Backend
@@ -175,8 +198,8 @@ Jalankan di `apps\backend`, masing-masing di **terminal terpisah** dan biarkan t
 | Terminal | Perintah | Fungsi | Wajib? |
 |---|---|---|---|
 | 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
-| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari `activitylog:clean` | Untuk pengingat approval dan pengingat masa berlaku surat |
-| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (bila `QUEUE_CONNECTION=database`) |
+| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari pukul 02.00 `disaster-alerts:prune` (activity log sengaja tidak dibersihkan) | Untuk pengingat approval, pengingat masa berlaku surat, dan pembersihan pengumuman serta peringatan SIGAP lama |
+| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push, dan **seluruh** notifikasi peringatan SIGAP (in-app maupun push) | Untuk push browser, dan wajib untuk notifikasi peringatan SIGAP (bila `QUEUE_CONNECTION=database`) |
 
 ```powershell
 php artisan serve
@@ -217,6 +240,8 @@ Notifikasi surat dikirim lewat dua jalur: **in-app** (lonceng) ditulis langsung 
 
 - `QUEUE_CONNECTION=database` (default lokal dan stack Docker): push dicatat dulu di tabel `jobs`, lalu dikirim `queue:work` di belakang layar. Tombol Ajukan/Setujui tetap cepat. Tanpa worker, push tertahan (lonceng tetap masuk) dan langsung terkirim saat worker dinyalakan. Di Docker, worker berjalan otomatis di service `sid_worker`.
 - `QUEUE_CONNECTION=sync`: push dikirim saat itu juga di dalam request, tanpa worker. Lebih praktis untuk lokal, tetapi tombol menunggu push selesai.
+
+**Peringatan bencana SIGAP berbeda:** notifikasinya dikirim ke semua akun aktif desa, jadi seluruh pengirimannya (termasuk lonceng in-app) dijalankan job antrean `SendDisasterAlertNotifications`, bukan di dalam request SIGAP. Tanpa worker, peringatan tetap tampil di bar merah halaman publik, tetapi **tidak ada notifikasi sama sekali** sampai worker dinyalakan.
 
 Cek push yang gagal: `php artisan queue:failed`; coba lagi: `php artisan queue:retry all`.
 
