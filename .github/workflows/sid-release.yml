@@ -1,5 +1,5 @@
 # Rilis image SID (sid-api, sid-web) ke GHCR berdasarkan tag git vX.Y.Z di main.
-# Server expo hanya `docker compose pull` tag ini; tidak ada tag latest.
+# Server hanya `docker compose pull` tag ini (atau build lokal dengan --build); tidak ada tag latest.
 # Dry-run: Actions -> SID Release -> Run workflow (push=false) = build + smoke, tanpa login/push.
 name: SID Release
 

@@ -1,4 +1,4 @@
-# Stack SID expo. Jalankan lewat skrip (deploy/scripts/*.sh), bukan langsung:
+# Stack SID (staging/produksi). Jalankan lewat skrip (deploy/scripts/*.sh), bukan langsung:
 # skrip mengatur -p, --env-file compose.env, SID_IMAGE_TAG, SID_ENV_FILE, COMPOSE_PROFILES.
 #   Mode DB local : SID_ENV_FILE=<config>/sid.env       COMPOSE_PROFILES=localdb
 #   Mode DB neon  : SID_ENV_FILE=<config>/sid.neon.env  COMPOSE_PROFILES=(kosong)

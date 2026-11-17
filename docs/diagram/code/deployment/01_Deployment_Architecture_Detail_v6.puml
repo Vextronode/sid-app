@@ -4,7 +4,7 @@
 ' JUDUL: Deployment Architecture v6 (Detail - Stack Docker)
 ' SUMBER: deploy/docker-compose.yml, deploy/nginx/sid.conf, deploy/scripts/*,
 '         apps/backend/Dockerfile + docker/entrypoint.sh, apps/frontend/Dockerfile,
-'         docs/EXPO_RUNBOOK.md (per 2026-10-16)
+'         README.md bagian B (per 2026-11-17)
 ' CATATAN: Menggantikan 01_Deployment_Architecture_Detail_v5.puml yang masih
 '          mengasumsikan "Docker belum dipakai Tahap 1".
 '==================================================================================
@@ -37,7 +37,7 @@ cloud "GHCR\n(image sid-api, sid-web\nper tag vX.Y.Z)" as GHCR
 cloud "Neon PostgreSQL\n(mode db=neon, opsional)" as NEON
 
 node "Host (laptop/server ber-Docker)" as HOST {
-  component "deploy/scripts\n(setup-expo.sh, deploy.sh,\nreset-demo.sh, make-golden.sh, smoke.sh)" as SCRIPTS
+  component "deploy/scripts\n(setup.sh, deploy.sh,\nreset-demo.sh, make-golden.sh, smoke.sh)" as SCRIPTS
   port "127.0.0.1:${SID_HTTP_PORT:-8100}" as PORT
 
   node "network sid_net (internal)" as NET {
@@ -81,7 +81,7 @@ note right of LARAVEL
   QUEUE_CONNECTION=database (dikirim sid_worker),
   CACHE_STORE=database,
   SESSION_DRIVER=database.
-  VAPID kosong pada image expo → Web Push nonaktif.
+  VAPID kosong pada image web → Web Push nonaktif.
 end note
 note bottom of NET
   sid_net internal: hanya sid_web yang
