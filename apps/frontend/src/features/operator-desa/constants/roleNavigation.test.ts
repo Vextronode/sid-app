@@ -58,6 +58,7 @@ describe('operator role navigation', () => {
       '/admin/pengumuman',
       '/admin/halaman-informasi',
       '/admin/pengaturan-persetujuan',
+      '/admin/pelanggan-notifikasi',
       '/admin/organisasi/bpd',
       '/admin/organisasi/lembaga',
     ]) {

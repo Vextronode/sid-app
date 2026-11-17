@@ -51,6 +51,7 @@ use App\Http\Controllers\Api\UserPhotoController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
+use App\Http\Controllers\Api\WebPushSubscriberController;
 use App\Models\DisasterAlert;
 use App\Models\VillageOrgPosition;
 use App\Support\InfoPageFields;
@@ -299,6 +300,16 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/accounts', [ActivityLogController::class, 'accounts']);
             Route::get('/letters', [ActivityLogController::class, 'letters']);
         });
+
+    /*
+    |----------------------------------------------------------------------
+    | Pelanggan Notifikasi (Web Push)
+    |----------------------------------------------------------------------
+    | Staf SIDUTama memantau akun desa yang mengaktifkan Web Push beserta
+    | status perangkatnya. Hanya baca; endpoint & kunci push tidak dikirim.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->get('/web-push-subscribers', [WebPushSubscriberController::class, 'index']);
 
     /*
     |----------------------------------------------------------------------

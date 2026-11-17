@@ -15,7 +15,7 @@ class PushSubscriptionController extends Controller
 
     public function store(StorePushSubscriptionRequest $request)
     {
-        $this->pushSubscriptionService->subscribe($request->user(), $request->validated());
+        $this->pushSubscriptionService->subscribe($request->user(), $request->validated(), $request->userAgent());
 
         return response()->json([
             'message' => 'Langganan push notification berhasil disimpan.',
