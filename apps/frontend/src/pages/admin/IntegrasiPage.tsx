@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { KeyRound, Plug, Power, PowerOff, Trash2 } from 'lucide-react'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
@@ -109,172 +110,153 @@ export default function IntegrasiPage() {
   }
 
   return (
-    <div className="sid-operator-page">
-      <div className="sid-operator-content">
-        <div className="sid-operator-header">
+    <div className="sid-kelola-wilayah-page">
+      <div className="sid-kelola-wilayah-content">
+        <div className="sid-kelola-wilayah-header">
           <div>
             <h1>Integrasi</h1>
             <p>
-              Aplikasi lain yang terhubung ke SID lewat token, misalnya Cimart. Di sini Anda bisa
-              menonaktifkan aplikasi, menerbitkan token baru, dan mencabut token. Menambah aplikasi
-              dan mengubah hak aksesnya dilakukan tim teknis di server.
+              Aplikasi lain yang terhubung ke SID lewat token, misalnya Cimart dan SIGAP. Di sini
+              Anda bisa menonaktifkan aplikasi, menerbitkan token baru, dan mencabut token. Menambah
+              aplikasi dan mengubah hak aksesnya dilakukan tim teknis di server.
             </p>
           </div>
-          <RefreshButton onRefresh={load} refreshing={loading} />
+
+          <div className="sid-kelola-wilayah-header-actions">
+            <RefreshButton onRefresh={load} refreshing={loading} />
+          </div>
         </div>
 
         {error && (
-          <p className="sid-admin-alert sid-admin-alert-error" role="alert">
+          <div className="sid-kelola-wilayah-error" role="alert">
             {error}
-          </p>
+          </div>
         )}
 
-        <div className="sid-operator-table-card">
-          <div className="sid-operator-table-wrapper">
-            <table className="sid-operator-table">
-              <thead>
-                <tr>
-                  <th>Aplikasi</th>
-                  <th className="center">Status</th>
-                  <th>Hak Akses</th>
-                  <th>Terakhir Dipakai</th>
-                  <th className="center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && clients.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="empty">
-                      Memuat data...
-                    </td>
-                  </tr>
-                ) : clients.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="empty">
-                      Belum ada aplikasi yang terhubung.
-                    </td>
-                  </tr>
-                ) : (
-                  clients.map((client) => (
-                    <tr key={client.id}>
-                      <td className="primary-text">{client.name}</td>
-                      <td className="center">
-                        <StatusPill active={client.is_active}>
-                          {client.is_active ? 'Aktif' : 'Nonaktif'}
-                        </StatusPill>
-                      </td>
-                      <td>
-                        {client.abilities.length === 0
-                          ? '-'
-                          : client.abilities.map((ability) => (
-                              <div key={ability.value}>{ability.label}</div>
-                            ))}
-                      </td>
-                      <td>{lastUsed(client.last_used_at)}</td>
-                      <td className="center">
-                        <div className="sid-operator-actions">
-                          {client.is_active ? (
-                            <button
-                              type="button"
-                              className="sid-btn sid-btn-secondary"
-                              disabled={busyId !== null}
-                              onClick={() => disable(client)}
-                            >
-                              {busyId === client.id ? 'Memproses...' : 'Nonaktifkan'}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="sid-btn sid-btn-secondary"
-                              disabled={busyId !== null}
-                              onClick={() => setPending({ kind: 'enable', client })}
-                            >
-                              Aktifkan
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="sid-btn sid-btn-primary"
-                            disabled={busyId !== null}
-                            onClick={() => setPending({ kind: 'rotate', client })}
-                          >
-                            Terbitkan token baru
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {clients.map((client) => (
-          <section
-            key={client.id}
-            className="sid-operator-table-card"
-            aria-labelledby={`integration-tokens-${client.id}`}
-          >
-            <div className="sid-operator-header">
-              <div>
-                <h2 id={`integration-tokens-${client.id}`}>Token {client.name}</h2>
-                <p>
-                  Token lama tetap berlaku setelah token baru diterbitkan. Cabut token lama setelah
-                  token baru terlihat dipakai. Bila token bocor, cabut segera lalu terbitkan token
-                  baru.
-                </p>
+        <div className="flex flex-col gap-4">
+          {clients.length === 0 && (
+            <div className="sid-wilayah-table-card">
+              <div className="sid-wilayah-empty">
+                {loading ? 'Memuat data...' : 'Belum ada aplikasi yang terhubung.'}
               </div>
             </div>
-            <div className="sid-operator-table-wrapper">
-              <table className="sid-operator-table">
-                <thead>
-                  <tr>
-                    <th>Token</th>
-                    <th>Diterbitkan</th>
-                    <th>Terakhir Dipakai</th>
-                    <th className="center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {client.tokens.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="empty">
-                        Tidak ada token aktif. {client.name} tidak bisa terhubung sampai token baru
-                        diterbitkan.
-                      </td>
-                    </tr>
+          )}
+
+          {clients.map((client) => (
+            <section
+              key={client.id}
+              className="sid-wilayah-table-card"
+              aria-labelledby={`integration-client-${client.id}`}
+            >
+              <div className="sid-wilayah-table-toolbar">
+                <div className="min-w-0">
+                  <h3 id={`integration-client-${client.id}`} className="flex items-center gap-2">
+                    <Plug size={18} aria-hidden="true" />
+                    {client.name}
+                    <StatusPill active={client.is_active}>
+                      {client.is_active ? 'Aktif' : 'Nonaktif'}
+                    </StatusPill>
+                  </h3>
+                  <p>
+                    Hak akses:{' '}
+                    {client.abilities.length === 0
+                      ? '-'
+                      : client.abilities.map((ability) => ability.label).join(', ')}
+                    . Terakhir dipakai: {lastUsed(client.last_used_at)}.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {client.is_active ? (
+                    <button
+                      type="button"
+                      className="sid-wilayah-btn sid-wilayah-btn-secondary"
+                      disabled={busyId !== null}
+                      onClick={() => disable(client)}
+                    >
+                      <PowerOff size={15} aria-hidden="true" />
+                      {busyId === client.id ? 'Memproses...' : 'Nonaktifkan'}
+                    </button>
                   ) : (
-                    client.tokens.map((token, index) => (
-                      <tr key={token.id}>
-                        <td className="primary-text">
-                          {token.name}{' '}
-                          <StatusPill tone={index === 0 ? 'active' : 'warning'}>
-                            {index === 0 ? 'Terbaru' : 'Token lama'}
-                          </StatusPill>
-                        </td>
-                        <td>{formatDateTime(token.created_at)}</td>
-                        <td>{lastUsed(token.last_used_at)}</td>
-                        <td className="center">
-                          <div className="sid-operator-actions">
-                            <button
-                              type="button"
-                              className="sid-btn sid-btn-danger"
-                              disabled={busyId !== null}
-                              onClick={() => setPending({ kind: 'revoke', client, token })}
-                            >
-                              Cabut
-                            </button>
+                    <button
+                      type="button"
+                      className="sid-wilayah-btn sid-wilayah-btn-secondary"
+                      disabled={busyId !== null}
+                      onClick={() => setPending({ kind: 'enable', client })}
+                    >
+                      <Power size={15} aria-hidden="true" />
+                      Aktifkan
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="sid-wilayah-btn sid-wilayah-btn-primary"
+                    disabled={busyId !== null}
+                    onClick={() => setPending({ kind: 'rotate', client })}
+                  >
+                    <KeyRound size={15} aria-hidden="true" />
+                    Terbitkan token baru
+                  </button>
+                </div>
+              </div>
+
+              <div className="sid-wilayah-table-wrap">
+                <table className="sid-wilayah-table">
+                  <thead>
+                    <tr>
+                      <th>Token</th>
+                      <th>Diterbitkan</th>
+                      <th>Terakhir Dipakai</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {client.tokens.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>
+                          <div className="sid-wilayah-empty">
+                            Tidak ada token aktif. {client.name} tidak bisa terhubung sampai token
+                            baru diterbitkan.
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ))}
+                    ) : (
+                      client.tokens.map((token, index) => (
+                        <tr key={token.id}>
+                          <td className="center">
+                            <span className="font-semibold">{token.name}</span>{' '}
+                            <StatusPill tone={index === 0 ? 'active' : 'warning'}>
+                              {index === 0 ? 'Terbaru' : 'Token lama'}
+                            </StatusPill>
+                          </td>
+                          <td className="center">{formatDateTime(token.created_at)}</td>
+                          <td className="center">{lastUsed(token.last_used_at)}</td>
+                          <td className="center">
+                            <button
+                              type="button"
+                              className="sid-wilayah-btn sid-wilayah-btn-danger"
+                              disabled={busyId !== null}
+                              onClick={() => setPending({ kind: 'revoke', client, token })}
+                            >
+                              <Trash2 size={15} aria-hidden="true" />
+                              Cabut
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="m-0 border-t border-gray-100 px-5 py-3 text-xs text-gray-500">
+                Token lama tetap berlaku setelah token baru diterbitkan. Cabut token lama setelah
+                token baru terlihat dipakai. Bila token bocor, cabut segera lalu terbitkan token
+                baru.
+              </p>
+            </section>
+          ))}
+        </div>
       </div>
 
       {pending && (

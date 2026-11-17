@@ -21839,6 +21839,17 @@ button.sid-operator-profile {
   background: var(--sid-surface-page);
 }
 
+/* Aksi yang menghapus atau mencabut (mis. Cabut token di menu Integrasi). */
+.sid-wilayah-btn-danger {
+  border: 1px solid var(--sid-danger-border);
+  background: var(--sid-danger-soft);
+  color: var(--sid-danger);
+}
+
+.sid-wilayah-btn-danger:hover:not(:disabled) {
+  border-color: var(--sid-danger);
+}
+
 /* Ikon RefreshButton selama data dimuat ulang. */
 .sid-refresh-icon-spinning {
   animation: sid-spin 0.8s linear infinite;

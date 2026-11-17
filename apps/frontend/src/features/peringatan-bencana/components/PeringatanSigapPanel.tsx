@@ -173,10 +173,10 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
                       <StatusPill tone={levelTone(alert.level)}>{alert.level_label}</StatusPill>
                     </td>
                     <td className="center">{alert.type_label}</td>
-                    <td>
-                      <span className="font-semibold">{alert.title}</span>
+                    <td className="center">
+                      <span className="block font-semibold">{alert.title}</span>
                       {index === 0 && (
-                        <span className="ml-2 inline-block rounded bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-700">
+                        <span className="mt-1 inline-block rounded bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-700">
                           Tampil di bar beranda
                         </span>
                       )}
@@ -234,9 +234,9 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
               ) : (
                 dismissed.map((alert) => (
                   <tr key={alert.id}>
-                    <td>
-                      <span className="font-semibold">{alert.title}</span>
-                      <span className="ml-2 text-xs text-gray-500">{alert.level_label}</span>
+                    <td className="center">
+                      <span className="block font-semibold">{alert.title}</span>
+                      <span className="text-xs text-gray-500">{alert.level_label}</span>
                     </td>
                     <td className="center">{alert.dismissed_by?.name ?? '-'}</td>
                     <td className="center">{formatDateTime(alert.dismissed_at)}</td>

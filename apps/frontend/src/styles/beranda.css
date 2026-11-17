@@ -271,6 +271,14 @@
   overscroll-behavior: contain;
 }
 
+/* Detail peringatan SIGAP: teks memudar di tepi bawah area gulir, jadi
+   terlihat masih ada lanjutan dan tidak terpotong tajam di garis merah.
+   Padding bawah panel membuat isi terakhir tetap utuh saat digulir habis. */
+.bd-alert-panel {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
 /* Tiga garis "pukulan kentongan" di kiri pita pengumuman. Saat pita muncul,
    garis menyala bergantian sekali (tok, tok, tok), lalu diam. */
 .bd-kentongan > span {

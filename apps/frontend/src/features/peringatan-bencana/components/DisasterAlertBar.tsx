@@ -122,14 +122,16 @@ export function DisasterAlertBar({
           </div>
 
           {open && (
-            <div className="border-b border-pb-line-strong bg-pb-bahaya-tint">
+            // Garis merah tebal + bayangan menutup panel, supaya ujung daftar
+            // yang digulir tidak menempel ke header di bawahnya.
+            <div className="relative z-[1] border-b-4 border-pb-bahaya bg-pb-bahaya-tint shadow-[0_8px_14px_-8px_rgb(0_0_0/0.35)]">
               <div className={containerClassName}>
                 <ul
                   id={panelId}
-                  className="bd-announcement-panel m-0 flex list-none flex-col gap-5 p-0 py-5"
+                  className="bd-announcement-panel bd-alert-panel m-0 flex list-none flex-col divide-y divide-pb-bahaya/15 p-0 pt-4 pb-8"
                 >
                   {alerts.map((alert) => (
-                    <li key={alert.id}>
+                    <li key={alert.id} className="py-4 first:pt-0">
                       <AlertDetail alert={alert} />
                     </li>
                   ))}
