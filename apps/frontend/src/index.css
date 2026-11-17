@@ -16,6 +16,10 @@
   --color-pb-padi: #e0ac2b;
   --color-pb-padi-soft: #fbf1d6;
   --color-pb-padi-ink: #5c3d00;
+  /* Peringatan bencana SIGAP. Teks putih di atas bahaya: kontras 6,6:1. */
+  --color-pb-bahaya: #b42318;
+  --color-pb-bahaya-deep: #8a1a12;
+  --color-pb-bahaya-tint: #fdecea;
 
   --font-display: 'Bricolage Grotesque Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
 

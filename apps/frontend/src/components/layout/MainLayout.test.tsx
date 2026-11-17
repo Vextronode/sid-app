@@ -13,6 +13,11 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
   usePublicVillageInfo: vi.fn(),
 }))
 
+// Bar peringatan bencana memuat datanya sendiri.
+vi.mock('@/features/peringatan-bencana/api', () => ({
+  getPublicDisasterAlerts: vi.fn().mockResolvedValue([]),
+}))
+
 vi.mock('@/features/auth/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null as unknown, isLoading: false }),
 }))
