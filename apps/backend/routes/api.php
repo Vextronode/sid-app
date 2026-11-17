@@ -11,11 +11,13 @@ use App\Http\Controllers\Api\CitizenBusinessController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DisasterAlertController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\IdentityController;
 use App\Http\Controllers\Api\InfoPageController;
+use App\Http\Controllers\Api\Integration\AlertController;
 use App\Http\Controllers\Api\Integration\PingController;
 use App\Http\Controllers\Api\Integration\SellerApplicationController;
 use App\Http\Controllers\Api\IntegrationClientController;
@@ -49,6 +51,7 @@ use App\Http\Controllers\Api\UserPhotoController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
+use App\Models\DisasterAlert;
 use App\Models\VillageOrgPosition;
 use App\Support\InfoPageFields;
 use App\Support\PopulationScope;
@@ -71,17 +74,23 @@ Route::prefix('public')->group(function () {
     Route::get('/contact-us', [PublicPageController::class, 'contactUs']);
     Route::get('/info-pages/{page}', [PublicPageController::class, 'infoPage'])
         ->whereIn('page', array_keys(InfoPageFields::PAGES));
+    // Peringatan bencana SIGAP untuk bar merah; tanpa cache halaman (lihat
+    // PublicPageController::disasterAlerts). Dipanggil berkala tiap halaman
+    // publik yang terbuka, jadi batasnya longgar: banyak warga bisa berbagi
+    // satu IP (NAT operator seluler).
+    Route::get('/disaster-alerts', [PublicPageController::class, 'disasterAlerts'])
+        ->middleware('throttle:300,1');
 });
 
 /*
 |--------------------------------------------------------------------------
 | API Integrasi Pihak Ketiga (v1)
 |--------------------------------------------------------------------------
-| Server ke server dengan bearer token milik client integrasi (Cimart),
-| bukan milik user SID. `auth:integration` hanya menerima token
+| Server ke server dengan bearer token milik client integrasi (Cimart,
+| SIGAP), bukan milik user SID. `auth:integration` hanya menerima token
 | IntegrationClient; `integration.client` menolak session User SID dan
 | client nonaktif. Hak akses per endpoint lewat Sanctum abilities.
-| Kontrak: docs/thirdparty/cimart/api-spec/openapi.yaml.
+| Kontrak: docs/thirdparty/{cimart,sigap}/api-spec/openapi.yaml.
 */
 Route::prefix('integrations/v1')
     ->middleware(['auth:integration', 'integration.client', 'throttle:integration'])
@@ -97,6 +106,15 @@ Route::prefix('integrations/v1')
         Route::patch('/seller-applications/{businessRef}', [SellerApplicationController::class, 'update'])
             ->whereUuid('businessRef')
             ->middleware(IntegrationAbility::middleware(IntegrationAbility::SellerApplicationsUpdate));
+
+        // Peringatan bencana dari SIGAP. Kontrak:
+        // docs/thirdparty/sigap/api-spec/openapi.yaml.
+        Route::middleware(IntegrationAbility::middleware(IntegrationAbility::AlertsWrite))->group(function () {
+            Route::put('/alerts/{externalId}', [AlertController::class, 'upsert'])
+                ->where('externalId', DisasterAlert::EXTERNAL_ID_PATTERN);
+            Route::post('/alerts/{externalId}/end', [AlertController::class, 'end'])
+                ->where('externalId', DisasterAlert::EXTERNAL_ID_PATTERN);
+        });
     });
 
 /*
@@ -515,6 +533,21 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Staf SIDUTama. Satu pengumuman per desa (PUT menggantikan).
     */
+    /*
+    |----------------------------------------------------------------------
+    | Peringatan bencana SIGAP (tab Peringatan SIGAP di halaman Pengumuman)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama, dibatasi ke desanya. Isi dari SIGAP tidak
+    | bisa diubah; staf hanya menurunkan (alasan wajib) dan menampilkan lagi.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('disaster-alerts')
+        ->group(function () {
+            Route::get('/', [DisasterAlertController::class, 'index']);
+            Route::post('/{disasterAlert}/dismiss', [DisasterAlertController::class, 'dismiss']);
+            Route::post('/{disasterAlert}/restore', [DisasterAlertController::class, 'restore']);
+        });
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::get('/announcement', [AnnouncementController::class, 'show']);
         Route::put('/announcement', [AnnouncementController::class, 'save']);

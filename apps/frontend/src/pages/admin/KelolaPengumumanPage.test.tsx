@@ -19,7 +19,18 @@ vi.mock('@/features/info-desa/usePublicVillageInfo', () => ({
 vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 const { confirmDialog } = vi.hoisted(() => ({ confirmDialog: vi.fn() }))
-vi.mock('@/shared/lib/dialog', () => ({ confirmDialog, alertDialog: vi.fn() }))
+vi.mock('@/shared/lib/dialog', () => ({
+  confirmDialog,
+  alertDialog: vi.fn(),
+  promptDialog: vi.fn(),
+}))
+
+const alertApi = vi.hoisted(() => ({
+  getDisasterAlerts: vi.fn(),
+  dismissDisasterAlert: vi.fn(),
+  restoreDisasterAlert: vi.fn(),
+}))
+vi.mock('@/features/peringatan-bencana/api', () => alertApi)
 
 import KelolaPengumumanPage from './KelolaPengumumanPage'
 
@@ -48,6 +59,52 @@ describe('KelolaPengumumanPage', () => {
     Object.values(api).forEach((fn) => fn.mockReset())
     beritaApi.getBeritaList.mockReset()
     beritaApi.getBeritaList.mockResolvedValue({ data: { data: PUBLISHED } })
+    alertApi.getDisasterAlerts.mockReset()
+    alertApi.getDisasterAlerts.mockResolvedValue([])
+  })
+
+  it('opens the SIGAP tab with the number of displayed alerts in its label', async () => {
+    const user = userEvent.setup()
+    api.getAnnouncement.mockResolvedValue({ data: { data: null } })
+    alertApi.getDisasterAlerts.mockImplementation((status: string) =>
+      Promise.resolve(
+        status === 'displayed'
+          ? [
+              {
+                id: 'a-1',
+                type: 'gempa',
+                type_label: 'Gempa',
+                level: 'waspada',
+                level_label: 'Waspada',
+                title: 'Gempa M6.9',
+                occurred_at: '2026-11-16T14:02:00+07:00',
+                expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+              },
+            ]
+          : [],
+      ),
+    )
+
+    renderPage()
+
+    const sigapTab = await screen.findByRole('tab', { name: 'Peringatan SIGAP (1)' })
+    expect(screen.getByRole('tab', { name: 'Pengumuman Desa' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+
+    await user.click(sigapTab)
+
+    // Tiap tab merender halamannya sendiri, jadi tab dicari ulang.
+    expect(await screen.findByRole('tab', { name: 'Peringatan SIGAP (1)' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(await screen.findByText('Gempa M6.9')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Peringatan yang sedang tampil' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Buat pengumuman/ })).toBeNull()
   })
 
   it('creates an announcement with a preset duration', async () => {

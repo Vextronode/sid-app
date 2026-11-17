@@ -14,7 +14,7 @@
 
 > **2026-11-12:** Tabel baru `citizen_businesses` (data usaha dari SKU A01 dan status pendaftaran pedagang Cimart).
 
-> **2026-11-17:** Tabel baru `integration_clients` (aplikasi pihak ketiga pemilik token API integrasi, mis. Cimart). Token-nya baris `personal_access_tokens` dengan `tokenable_type = App\Models\IntegrationClient`.
+> **2026-11-17:** Tabel baru `integration_clients` (aplikasi pihak ketiga pemilik token API integrasi, mis. Cimart). Token-nya baris `personal_access_tokens` dengan `tokenable_type = App\Models\IntegrationClient`. Tabel baru `disaster_alerts` (peringatan bencana dari SIGAP).
 
 > **2026-10-31:** TTD digital dihapus: tabel `user_signatures` dan `signature_reset_requests` di-drop; kolom `villages.stamp_img`, `officials.signature_img`, `officials.stamp_img`, `letter_types.signature_slots`, `letter_signatures.user_signature_id`/`attachment_id` dihapus; `letter_signatures` kini hanya saksi (`signer_type = witness`, method `consent`/`rt_check`/`manual`); kind `wet_signature` di `letter_attachments` tidak dipakai lagi.
 
@@ -589,6 +589,37 @@ Aplikasi pihak ketiga yang memanggil `/api/integrations/v1` dengan bearer token 
 | is_active | BOOLEAN | DEFAULT true | `false`: semua request ditolak `403 integration_disabled` tanpa mencabut token |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
+**Tabel: disaster_alerts**
+
+Peringatan bencana yang dikirim SIGAP lewat `PUT /api/integrations/v1/alerts/{external_id}`, terpisah dari `announcements` (satu pengumuman staf per desa). SID tidak mengubah isinya; Staf SIDUTama hanya bisa menurunkan dan menampilkan lagi. Tampil selama `ended_at` dan `dismissed_at` kosong dan `expires_at` belum lewat. Dihapus `disaster-alerts:prune` (harian) setelah 30 hari sejak berakhir atau kedaluwarsa.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | UUID | PK | |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | Dari `integration_clients.village_id` pengirim |
+| integration_client_id | UUID | FK → integration_clients.id, ON DELETE CASCADE | Sumber peringatan |
+| external_id | VARCHAR(100) | NOT NULL | ID dari SIGAP, pola `[A-Za-z0-9._:-]` |
+| type | VARCHAR(30) | NOT NULL | `gempa` \| `tsunami` (`DisasterAlertType`) |
+| level | VARCHAR(20) | NOT NULL | `info` \| `waspada` \| `siaga` \| `awas` (`DisasterAlertLevel`) |
+| level_rank | UNSIGNED TINYINT | NOT NULL | 1–4, untuk urutan tampil |
+| title | VARCHAR(150) | NOT NULL | |
+| message | TEXT | NULL | |
+| magnitude | DECIMAL(3,1) | NULL | |
+| depth_km | DECIMAL(6,1) | NULL | |
+| location | VARCHAR(150) | NULL | |
+| link_url | VARCHAR(500) | NULL | Hanya https dari domain di `SIGAP_LINK_HOSTS` |
+| occurred_at | TIMESTAMP | NOT NULL | Waktu kejadian |
+| sent_at | TIMESTAMP | NOT NULL | `sent_at` versi terakhir yang diterapkan; pembaruan yang tidak lebih baru diabaikan |
+| expires_at | TIMESTAMP | NOT NULL | Sudah memakai default (6 jam) dan batas maksimal (3 hari sejak pertama diterima) |
+| ended_at | TIMESTAMP | NULL | Diakhiri SIGAP; final |
+| dismissed_at | TIMESTAMP | NULL | Diturunkan Staf SIDUTama |
+| dismissed_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
+| dismiss_reason | TEXT | NULL | Wajib saat menurunkan |
+| notified_level_rank | UNSIGNED TINYINT | NULL | Level tertinggi yang sudah dikirim sebagai notifikasi; mencegah kiriman dobel |
+| created_at, updated_at | TIMESTAMP | NULL | `created_at` = waktu pertama diterima (`received_at` di API) |
+
+Constraint: `UNIQUE(integration_client_id, external_id)` (`uq_disaster_alerts_client_external`). Index: `idx_disaster_alerts_village_expires (village_id, expires_at)`.
+
 **Tabel: approval_settings**
 
 | Kolom | Tipe | Constraint | Keterangan |
@@ -788,7 +819,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **34 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **37 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **35 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **38 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -800,16 +831,16 @@ Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
 Usaha Warga (1): citizen_businesses
-Integrasi (1): integration_clients
+Integrasi (2): integration_clients, disaster_alerts
 Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 1 + 2 + 7 + 1 = 34 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 2 + 2 + 7 + 1 = 35 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 37 tabel
+Total aplikasi non-framework: 38 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 

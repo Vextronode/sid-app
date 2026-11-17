@@ -1,0 +1,33 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Peringatan bencana SIGAP yang sedang tampil (tanpa login)
+  security: []
+  description: |
+    Untuk bar merah di paling atas semua halaman publik, di atas Pengumuman
+    Desa. Hanya peringatan yang belum diakhiri SIGAP, belum diturunkan Staf
+    SIDUTama, dan belum lewat `expires_at`; urut level tertinggi lalu yang
+    terbaru. **Tanpa cache halaman** (beda dengan endpoint publik lain):
+    peringatan berhenti tampil karena waktu, dan turunan staf harus
+    langsung terlihat. Frontend memanggilnya tiap ±60 detik selama tab
+    terlihat. Dibatasi 300 request per menit per IP.
+  operationId: getPublicDisasterAlerts
+  parameters:
+    - $ref: '../../parameters/common.yaml#/VillageCode'
+  responses:
+    '200':
+      description: Daftar peringatan yang tampil (bisa kosong)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/disaster-alerts/disaster-alerts.yaml#/PublicDisasterAlert'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Melewati batas 300 request per menit per IP

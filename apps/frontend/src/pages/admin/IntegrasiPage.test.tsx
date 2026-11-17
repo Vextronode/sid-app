@@ -51,7 +51,7 @@ function cimart(overrides: Partial<IntegrationClient> = {}): IntegrationClient {
 async function renderPage() {
   render(<IntegrasiPage />)
 
-  await screen.findByRole('heading', { name: 'Token Cimart' })
+  await screen.findByRole('heading', { name: /Cimart/ })
 }
 
 function passwordDialog() {
@@ -77,9 +77,11 @@ describe('IntegrasiPage', () => {
   it('lists the client with status, abilities, and its tokens', async () => {
     await renderPage()
 
-    const row = screen.getByRole('row', { name: /Cimart/ })
-    expect(within(row).getByText('Aktif')).toBeInTheDocument()
-    expect(within(row).getByText('Membaca permohonan pedagang')).toBeInTheDocument()
+    const card = screen.getByRole('region', { name: /Cimart/ })
+    expect(within(card).getByText('Aktif')).toBeInTheDocument()
+    expect(card).toHaveTextContent(
+      'Hak akses: Membaca permohonan pedagang, Melaporkan hasil permohonan pedagang.',
+    )
     expect(screen.getByText('cimart-20261112-080000')).toBeInTheDocument()
     expect(screen.getByText('Terbaru')).toBeInTheDocument()
   })

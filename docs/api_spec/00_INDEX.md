@@ -36,7 +36,7 @@ api_spec/
 │   ├── signatures/   permintaan saksi/persetujuan, blokir
 │   ├── notifications/, push-subscriptions/
 │   ├── approval-settings/, letter-expiry-reminder-settings/, dashboard/
-│   ├── citizen-businesses/, integration-clients/
+│   ├── citizen-businesses/, integration-clients/, disaster-alerts/
 │   ├── public/, villages/, news/, regulations/
 │   └── village-org/
 └── schemas/
@@ -64,13 +64,14 @@ api_spec/
 | Konfigurasi surat | `GET /letter-types`, `PUT /letter-types/{id}`, `GET /approval-flows`, `GET /approval-flows/{id}`, `GET/PATCH /approval-settings`, `GET/PATCH /letter-expiry-reminder-settings`, `PATCH /letter-expiry-reminder-settings/send-at` | Staf SIDUTama (GET letter-types lintas-role) |
 | Kependudukan | `/citizens` (GET juga untuk Kasi/Kaur), `/citizens/import`, `POST /citizens/import/preview`, `GET /citizens/import-template`, `/citizens/wilayah`, `/families` (berhalaman), `GET /families/options`, `/families/{id}/socioeconomic`, `/occupations` (GET daftar aktif juga untuk semua role, dipakai isian pekerjaan form surat) | Staf SIDUTama dan Kasi Pemerintahan (kelola); Kaur TU & Umum, Kades, Sekdes (seluruh desa) serta Kadus, RW, RT (wilayahnya, `PopulationScope`) hanya GET `/citizens` dan `/families` |
 | Data usaha warga | `GET /citizen-businesses` (cari, filter `category`/`letter_status`/`cimart_status`), `GET /citizen-businesses/{id}`; Usaha Saya: `GET /profile/businesses`, `POST`/`DELETE /profile/businesses/{id}/cimart-application` | Staf SIDUTama dan petugas SKU (`assigned_role` A01) baca saja; warga pemilik usaha untuk Usaha Saya |
-| Integrasi pihak ketiga | `GET /integration-clients`, `PATCH /integration-clients/{id}/status`, `POST /integration-clients/{id}/tokens` (rotate, token tampil sekali), `DELETE /integration-clients/{id}/tokens/{token}`; kata sandi wajib saat mengaktifkan, rotate, dan cabut. Endpoint untuk aplikasi itu sendiri (`/integrations/v1/*`, bearer token client) ada di `../thirdparty/cimart/api-spec/openapi.yaml` | Staf SIDUTama; `/integrations/v1/*` hanya token client integrasi |
+| Integrasi pihak ketiga | `GET /integration-clients`, `PATCH /integration-clients/{id}/status`, `POST /integration-clients/{id}/tokens` (rotate, token tampil sekali), `DELETE /integration-clients/{id}/tokens/{token}`; kata sandi wajib saat mengaktifkan, rotate, dan cabut. Endpoint untuk aplikasi itu sendiri (`/integrations/v1/*`, bearer token client) ada di `../thirdparty/cimart/api-spec/openapi.yaml` (permohonan pedagang) dan `../thirdparty/sigap/api-spec/openapi.yaml` (peringatan bencana) | Staf SIDUTama; `/integrations/v1/*` hanya token client integrasi |
 | Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, photo POST/DELETE), `/official-position-types` | Staf SIDUTama (`staf_sid`, satu per desa) |
 | Wilayah | `/hamlets`, `/rws`, `/rts`; `GET /village-areas` (pohon Dusun -> RW -> RT aktif untuk isian `village_area` form surat) | Staf SIDUTama; `/village-areas` semua role |
 | Notifikasi | `/notifications`, `/notifications/unread-count` (`{ data: { count } }`), `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions` | Semua user |
 | Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` (keduanya dibungkus `data`) | Semua role (data di-scope) |
 | CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo) | Staf SIDUTama |
-| Publik | `/public/home` (+ `village_head`), `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa) | Tanpa login |
+| Publik | `/public/home` (+ `village_head`), `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa); `/public/disaster-alerts` (peringatan SIGAP untuk bar merah, **tanpa cache**, 300 request/menit per IP) | Tanpa login |
+| Peringatan SIGAP | `GET /disaster-alerts?status=displayed\|dismissed`, `POST /disaster-alerts/{id}/dismiss` (alasan wajib), `POST /disaster-alerts/{id}/restore`; tab Peringatan SIGAP di halaman Pengumuman. Peringatan dikirim SIGAP lewat `/integrations/v1/alerts` (`../thirdparty/sigap/api-spec/openapi.yaml`) | Staf SIDUTama |
 
 ## Alur Surat (ringkas)
 

@@ -111,9 +111,10 @@ tags:
   - name: Integrasi Pihak Ketiga
     description: |
       Menu Integrasi Staf SIDUTama: status dan token aplikasi pihak ketiga
-      (Cimart). Endpoint yang dipanggil aplikasi itu sendiri
+      (Cimart, SIGAP). Endpoint yang dipanggil aplikasi itu sendiri
       (`/api/integrations/v1`) didokumentasikan terpisah di
-      `docs/thirdparty/cimart/api-spec/openapi.yaml`.
+      `docs/thirdparty/cimart/api-spec/openapi.yaml` dan
+      `docs/thirdparty/sigap/api-spec/openapi.yaml`.
 
 components:
   securitySchemes:
@@ -371,6 +372,8 @@ paths:
     $ref: 'paths/public/letter-types.yaml'
   /public/regulations:
     $ref: 'paths/public/regulations.yaml'
+  /public/disaster-alerts:
+    $ref: 'paths/public/disaster-alerts.yaml'
   /public/info-pages/{page}:
     $ref: 'paths/public/info-pages.yaml'
   /public/contact-us:
@@ -393,6 +396,12 @@ paths:
     $ref: 'paths/news/news-category-detail.yaml'
   /announcement:
     $ref: 'paths/announcement/announcement.yaml'
+  /disaster-alerts:
+    $ref: 'paths/disaster-alerts/disaster-alerts.yaml'
+  /disaster-alerts/{disasterAlert}/dismiss:
+    $ref: 'paths/disaster-alerts/disaster-alert-dismiss.yaml'
+  /disaster-alerts/{disasterAlert}/restore:
+    $ref: 'paths/disaster-alerts/disaster-alert-restore.yaml'
   /info-pages:
     $ref: 'paths/info-pages/info-pages.yaml'
   /info-pages/{page}:

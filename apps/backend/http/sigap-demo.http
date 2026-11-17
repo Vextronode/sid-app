@@ -1,0 +1,164 @@
+### =====================================================================
+### Demo API SIGAP -> SID (peringatan bencana dummy)
+### =====================================================================
+###
+### Dipakai dengan ekstensi VS Code "REST Client" (humao.rest-client):
+### klik "Send Request" di atas tiap request, jalankan berurutan dari atas.
+###
+### Persiapan (sekali, di apps/backend):
+###   1. php artisan migrate
+###   2. Isi di .env:  SIGAP_LINK_HOSTS=sigap.example.id   lalu  php artisan config:clear
+###   3. php artisan integration:create sigap --name="SIGAP" --abilities=alerts:write
+###      -> salin token yang tercetak ke @token di bawah.
+###   4. Jalankan  php artisan serve  dan  php artisan queue:work
+###      (tanpa queue:work, bar merah tetap muncul tetapi notifikasi tidak terkirim).
+###
+### JANGAN commit file ini dengan token asli.
+###
+### Waktu ditulis tetap (bukan variabel dinamis) supaya jalan di HTTP client
+### mana pun. Urutan sent_at sudah naik sesuai skenario; tidak perlu diubah.
+### Peringatan tanpa expires_at tampil 6 jam sejak request diterima SID.
+###
+### Ingin mengulang demo dari awal? Ganti @run (mis. demo2). external_id yang
+### sudah diakhiri tidak bisa dipakai lagi, jadi tiap putaran perlu ID baru.
+
+@baseUrl = http://localhost:8000/api/integrations/v1
+@token = 01a1ea6a-18f4-7246-ab2b-b225bbe61ee9|FqG89oduNo9NzH3Ykwp59pHo1jzZzaN8yFbdIdwmf65b6016
+@run = demo1
+
+
+### 0. Tes koneksi dan token -> 200, data.client = "SIGAP"
+GET {{baseUrl}}/ping
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### 1. Gempa M7.1 (waspada) -> 201
+###    Bar merah muncul di beranda, notifikasi masuk ke semua akun aktif.
+PUT {{baseUrl}}/alerts/gempa-881-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "gempa",
+  "level": "waspada",
+  "title": "Gempa M7.1 di 23 km barat daya Cibenda",
+  "message": "Tetap tenang, jauhi bangunan yang retak, dan ikuti arahan petugas.",
+  "occurred_at": "2026-11-17T14:02:00+07:00",
+  "sent_at": "2026-11-17T14:03:00+07:00",
+  "magnitude": 7.1,
+  "depth_km": 10,
+  "location": "23 km barat daya Cibenda",
+  "link_url": "https://sigap.example.id/kejadian/gempa-881"
+}
+
+
+### 2. Revisi magnitudo jadi M6.9 (ID sama, sent_at lebih baru) -> 200
+###    Judul di bar berubah, TANPA notifikasi baru (level tidak naik).
+PUT {{baseUrl}}/alerts/gempa-881-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "gempa",
+  "level": "waspada",
+  "title": "Gempa M6.9 di 23 km barat daya Cibenda",
+  "message": "Magnitudo direvisi. Tetap tenang dan ikuti arahan petugas.",
+  "occurred_at": "2026-11-17T14:02:00+07:00",
+  "sent_at": "2026-11-17T14:05:00+07:00",
+  "magnitude": 6.9,
+  "depth_km": 10,
+  "location": "23 km barat daya Cibenda",
+  "link_url": "https://sigap.example.id/kejadian/gempa-881"
+}
+
+
+### 3. Peringatan dini tsunami (awas, ID baru) -> 201
+###    Bar berganti ke tsunami dengan "+1 peringatan lain", notifikasi masuk.
+PUT {{baseUrl}}/alerts/tsunami-882-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "tsunami",
+  "level": "awas",
+  "title": "Peringatan dini tsunami pesisir selatan",
+  "message": "Segera menjauh dari pantai menuju tempat tinggi melalui jalur evakuasi.",
+  "occurred_at": "2026-11-17T14:06:00+07:00",
+  "sent_at": "2026-11-17T14:06:30+07:00",
+  "location": "Pesisir selatan Pangandaran"
+}
+
+
+### 4. Gempa susulan M5.0 (info, ID baru) -> 201
+###    Bar tetap tsunami, kini "+2 peringatan lain". Tanpa expires_at:
+###    tampil 6 jam sejak diterima.
+PUT {{baseUrl}}/alerts/gempa-883-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "gempa",
+  "level": "info",
+  "title": "Gempa susulan M5.0",
+  "occurred_at": "2026-11-17T14:40:00+07:00",
+  "sent_at": "2026-11-17T14:41:00+07:00",
+  "magnitude": 5.0,
+  "depth_km": 12,
+  "location": "25 km barat daya Cibenda"
+}
+
+
+### 5. Retry yang datang terlambat (sent_at lama) -> 200, DIABAIKAN
+###    (sent_at 14.04 lebih lama dari versi M6.9 pukul 14.05.)
+###    Data gempa-881 tetap versi M6.9.
+PUT {{baseUrl}}/alerts/gempa-881-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "gempa",
+  "level": "info",
+  "title": "Versi lama yang terlambat",
+  "occurred_at": "2026-11-17T14:02:00+07:00",
+  "sent_at": "2026-11-17T14:04:00+07:00"
+}
+
+
+### 6. Tsunami berakhir -> 200, status "ended"
+###    Bar kembali ke gempa M6.9 dengan "+1 peringatan lain".
+POST {{baseUrl}}/alerts/tsunami-882-{{run}}/end
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### 7. Contoh data salah (level tidak dikenal) -> 422
+PUT {{baseUrl}}/alerts/gempa-salah-{{run}}
+Authorization: Bearer {{token}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "type": "gempa",
+  "level": "merah",
+  "title": "Level tidak dikenal",
+  "occurred_at": "2026-11-17T15:00:00+07:00",
+  "sent_at": "2026-11-17T15:00:00+07:00"
+}
+
+
+### 8. Bersih-bersih: akhiri sisa peringatan supaya bar merah hilang -> 200
+POST {{baseUrl}}/alerts/gempa-881-{{run}}/end
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+POST {{baseUrl}}/alerts/gempa-883-{{run}}/end
+Authorization: Bearer {{token}}
+Accept: application/json

@@ -37,6 +37,12 @@ Schedule::command('announcements:prune')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Peringatan bencana SIGAP disimpan untuk audit selama masa simpan
+// (config disaster_alerts.retention_days) setelah berakhir, lalu dihapus.
+Schedule::command('disaster-alerts:prune')
+    ->dailyAt('02:00')
+    ->withoutOverlapping();
+
 // Activity log sengaja tidak dibersihkan otomatis (`activitylog:clean` tidak
 // dijadwalkan): riwayat data warga/KK, jabatan, akun, dan akses identitas
 // menjadi bukti bila ada sengketa bertahun-tahun kemudian. Retensi baru

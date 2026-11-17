@@ -46,8 +46,8 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 | Policy | `LetterPolicy` (view, create, download, fulfill, delete), `OfficialPolicy`, `RegionPolicy` |
 | Middleware | `account.active`, `password.changed`, `role`, `verified`; API integrasi: `integration.client`, `abilities`/`ability` (Sanctum) |
 | Rule | `ValidOfficialPosition` |
-| Notifikasi | `LetterStatusNotification` (kanal database + WebPush) |
-| Console | `staf-sid:first`, `letters:backfill-snapshots`, `letters:send-expiry-reminders`, `integration:{create,enable,disable,rotate,tokens,revoke,abilities}` |
+| Notifikasi | `LetterStatusNotification` (kanal database + WebPush); `DisasterAlertNotification` (peringatan SIGAP, dikirim job `SendDisasterAlertNotifications` per 200 akun) |
+| Console | `staf-sid:first`, `letters:backfill-snapshots`, `letters:send-expiry-reminders`, `integration:{create,enable,disable,rotate,tokens,revoke,abilities}`, `disaster-alerts:prune` (harian) |
 | Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
 ---
@@ -202,6 +202,8 @@ Aplikasi pihak ketiga (Cimart) memanggil `/api/integrations/v1` dari server-nya 
 
 Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf SIDUTama mengaktifkan/menonaktifkan, menerbitkan token baru (rotate, token lama tetap berlaku), dan mencabut token dari menu Integrasi (`/api/integration-clients`, konfirmasi kata sandi). Logika keduanya di `IntegrationClientService`. Kontrak untuk Cimart: `docs/thirdparty/cimart/api-spec/openapi.yaml`.
 
+**Peringatan bencana SIGAP** (`PUT /alerts/{external_id}`, `POST /alerts/{external_id}/end`, ability `alerts:write`) disimpan di `disaster_alerts` oleh `DisasterAlertService`. Penerimaan memakai `lockForUpdate` per peringatan: pembaruan dengan `sent_at` yang tidak lebih baru diabaikan, peringatan yang diakhiri bersifat final, dan peringatan yang diturunkan staf tetap tersembunyi. Notifikasi ke semua akun aktif desa dikirim lewat job antrean (bukan di request SIGAP) hanya saat peringatan baru tampil atau levelnya naik (`notified_level_rank`). Kontrak: `docs/thirdparty/sigap/api-spec/openapi.yaml`. Halaman publik membaca `GET /public/disaster-alerts` tanpa `PublicPageCache` (peringatan kedaluwarsa karena waktu, dan turunan staf harus langsung terlihat). Staf SIDUTama menurunkan dan menampilkan lagi lewat `/disaster-alerts/{id}/dismiss|restore` (kunci baris yang sama, activity log `disaster_alert`).
+
 ---
 
 ## 5. Domain Kependudukan
@@ -311,5 +313,6 @@ Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf S
 | 1.1 | - | v5.1 Auth & Approval Flow |
 | 1.2 | 2026-10-06 | v5.2: sosio-ekonomi per KK, pekerjaan baku, stempel desa, upload privat |
 | 1.3 | 2026-10-16 | v5.3: kategori surat & verification_type dihapus; jenis surat data-driven (form_fields, data_action, signature_slots, supporting_template, classification_code); snapshot render; nomor surat per kode klasifikasi; TTD akun & permintaan TTD; lampiran; Terapkan; surat ditahan saat RT kosong; Web Push; jabatan tanpa akun dinamis & foto pejabat; kategori berita; identitas desa & cache halaman publik; register dengan tanggal lahir; paginasi; index performa; Docker |
+| 1.6 | 2026-11-17 | Peringatan bencana SIGAP (4.4): tabel `disaster_alerts`, endpoint `alerts`, job notifikasi ke semua akun aktif, dan `disaster-alerts:prune` |
 | 1.5 | 2026-11-17 | API integrasi pihak ketiga (4.4): `integration_clients`, guard `integration` terpisah dari `sanctum`, middleware `integration.client` dan Sanctum abilities, rate limit per client, command `integration:*`, API permohonan pedagang Cimart, dan menu Integrasi Staf SIDUTama |
 | 1.4 | 2026-10-31 | TTD digital dihapus: surat terbit tanpa TTD/stempel (TTD & stempel basah di kantor desa), pratinjau pemohon setelah terbit; tabel `user_signatures`/`signature_reset_requests`, kolom `officials.signature_img`, `villages.stamp_img`, `letter_types.signature_slots`, dan TTD pihak lain/basah di `letter_signatures` dihapus; tersisa saksi/persetujuan |

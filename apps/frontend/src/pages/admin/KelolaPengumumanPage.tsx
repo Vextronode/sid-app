@@ -2,6 +2,7 @@ import '@/styles/beranda.css'
 
 import { Megaphone, Pencil, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { PageLoader } from '@/components/ui/PageLoader'
@@ -12,12 +13,14 @@ import { formatAnnouncementUntil } from '@/features/beranda/utils/announcement'
 import { getBeritaList } from '@/features/kelola-berita/api'
 import { deleteAnnouncement, getAnnouncement, saveAnnouncement } from '@/features/pengumuman/api'
 import { refreshPublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import { getDisasterAlerts } from '@/features/peringatan-bencana/api'
+import { PeringatanSigapPanel } from '@/features/peringatan-bencana/components/PeringatanSigapPanel'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { useConfirmDiscard } from '@/shared/hooks/useConfirmDiscard'
 import { isFormDirty } from '@/shared/lib/isFormDirty'
 import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
 import type { AnnouncementPayload, DurationUnit } from '@/features/pengumuman/api'
 import type { News } from '@/types'
@@ -490,7 +493,99 @@ function AnnouncementForm({
   )
 }
 
+// Tab halaman Pengumuman (?bagian=): pengumuman dari Staf SIDUTama, dan
+// peringatan bencana dari SIGAP.
+type PengumumanSection = 'desa' | 'sigap'
+
+const SECTION_PARAM = 'bagian'
+
 export default function KelolaPengumumanPage() {
+  const [params, setParams] = useSearchParams()
+  const active: PengumumanSection = params.get(SECTION_PARAM) === 'sigap' ? 'sigap' : 'desa'
+  const [sigapCount, setSigapCount] = useState<number | null>(null)
+
+  // Jumlah peringatan yang tampil untuk label tab, juga saat tab Pengumuman
+  // Desa yang terbuka. Gagal memuat cukup tanpa angka.
+  useEffect(() => {
+    let current = true
+
+    getDisasterAlerts('displayed')
+      .then((alerts) => {
+        if (current) setSigapCount(alerts.length)
+      })
+      .catch(() => undefined)
+
+    return () => {
+      current = false
+    }
+  }, [])
+
+  const open = (section: PengumumanSection) => {
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        next.set(SECTION_PARAM, section)
+
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const sections: { value: PengumumanSection; label: string }[] = [
+    { value: 'desa', label: 'Pengumuman Desa' },
+    {
+      value: 'sigap',
+      label: sigapCount ? `Peringatan SIGAP (${sigapCount})` : 'Peringatan SIGAP',
+    },
+  ]
+
+  const tabs = (
+    <div className="sid-wilayah-tabs" role="tablist" aria-label="Pilih jenis pengumuman">
+      {sections.map((section) => (
+        <button
+          key={section.value}
+          type="button"
+          role="tab"
+          aria-selected={section.value === active}
+          className={`sid-wilayah-tab${section.value === active ? ' sid-wilayah-tab-active' : ''}`}
+          onClick={() => open(section.value)}
+        >
+          {section.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (active === 'sigap') {
+    return (
+      <div className="sid-kelola-wilayah-page">
+        <div className="sid-kelola-wilayah-content">
+          <div className="sid-kelola-wilayah-header">
+            <div>
+              <h1>Pengumuman</h1>
+
+              <p>
+                Peringatan bencana dari SIGAP tampil sebagai bar merah di atas Pengumuman Desa,
+                sampai diakhiri SIGAP, lewat masa tayang, atau diturunkan di sini.
+              </p>
+            </div>
+          </div>
+
+          {tabs}
+
+          <PeringatanSigapPanel onDisplayedCountChange={setSigapCount} />
+        </div>
+
+        <SiteFooter />
+      </div>
+    )
+  }
+
+  return <PengumumanDesaPage tabs={tabs} />
+}
+
+function PengumumanDesaPage({ tabs }: { tabs: ReactNode }) {
   const content = getBerandaContent()
   const [announcement, setAnnouncement] = useState<PublicAnnouncement | null>(null)
   const [loading, setLoading] = useState(true)
@@ -566,6 +661,7 @@ export default function KelolaPengumumanPage() {
     return (
       <div className="sid-kelola-wilayah-page">
         <div className="sid-kelola-wilayah-content">
+          {tabs}
           <PageLoader label="Memuat pengumuman..." />
         </div>
 
@@ -593,6 +689,8 @@ export default function KelolaPengumumanPage() {
             <RefreshButton onRefresh={load} disabled={processing} />
           </div>
         </div>
+
+        {tabs}
 
         {error && (
           <div className="sid-kelola-wilayah-error" role="alert">

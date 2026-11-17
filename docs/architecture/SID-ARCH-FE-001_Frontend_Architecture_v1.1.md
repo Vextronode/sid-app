@@ -77,11 +77,16 @@ src/
     profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, titik kantor
                           dari koordinat/link Google Maps, sambutan Kepala Desa)
     pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
+    peringatan-bencana/   peringatan SIGAP: DisasterAlertBar (bar merah publik, dimuat ulang
+                          tiap 60 detik selama tab terlihat) dan PeringatanSigapPanel (tab
+                          Peringatan SIGAP di Kelola Pengumuman: turunkan / tampilkan lagi)
+    integrasi/            menu Integrasi (status dan token aplikasi pihak ketiga)
     info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
     peraturan/, notifikasi/ (satu popover untuk semua peran, WebPushControls, deep link),
                           dashboard-mobile/
     beranda/              header publik (AccountNavLink: Masuk / Dashboard Saya), konten beranda,
-                          PublicStickyChrome (header + bar pengumuman menempel di semua halaman publik)
+                          PublicStickyChrome (bar peringatan SIGAP + header + bar pengumuman
+                          menempel di semua halaman publik)
     profil-desa/          OrgChart (bagan Perangkat Desa, BPD, Lembaga Desa)
     berita/, info-desa/, info/ (halaman informasi: template + isian dari menu Halaman Informasi)
     cetak-surat/
@@ -153,7 +158,7 @@ Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat war
 | Auth | `/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password` |
 | Warga | `/surat-saya` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/surat-saya/daftar`, `/profil` |
 | RT/RW/Kadus/Kades | `/admin/{rt,rw,kadus,kades}`, `/admin/{rt,rw,kadus,kades}/surat` |
-| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/integrasi` (token aplikasi pihak ketiga, khusus Staf SIDUTama), `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/integrasi` (token aplikasi pihak ketiga, khusus Staf SIDUTama), `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman` (`?bagian=desa` Pengumuman Desa, `?bagian=sigap` Peringatan SIGAP), `/admin/halaman-informasi` |
 | Pejabat (umum, termasuk Staf SIDUTama) | `/admin/profil`, `/admin/surat-saya` |
 
 ---
