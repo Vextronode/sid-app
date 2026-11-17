@@ -36,6 +36,16 @@ class IntegrationClientFactory extends Factory
         ]);
     }
 
+    /** Client SIGAP dengan ability bawaannya. */
+    public function sigap(): static
+    {
+        return $this->state(fn () => [
+            'slug' => 'sigap-'.fake()->unique()->numerify('####'),
+            'name' => 'SIGAP',
+            'abilities' => [IntegrationAbility::AlertsWrite->value],
+        ]);
+    }
+
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);

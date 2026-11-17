@@ -11,12 +11,14 @@ enum IntegrationAbility: string
 {
     case SellerApplicationsRead = 'seller-applications:read';
     case SellerApplicationsUpdate = 'seller-applications:update';
+    case AlertsWrite = 'alerts:write';
 
     public function label(): string
     {
         return match ($this) {
             self::SellerApplicationsRead => 'Membaca permohonan pedagang',
             self::SellerApplicationsUpdate => 'Melaporkan hasil permohonan pedagang',
+            self::AlertsWrite => 'Mengirim peringatan bencana',
         };
     }
 
