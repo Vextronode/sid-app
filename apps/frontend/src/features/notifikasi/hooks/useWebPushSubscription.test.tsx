@@ -6,9 +6,15 @@ const { savePushSubscription, removePushSubscription } = vi.hoisted(() => ({
   removePushSubscription: vi.fn(),
 }))
 
-vi.mock('../api', () => ({ savePushSubscription, removePushSubscription }))
+const { notifySuccess, notifyError } = vi.hoisted(() => ({
+  notifySuccess: vi.fn(),
+  notifyError: vi.fn(),
+}))
 
-import useWebPushSubscription from './useWebPushSubscription'
+vi.mock('../api', () => ({ savePushSubscription, removePushSubscription }))
+vi.mock('@/shared/lib/toast', () => ({ notifySuccess, notifyError }))
+
+import useWebPushSubscription, { SERVICE_WORKER_TIMEOUT_MS } from './useWebPushSubscription'
 import type { Mock } from 'vitest'
 
 const endpoint = 'https://push.example/subscription'
@@ -93,5 +99,70 @@ describe('useWebPushSubscription', () => {
 
     expect(result.current.error).toBe('Notifikasi push belum dikonfigurasi. Hubungi administrator.')
     expect(Notification.requestPermission).not.toHaveBeenCalled()
+    expect(notifyError).toHaveBeenCalledWith(
+      'Notifikasi push belum dikonfigurasi. Hubungi administrator.',
+    )
+  })
+
+  it('shows a success toast after enabling and disabling', async () => {
+    const { result } = renderHook(() => useWebPushSubscription())
+
+    await act(async () => {
+      await result.current.enable()
+    })
+    expect(notifySuccess).toHaveBeenLastCalledWith('Notifikasi browser diaktifkan.')
+
+    registration.pushManager.getSubscription.mockResolvedValue(subscription)
+    await act(async () => {
+      await result.current.disable()
+    })
+    expect(notifySuccess).toHaveBeenLastCalledWith('Notifikasi browser dinonaktifkan.')
+    expect(notifyError).not.toHaveBeenCalled()
+  })
+
+  it('shows the blocked-permission message instead of a generic one', async () => {
+    vi.stubGlobal('Notification', { requestPermission: vi.fn().mockResolvedValue('denied') })
+    const { result } = renderHook(() => useWebPushSubscription())
+
+    await act(async () => {
+      await result.current.enable()
+    })
+
+    const message = 'Izin notifikasi diblokir di browser. Ubah izin situs untuk mengaktifkannya.'
+    expect(result.current.error).toBe(message)
+    expect(notifyError).toHaveBeenCalledWith(message)
+    expect(registration.pushManager.subscribe).not.toHaveBeenCalled()
+  })
+
+  it('stops waiting when the service worker never becomes ready', async () => {
+    // Tanpa service worker (mis. `npm run dev`), ready tidak pernah selesai.
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { ready: new Promise(() => {}) },
+    })
+    vi.useFakeTimers()
+
+    try {
+      const { result } = renderHook(() => useWebPushSubscription())
+
+      let enabling!: Promise<boolean>
+      act(() => {
+        enabling = result.current.enable()
+      })
+      expect(result.current.loading).toBe(true)
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(SERVICE_WORKER_TIMEOUT_MS)
+      })
+
+      await expect(enabling).resolves.toBe(false)
+      const message = 'Layanan notifikasi browser belum siap. Muat ulang halaman lalu coba lagi.'
+      expect(result.current.loading).toBe(false)
+      expect(result.current.error).toBe(message)
+      expect(notifyError).toHaveBeenCalledWith(message)
+      expect(savePushSubscription).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
