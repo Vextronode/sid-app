@@ -13,6 +13,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
+  BellRing,
   BriefcaseBusiness,
   ScrollText,
   LayoutGrid,
@@ -247,6 +248,12 @@ const MENU_ITEMS = [
     route: '/admin/log-aktivitas',
     allowedRoles: getOperatorAllowedRoles('/admin/log-aktivitas'),
     icon: History,
+  },
+  {
+    label: 'Pelanggan Notifikasi',
+    route: '/admin/pelanggan-notifikasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/pelanggan-notifikasi'),
+    icon: BellRing,
   },
   {
     label: 'Integrasi',

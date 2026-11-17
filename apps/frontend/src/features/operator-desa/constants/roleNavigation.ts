@@ -55,6 +55,8 @@ export const OPERATOR_ROUTE_CAPABILITIES: Record<string, UserRole[]> = {
   '/admin/pengaturan-persetujuan': ['staf_sid'],
   '/admin/alur-persetujuan': ['staf_sid'],
   '/admin/log-aktivitas': ['staf_sid'],
+  // Akun yang mengaktifkan notifikasi browser (Web Push) dan status perangkatnya.
+  '/admin/pelanggan-notifikasi': ['staf_sid'],
   // Token aplikasi pihak ketiga (Cimart, dll.).
   '/admin/integrasi': ['staf_sid'],
   '/admin/organisasi/bpd': ['staf_sid'],

@@ -23479,6 +23479,114 @@ button.sid-operator-profile {
   }
 }
 
+/* Pelanggan Notifikasi (PelangganNotifikasiPage) */
+
+.sid-push-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sid-push-note {
+  margin-bottom: 1.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--radius-lg);
+  background: var(--sid-surface-card);
+  color: var(--sid-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.sid-push-note p {
+  margin: 0;
+}
+
+.sid-push-note p + p {
+  margin-top: 0.5rem;
+}
+
+.sid-push-note strong,
+.sid-push-note b {
+  color: var(--sid-text-primary);
+  font-weight: 600;
+}
+
+.sid-push-filters {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sid-push-search {
+  grid-column: span 2;
+}
+
+.sid-push-device-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-button);
+  background: var(--sid-surface-card);
+  color: var(--sid-primary);
+  font: inherit;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sid-push-device-toggle:hover {
+  border-color: var(--sid-primary);
+  background: var(--sid-status-progress-bg);
+}
+
+.sid-push-device-row > td {
+  padding: 0.75rem 1rem;
+  background: var(--sid-surface-page);
+}
+
+.sid-push-device-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.sid-push-device-table th,
+.sid-push-device-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--sid-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sid-push-device-table th {
+  color: var(--sid-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sid-push-device-table tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .sid-push-stats,
+  .sid-push-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sid-push-stats,
+  .sid-push-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .sid-push-search {
+    grid-column: auto;
+  }
+}
+
 /* Simpan dan Nonaktifkan/Aktifkan: bertumpuk, lebar sama, di tengah kolom. */
 .sid-admin-letter-type-actions {
   display: flex;
