@@ -4,16 +4,22 @@ use App\Exceptions\OccupationInUseException;
 use App\Exceptions\RegionContainsCitizensException;
 use App\Exceptions\RegionHasActiveCitizensException;
 use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureIntegrationClient;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Support\ApiExceptionMessages;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -34,6 +40,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => EnsureEmailIsVerified::class,
             'password.changed' => EnsurePasswordIsChanged::class,
             'role' => EnsureUserHasRole::class,
+            // API integrasi pihak ketiga (/api/integrations/v1).
+            'integration.client' => EnsureIntegrationClient::class,
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class,
         ]);
 
         //
@@ -50,6 +60,29 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json([
                 'message' => $exception->getMessage(),
             ], $exception->getStatusCode());
+        });
+
+        // API integrasi: klien membaca `code`, dan 401 berarti token salah,
+        // bukan sesi login yang habis. MissingAbilityException (dari
+        // middleware `abilities:`) sudah diubah framework menjadi
+        // AccessDeniedHttpException saat callback ini dijalankan.
+        $exceptions->render(function (AccessDeniedHttpException $exception): ?JsonResponse {
+            if (! $exception->getPrevious() instanceof MissingAbilityException) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'Token tidak memiliki akses ke endpoint ini.',
+                'code' => 'ability_forbidden',
+            ], 403);
+        });
+
+        $exceptions->render(function (AuthenticationException $exception, Request $request): ?JsonResponse {
+            if (! $request->is('api/integrations/*')) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Token tidak valid.'], 401);
         });
 
         // Pesan bawaan framework (401/403/404/419/429/5xx) dalam bahasa

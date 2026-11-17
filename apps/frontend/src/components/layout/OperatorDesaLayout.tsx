@@ -32,6 +32,7 @@ import {
   Network,
   PanelLeftClose,
   PanelLeftOpen,
+  Plug,
   RotateCcw,
   Settings,
   Store,
@@ -246,6 +247,12 @@ const MENU_ITEMS = [
     route: '/admin/log-aktivitas',
     allowedRoles: getOperatorAllowedRoles('/admin/log-aktivitas'),
     icon: History,
+  },
+  {
+    label: 'Integrasi',
+    route: '/admin/integrasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/integrasi'),
+    icon: Plug,
   },
   {
     label: 'Organisasi BPD',

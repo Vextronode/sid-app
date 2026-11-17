@@ -121,6 +121,7 @@ const OperatorSuratListPage = lazy(() => import('@/pages/admin/OperatorSuratList
 const ApprovalSettingPage = lazy(() => import('@/pages/admin/ApprovalSettingPage'))
 const ApprovalFlowsPage = lazy(() => import('@/pages/admin/ApprovalFlowsPage'))
 const ActivityLogPage = lazy(() => import('@/pages/admin/ActivityLogPage'))
+const IntegrasiPage = lazy(() => import('@/pages/admin/IntegrasiPage'))
 const PejabatDesaPage = lazy(() => import('@/pages/admin/PejabatDesaPage'))
 const SuratSayaPejabatPage = lazy(() => import('@/pages/admin/SuratSayaPejabatPage'))
 const NotificationRedirectPage = lazy(() => import('@/pages/NotificationRedirectPage'))
@@ -630,6 +631,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/log-aktivitas')}>
                     <ActivityLogPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/integrasi"
+                element={
+                  <ProtectedRoute allowedRoles={getOperatorAllowedRoles('/admin/integrasi')}>
+                    <IntegrasiPage />
                   </ProtectedRoute>
                 }
               />

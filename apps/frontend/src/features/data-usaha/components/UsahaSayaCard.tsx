@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Store } from 'lucide-react'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
-import { letterDetailPath } from '@/features/notifikasi/utils/notificationTarget'
+import { letterDetailPath, USAHA_SAYA_ANCHOR } from '@/features/notifikasi/utils/notificationTarget'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { confirmDialog } from '@/shared/lib/dialog'
 import { notifySuccess } from '@/shared/lib/toast'
@@ -19,6 +19,8 @@ import { cimartStatusTone, formatDate } from '../constants'
  */
 export function UsahaSayaCard() {
   const { user } = useAuth()
+  const { hash } = useLocation()
+  const sectionRef = useRef<HTMLElement>(null)
   const [businesses, setBusinesses] = useState<CitizenBusiness[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -38,6 +40,13 @@ export function UsahaSayaCard() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   }, [load])
+
+  // Dibuka dari notifikasi hasil pendaftaran Cimart: gulir ke bagian ini.
+  useEffect(() => {
+    if (!loading && hash === `#${USAHA_SAYA_ANCHOR}`) {
+      sectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    }
+  }, [loading, hash])
 
   const run = async (business: CitizenBusiness, action: typeof requestCimartApplication) => {
     setBusyId(business.id)
@@ -87,7 +96,12 @@ export function UsahaSayaCard() {
     business.letter && user ? letterDetailPath(user.role, business.letter.id, true) : null
 
   return (
-    <section className="sid-card" aria-labelledby="usaha-saya-heading">
+    <section
+      ref={sectionRef}
+      id={USAHA_SAYA_ANCHOR}
+      className="sid-card"
+      aria-labelledby="usaha-saya-heading"
+    >
       <h2 id="usaha-saya-heading" className="sid-section-title">
         Usaha Saya
       </h2>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\IntegrationClient;
 use App\Models\User;
 
 return [
@@ -42,6 +43,23 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Route internal (`auth:sanctum`): session SPA atau token milik
+        // User. Provider wajib diisi agar token client integrasi ditolak
+        // (Laravel\Sanctum\Guard::hasValidProvider).
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+
+        // Route /api/integrations/v1 (`auth:integration`): hanya token milik
+        // IntegrationClient. Guard Sanctum memeriksa session cookie lebih
+        // dulu, jadi middleware `integration.client` tetap wajib menolak
+        // User yang login lewat session.
+        'integration' => [
+            'driver' => 'sanctum',
+            'provider' => 'integration_clients',
+        ],
     ],
 
     /*
@@ -65,6 +83,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'integration_clients' => [
+            'driver' => 'eloquent',
+            'model' => IntegrationClient::class,
         ],
 
         // 'users' => [

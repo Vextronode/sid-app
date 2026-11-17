@@ -153,7 +153,7 @@ Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat war
 | Auth | `/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password` |
 | Warga | `/surat-saya` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/surat-saya/daftar`, `/profil` |
 | RT/RW/Kadus/Kades | `/admin/{rt,rw,kadus,kades}`, `/admin/{rt,rw,kadus,kades}/surat` |
-| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/integrasi` (token aplikasi pihak ketiga, khusus Staf SIDUTama), `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman`, `/admin/halaman-informasi` |
 | Pejabat (umum, termasuk Staf SIDUTama) | `/admin/profil`, `/admin/surat-saya` |
 
 ---

@@ -46,6 +46,11 @@ const ACCOUNT_REQUEST_SECTIONS: Record<string, AccountSection> = {
 // Keputusan permintaan ganti foto, untuk warga yang memintanya.
 const PROFILE_PHOTO_DECISIONS = ['profile_photo_approved', 'profile_photo_rejected']
 
+// Hasil pendaftaran pedagang Cimart: dibuka di bagian Usaha Saya pada profil.
+const CIMART_DECISIONS = ['cimart_accepted', 'cimart_rejected']
+
+export const USAHA_SAYA_ANCHOR = 'usaha-saya'
+
 function profileRoute(role: UserRole) {
   return role === 'warga' ? '/profil' : '/admin/profil'
 }
@@ -76,6 +81,10 @@ export function getNotificationTarget(
 
   if (context.status && PROFILE_PHOTO_DECISIONS.includes(context.status)) {
     return profileRoute(role)
+  }
+
+  if (context.status && CIMART_DECISIONS.includes(context.status)) {
+    return `${profileRoute(role)}#${USAHA_SAYA_ANCHOR}`
   }
 
   if (!context.letter_id) return null
