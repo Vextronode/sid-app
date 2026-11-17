@@ -28,7 +28,7 @@ title Deployment High-Level - SIDUTama v5.3
 actor "Warga / Pejabat / Petugas /\nPengunjung publik" as USER
 cloud "Layanan push browser" as PUSHSVC
 
-rectangle "Mode A - Docker (expo/demo)" #F1F8E9 {
+rectangle "Mode A - Docker (staging/produksi)" #F1F8E9 {
   node "Host ber-Docker" as DHOST {
     node "sid_web (Nginx + SPA)" as DWEB
     node "sid_api (PHP-FPM + Laravel)" as DAPI

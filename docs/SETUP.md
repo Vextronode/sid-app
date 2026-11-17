@@ -12,7 +12,7 @@ date: 2026-10-18
 
 Panduan clone dan menjalankan project di lokal. Command ditulis untuk **Windows (PowerShell/CMD)**. macOS/Linux hampir sama, bedanya di cara menyalin file `.env` (`cp`, bukan `copy`).
 
-Untuk menjalankan stack Docker expo (bukan pengembangan lokal), lihat [`EXPO_RUNBOOK.md`](EXPO_RUNBOOK.md).
+Untuk menjalankan stack Docker staging/produksi (bukan pengembangan lokal), lihat README bagian **B. Produksi**.
 
 ---
 
@@ -38,7 +38,7 @@ Monorepo dengan 2 aplikasi di `apps/`:
 - `apps/backend` - Laravel (API, queue, scheduler)
 - `apps/frontend` - React SPA (Vite)
 
-Folder `deploy/` berisi docker compose dan skrip untuk stack expo.
+Folder `deploy/` berisi docker compose dan skrip untuk stack staging/produksi.
 
 ---
 

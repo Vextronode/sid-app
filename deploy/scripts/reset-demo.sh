@@ -55,7 +55,7 @@ else
   ROLE="" DB_HOST_V="" DB_NAME="" DB_USER=""
 fi
 
-if [ "$ROLE" = "expo" ]; then gok "SID_ROLE=expo"; else gfail "SID_ROLE='$ROLE' (harus expo)."; fi
+if [ "$ROLE" = "demo" ]; then gok "SID_ROLE=demo"; else gfail "SID_ROLE='$ROLE' (harus demo; instance production tidak boleh di-reset)."; fi
 if [ "$DB_HOST_V" = "sid_db" ]; then gok "DB_HOST=sid_db"; else gfail "DB_HOST='$DB_HOST_V' (harus persis sid_db, service DB lokal)."; fi
 if [[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] && [ "$DB_NAME" != "postgres" ] && [ "$DB_NAME" != "template0" ] && [ "$DB_NAME" != "template1" ]; then
   gok "DB_DATABASE=$DB_NAME"

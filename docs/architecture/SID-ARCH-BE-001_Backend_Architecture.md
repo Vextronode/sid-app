@@ -23,7 +23,7 @@
 | Otorisasi | Middleware `role:` (`EnsureUserHasRole`) + Laravel Policy | Tanpa package RBAC pihak ketiga |
 | Database | PostgreSQL (`DB_CONNECTION=pgsql`); stack Docker memakai `postgres:18.6` atau Neon | SQLite dipakai test |
 | ORM | Eloquent | Enkripsi field via `$casts` |
-| Queue | Driver `database` (dev) / `sync` (stack Docker expo) | Hanya kanal Web Push yang diantrekan |
+| Queue | Driver `database` (dev dan stack Docker; dikirim `sid_worker`) | Yang diantrekan: kanal Web Push dan job notifikasi peringatan SIGAP (`SendDisasterAlertNotifications`) |
 | Cache & Session | Driver `database` | Cache dipakai halaman publik (`PublicPageCache`) |
 | PDF | `barryvdh/laravel-dompdf` ^3.1 | On-demand; surat approved dari snapshot (S6) |
 | Import Excel | `maatwebsite/excel` ^4 | Import warga |
@@ -300,7 +300,7 @@ Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf S
 | Skema DB | `TDD-03_Database_Schema.md` |
 | Use case | `TDD-02_UseCase_Descriptions.md` |
 | Diagram | `docs/diagram/code/*` |
-| Deployment | `deploy/`, `docs/deploy/`, `docs/EXPO_RUNBOOK.md` |
+| Deployment | `deploy/`, README bagian B |
 | Audit docs | `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
 ---

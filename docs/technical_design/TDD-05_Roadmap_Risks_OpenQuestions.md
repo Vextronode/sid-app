@@ -11,7 +11,7 @@
 
 > **Cara pakai dokumen ini:** Section 3 (Pertanyaan Prioritas) adalah bagian paling penting untuk dicek berkala — status di sini bisa berubah seiring project jalan, sementara dokumen tidak selalu ikut diperbarui secara real-time. Jika ragu, cek migration/kode terlebih dulu, baru anggap dokumen ini sebagai rujukan kedua.
 
-> **Catatan v5.3:** keputusan yang sudah terkunci sebelumnya tetap berlaku. Keputusan baru yang sudah dieksekusi di source (kategori surat dihapus, jenis surat data-driven, snapshot, tanda tangan pihak terkait, Terapkan, jabatan tanpa akun dinamis, kategori berita, Docker untuk expo) dicatat sebagai terjawab di S3.2.
+> **Catatan v5.3:** keputusan yang sudah terkunci sebelumnya tetap berlaku. Keputusan baru yang sudah dieksekusi di source (kategori surat dihapus, jenis surat data-driven, snapshot, tanda tangan pihak terkait, Terapkan, jabatan tanpa akun dinamis, kategori berita, Docker untuk deploy) dicatat sebagai terjawab di S3.2.
 
 ---
 
@@ -21,7 +21,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 
 | Tahap | Fokus | Deliverable | Prasyarat |
 |---|---|---|---|
-| Tahap 1 — Core System (MVP) | Register NIK + tanggal lahir + password, login username; surat dengan isian dinamis, lampiran, tanda tangan pihak terkait; flow RT → Kades/Sekdes final (RW/Kadus FYI); snapshot & nomor surat per kode klasifikasi; Kasi/Kaur unduh & Terapkan perubahan data; PDF on-demand + dokumen pendukung; deadline & overdue; data kependudukan; jabatan berakun & tanpa akun; CMS (profil desa, berita berkategori, peraturan, organisasi); dashboard; notifikasi in-app + Web Push; cache halaman publik; Docker stack expo | Fitur MVP aktif termasuk pengingat approval terjadwal; notifikasi email dan audit akses data sensitif belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
+| Tahap 1 — Core System (MVP) | Register NIK + tanggal lahir + password, login username; surat dengan isian dinamis, lampiran, tanda tangan pihak terkait; flow RT → Kades/Sekdes final (RW/Kadus FYI); snapshot & nomor surat per kode klasifikasi; Kasi/Kaur unduh & Terapkan perubahan data; PDF on-demand + dokumen pendukung; deadline & overdue; data kependudukan; jabatan berakun & tanpa akun; CMS (profil desa, berita berkategori, peraturan, organisasi); dashboard; notifikasi in-app + Web Push; cache halaman publik; Docker stack staging/produksi | Fitur MVP aktif termasuk pengingat approval terjadwal; notifikasi email dan audit akses data sensitif belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
 | Tahap 2 — Penguatan Integritas & Keamanan | Aset & Keuangan Desa; Kelayakan Bantuan Sosial; Redis + Laravel Horizon; backup terjadwal; hardening (force HTTPS, cookie SameSite ketat, audit akses data sensitif); benchmarking & load test | Backup terjadwal tidak diverifikasi terhadap source backend; hasil benchmarking terdokumentasi (hash chain & dynamic form **tidak** termasuk — lihat Next Dev di `TDD-06_Appendix.md`) | Tahap 1 stabil |
 | Next Dev — Paket 1 | Dynamic Tipe Surat oleh Staf SIDUTama: create tipe surat baru, WYSIWYG template editor, CRUD isian form/aksi data dari UI (infrastruktur data `form_fields` dsb. sudah ada, tetapi hanya diisi developer lewat seeder) | Staf SIDUTama mandiri kelola tipe surat tanpa developer | Tahap 1 stabil — lihat detail di Appendix |
 | Next Dev — Paket 2 | Blockchain-inspired hashing | Validasi integritas data surat | Tahap 1 stabil — lihat detail di Appendix |
@@ -39,7 +39,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 | Server deployment tersedia dengan spesifikasi minimum: 2 vCPU, 2GB RAM, 20GB SSD | TINGGI | Performa sistem degradasi; implementasi keamanan (HTTPS, fail2ban, firewall) tidak bisa diterapkan penuh | Dokumentasikan minimum server requirement sejak awal; siapkan alternatif managed hosting |
 | Worker queue dijaga berjalan bila Web Push diaktifkan | SEDANG | Push tertunda (notifikasi in-app tetap) | Stack Docker: service `sid_worker` dengan `restart: unless-stopped`; panduan VPS menyediakan konfigurasi Supervisor |
 | PostgreSQL tersedia dan dapat dikonfigurasi di server deployment | RENDAH | Implementasi keamanan tidak bisa diterapkan penuh | Dokumentasikan minimum requirement server; siapkan alternatif shared hosting |
-| Docker dipakai untuk stack expo/demo; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
+| Docker dipakai untuk stack staging/produksi; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
 
 ### 2.2. Asumsi & Risiko Operasional & Sosial
 
@@ -71,7 +71,7 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 
 | Pertanyaan | Status | Jawaban |
 |---|---|---|
-| Queue driver Tahap 1 | Sudah diputuskan | `database` untuk dev/VPS; `sync` untuk stack Docker expo. Hanya Web Push yang diantrekan |
+| Queue driver Tahap 1 | Sudah diputuskan | `database` untuk dev, VPS, dan stack Docker (dikirim `sid_worker`). Hanya Web Push yang diantrekan |
 | Docker untuk deployment | Terjawab (source) | Image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dengan compose; Laravel Sail tidak dipakai |
 | Apakah notifikasi email aktif di MVP atau in-app dulu? | Terjawab (source) | In-app (database) + Web Push; email status surat belum ada |
 | Apakah kategori surat (`letter_categories`) dipertahankan? | Terjawab (source) | Dihapus; perilaku per jenis surat diturunkan dari kolom `letter_types` |
@@ -108,11 +108,11 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | `on_behalf_of` nullable di MVP | Warga submit sendiri di MVP, kolom selalu NULL | Kolom tetap ada untuk future use case di mana petugas mungkin perlu input atas nama warga tertentu |
 | Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |
 | Redis belum dipakai | Queue, cache, dan session di database | Cukup untuk traffic desa; switch lewat `.env` |
-| Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan `docs/EXPO_RUNBOOK.md` |
+| Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan README bagian B |
 | Struktur jenis surat (template, isian, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, penugasan, status aktif (UC-21) |
 | Snapshot/PDF membutuhkan Kepala Desa aktif | Surat approved lama tanpa snapshot tidak dapat diunduh (404) selama jabatan Kades kosong | Pastikan Kades selalu ditetapkan; snapshot dibuat saat final approve bila Kades ada |
 | Surat ditahan bila RT di wilayah pemohon kosong | Surat menunggu sampai RT ditetapkan | Staf SIDUTama dinotifikasi; RT baru langsung diberi tahu |
-| Web Push butuh VAPID di backend & `VITE_VAPID_PUBLIC_KEY` di build frontend | Tanpa keduanya push nonaktif | Image web expo saat ini dibangun tanpa VAPID |
+| Web Push butuh VAPID di backend & `VITE_VAPID_PUBLIC_KEY` di build frontend | Tanpa keduanya push nonaktif | Image web saat ini dibangun tanpa VAPID |
 | Optimasi gambar butuh ekstensi GD (WebP) | Tanpa dukungan, berkas disimpan apa adanya/fallback | Pasang `gd` dengan WebP di image PHP |
 | Cache halaman publik 10 menit | Perubahan via SQL langsung (tanpa event model) tidak menggugurkan cache | Ubah data lewat aplikasi, atau tunggu TTL |
 | Tipe surat dengan `template=NULL` tidak bisa dipakai warga | Warga tidak bisa submit surat yang belum ada template | Guard di backend + badge "Draft" di admin page |
