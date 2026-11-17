@@ -8,11 +8,17 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title ?? 'SIDUTama'
+  const tag = payload.tag ?? payload.data?.tag
   const options = {
     body: payload.body ?? payload.message ?? 'Ada pembaruan layanan desa.',
     icon: payload.icon ?? '/assets/icons/icon-192.png',
     badge: '/assets/icons/icon-192.png',
-    tag: payload.tag ?? payload.data?.tag,
+    tag,
+    // Peringatan bencana: tetap berbunyi saat menggantikan notifikasi dengan
+    // tag yang sama (level naik), dan tidak hilang sendiri dari layar.
+    // `renotify` tanpa tag ditolak browser.
+    renotify: Boolean(tag && payload.renotify),
+    requireInteraction: Boolean(payload.requireInteraction),
     data: payload.data ?? {},
   }
 
