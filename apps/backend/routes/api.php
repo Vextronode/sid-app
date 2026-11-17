@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationAbility;
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\AccountRegistrationController;
 use App\Http\Controllers\Api\ActivityLogController;
@@ -15,6 +16,9 @@ use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\IdentityController;
 use App\Http\Controllers\Api\InfoPageController;
+use App\Http\Controllers\Api\Integration\PingController;
+use App\Http\Controllers\Api\Integration\SellerApplicationController;
+use App\Http\Controllers\Api\IntegrationClientController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
@@ -68,6 +72,32 @@ Route::prefix('public')->group(function () {
     Route::get('/info-pages/{page}', [PublicPageController::class, 'infoPage'])
         ->whereIn('page', array_keys(InfoPageFields::PAGES));
 });
+
+/*
+|--------------------------------------------------------------------------
+| API Integrasi Pihak Ketiga (v1)
+|--------------------------------------------------------------------------
+| Server ke server dengan bearer token milik client integrasi (Cimart),
+| bukan milik user SID. `auth:integration` hanya menerima token
+| IntegrationClient; `integration.client` menolak session User SID dan
+| client nonaktif. Hak akses per endpoint lewat Sanctum abilities.
+| Kontrak: docs/thirdparty/cimart/api-spec/openapi.yaml.
+*/
+Route::prefix('integrations/v1')
+    ->middleware(['auth:integration', 'integration.client', 'throttle:integration'])
+    ->group(function () {
+        Route::get('/ping', PingController::class);
+
+        Route::middleware(IntegrationAbility::middleware(IntegrationAbility::SellerApplicationsRead))->group(function () {
+            Route::get('/seller-applications', [SellerApplicationController::class, 'index']);
+            Route::get('/seller-applications/{businessRef}', [SellerApplicationController::class, 'show'])
+                ->whereUuid('businessRef');
+        });
+
+        Route::patch('/seller-applications/{businessRef}', [SellerApplicationController::class, 'update'])
+            ->whereUuid('businessRef')
+            ->middleware(IntegrationAbility::middleware(IntegrationAbility::SellerApplicationsUpdate));
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -250,6 +280,28 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/population', [ActivityLogController::class, 'population']);
             Route::get('/accounts', [ActivityLogController::class, 'accounts']);
             Route::get('/letters', [ActivityLogController::class, 'letters']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Integrasi Pihak Ketiga (menu Integrasi)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama: aktif/nonaktif client, terbitkan token
+    | baru (rotate), dan cabut token. Membuat client dan mengubah ability
+    | hanya lewat artisan `integration:*`. Kata sandi diminta ulang saat
+    | mengaktifkan, menerbitkan, dan mencabut token.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('integration-clients')
+        ->group(function () {
+            Route::get('/', [IntegrationClientController::class, 'index']);
+
+            Route::middleware('throttle:10,1')->group(function () {
+                Route::patch('/{integrationClient}/status', [IntegrationClientController::class, 'updateStatus']);
+                Route::post('/{integrationClient}/tokens', [IntegrationClientController::class, 'issueToken']);
+                Route::delete('/{integrationClient}/tokens/{token}', [IntegrationClientController::class, 'revokeToken'])
+                    ->whereUuid('token');
+            });
         });
 
     // Daftar pekerjaan aktif juga dipakai pemohon surat untuk isian
