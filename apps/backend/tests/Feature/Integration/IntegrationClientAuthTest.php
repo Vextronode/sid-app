@@ -10,6 +10,7 @@ use App\Models\Village;
 use App\Services\IntegrationClientService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -81,6 +82,41 @@ class IntegrationClientAuthTest extends TestCase
             ->assertExactJson(['message' => 'Token tidak valid.']);
 
         $this->withToken('salah|token')->getJson('/api/integrations/v1/ping')->assertUnauthorized();
+    }
+
+    /**
+     * Bagian sebelum `|` dicari sebagai UUID. Di PostgreSQL (CI dan
+     * production), teks yang bukan UUID membuat query error dan respons 500;
+     * SQLite di test lokal tidak memeriksa tipe UUID, jadi yang dipastikan
+     * di sini adalah token seperti itu ditolak tanpa query sama sekali.
+     */
+    public function test_malformed_token_id_is_rejected_without_querying_tokens(): void
+    {
+        $token = $this->clientToken();
+        $secret = explode('|', $token, 2)[1];
+
+        foreach (['/api/integrations/v1/ping', '/api/user'] as $path) {
+            foreach (['salah|token', "bukan-uuid|{$secret}", "1|{$secret}"] as $malformed) {
+                Auth::forgetGuards();
+                DB::flushQueryLog();
+                DB::enableQueryLog();
+
+                $this->withToken($malformed)->getJson($path)->assertUnauthorized();
+
+                $tokenQueries = array_filter(
+                    DB::getQueryLog(),
+                    fn (array $query) => str_contains($query['query'], 'personal_access_tokens'),
+                );
+                $this->assertSame([], $tokenQueries, "{$path} dengan token {$malformed} tidak boleh query ke personal_access_tokens.");
+                DB::disableQueryLog();
+            }
+        }
+
+        // Token utuh tetap berlaku.
+        Auth::forgetGuards();
+        $this->withToken($token)->getJson('/api/integrations/v1/ping')->assertOk();
+        $this->assertNull(PersonalAccessToken::findToken('salah|token'));
+        $this->assertNotNull(PersonalAccessToken::findToken($token));
     }
 
     public function test_ping_returns_client_name_and_token_abilities(): void
@@ -193,6 +229,14 @@ class IntegrationClientAuthTest extends TestCase
         $this->artisan('integration:create', [
             'slug' => 'cimart',
             '--abilities' => 'seller-applications:read',
+            '--village' => 'bukan-uuid',
+        ])
+            ->expectsOutputToContain('Desa tidak ditemukan')
+            ->assertExitCode(1);
+
+        $this->artisan('integration:create', [
+            'slug' => 'cimart',
+            '--abilities' => 'seller-applications:read',
             '--village' => $this->village->id,
         ])->assertExitCode(0);
     }
@@ -222,6 +266,11 @@ class IntegrationClientAuthTest extends TestCase
         $this->assertSame(1, $client->tokens()->count());
 
         $this->artisan('integration:revoke', ['slug' => 'cimart', 'token_id' => $tokenId])
+            ->expectsOutputToContain('Token tidak ditemukan')
+            ->assertExitCode(1);
+
+        // ID yang bukan UUID ditolak dengan pesan, bukan error query PostgreSQL.
+        $this->artisan('integration:revoke', ['slug' => 'cimart', 'token_id' => 'abc'])
             ->expectsOutputToContain('Token tidak ditemukan')
             ->assertExitCode(1);
 

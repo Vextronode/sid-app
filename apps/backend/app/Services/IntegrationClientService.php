@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Models\Village;
 use App\Support\IntegrationAudit;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -125,6 +127,11 @@ class IntegrationClientService
     /** Mencabut satu token client; request dengan token itu langsung 401. */
     public function revokeToken(IntegrationClient $client, string $tokenId, ?User $actor = null): void
     {
+        // ID bukan UUID tidak boleh sampai ke query (PostgreSQL error).
+        if (! Str::isUuid($tokenId)) {
+            throw (new ModelNotFoundException)->setModel(PersonalAccessToken::class, [$tokenId]);
+        }
+
         DB::transaction(function () use ($client, $tokenId, $actor): void {
             /** @var PersonalAccessToken $token */
             $token = $client->tokens()->whereKey($tokenId)->firstOrFail();
@@ -194,7 +201,7 @@ class IntegrationClientService
     private function resolveVillageId(?string $villageId): string
     {
         if ($villageId !== null && $villageId !== '') {
-            if (! Village::query()->whereKey($villageId)->exists()) {
+            if (! Str::isUuid($villageId) || ! Village::query()->whereKey($villageId)->exists()) {
                 throw new InvalidArgumentException('Desa tidak ditemukan.');
             }
 
