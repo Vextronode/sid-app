@@ -19,7 +19,7 @@
 |---|---|---|
 | Runtime | PHP ^8.3 | Image Docker `sid-api` menjalankan PHP-FPM |
 | Framework | Laravel ^13.8 (REST API murni) | Satu-satunya view adalah template PDF (`resources/views/pdf/templates/{wet,digital}.blade.php`) |
-| Autentikasi | Laravel Sanctum ^4 (SPA cookie-based) | `EnsureFrontendRequestsAreStateful` di depan grup API |
+| Autentikasi | Laravel Sanctum ^4 (SPA cookie-based) | `EnsureFrontendRequestsAreStateful` di depan grup API. Aplikasi pihak ketiga memakai bearer token milik `IntegrationClient` (guard `integration`, lihat 4.4) |
 | Otorisasi | Middleware `role:` (`EnsureUserHasRole`) + Laravel Policy | Tanpa package RBAC pihak ketiga |
 | Database | PostgreSQL (`DB_CONNECTION=pgsql`); stack Docker memakai `postgres:18.6` atau Neon | SQLite dipakai test |
 | ORM | Eloquent | Enkripsi field via `$casts` |
@@ -44,10 +44,10 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 | Service domain lain | `CitizenService`, `FamilyService`, `FamilySocioeconomicService`, `OccupationService`, `OfficialService`, `OfficialAssignmentService`, `OfficialPositionTypeService`, `UserService`, `ProfileService`, `Auth\AuthService`, `Auth\UsernameGenerator`, `HamletService`, `RtService`, `RwService`, `NewsService`, `NewsCategoryService`, `RegulationService`, `VillageProfileService`, `PublicPageService`, `DashboardService`, `NotificationService`, `PushSubscriptionService`, `VillageOrgPositionService`, `VillageOrgMemberService` |
 | Support | `LetterFormSchema` (aturan validasi dari `form_fields`), `LetterValueFormatter` (format nilai isian di PDF), `OfficialPositionCatalog` (label jabatan), `PublicPageCache`, `VillageImageOptimizer` |
 | Policy | `LetterPolicy` (view, create, download, fulfill, delete), `OfficialPolicy`, `RegionPolicy` |
-| Middleware | `account.active`, `password.changed`, `role`, `verified` |
+| Middleware | `account.active`, `password.changed`, `role`, `verified`; API integrasi: `integration.client`, `abilities`/`ability` (Sanctum) |
 | Rule | `ValidOfficialPosition` |
 | Notifikasi | `LetterStatusNotification` (kanal database + WebPush) |
-| Console | `staf-sid:first`, `letters:backfill-snapshots`, `letters:send-expiry-reminders` |
+| Console | `staf-sid:first`, `letters:backfill-snapshots`, `letters:send-expiry-reminders`, `integration:{create,enable,disable,rotate,tokens,revoke,abilities}` |
 | Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
 ---
@@ -190,6 +190,18 @@ Tidak ada TTD digital (TTD akun, TTD jabatan, stempel digital, dan reset TTD sud
 
 Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jabatan, konfigurasi); Kades/Sekdes = approver final tanpa akses CMS; Kasi/Kaur = baca daftar warga, akses surat selesai, Terapkan; RT = approver wilayah; RW/Kadus = baca FYI. Data Penduduk (warga & KK) khusus-baca juga untuk Kades/Sekdes (seluruh desa) dan RT/RW/Kadus (wilayahnya).
 
+### 4.4 API integrasi pihak ketiga
+
+Aplikasi pihak ketiga (Cimart) memanggil `/api/integrations/v1` dari server-nya dengan bearer token milik model `IntegrationClient`, bukan milik user. Isolasinya dua arah:
+
+1. **Token client ditolak di route internal.** `config/auth.php` menetapkan `guards.sanctum.provider = users`, sehingga `Laravel\Sanctum\Guard::hasValidProvider` menolak token yang pemiliknya bukan `User`. Ini penting karena `IntegrationClient` punya kolom `is_active` dan tidak punya `must_change_password`, jadi `account.active` dan `password.changed` tidak akan menolaknya.
+2. **Route integrasi hanya menerima token client.** Grup `integrations/v1` memakai `auth:integration` (provider `integration_clients`), lalu `integration.client`. Middleware kedua wajib ada, karena guard Sanctum memeriksa session `web` lebih dulu dan meloloskan User SID yang sedang login dengan `TransientToken` (dianggap punya semua ability). Client nonaktif ditolak `403 integration_disabled`.
+3. **Hak per endpoint** lewat Sanctum abilities (`IntegrationAbility`) dan middleware `abilities:`; tanpa ability → `403 ability_forbidden`.
+4. **Rate limit** `throttle:integration`: 60 request per menit per client, `429 too_many_attempts` dengan `Retry-After`.
+5. **Audit**: activity log `log_name = integration`, causer client (request API) atau Staf SIDUTama (menu Integrasi). NIK dan nilai token tidak pernah dicatat.
+
+Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf SIDUTama mengaktifkan/menonaktifkan, menerbitkan token baru (rotate, token lama tetap berlaku), dan mencabut token dari menu Integrasi (`/api/integration-clients`, konfirmasi kata sandi). Logika keduanya di `IntegrationClientService`. Kontrak untuk Cimart: `docs/thirdparty/cimart/api-spec/openapi.yaml`.
+
 ---
 
 ## 5. Domain Kependudukan
@@ -299,4 +311,5 @@ Scope ringkas: Staf SIDUTama = operator penuh di desanya (CMS, kependudukan, jab
 | 1.1 | - | v5.1 Auth & Approval Flow |
 | 1.2 | 2026-10-06 | v5.2: sosio-ekonomi per KK, pekerjaan baku, stempel desa, upload privat |
 | 1.3 | 2026-10-16 | v5.3: kategori surat & verification_type dihapus; jenis surat data-driven (form_fields, data_action, signature_slots, supporting_template, classification_code); snapshot render; nomor surat per kode klasifikasi; TTD akun & permintaan TTD; lampiran; Terapkan; surat ditahan saat RT kosong; Web Push; jabatan tanpa akun dinamis & foto pejabat; kategori berita; identitas desa & cache halaman publik; register dengan tanggal lahir; paginasi; index performa; Docker |
+| 1.5 | 2026-11-17 | API integrasi pihak ketiga (4.4): `integration_clients`, guard `integration` terpisah dari `sanctum`, middleware `integration.client` dan Sanctum abilities, rate limit per client, command `integration:*`, API permohonan pedagang Cimart, dan menu Integrasi Staf SIDUTama |
 | 1.4 | 2026-10-31 | TTD digital dihapus: surat terbit tanpa TTD/stempel (TTD & stempel basah di kantor desa), pratinjau pemohon setelah terbit; tabel `user_signatures`/`signature_reset_requests`, kolom `officials.signature_img`, `villages.stamp_img`, `letter_types.signature_slots`, dan TTD pihak lain/basah di `letter_signatures` dihapus; tersisa saksi/persetujuan |

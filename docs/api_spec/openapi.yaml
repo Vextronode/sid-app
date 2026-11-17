@@ -108,6 +108,12 @@ tags:
     description: Halaman publik, profil desa, berita & kategori, peraturan. UC-16, UC-18, UC-19, UC-24.
   - name: Epic 10 - Organisasi Non-Struktural Desa
     description: BPD/BUMDES/LPM/Karang Taruna/PKK. UC-23.
+  - name: Integrasi Pihak Ketiga
+    description: |
+      Menu Integrasi Staf SIDUTama: status dan token aplikasi pihak ketiga
+      (Cimart). Endpoint yang dipanggil aplikasi itu sendiri
+      (`/api/integrations/v1`) didokumentasikan terpisah di
+      `docs/thirdparty/cimart/api-spec/openapi.yaml`.
 
 components:
   securitySchemes:
@@ -211,6 +217,14 @@ paths:
     $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
   /citizen-businesses/{citizenBusiness}:
     $ref: 'paths/citizen-businesses/citizen-business-detail.yaml'
+  /integration-clients:
+    $ref: 'paths/integration-clients/integration-clients.yaml'
+  /integration-clients/{integrationClient}/status:
+    $ref: 'paths/integration-clients/integration-client-status.yaml'
+  /integration-clients/{integrationClient}/tokens:
+    $ref: 'paths/integration-clients/integration-client-tokens.yaml'
+  /integration-clients/{integrationClient}/tokens/{token}:
+    $ref: 'paths/integration-clients/integration-client-token-detail.yaml'
   /occupations:
     $ref: 'paths/occupations/occupations.yaml'
   /occupations/{id}:

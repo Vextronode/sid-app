@@ -1,0 +1,49 @@
+parameters:
+  - name: integrationClient
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+post:
+  tags: [Integrasi Pihak Ketiga]
+  summary: Terbitkan token baru (rotate)
+  description: |
+    Eksklusif Staf SIDUTama, wajib kata sandi. Token lama **tidak** dicabut,
+    jadi aplikasi bisa berganti token tanpa jeda. Nilai token hanya ada di
+    respons ini; SID hanya menyimpan hash-nya. Dicatat di activity log
+    (event `token_issued`, tanpa nilai token). Dibatasi 10 request per
+    menit.
+  operationId: issueIntegrationToken
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/integration-clients/integration-clients.yaml#/PasswordConfirmation'
+  responses:
+    '200':
+      description: Token baru diterbitkan
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '../../schemas/integration-clients/integration-clients.yaml#/IntegrationClientMessage'
+              - type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token utuh, ditampilkan sekali.
+                    example: "9f1c...|Xk2..."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Melewati batas 10 request per menit

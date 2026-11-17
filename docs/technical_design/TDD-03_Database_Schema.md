@@ -14,6 +14,8 @@
 
 > **2026-11-12:** Tabel baru `citizen_businesses` (data usaha dari SKU A01 dan status pendaftaran pedagang Cimart).
 
+> **2026-11-17:** Tabel baru `integration_clients` (aplikasi pihak ketiga pemilik token API integrasi, mis. Cimart). Token-nya baris `personal_access_tokens` dengan `tokenable_type = App\Models\IntegrationClient`.
+
 > **2026-10-31:** TTD digital dihapus: tabel `user_signatures` dan `signature_reset_requests` di-drop; kolom `villages.stamp_img`, `officials.signature_img`, `officials.stamp_img`, `letter_types.signature_slots`, `letter_signatures.user_signature_id`/`attachment_id` dihapus; `letter_signatures` kini hanya saksi (`signer_type = witness`, method `consent`/`rt_check`/`manual`); kind `wet_signature` di `letter_attachments` tidak dipakai lagi.
 
 ---
@@ -573,6 +575,20 @@ Data usaha warga, dicatat sekali saat Surat Keterangan Usaha (A01) final approve
 
 Index: `idx_citizen_businesses_village_category (village_id, category)`, `idx_citizen_businesses_cimart_queue (cimart_status, cimart_requested_at)` (antrean Cimart).
 
+**Tabel: integration_clients**
+
+Aplikasi pihak ketiga yang memanggil `/api/integrations/v1` dengan bearer token miliknya sendiri, bukan milik user SID. Token disimpan di `personal_access_tokens` (hanya hash SHA-256) dengan `tokenable_type = App\Models\IntegrationClient`, sehingga guard `sanctum` (route internal, provider `users`) menolaknya dan guard `integration` hanya menerimanya. Dibuat dan diubah hak aksesnya hanya lewat artisan `integration:*`; Staf SIDUTama mengelola status dan token dari menu Integrasi.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | UUID | PK | Wajib UUID karena `personal_access_tokens.tokenable` memakai `uuidMorphs` |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | Data yang boleh diakses client dibatasi ke desa ini |
+| slug | VARCHAR(50) | UNIQUE, NOT NULL | Kunci command artisan, mis. `cimart` |
+| name | VARCHAR(100) | NOT NULL | Nama aplikasi, mis. Cimart |
+| abilities | JSON | NOT NULL | Ability yang diberikan ke setiap token baru (`IntegrationAbility`), mis. `seller-applications:read` |
+| is_active | BOOLEAN | DEFAULT true | `false`: semua request ditolak `403 integration_disabled` tanpa mencabut token |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
 **Tabel: approval_settings**
 
 | Kolom | Tipe | Constraint | Keterangan |
@@ -772,7 +788,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **33 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **36 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **34 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **37 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -784,15 +800,16 @@ Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
 Usaha Warga (1): citizen_businesses
+Integrasi (1): integration_clients
 Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
                          news_category_news, village_regulations,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 2 + 7 + 1 = 33 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 1 + 2 + 7 + 1 = 34 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 36 tabel
+Total aplikasi non-framework: 37 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 

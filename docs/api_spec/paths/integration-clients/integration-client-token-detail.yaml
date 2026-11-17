@@ -1,0 +1,48 @@
+parameters:
+  - name: integrationClient
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+  - name: token
+    in: path
+    required: true
+    description: ID token dari `tokens[].id`.
+    schema:
+      type: string
+      format: uuid
+delete:
+  tags: [Integrasi Pihak Ketiga]
+  summary: Cabut token client integrasi
+  description: |
+    Eksklusif Staf SIDUTama, wajib kata sandi. Request dengan token itu
+    langsung ditolak `401`. Dipakai setelah rotate, atau segera saat token
+    bocor. Dicatat di activity log (event `token_revoked`). Dibatasi 10
+    request per menit.
+  operationId: revokeIntegrationToken
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../schemas/integration-clients/integration-clients.yaml#/PasswordConfirmation'
+  responses:
+    '200':
+      description: Token dicabut
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/integration-clients/integration-clients.yaml#/IntegrationClientMessage'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Melewati batas 10 request per menit

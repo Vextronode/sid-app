@@ -1,0 +1,25 @@
+get:
+  tags: [Integrasi Pihak Ketiga]
+  summary: Daftar client integrasi desa
+  description: |
+    Eksklusif Staf SIDUTama (role lain 403). Hanya client di desa staf,
+    beserta metadata token (tanpa nilai token).
+  operationId: listIntegrationClients
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Daftar client integrasi
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/integration-clients/integration-clients.yaml#/IntegrationClient'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
