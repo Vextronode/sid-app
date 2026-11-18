@@ -27,14 +27,14 @@ class LetterTypeService
 
         return $includeInactive
             ? $this->letterTypeRepository->allForVillage($villageId)
-            : $this->letterTypeRepository->allActiveWithTemplate($villageId);
+            : $this->letterTypeRepository->allSubmittable($villageId);
     }
 
     public function update(LetterType $letterType, array $data, User $user): LetterType
     {
         $letterType = $this->letterTypeRepository->findOrFail($letterType->id, $this->villageId($user));
 
-        if (($data['is_active'] ?? false) === true && $letterType->template === null) {
+        if (($data['is_active'] ?? false) === true && ! $letterType->isReady()) {
             throw ValidationException::withMessages([
                 'is_active' => 'Jenis surat draft belum memiliki template sehingga tidak dapat diaktifkan.',
             ]);
@@ -62,7 +62,7 @@ class LetterTypeService
 
         $letterType = $this->letterTypeRepository->findOrFail($letterType->id, $this->villageId($user));
 
-        if (! $letterType->is_active || $letterType->template === null) {
+        if (! $letterType->is_active || ! $letterType->isReady()) {
             abort(404, 'Jenis surat ini sedang tidak dapat diajukan.');
         }
 

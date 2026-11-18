@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LetterDataAction;
 use App\Enums\LetterTypeCategory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -70,5 +71,25 @@ class LetterType extends Model
     public function flow(): BelongsTo
     {
         return $this->belongsTo(ApprovalFlow::class, 'flow_id');
+    }
+
+    /**
+     * Isinya lengkap sehingga boleh diaktifkan dan diajukan: punya template,
+     * atau memang tidak menerbitkan surat (layanan pendataan, mis. CPMI F11,
+     * yang hasilnya data). Tanpa keduanya = draft.
+     */
+    public function isReady(): bool
+    {
+        return $this->template !== null || $this->produces_letter === false;
+    }
+
+    /** Jenis surat aktif yang bisa diajukan (lihat isReady()). */
+    public function scopeSubmittable(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->where(fn (Builder $ready) => $ready
+                ->whereNotNull('template')
+                ->orWhere('produces_letter', false));
     }
 }

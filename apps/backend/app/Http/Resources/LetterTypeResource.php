@@ -72,7 +72,8 @@ class LetterTypeResource extends JsonResource
      */
     private function statusLabel(): string
     {
-        if (! $this->template) {
+        // Layanan pendataan (mis. CPMI F11) tidak butuh template: bukan draft.
+        if (! $this->resource->isReady()) {
             return 'draft';
         }
 
