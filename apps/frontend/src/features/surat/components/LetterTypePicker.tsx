@@ -5,7 +5,9 @@ import { Check, Download, FileText, Loader2, Search } from 'lucide-react'
 import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
 import { groupLetterTypes } from '../utils/letterTypeGroups'
 import { handwrittenFormUrl } from '../api/letterTypeApi'
-import type { LetterType } from '@/types'
+import { PaperSizeToggle } from '@/features/cetak-surat/components/PaperSizeToggle'
+import { DEFAULT_PAPER } from '@/features/cetak-surat/utils/paperSize'
+import type { LetterType, PaperSize } from '@/types'
 
 // Kolom pencarian baru berguna bila jenis surat cukup banyak.
 const SEARCH_THRESHOLD = 6
@@ -79,6 +81,7 @@ function HandwrittenForms({ type }: { type: LetterType }) {
   const forms = type.handwritten_forms ?? []
   const [busyKey, setBusyKey] = useState('')
   const [error, setError] = useState('')
+  const [paper, setPaper] = useState<PaperSize>(DEFAULT_PAPER)
 
   if (forms.length === 0) return null
 
@@ -89,8 +92,8 @@ function HandwrittenForms({ type }: { type: LetterType }) {
     try {
       await downloadFile(
         handwrittenFormUrl(type.id, key),
-        `formulir-${type.code.toLowerCase()}-${key}.pdf`,
-        { download: 1 },
+        `formulir-${type.code.toLowerCase()}-${key}-${paper}.pdf`,
+        { download: 1, paper },
       )
     } catch (downloadError) {
       setError(await downloadErrorMessage(downloadError, 'Formulir gagal diunduh. Coba lagi.'))
@@ -106,6 +109,7 @@ function HandwrittenForms({ type }: { type: LetterType }) {
         Identitas Anda sudah tercetak. Cetak, lengkapi, dan tanda tangani formulirnya, lalu unggah
         fotonya di form di bawah.
       </p>
+      <PaperSizeToggle value={paper} onChange={setPaper} className="sid-letter-type-forms-paper" />
       <ul className="sid-letter-type-forms">
         {forms.map((form) => {
           const busy = busyKey === form.key

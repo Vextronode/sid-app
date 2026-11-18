@@ -11,6 +11,9 @@ import { notifySuccess } from '@/shared/lib/toast'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { revealLetterPayloadIdentity } from '@/shared/lib/identityApi'
 import { RevealableValue } from '@/components/ui/RevealableValue'
+import { PaperSizeToggle } from '@/features/cetak-surat/components/PaperSizeToggle'
+import { DEFAULT_PAPER } from '@/features/cetak-surat/utils/paperSize'
+import type { PaperSize } from '@/types'
 
 // Terapkan hanya oleh Kasi/Kaur yang ditugaskan; Staf SIDUTama mengubah
 // data lewat Data Penduduk.
@@ -101,6 +104,8 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
   const { user } = useAuth()
   const [letter, setLetter] = useState<Letter | null>(null)
   const [error, setError] = useState('')
+  // Ukuran kertas dokumen pendukung (lihat maupun unduh).
+  const [paper, setPaper] = useState<PaperSize>(DEFAULT_PAPER)
   // Hasil instansi baru diterima: Terapkan langsung dimulai (pop up perubahan).
   const [resultAccepted, setResultAccepted] = useState(false)
 
@@ -267,11 +272,12 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
       {letter.has_supporting_document && (
         <section className="sid-modal-note" aria-label="Dokumen pendukung">
           <p className="sid-modal-note-label">Dokumen Pendukung</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <PaperSizeToggle value={paper} onChange={setPaper} />
             <button
               type="button"
               className="sid-btn sid-btn-secondary"
-              onClick={() => openFile(() => openProtectedFile(documentUrl))}
+              onClick={() => openFile(() => openProtectedFile(documentUrl, { paper }))}
             >
               Lihat
             </button>
@@ -280,8 +286,9 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
               className="sid-btn sid-btn-secondary"
               onClick={() =>
                 openFile(() =>
-                  downloadFile(documentUrl, `dokumen-pendukung-${letter.id}.pdf`, {
+                  downloadFile(documentUrl, `dokumen-pendukung-${letter.id}-${paper}.pdf`, {
                     download: 1,
+                    paper,
                   }),
                 )
               }

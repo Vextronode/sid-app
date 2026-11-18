@@ -181,8 +181,8 @@ describe('LetterTypePicker handwritten forms', () => {
     await waitFor(() =>
       expect(downloadFile).toHaveBeenCalledWith(
         '/api/letter-types/12/forms/pernyataan',
-        'formulir-a12-pernyataan.pdf',
-        { download: 1 },
+        'formulir-a12-pernyataan-f4.pdf',
+        { download: 1, paper: 'f4' },
       ),
     )
   })
