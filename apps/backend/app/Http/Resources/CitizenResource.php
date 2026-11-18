@@ -44,6 +44,11 @@ class CitizenResource extends JsonResource
             'mother_id' => $this->mother_id,
             'father_name_text' => $this->father_name_text,
             'mother_name_text' => $this->mother_name_text,
+            // Nama ibu kandung: ibu yang tertaut di data penduduk, atau teks bila tidak tertaut.
+            'mother_name' => $this->when(
+                $this->relationLoaded('mother'),
+                fn () => $this->mother?->name ?? $this->mother_name_text,
+            ),
             'marital_status' => $this->marital_status,
             'occupation_id' => $this->occupation_id,
             'occupation' => $this->occupation?->name,

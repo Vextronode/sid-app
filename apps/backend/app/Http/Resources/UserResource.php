@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\UserRole;
 use App\Models\CitizenBusiness;
+use App\Models\MigrantWorker;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -39,6 +40,11 @@ class UserResource extends JsonResource
             'can_view_citizen_businesses' => $this->when(
                 $request->user()?->is($this->resource),
                 fn () => $this->resource->can('viewAny', CitizenBusiness::class),
+            ),
+            // Menu Data CPMI: Staf SIDUTama, Kades/Sekdes, dan petugas F11.
+            'can_view_migrant_workers' => $this->when(
+                $request->user()?->is($this->resource),
+                fn () => $this->resource->can('viewAny', MigrantWorker::class),
             ),
             'is_active' => $this->is_active,
             'must_change_password' => $this->must_change_password,
