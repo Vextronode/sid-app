@@ -37,6 +37,8 @@ class SeededLetterRenderingTest extends TestCase
 
     private array $kades;
 
+    private mixed $paper = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -104,6 +106,67 @@ class SeededLetterRenderingTest extends TestCase
         // Pemohon hanyalah pelapor dan tidak boleh tercetak sebagai yang meninggal.
         $this->assertStringNotContainsString('Pelapor Hidup', $html);
         $this->assertStringNotContainsString('________', $html);
+    }
+
+    public function test_event_permit_prints_the_event_and_the_external_acknowledgement_block_on_f4(): void
+    {
+        Storage::fake('private_uploads');
+        $occupation = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani']);
+        $this->applicant['citizen']->update(['occupation_id' => $occupation->id, 'address' => 'Dusun Sukamaju RT 001/RW 002']);
+        $photo = fn (string $name) => UploadedFile::fake()->image($name);
+
+        $html = $this->issue('A12', [
+            'kegiatan' => 'Hajatan pernikahan',
+            'maksud_kegiatan' => 'Syukuran pernikahan anak',
+            'tempat_kegiatan' => 'Halaman rumah pemohon',
+            'tanggal_kegiatan' => '2026-10-17',
+            'jam_mulai' => '08:00',
+        ], $letterId, [
+            'foto_daftar_1' => $photo('daftar1.jpg'),
+            'foto_daftar_2' => $photo('daftar2.jpg'),
+            'foto_pernyataan' => $photo('pernyataan.jpg'),
+        ]);
+
+        $this->assertStringContainsString('SURAT KETERANGAN</div>', $html);
+        $this->assertMatchesRegularExpression('#Nomor : 503/\d+/Des/X/2026#', $html);
+        foreach (['Pelapor Hidup', 'Petani', 'Dusun Sukamaju RT 001/RW 002', 'Hajatan pernikahan', 'Syukuran pernikahan anak', 'Halaman rumah pemohon', 'Sabtu', '17 Oktober 2026', 'Kepala Desa Sukamaju Kecamatan Cijulang Kabupaten Pangandaran'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        // Tanpa hiburan dan tanpa jam selesai.
+        $this->assertMatchesRegularExpression('#Jenis Hiburan</td>.*?<td[^>]*>-</td>#s', $html);
+        $this->assertStringContainsString('08:00 WIB s.d. selesai', $html);
+        // Mengetahui: hanya jabatan instansi luar, nama/NIP/TTD diisi basah.
+        foreach (['Mengetahui,', 'Reg. No :', 'CAMAT CIJULANG,', 'Komandan Ramil 2501/Parigi', 'Kepala Polisi Sektor Cijulang,'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        $this->assertSame(3, substr_count($html, 'NIP.'));
+        $this->assertStringNotContainsString('________', $html);
+        $this->assertSame([0.0, 0.0, 609.45, 935.43], $this->paper);
+
+        // Ketiga foto formulir tersimpan sebagai lampiran untuk approver.
+        $this->assertEqualsCanonicalizing(
+            ['foto_daftar_1', 'foto_daftar_2', 'foto_pernyataan'],
+            Letter::query()->findOrFail($letterId)->attachments()->pluck('field')->all(),
+        );
+    }
+
+    public function test_event_permit_requires_the_three_form_photos_and_an_upcoming_date(): void
+    {
+        $response = $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => $this->letterType('A12')->id,
+            'payload' => [
+                'kegiatan' => 'Hajatan',
+                'maksud_kegiatan' => 'Syukuran',
+                'tempat_kegiatan' => 'Rumah',
+                'tanggal_kegiatan' => '2026-10-11',
+                'jam_mulai' => '08:00',
+                'jam_selesai' => '22:00',
+            ],
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors([
+            'files.foto_daftar_1', 'files.foto_daftar_2', 'files.foto_pernyataan', 'payload.tanggal_kegiatan',
+        ]);
     }
 
     public function test_inheritance_letter_takes_the_deceased_from_the_population_data_by_nik(): void
@@ -641,16 +704,21 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('________', $html);
     }
 
-    public function test_requirement_line_is_only_kept_for_the_business_photo(): void
+    public function test_requirement_line_is_only_kept_for_uploaded_documents(): void
     {
+        // Hanya surat yang meminta unggahan: foto usaha (A01) dan formulir
+        // isi tangan izin keramaian (A12).
         $this->assertSame(
-            ['A01' => 'Foto usaha terkini.'],
+            ['A01', 'A12'],
             LetterType::query()
                 ->where('village_id', $this->village->id)
                 ->whereNotNull('requirement_info')
-                ->pluck('requirement_info', 'code')
+                ->orderBy('code')
+                ->pluck('code')
                 ->all(),
         );
+        $this->assertSame('Foto usaha terkini.', $this->letterType('A01')->requirement_info);
+        $this->assertStringContainsString('materai 10.000', $this->letterType('A12')->requirement_info);
     }
 
     public function test_own_nik_is_shown_in_full_to_its_owner_only(): void
@@ -672,7 +740,7 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString($nik, json_encode($row));
     }
 
-    public function test_only_the_business_letter_asks_for_an_upload(): void
+    public function test_only_the_business_and_event_permit_letters_ask_for_an_upload(): void
     {
         $withUpload = LetterType::query()
             ->where('village_id', $this->village->id)
@@ -681,7 +749,7 @@ class SeededLetterRenderingTest extends TestCase
             ->pluck('code')
             ->all();
 
-        $this->assertSame(['A01'], array_values($withUpload));
+        $this->assertSame(['A01', 'A12'], array_values($withUpload));
     }
 
     public function test_required_fields_of_seeded_types_are_enforced_on_submission(): void
@@ -847,6 +915,12 @@ class SeededLetterRenderingTest extends TestCase
 
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
+        // Kertas F4 (mis. A12) diatur lewat setPaper; A4 tegak bawaan view.
+        $pdf->shouldReceive('setPaper')->andReturnUsing(function (mixed $size) use ($pdf) {
+            $this->paper = $size;
+
+            return $pdf;
+        });
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()

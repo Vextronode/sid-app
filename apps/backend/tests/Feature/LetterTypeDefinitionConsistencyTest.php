@@ -129,7 +129,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx dan A11 Ahli Waris).
         $this->assertSame(
-            ['persuratan' => 10, 'pelayanan' => 11],
+            ['persuratan' => 11, 'pelayanan' => 11],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -197,9 +197,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 ->all(),
         );
 
-        // Penghasilan memakai kode klasifikasi 510, lainnya 470.
+        // Penghasilan memakai kode klasifikasi 510, izin keramaian 503, lainnya 470.
         $this->assertSame(
-            ['A03' => '510'],
+            ['A03' => '510', 'A12' => '503'],
             $letterTypes->where('classification_code', '!=', '470')->pluck('classification_code', 'code')->all(),
         );
     }
@@ -213,6 +213,30 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             (string) $letterType->template,
             ...array_map(fn (array $document): string => (string) ($document['template'] ?? ''), $letterType->documents ?? []),
         ]);
+    }
+
+    /**
+     * Formulir isi tangan diisi sebelum surat ada: hanya identitas pemohon
+     * dan desa (PdfService::handwrittenForm), selebihnya ditulis tangan.
+     */
+    public function test_handwritten_forms_only_use_applicant_and_village_placeholders(): void
+    {
+        $allowed = [
+            'logo_img', 'applicant_name', 'applicant_nik', 'applicant_address', 'applicant_gender',
+            'applicant_birth_place_date', 'applicant_occupation', 'applicant_marital_status',
+            'applicant_religion', 'applicant_email', 'village_name', 'village_name_short',
+            'village_name_upper', 'village_district', 'village_district_upper', 'village_regency',
+            'village_regency_upper', 'village_province', 'village_region', 'village_address',
+            'village_phone', 'village_postal_code', 'village_area_code', 'village_email',
+        ];
+
+        foreach (LetterType::query()->whereNotNull('handwritten_forms')->get() as $letterType) {
+            foreach ($letterType->handwritten_forms as $form) {
+                preg_match_all('/\{\{\s*([a-zA-Z0-9_]+)\s*}}/', (string) $form['template'], $matches);
+                $this->assertSame([], array_values(array_diff($matches[1], $allowed)), "{$letterType->code}.{$form['key']}");
+                $this->assertStringNotContainsString('{{#', (string) $form['template']);
+            }
+        }
     }
 
     /**

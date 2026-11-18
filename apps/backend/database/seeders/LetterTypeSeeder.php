@@ -14,14 +14,17 @@ use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
 /**
- * Sebelas jenis surat keterangan (A01-A11). Redaksi dan susunan tiap
+ * Dua belas jenis surat keterangan (A01-A12). Redaksi dan susunan tiap
  * template mengikuti template fisik kantor desa di
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
  * aksi data. Isian form hanya yang ada di template fisik (kecuali
  * data usaha, foto usaha, dan pilihan Cimart di A01). Nama isian = nama placeholder di template. Kop surat dan
  * wilayah administratif diambil dari profil desa, bukan ditulis tetap.
- * Semua surat bawaan ditangani Kaur TU & Umum (surat selesai dan Terapkan).
+ * Semua surat bawaan ditangani Kaur TU & Umum (surat selesai dan Terapkan),
+ * kecuali A11 Ahli Waris (Kasi Pemerintahan).
+ * A12 Izin Keramaian/Kegiatan memakai formulir isi tangan
+ * (`handwritten_forms`) yang diunduh pemohon, diisi, lalu fotonya diunggah.
  */
 class LetterTypeSeeder extends Seeder
 {
@@ -52,7 +55,9 @@ class LetterTypeSeeder extends Seeder
             foreach ($this->letterTypes() as $type) {
                 $sections = $type['sections'];
                 $opening = $type['opening'] ?? null;
-                unset($type['sections'], $type['opening']);
+                $heading = $type['heading'] ?? $type['name'];
+                $footer = $type['footer'] ?? null;
+                unset($type['sections'], $type['opening'], $type['heading'], $type['footer']);
 
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
@@ -66,9 +71,11 @@ class LetterTypeSeeder extends Seeder
                         'data_action' => 'none',
                         'data_fields' => null,
                         'data_subject_field' => null,
+                        'paper_size' => 'a4',
+                        'handwritten_forms' => null,
                     ], $type, [
                         'village_id' => $village->id,
-                        'template' => $this->page($type['name'], $sections, $opening),
+                        'template' => $this->page($heading, $sections, $opening, $footer),
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -364,7 +371,217 @@ class LetterTypeSeeder extends Seeder
                     $this->paragraph('Demikian Surat Keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.'),
                 ],
             ],
+            [
+                'code' => 'A12',
+                'name' => 'Surat Keterangan Izin Keramaian/Kegiatan',
+                'heading' => 'Surat Keterangan',
+                'description' => 'Keterangan izin lingkungan untuk mengadakan keramaian/kegiatan yang mengumpulkan banyak orang (mis. hajatan dengan hiburan).',
+                'requirement_info' => 'Surat Pernyataan Ijin Lingkungan (2 lembar) yang ditandatangani warga sekitar, serta Surat Pernyataan yang ditandatangani pemohon di atas materai 10.000. Unduh formulirnya, isi, lalu unggah fotonya di form pengajuan.',
+                'classification_code' => '503',
+                'validity_days' => 90,
+                // Template fisik kantor desa memakai kertas F4.
+                'paper_size' => 'f4',
+                // Diunduh pemohon sebelum mengajukan, dengan identitas pemohon
+                // terisi; sisanya ditulis tangan, lalu fotonya diunggah di
+                // isian foto_daftar_1, foto_daftar_2, dan foto_pernyataan.
+                'handwritten_forms' => [
+                    [
+                        'key' => 'daftar',
+                        'title' => 'Surat Pernyataan Ijin Lingkungan (2 lembar)',
+                        'description' => 'Daftar nama dan tanda tangan warga sekitar yang mengizinkan, diketahui Ketua RT, Ketua RW, dan Kepala Dusun.',
+                        'template' => $this->izinDaftarTemplate(),
+                        'paper' => 'f4',
+                    ],
+                    [
+                        'key' => 'pernyataan',
+                        'title' => 'Surat Pernyataan Bermaterai',
+                        'description' => 'Pernyataan pemohon siap menaati aturan keramaian, ditandatangani di atas materai 10.000.',
+                        'template' => $this->izinPernyataanTemplate(),
+                        'paper' => 'f4',
+                    ],
+                ],
+                'form_fields' => [
+                    $this->text('kegiatan', 'Kegiatan', true, 'Contoh: Hajatan pernikahan'),
+                    $this->text('maksud_kegiatan', 'Maksud Kegiatan', true, 'Contoh: Syukuran pernikahan anak'),
+                    [
+                        ...$this->text('jenis_hiburan', 'Jenis Hiburan', false, 'Contoh: Organ tunggal'),
+                        'help' => 'Kosongkan bila tidak ada hiburan.',
+                    ],
+                    $this->text('tempat_kegiatan', 'Tempat Kegiatan', true, 'Contoh: Halaman rumah pemohon'),
+                    // Satu hari; nama hari dicetak dari tanggal ini.
+                    [...$this->date('tanggal_kegiatan', 'Tanggal Kegiatan'), 'upcoming' => true],
+                    $this->time('jam_mulai', 'Jam Mulai'),
+                    [
+                        ...$this->time('jam_selesai', 'Jam Selesai', false),
+                        'help' => 'Kosongkan bila kegiatan berlangsung sampai selesai.',
+                    ],
+                    // Formulir isi tangan yang sudah diisi, untuk diperiksa RT
+                    // dan Kepala Desa. Tidak dicetak di surat.
+                    [
+                        ...$this->field('foto_daftar_1', 'Foto Surat Pernyataan Ijin Lingkungan Halaman 1', 'file', true),
+                        'help' => 'Halaman 1 yang sudah diisi dan ditandatangani warga sekitar. Pastikan seluruh halaman terlihat jelas.',
+                    ],
+                    [
+                        ...$this->field('foto_daftar_2', 'Foto Surat Pernyataan Ijin Lingkungan Halaman 2', 'file', true),
+                        'help' => 'Halaman 2: lanjutan daftar warga serta bagian Ketua RT, Ketua RW, dan Kepala Dusun.',
+                    ],
+                    [
+                        ...$this->field('foto_pernyataan', 'Foto Surat Pernyataan Bermaterai', 'file', true),
+                        'help' => 'Surat Pernyataan yang sudah ditandatangani pemohon di atas materai 10.000.',
+                    ],
+                ],
+                'opening' => $this->paragraph('Yang bertanda tangan di bawah ini, Kepala Desa {{ village_name_short }} Kecamatan {{ village_district }} Kabupaten {{ village_regency }}, menerangkan bahwa:', false),
+                'sections' => [
+                    $this->rowsBlock(null, [
+                        'Nama' => '{{ applicant_name }}',
+                        'NIK' => '{{ applicant_nik }}',
+                        'Tempat, Tgl. Lahir' => '{{ applicant_birth_place_date }}',
+                        'Pekerjaan' => '{{ applicant_occupation }}',
+                        'Alamat/Lokasi' => '{{ applicant_address }}',
+                    ]),
+                    $this->paragraph('Berdasarkan pernyataan dari yang bersangkutan, izin lingkungan dan tetangga setempat, warga tersebut benar akan mengadakan keramaian berupa:', false),
+                    $this->rowsBlock(null, [
+                        'Kegiatan' => '{{ kegiatan }}',
+                        'Maksud Kegiatan' => '{{ maksud_kegiatan }}',
+                        'Jenis Hiburan' => '{{#if jenis_hiburan}}{{ jenis_hiburan }}{{/if}}{{#if !jenis_hiburan}}-{{/if}}',
+                        'Tempat' => '{{ tempat_kegiatan }}',
+                        'Hari' => '{{ tanggal_kegiatan_namahari }}',
+                        'Tanggal' => '{{ tanggal_kegiatan }}',
+                        'Waktu' => '{{ jam_mulai }} WIB s.d. {{#if jam_selesai}}{{ jam_selesai }} WIB{{/if}}{{#if !jam_selesai}}selesai{{/if}}',
+                    ]),
+                    $this->paragraph('Demikian keterangan ini kami buat dengan sebenarnya dan ditandatangani untuk dipergunakan sebagaimana mestinya.', false),
+                ],
+                // Nama, NIP, dan tanda tangan instansi luar dibubuhkan basah.
+                'footer' => $this->izinMengetahuiBlock(),
+            ],
         ];
+    }
+
+    // ------------------------------------------------------------------
+    // A12 Izin Keramaian/Kegiatan (template fisik: docs/template-surat/Izin Kegiatan/)
+    // ------------------------------------------------------------------
+
+    /**
+     * Blok "Mengetahui" Camat, Danramil, dan Kapolsek di bawah tanda tangan
+     * Kepala Desa. Hanya jabatannya yang dicetak; nama, NIP, dan tanda
+     * tangannya diisi instansi masing-masing.
+     */
+    private function izinMengetahuiBlock(): string
+    {
+        $column = fn (string $title): string => '<td style="width: 33.3%; vertical-align: top; padding: 0 8px;">'
+            .'<div style="text-align: center;">'.$title.'</div>'
+            .'<div style="height: 60px;"></div>'
+            .'<div style="border-bottom: 1px dotted #000;">&nbsp;</div>'
+            .'<div>NIP.</div>'
+            .'</td>';
+
+        return '<div style="margin-top: 14px;">'
+            .'<div style="text-align: center; margin-bottom: 6px;">Mengetahui,</div>'
+            .'<div style="padding-left: 8px;">Reg. No :</div>'
+            .'<table style="width: 100%; border-collapse: collapse;"><tr>'
+            .$column('CAMAT {{ village_district_upper }},')
+            .$column('Komandan Ramil 2501/Parigi')
+            .$column('Kepala Polisi Sektor {{ village_district }},')
+            .'</tr></table></div>';
+    }
+
+    /**
+     * Surat Pernyataan Ijin Lingkungan: satu dokumen dua lembar. Lembar 1
+     * berisi pernyataan dan 20 baris daftar warga, lembar 2 berisi 11 baris
+     * lanjutan serta Ketua RW, Ketua RT, dan Kepala Dusun.
+     */
+    private function izinDaftarTemplate(): string
+    {
+        $dots = fn (int $count): string => str_repeat('.', $count);
+        $indent = 'text-align: justify; text-indent: 40px; margin: 0 0 4px 0;';
+        $table = function (int $from, int $to): string {
+            $cell = 'border: 1px solid #000; padding: 0 4px;';
+            $html = '<table style="width: 100%; border-collapse: collapse; margin-top: 6px;">'
+                .'<tr>'
+                .'<th style="'.$cell.' width: 7%; height: 24px; background: #e7e7e7; font-weight: normal;">NO</th>'
+                .'<th style="'.$cell.' width: 32%; background: #e7e7e7; font-weight: normal;">NAMA</th>'
+                .'<th style="'.$cell.' width: 32%; background: #e7e7e7; font-weight: normal;">ALAMAT</th>'
+                .'<th style="'.$cell.' width: 29%; background: #e7e7e7; font-weight: normal;">TANDA TANGAN</th>'
+                .'</tr>';
+
+            foreach (range($from, $to) as $number) {
+                $html .= '<tr>'
+                    .'<td style="'.$cell.' height: 32px; text-align: center;">'.$number.'</td>'
+                    .'<td style="'.$cell.'"></td><td style="'.$cell.'"></td><td style="'.$cell.'"></td>'
+                    .'</tr>';
+            }
+
+            return $html.'</table>';
+        };
+        $signer = fn (string $title): string => '<td style="width: 50%; text-align: center; vertical-align: top;">'
+            .'<div>'.$title.'</div><div style="height: 64px;"></div><div>'.$dots(45).'</div></td>';
+        $applicant = $this->rowsBlock(null, [
+            'Nama' => '{{ applicant_name }}',
+            'NIK' => '{{ applicant_nik }}',
+            'Jenis Kelamin' => '{{ applicant_gender }}',
+            'Tempat/Tgl. Lahir' => '{{ applicant_birth_place_date }}',
+            'Alamat' => '{{ applicant_address }}',
+        ], 40);
+
+        return '<div style="font-family: \'Times New Roman\', serif; font-size: 11pt; line-height: 1.35; color: #000;">'
+            .'<div style="text-align: center; font-size: 12pt; font-weight: bold; text-decoration: underline; margin-bottom: 12px;">SURAT PERNYATAAN IJIN LINGKUNGAN</div>'
+            .'<p style="'.$indent.'">Pada hari ini '.$dots(20).' tanggal '.$dots(40).' kami yang bertanda tangan di bawah ini warga masyarakat lingkungan RT '.$dots(10).'/RW '.$dots(10).' Dusun '.$dots(30).' Desa {{ village_name_short }} Kecamatan {{ village_district }} (Daftar Nama terlampir), dengan ini menyatakan menyetujui/mengijinkan:</p>'
+            .$applicant
+            .'<p style="'.$indent.'">Untuk kegiatan '.$dots(120).'</p>'
+            .'<p style="'.$indent.'">Demikian surat pernyataan ini kami buat dengan sebenar-benarnya dan untuk dipergunakan sebagai mana mestinya.</p>'
+            .'<p style="'.$indent.'">Warga Masyarakat RT '.$dots(10).'/ RW '.$dots(10).' Dusun '.$dots(30).' Desa {{ village_name_short }} Kecamatan {{ village_district }} Kabupaten {{ village_regency }}.</p>'
+            .$table(1, 20)
+            .'<div style="page-break-before: always;"></div>'
+            .$table(21, 31)
+            .'<table style="width: 100%; border-collapse: collapse; margin-top: 16px;">'
+            .'<tr><td style="width: 50%;"></td><td style="width: 50%; text-align: center;">{{ village_name_short }}, '.$dots(40).'</td></tr>'
+            .'<tr>'.$signer('Ketua RW').$signer('Ketua RT '.$dots(8).' RW '.$dots(8)).'</tr>'
+            .'</table>'
+            .'<div style="text-align: center; margin-top: 16px;">Mengetahui:<br>Kepala Dusun</div>'
+            .'<div style="height: 64px;"></div>'
+            .'<div style="text-align: center;">'.$dots(45).'</div>'
+            .'</div>';
+    }
+
+    /**
+     * Surat Pernyataan pemohon (bermaterai 10.000). Identitas pemohon
+     * terisi dari data penduduk; nomor HP ditulis tangan.
+     */
+    private function izinPernyataanTemplate(): string
+    {
+        $dots = str_repeat('.', 40);
+        $identity = $this->rowsBlock(null, [
+            'Nama' => '{{ applicant_name }}',
+            'Tempat/Tgl.Lahir' => '{{ applicant_birth_place_date }}',
+            'Jenis Kelamin' => '{{ applicant_gender }}',
+            'Status Perkawinan' => '{{ applicant_marital_status }}',
+            'Agama' => '{{ applicant_religion }}',
+            'Pekerjaan' => '{{ applicant_occupation }}',
+            'Alamat' => '{{ applicant_address }}<br>Kabupaten {{ village_regency }}',
+            'No.HP/email' => $dots.' / {{ applicant_email }}',
+        ], 0);
+
+        return '<div style="font-family: \'Times New Roman\', serif; font-size: 12pt; line-height: 1.4; color: #000;">'
+            .'<div style="text-align: center; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 20px;">SURAT PERNYATAAN</div>'
+            .'<p style="margin: 0 0 12px 0;">Yang bertanda tangan dibawah ini:</p>'
+            .$identity
+            .'<div style="text-align: center; font-weight: bold; margin: 16px 0 10px 0;">MENYATAKAN</div>'
+            .'<ol style="margin: 0 0 12px 0; padding-left: 28px; text-align: justify;">'
+            .'<li>Bahwa saya siap menaati aturan menyelenggarakan keramaian/kegiatan apapun yang mengumpulkan banyak orang.</li>'
+            .'<li>Apabila dikemudian hari ternyata apa yang saya nyatakan tersebut tidak benar, maka saya bersedia dikenakan sanksi/hukuman menurut ketentuan peraturan perundang-undangan.</li>'
+            .'</ol>'
+            .$this->paragraph('Demikian surat pernyataan ini saya buat dalam keadaan sadar, tanpa paksaan, dan dibuat dengan sebenar-benarnya.')
+            .'<table style="width: 100%; border-collapse: collapse; margin-top: 24px;"><tr>'
+            .'<td style="width: 50%;"></td>'
+            .'<td style="width: 50%; text-align: center;">'
+            .'<div>{{ village_name_short }}, '.$dots.'</div>'
+            .'<div>Yang membuat pernyataan</div>'
+            .'<div style="height: 30px;"></div>'
+            .'<div style="width: 80px; height: 50px; margin: 0 auto; border: 1px solid #999; background: #e7e7e7; font-size: 7pt; text-align: left; padding: 2px;">Materai 10.000</div>'
+            .'<div style="height: 30px;"></div>'
+            .'<div style="font-weight: bold; text-decoration: underline;">{{ applicant_name }}</div>'
+            .'</td></tr></table>'
+            .'</div>';
     }
 
     // ------------------------------------------------------------------
@@ -480,8 +697,10 @@ class LetterTypeSeeder extends Seeder
      * @param  array<int, string>  $sections
      * @param  string|null  $opening  pengganti blok penanda tangan bila
      *                                template fisik memakai satu paragraf pembuka
+     * @param  string|null  $footer  blok sesudah tanda tangan Kepala Desa
+     *                               (mis. "Mengetahui" instansi luar di A12)
      */
-    private function page(string $title, array $sections, ?string $opening = null): string
+    private function page(string $title, array $sections, ?string $opening = null, ?string $footer = null): string
     {
         $kop = <<<'HTML'
         <div style="text-align: center; margin-bottom: 5px;">
@@ -538,6 +757,7 @@ class LetterTypeSeeder extends Seeder
             {$signer}
             {$body}
             {$signature}
+            {$footer}
         </div>
         HTML;
     }
