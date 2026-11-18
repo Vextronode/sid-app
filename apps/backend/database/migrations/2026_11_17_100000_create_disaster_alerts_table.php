@@ -40,6 +40,10 @@ return new class extends Migration
             $table->text('dismiss_reason')->nullable();
             // Level tertinggi yang sudah dikirim sebagai notifikasi.
             $table->unsignedTinyInteger('notified_level_rank')->nullable();
+            // Patokan magnitudo untuk gempa susulan (external_id sama):
+            // magnitudo saat notifikasi terakhir, atau magnitudo pertama yang
+            // datang setelah notifikasi bila saat itu masih kosong.
+            $table->decimal('notified_magnitude', 3, 1)->nullable();
             // created_at = waktu pertama diterima (`received_at` di API).
             $table->timestamps();
 

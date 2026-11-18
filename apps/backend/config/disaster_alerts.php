@@ -28,6 +28,11 @@ return [
         explode(',', (string) env('SIGAP_LINK_HOSTS', '')),
     ))),
 
+    // Gempa susulan dikirim SIGAP sebagai pembaruan (external_id sama).
+    // Notifikasi dikirim lagi bila magnitudonya >= patokan + nilai ini
+    // (patokan = magnitudo saat notifikasi terakhir).
+    'magnitude_renotify_delta' => (float) env('DISASTER_ALERT_MAGNITUDE_RENOTIFY_DELTA', 1.0),
+
     // Jumlah akun per kelompok saat mengirim notifikasi ke semua warga.
     'notification_chunk' => 200,
 
