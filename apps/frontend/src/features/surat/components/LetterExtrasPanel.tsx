@@ -136,13 +136,16 @@ export function LetterExtrasPanel({ letterId }: { letterId: Id }) {
   }
 
   const signatures = letter.signatures ?? []
-  const attachments = letter.attachments ?? []
+  // Layanan pendataan (mis. CPMI): isian dan dokumen sudah tampil rapi per
+  // section di panel rincian (FormAnswersReview), jadi tidak diulang di sini.
+  const dataOnly = letter.letter_type?.produces_letter === false
+  const attachments = dataOnly ? [] : (letter.attachments ?? [])
   // Berkas isian ditampilkan dengan label isiannya (mis. "Foto Usaha Terkini").
   const fieldLabels = Object.fromEntries(
     (letter.letter_type?.form_fields ?? []).map((field) => [field.name, field.label]),
   )
   // Isian form pemohon, dengan label dari definisi jenis surat.
-  const formValues = (letter.letter_type?.form_fields ?? [])
+  const formValues = (dataOnly ? [] : (letter.letter_type?.form_fields ?? []))
     .filter((field) => field.type !== 'file')
     .map((field) => {
       const raw = letter.payload?.[field.name]

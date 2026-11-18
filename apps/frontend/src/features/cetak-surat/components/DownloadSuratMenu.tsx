@@ -13,7 +13,12 @@ import { ChevronDown, Download, FileText } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { downloadSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
-import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
+import {
+  DATA_ONLY_RESULT_NOTE,
+  MAIN_DOCUMENT,
+  producesLetter,
+} from '@/features/cetak-surat/utils/letterDocuments'
+import { StatusPill } from '@/components/ui/StatusPill'
 import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { isSignedByVillageHead } from '@/features/cetak-surat/utils/letterSigning'
 import { alertDialog } from '@/shared/lib/dialog'
@@ -65,7 +70,20 @@ function downloadOptions(surat: PrintableLetter | null | undefined): DownloadOpt
 
 const MENU_WIDTH = 288
 
-export function DownloadSuratMenu({
+// Layanan pendataan (mis. CPMI): tidak ada surat untuk diunduh.
+export function DownloadSuratMenu(props: DownloadSuratMenuProps) {
+  if (!producesLetter(props.surat)) {
+    return (
+      <span title={DATA_ONLY_RESULT_NOTE}>
+        <StatusPill tone="active">Data tersimpan</StatusPill>
+      </span>
+    )
+  }
+
+  return <LetterDownloadMenu {...props} />
+}
+
+function LetterDownloadMenu({
   surat,
   label = 'Unduh surat',
   variant = 'primary',

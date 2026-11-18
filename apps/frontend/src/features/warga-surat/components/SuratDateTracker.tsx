@@ -29,6 +29,7 @@ import { LetterValidityNote } from '@/features/surat/components/LetterValidityNo
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
 import { SURAT_STATUS } from '@/constants/suratStatus'
+import { DATA_ONLY_RESULT_NOTE, producesLetter } from '@/features/cetak-surat/utils/letterDocuments'
 
 import { useLetters } from '@/features/surat/hooks/useLetters'
 import { useLetterReapply } from '@/features/surat/hooks/useLetterReapply'
@@ -499,11 +500,16 @@ export default function SuratDateTracker() {
           {activeSurat?.status === SURAT_STATUS.APPROVED && (
             <LetterValidityNote surat={activeSurat} onReapply={reapply} />
           )}
-          <SuratPreview
-            suratId={activeSurat?.id}
-            status={activeSurat?.status}
-            isExpired={activeSurat?.is_expired === true}
-          />
+          {producesLetter(activeSurat) ? (
+            <SuratPreview
+              suratId={activeSurat?.id}
+              status={activeSurat?.status}
+              isExpired={activeSurat?.is_expired === true}
+            />
+          ) : (
+            // Layanan pendataan (mis. CPMI): tidak ada surat untuk dipratinjau.
+            <p className="sid-info">{DATA_ONLY_RESULT_NOTE}</p>
+          )}
         </>
       )}
     </div>

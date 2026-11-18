@@ -40,6 +40,16 @@ describe('DownloadSuratMenu', () => {
     expect(screen.queryByText(/TTD/)).toBeNull()
   })
 
+  it('shows the data-only result instead of a download for services without a letter', () => {
+    render(
+      <DownloadSuratMenu surat={{ id: 'letter-3', letter_type: { produces_letter: false } }} />,
+    )
+
+    expect(screen.queryByRole('button', { name: /Unduh surat/ })).toBeNull()
+    expect(screen.getByText('Data tersimpan')).toBeInTheDocument()
+    expect(downloadSuratPDF).not.toHaveBeenCalled()
+  })
+
   it('downloads a single-document form directly as well', async () => {
     const form = { id: 'letter-2', letter_type: { signed_by_village_head: false } }
     render(<DownloadSuratMenu surat={form} />)
