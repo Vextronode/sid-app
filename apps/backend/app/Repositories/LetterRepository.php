@@ -419,6 +419,10 @@ class LetterRepository
         return Letter::query()
             ->with([
                 'citizen.rt',
+                // Data diri lengkap di rincian layanan pendataan (mis. CPMI F11).
+                'citizen.rw',
+                'citizen.hamlet',
+                'citizen.mother:id,name',
                 'letterType:id,name,code,category,assigned_role,produces_letter,data_action,form_fields,supporting_template,documents,issues_letter_number,signed_by_village_head,requires_result_upload,result_upload_hint,data_instructions',
                 'approvals.approvedBy:id,name',
                 'flow.steps',
@@ -486,7 +490,7 @@ class LetterRepository
                 'letters.updated_at',
             ])
             ->with([
-                'letterType:id,name,code,data_action,signed_by_village_head,requires_result_upload',
+                'letterType:id,name,code,produces_letter,data_action,signed_by_village_head,requires_result_upload',
                 'citizen:id,name',
                 'latestResult',
                 'latestRejection',

@@ -63,6 +63,8 @@ class LetterListResource extends JsonResource
                 'name' => $this->letterType->name,
                 'code' => $this->letterType->code,
                 'signed_by_village_head' => $this->letterType->signed_by_village_head,
+                // false: layanan pendataan (mis. CPMI F11), tidak ada surat untuk diunduh.
+                'produces_letter' => $this->letterType->produces_letter ?? true,
             ] : null,
             'citizen' => $this->citizen ? [
                 'id' => $this->citizen->id,

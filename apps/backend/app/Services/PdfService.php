@@ -107,12 +107,17 @@ class PdfService
      */
     private function buildPdf(Letter $letter, ?string $documentKey): array
     {
-        // Surat approved dirender dari snapshot final approve.
-        $context = $this->letterSnapshotService->contextFor($letter);
-
         if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
         }
+
+        // Layanan pendataan (mis. CPMI F11): hasilnya data, tidak ada surat.
+        if (! $letter->letterType->produces_letter) {
+            abort(404, 'Layanan ini tidak menerbitkan surat; hasilnya berupa data yang tersimpan di desa.');
+        }
+
+        // Surat approved dirender dari snapshot final approve.
+        $context = $this->letterSnapshotService->contextFor($letter);
 
         $document = $this->documentFor($letter, $context, $documentKey);
         $filename = $document['key'] === LetterDocuments::MAIN

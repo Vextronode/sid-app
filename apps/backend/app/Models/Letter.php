@@ -151,6 +151,16 @@ class Letter extends Model
         return $this->hasOne(CitizenBusiness::class);
     }
 
+    /**
+     * Data CPMI yang dicatat dari pengajuan ini (F11).
+     *
+     * @return HasOne<MigrantWorker, $this>
+     */
+    public function migrantWorker(): HasOne
+    {
+        return $this->hasOne(MigrantWorker::class);
+    }
+
     /** @return HasMany<LetterSignature, $this> */
     public function signatures(): HasMany
     {
@@ -231,6 +241,12 @@ class Letter extends Model
     public function rw(): BelongsTo
     {
         return $this->belongsTo(Rw::class);
+    }
+
+    /** Dusun pemohon saat pengajuan (dibekukan bersama rt_id/rw_id). */
+    public function hamlet(): BelongsTo
+    {
+        return $this->belongsTo(Hamlet::class);
     }
 
     /** Akun pengaju atau warga pemohon surat (akun lain milik orang yang sama). */

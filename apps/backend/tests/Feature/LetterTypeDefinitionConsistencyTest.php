@@ -49,6 +49,17 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
      */
     private const BUSINESS_DATA_FIELDS = [
         'A01' => ['nama_usaha', 'kategori_usaha', 'alamat_usaha', 'email_usaha', 'telepon_usaha', 'daftar_cimart'],
+        // CPMI tidak menerbitkan surat: seluruh isian disimpan sebagai data
+        // migrant_workers (MigrantWorkerService); agama/status kawin menjadi
+        // cadangan identitas di detail Data CPMI.
+        'F11' => [
+            'agama', 'status_perkawinan', 'jenis_kelamin_pemohon', 'tinggi_badan', 'berat_badan', 'telepon', 'email',
+            'pendidikan_terakhir', 'nama_sekolah', 'jurusan', 'tahun_lulus', 'sertifikat', 'pengalaman_kerja',
+            'penanggung_jawab_sumber', 'penanggung_jawab_anggota', 'penanggung_jawab_hubungan', 'penanggung_jawab_nama',
+            'penanggung_jawab_alamat', 'penanggung_jawab_telepon', 'penanggung_jawab_email',
+            'negara_tujuan_lainnya', 'nama_pemberi_kerja', 'alamat_pemberi_kerja', 'kontak_pemberi_kerja',
+            'kontak_p3mi', 'jabatan_kerja', 'gaji_fasilitas', 'kontrak_mulai', 'kontrak_selesai',
+        ],
     ];
 
     protected function setUp(): void
@@ -129,9 +140,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
     {
         $letterTypes = LetterType::query()->with('flow.steps')->orderBy('code')->get();
 
-        // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx dan A11 Ahli Waris).
+        // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx, termasuk F11 CPMI, dan A11 Ahli Waris).
         $this->assertSame(
-            ['persuratan' => 12, 'pelayanan' => 11],
+            ['persuratan' => 12, 'pelayanan' => 12],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -139,7 +150,8 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
             $this->assertSame(ApprovalFlowSeeder::DEFAULT_FLOW_NAME, $letterType->flow->name);
             $this->assertSame(['rt', 'kepala_desa'], $letterType->flow->steps->pluck('approver_position')->all());
             $this->assertNotNull($letterType->form_fields, "{$letterType->code} belum punya definisi isian.");
-            $this->assertTrue($letterType->produces_letter);
+            // Hanya F11 (pendataan CPMI) yang hasilnya data, bukan surat.
+            $this->assertSame($letterType->code !== 'F11', $letterType->produces_letter, $letterType->code);
 
             if (str_starts_with($letterType->code, 'A')) {
                 // Surat keterangan desa. Ahli Waris tampil di Layanan Kependudukan
@@ -154,6 +166,14 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                 $this->assertSame($letterType->code !== 'A13', $letterType->issues_letter_number, "{$letterType->code} nomor surat.");
                 $this->assertTrue($letterType->signed_by_village_head);
                 $this->assertFalse($letterType->requires_result_upload);
+            } elseif (! $letterType->produces_letter) {
+                // Pendataan CPMI (F11): hasilnya data saat Kades menyetujui,
+                // tanpa surat, nomor, TTD, maupun unggah hasil.
+                $this->assertSame('kasi_pemerintahan', $letterType->assigned_role);
+                $this->assertSame(LetterTypeCategory::Pelayanan, $letterType->category);
+                $this->assertFalse($letterType->issues_letter_number || $letterType->signed_by_village_head || $letterType->requires_result_upload);
+                $this->assertNull($letterType->template);
+                $this->assertNull($letterType->documents);
             } else {
                 // Formulir Disdukcapil: tanpa nomor dan TTD Kepala Desa,
                 // bersambung dengan unggah hasil ke Kasi Pemerintahan.
