@@ -54,4 +54,4 @@ get:
           example:
             message: "Masa berlaku surat telah habis."
     '404':
-      description: Surat tidak ditemukan atau belum ada Kepala Desa aktif
+      description: Surat tidak ditemukan atau belum ada Kepala Desa aktif, atau jenis layanan tidak menerbitkan surat (`letter_types.produces_letter = false`, mis. Pendataan CPMI F11; hasilnya data `migrant_workers`)

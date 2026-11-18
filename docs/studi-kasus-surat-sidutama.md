@@ -168,6 +168,7 @@ Tabel cepat untuk menjawab: "Saya mengalami X, surat apa yang saya pilih?"
 | Ada anggota keluarga yang belum pernah punya KK/KTP-el | Layanan Kependudukan | Surat Pernyataan Tidak Memiliki Dokumen Kependudukan |
 | Ayah biologis ingin namanya tercantum di akta anak | Layanan Kependudukan | Pengakuan Anak |
 | Mengangkat anak (sudah ada penetapan pengadilan) | Layanan Kependudukan | Pelaporan Pengangkatan Anak |
+| Akan bekerja ke luar negeri (CPMI), desa perlu mendata | Layanan Kependudukan | Pendataan Calon Pekerja Migran Indonesia (CPMI) |
 
 ---
 
@@ -378,7 +379,7 @@ Perusahaan tempat Rizal melamar meminta SKCK. Polsek meminta surat pengantar dar
 
 ## 6. Studi Kasus Layanan Kependudukan
 
-Semua kasus di bagian ini mengikuti [Alur Umum Layanan Kependudukan](#3-alur-umum-layanan-kependudukan): pilih layanan, isi form, saksi menyetujui, RT dan Kepala Desa menyetujui, formulir dicetak dan dibawa ke Disdukcapil, hasil diunggah, Kasi Pemerintahan memverifikasi lalu menerapkan.
+Semua kasus di bagian ini mengikuti [Alur Umum Layanan Kependudukan](#3-alur-umum-layanan-kependudukan): pilih layanan, isi form, saksi menyetujui, RT dan Kepala Desa menyetujui, formulir dicetak dan dibawa ke Disdukcapil, hasil diunggah, Kasi Pemerintahan memverifikasi lalu menerapkan. Pengecualiannya [Pendataan CPMI](#611-pendataan-calon-pekerja-migran-indonesia-cpmi), yang tidak menerbitkan formulir: hasilnya data yang tersimpan di desa begitu Kepala Desa menyetujui.
 
 **Batas waktu pelaporan.** Bila tanggal peristiwa yang diisi sudah melewati batas pelaporan, form menampilkan peringatan, tetapi pengajuan tetap bisa dikirim. Disdukcapil dapat mengenakan denda administratif keterlambatan.
 
@@ -658,6 +659,31 @@ Pasangan Firman dan Lilis mengangkat Bayu, keponakan yatim piatu dari desa lain.
 - **Unggah hasil:** KK baru orang tua angkat (dan akta dengan catatan pengangkatan bila sudah terbit). Setelah Terapkan:
   - Bayu, yang belum terdata, ditambahkan sebagai warga baru di KK Firman.
   - Bila Bayu sebelumnya warga desa ini, ia dipindah dari KK asalnya dan kepala KK asal mendapat pemberitahuan.
+
+### 6.11 Pendataan Calon Pekerja Migran Indonesia (CPMI)
+
+Layanan ini **tidak menerbitkan surat atau formulir**. Tidak ada yang dicetak, dibawa ke Disdukcapil, atau diunggah sebagai hasil. Setelah RT dan Kepala Desa menyetujui, data CPMI langsung tersimpan di desa dan bisa dilihat di menu **Data CPMI** oleh Kepala Desa/Sekdes, Kasi Pemerintahan, dan Staf SIDUTama.
+
+**Kasus: Siti berangkat ke Taiwan, lalu tahun berikutnya ke Malaysia**
+
+Siti (24 tahun, belum menikah) diterima bekerja sebagai *caregiver* di Taiwan lewat PT Sinar Abadi, kontrak Maret 2027 sampai Februari 2030.
+
+- **Pilih di web:** Layanan Kependudukan → **Pendataan Calon Pekerja Migran Indonesia (CPMI)**.
+- **Form dibagi lima bagian:**
+  1. **Data Diri & Identitas (Sesuai KTP/KK):** NIK, nama, tempat/tanggal lahir, jenis kelamin, agama, status perkawinan, nama ibu kandung, dan alamat lengkap (RT/RW, dusun, desa sampai provinsi dan kode pos) tampil otomatis dari data penduduk dan tidak bisa diubah di sini. Agama atau status perkawinan hanya ditanyakan bila datanya belum tercatat. Siti mengisi tinggi dan berat badan serta No. HP/WhatsApp; email terisi dari akun.
+  2. **Data Pendidikan & Kompetensi:** jenjang pendidikan terisi dari data penduduk; Siti mengisi nama sekolah, jurusan, tahun lulus, sertifikat (mis. *Sertifikat Caregiver*), dan pengalaman kerja bila ada.
+  3. **Data Orang Tua / Wali / Pasangan (Kontak Darurat):** pertama pilih **Penanggung Jawab Diambil dari**.
+     - *Anggota KK saya*: Siti memilih ibunya dari daftar anggota KK. Nama, alamat, dan **hubungan** (*Ibu*) terisi otomatis dari data KK, tidak dipilih sendiri.
+     - *Di luar KK*: hubungan, nama, dan alamat diketik. Pilihan *Suami*/*Istri* hanya muncul bila pemohon berstatus kawin, dan sesuai jenis kelaminnya (pemohon laki-laki hanya bisa memilih *Istri*).
+     - No. HP penanggung jawab (wajib) dan emailnya (opsional) selalu diisi manual.
+  4. **Data Perusahaan, Sponsor, & Negara Tujuan:** negara tujuan, pemberi kerja beserta alamat dan kontaknya, nama dan kontak P3MI (bila memakai agensi), jabatan, gaji dan fasilitas sesuai kontrak, serta tanggal mulai dan berakhir kontrak.
+  5. **Dokumen Wajib:** 10 unggahan, masing-masing maks. 2 MB: pas foto (gambar), e-KTP, KK, akta kelahiran, ijazah terakhir, paspor, surat izin keluarga (bermaterai), perjanjian kerja, surat keterangan sehat dari sarana kesehatan terdaftar BP2MI, dan kepesertaan BPJS Ketenagakerjaan.
+- **Surat izin keluarga** cukup diunggah. Templatnya dari luar (agensi/BP2MI), dan "diketahui Kepala Desa" terpenuhi karena Kepala Desa membaca dokumen ini sebelum menyetujui pengajuan.
+- **Persetujuan:** RT lalu Kepala Desa/Sekdes. Karena tidak ada surat, rincian pengajuan tidak menampilkan pratinjau surat, melainkan seluruh isian yang tersusun per bagian form, satu isian per baris (sertifikat dan pengalaman kerja dipecah per entri), lengkap dengan tombol untuk membuka ke-10 dokumen.
+- **Setelah Kepala Desa menyetujui:** Siti mendapat notifikasi *Pendataan Disetujui*. Di Surat Saya, pengajuan ini bertanda **Data tersimpan**, tanpa tombol unduh atau pratinjau surat.
+- **Riwayat sendiri:** di halaman **Profil**, kartu **Data CPMI Saya** menampilkan setiap keberangkatan yang sudah disetujui (negara, jabatan, masa dan status kontrak) beserta rinciannya, dan tombol **Daftar CPMI lagi**.
+- **Keberangkatan berikutnya:** tahun 2031 Siti mendaftar lagi ke Malaysia. Form langsung terisi dari pendataan sebelumnya (tinggi/berat, kontak, pendidikan, sertifikat, pengalaman kerja, penanggung jawab), jadi Siti cukup memperbarui yang berubah. Negara tujuan, pemberi kerja, kontrak, dan dokumen selalu diisi baru. Setelah disetujui, Data CPMI memuat **dua baris** untuk Siti (Taiwan dan Malaysia), sehingga riwayat keberangkatannya tetap utuh.
+- **Data penduduk tidak berubah** oleh pendataan ini. Bila identitas di data penduduk tidak sesuai KTP/paspor, ajukan Perubahan Elemen Data Kependudukan terlebih dahulu.
 
 ---
 

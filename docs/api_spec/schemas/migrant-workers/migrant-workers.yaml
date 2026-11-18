@@ -1,0 +1,151 @@
+MigrantWorkerSummary:
+  type: object
+  description: |
+    Satu keberangkatan Calon Pekerja Migran Indonesia (CPMI), dicatat saat
+    pengajuan F11 disetujui Kepala Desa. Satu warga boleh punya beberapa
+    baris (satu per pengajuan). Bentuk di daftar `GET /migrant-workers`.
+  properties:
+    id:
+      type: string
+      format: uuid
+    letter_id:
+      type: string
+      format: uuid
+      description: Pengajuan F11 sumber data (dokumen wajib ada di lampirannya).
+    citizen:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Siti Aminah
+    hamlet:
+      type: string
+      nullable: true
+      description: Dusun pemohon saat pengajuan (`letters.hamlet_id`).
+      example: Sukamaju
+    destination_country:
+      type: string
+      description: Negara tujuan; negara yang diketik bila pilihannya "Lainnya".
+      example: Taiwan
+    employer_name:
+      type: string
+      nullable: true
+      example: Chen Family
+    agency_name:
+      type: string
+      nullable: true
+      description: P3MI/sponsor; null bila berangkat tanpa agensi.
+      example: PT Sinar Abadi
+    position:
+      type: string
+      nullable: true
+      example: Caregiver
+    contract_start:
+      type: string
+      format: date
+      nullable: true
+    contract_end:
+      type: string
+      format: date
+      nullable: true
+    contract_status:
+      type: string
+      enum: [akan_berangkat, aktif, berakhir]
+      description: |
+        Dihitung dari tanggal kontrak terhadap hari ini: `akan_berangkat`
+        (mulai > hari ini), `berakhir` (selesai < hari ini), selain itu `aktif`.
+    approved_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Waktu Kepala Desa menyetujui (`letters.processed_at`).
+    created_at:
+      type: string
+      format: date-time
+
+MigrantWorkerDetail:
+  description: |
+    Bentuk di `GET /migrant-workers/{id}`: ringkasan ditambah identitas,
+    rincian per bagian form, dan 10 dokumen wajib.
+  allOf:
+    - $ref: '#/MigrantWorkerSummary'
+    - type: object
+      properties:
+        identity:
+          type: object
+          description: |
+            Dibaca dari data penduduk saat ini (tidak disalin), dengan nama/NIK/alamat
+            pengajuan sebagai cadangan bila warga sudah terhapus. Agama dan status kawin
+            memakai jawaban form bila data penduduknya kosong.
+          properties:
+            name: { type: string, nullable: true }
+            nik: { type: string, nullable: true, description: NIK utuh (petugas berwenang). }
+            place_of_birth: { type: string, nullable: true }
+            date_of_birth: { type: string, format: date, nullable: true }
+            gender: { type: string, nullable: true, enum: [L, P] }
+            religion: { type: string, nullable: true }
+            marital_status: { type: string, nullable: true }
+            mother_name: { type: string, nullable: true }
+            address: { type: string, nullable: true }
+            rt: { type: string, nullable: true }
+            rw: { type: string, nullable: true }
+            hamlet: { type: string, nullable: true }
+        height_cm: { type: integer, nullable: true, example: 160 }
+        weight_kg: { type: integer, nullable: true, example: 55 }
+        phone: { type: string, nullable: true, example: '081234567890' }
+        email: { type: string, nullable: true }
+        education_level:
+          type: string
+          nullable: true
+          description: Kunci `CitizenLabels::LAST_EDUCATION` (mis. `sma`).
+        school_name: { type: string, nullable: true }
+        major: { type: string, nullable: true }
+        graduation_year: { type: integer, nullable: true }
+        certificates:
+          type: array
+          items:
+            type: object
+            properties:
+              nama_sertifikat: { type: string, nullable: true }
+              penerbit: { type: string, nullable: true }
+              tahun: { type: string, nullable: true }
+        work_history:
+          type: array
+          items:
+            type: object
+            properties:
+              perusahaan: { type: string, nullable: true }
+              jabatan: { type: string, nullable: true }
+              mulai: { type: string, nullable: true }
+              selesai: { type: string, nullable: true }
+              deskripsi: { type: string, nullable: true }
+        guardian_relation:
+          type: string
+          nullable: true
+          description: |
+            Di luar KK: dipilih pemohon (`suami`/`istri` hanya untuk pemohon
+            berstatus kawin, sesuai jenis kelaminnya). Dari KK: diturunkan dari
+            SHDK pemohon dan anggota (GuardianRelation).
+          enum: [suami, istri, ayah, ibu, saudara, wali, anak, mertua, menantu, cucu, kakek_nenek, famili_lain]
+        guardian_relation_label: { type: string, nullable: true, example: Ibu }
+        guardian_name: { type: string, nullable: true }
+        guardian_address: { type: string, nullable: true }
+        guardian_phone: { type: string, nullable: true }
+        guardian_email: { type: string, nullable: true }
+        employer_address: { type: string, nullable: true }
+        employer_contact: { type: string, nullable: true }
+        agency_contact: { type: string, nullable: true }
+        salary_facilities: { type: string, nullable: true }
+        documents:
+          type: array
+          description: |
+            Lampiran isian (kind `field`) pengajuannya: `pas_foto`, `scan_ktp`, `scan_kk`,
+            `scan_akta_lahir`, `scan_ijazah`, `scan_paspor`, `scan_izin_keluarga`,
+            `scan_perjanjian_kerja`, `scan_surat_sehat`, `scan_bpjs_tk`. `url` dibuka lewat
+            `GET /letters/{letter}/attachments/{attachment}` (hak lihat surat).
+          items:
+            $ref: '../letters/letters.yaml#/LetterAttachment'

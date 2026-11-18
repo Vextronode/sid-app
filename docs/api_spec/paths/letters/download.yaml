@@ -56,6 +56,6 @@ get:
               value:
                 message: "Masa berlaku surat telah habis."
     '404':
-      description: Surat tidak ditemukan, atau belum ada Kepala Desa aktif untuk membekukan snapshot
+      description: Surat tidak ditemukan, atau belum ada Kepala Desa aktif untuk membekukan snapshot, atau jenis layanan tidak menerbitkan surat (`letter_types.produces_letter = false`, mis. Pendataan CPMI F11; hasilnya data `migrant_workers`)
     '500':
       description: Data penanda tangan snapshot tidak ditemukan atau template tidak ada

@@ -45,8 +45,10 @@ put:
     '422':
       description: |
         validity_days < 1, category tidak valid, atau `is_active=true`
-        untuk tipe Draft (template NULL): "Jenis surat draft belum memiliki
-        template sehingga tidak dapat diaktifkan."
+        untuk tipe Draft (template NULL dan `produces_letter = true`): "Jenis
+        surat draft belum memiliki template sehingga tidak dapat diaktifkan."
+        Layanan pendataan tanpa surat (`produces_letter = false`, mis. CPMI F11)
+        bukan draft dan boleh diaktifkan.
       content:
         application/json:
           schema:

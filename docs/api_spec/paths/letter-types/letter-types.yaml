@@ -3,8 +3,9 @@ get:
   summary: Lihat daftar tipe surat
   description: |
     Lintas-role (semua user login). Default: tipe surat milik desa akun yang
-    login yang `template != NULL` dan `is_active = true`, urut nama (dipakai
-    warga saat memilih jenis surat).
+    login yang `is_active = true` dan siap diajukan (`template != NULL`, atau
+    `produces_letter = false` untuk layanan pendataan seperti CPMI F11), urut
+    nama (dipakai warga saat memilih jenis surat).
 
     `include_inactive=true` (khusus Staf SIDUTama / `staf_sid`): semua tipe
     surat desa termasuk Draft dan Nonaktif, urut nama, untuk halaman

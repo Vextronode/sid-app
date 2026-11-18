@@ -3,7 +3,8 @@ get:
   summary: Info jenis surat & persyaratan (tanpa login)
   security: []
   description: |
-    UC-16. Jenis surat aktif ber-template milik desa (urut nama), hanya
+    UC-16. Jenis surat aktif yang bisa diajukan (ber-template, atau layanan
+    pendataan tanpa surat seperti CPMI F11) milik desa (urut nama), hanya
     code, name, category, category_label, requirements_info. Cache per desa (10 menit).
   operationId: getPublicLetterTypes
   parameters:

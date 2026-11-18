@@ -1,0 +1,35 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Nilai awal form CPMI dari pengajuan terakhir
+  description: |
+    Isian pengajuan CPMI (F11) terakhir milik akun login yang bertahan
+    antarkeberangkatan, untuk mengisi awal form F11 berikutnya: tinggi/berat,
+    No. HP, email, pendidikan, sertifikat, pengalaman kerja, dan penanggung
+    jawab (`MigrantWorkerService::CARRIED_FIELDS`). Negara tujuan, pemberi
+    kerja, kontrak, dan dokumen tidak dibawa. Isian kosong dibuang; `data`
+    berupa objek kosong bila belum pernah. Frontend hanya mengisi isian yang
+    masih kosong.
+  operationId: showOwnMigrantWorkerPrefill
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Nilai awal per nama isian form F11
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                additionalProperties: true
+                example:
+                  tinggi_badan: '160'
+                  nama_sekolah: SMK Negeri 1
+                  penanggung_jawab_hubungan: ibu
+                  sertifikat:
+                    - nama_sertifikat: JLPT N4
+                      penerbit: The Japan Foundation
+                      tahun: '2023'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'

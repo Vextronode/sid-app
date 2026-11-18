@@ -169,7 +169,7 @@ LetterType:
       type: string
       enum: [draft, aktif, dinonaktifkan]
       example: "aktif"
-      description: "Derived: template=NULL -> draft; template!=NULL+is_active -> aktif; selain itu dinonaktifkan"
+      description: "Derived: template=NULL dan produces_letter=true -> draft; selain itu is_active -> aktif, tidak aktif -> dinonaktifkan. Layanan pendataan tanpa surat (produces_letter=false, mis. CPMI F11) tidak butuh template."
 
 LetterFormField:
   type: object
