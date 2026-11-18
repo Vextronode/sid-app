@@ -49,11 +49,25 @@ describe('PdfCanvasPreview', () => {
     const container = screen.getByTestId('pdf-canvas-preview')
     await waitFor(() => expect(container.querySelector('canvas')).not.toBeNull())
     expect(container).not.toHaveAttribute('hidden')
-    expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'main')
+    expect(previewSuratPDF).toHaveBeenCalledWith({ id: 'letter-1' }, 'main', 'f4')
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     present(container.querySelector('canvas')).dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('reloads the preview on the paper size chosen above it', async () => {
+    loadPdfjs.mockResolvedValue(fakePdfjs())
+    render(<PdfCanvasPreview surat={{ id: 'letter-1' }} documentKey="f1_01" />)
+
+    expect(screen.getByRole('radio', { name: 'F4' })).toHaveAttribute('aria-checked', 'true')
+    await waitFor(() => expect(previewSuratPDF).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(screen.getByRole('radio', { name: 'A4' }))
+
+    await waitFor(() =>
+      expect(previewSuratPDF).toHaveBeenLastCalledWith({ id: 'letter-1' }, 'f1_01', 'a4'),
+    )
   })
 
   it('unmounts cleanly after rendering (pdf.js 6 document has no destroy)', async () => {

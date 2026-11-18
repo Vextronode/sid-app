@@ -1,10 +1,10 @@
 // ==========================================
 // DownloadSuratMenu.tsx
 // Tombol "Unduh surat". Surat terbit tanpa TTD dan stempel (dibubuhkan basah
-// di kantor desa), jadi tidak ada pilihan format. Satu dokumen: tombol
-// langsung mengunduh; beberapa dokumen (surat.documents, mis. formulir yang
-// terbit bersama): pilih dokumen dari menu. Baris tabel tidak membawa daftar
-// dokumen, jadi `loadDetail` memuat rincian surat saat tombol ditekan.
+// di kantor desa). Menu berisi pilihan ukuran kertas (A4 | F4, bawaan F4;
+// backend menskalakan PDF utuh) lalu dokumen yang terbit (surat.documents,
+// dokumen utama lebih dulu). Baris tabel tidak membawa daftar dokumen, jadi
+// `loadDetail` memuat rincian surat saat tombol ditekan.
 // ==========================================
 
 import '@/styles/surat-dokumen.css'
@@ -13,6 +13,8 @@ import { ChevronDown, Download, FileText } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { downloadSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { PaperSizeToggle } from '@/features/cetak-surat/components/PaperSizeToggle'
+import { DEFAULT_PAPER, paperLabel } from '@/features/cetak-surat/utils/paperSize'
 import {
   DATA_ONLY_RESULT_NOTE,
   MAIN_DOCUMENT,
@@ -23,7 +25,7 @@ import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocumen
 import { isSignedByVillageHead } from '@/features/cetak-surat/utils/letterSigning'
 import { alertDialog } from '@/shared/lib/dialog'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
-import type { Id, LetterDocument } from '@/types'
+import type { Id, LetterDocument, PaperSize } from '@/types'
 
 type DownloadOption = {
   key: string
@@ -54,17 +56,21 @@ function downloadOptions(surat: PrintableLetter | null | undefined): DownloadOpt
   }
 
   return [main, ...documents.filter((document) => document.key !== MAIN_DOCUMENT)].map(
-    (document: LetterDocument) => ({
-      key: `document-${document.key}`,
-      documentKey: document.key,
-      icon: FileText,
-      label: document.title,
-      hint: !villageLetter
+    (document: LetterDocument) => {
+      const role = !villageLetter
         ? 'Formulir untuk instansi'
         : document.key === MAIN_DOCUMENT
           ? 'Surat utama'
-          : 'Terbit bersama surat ini',
-    }),
+          : 'Terbit bersama surat ini'
+
+      return {
+        key: `document-${document.key}`,
+        documentKey: document.key,
+        icon: FileText,
+        label: document.title,
+        hint: document.paper ? `${role} · template ${paperLabel(document.paper)}` : role,
+      }
+    },
   )
 }
 
@@ -95,6 +101,7 @@ function LetterDownloadMenu({
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [detail, setDetail] = useState<PrintableLetter | null>(null)
+  const [paper, setPaper] = useState<PaperSize>(DEFAULT_PAPER)
   const current = detail ?? surat
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
 
@@ -123,7 +130,7 @@ function LetterDownloadMenu({
       return
     }
 
-    menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]')?.focus()
+    menuRef.current?.querySelector<HTMLElement>('.sid-download-option')?.focus()
 
     const close = () => setOpen(false)
     const onPointerDown = (event: PointerEvent) => {
@@ -174,7 +181,7 @@ function LetterDownloadMenu({
     setBusy(true)
 
     try {
-      await downloadSuratPDF(target, option.documentKey)
+      await downloadSuratPDF(target, option.documentKey, paper)
     } catch (error) {
       alertDialog({
         title: 'Unduhan gagal',
@@ -185,7 +192,7 @@ function LetterDownloadMenu({
     }
   }
 
-  // Muat rincian (daftar dokumen) dulu; satu pilihan langsung diunduh.
+  // Muat rincian (daftar dokumen) dulu, lalu buka menu.
   const handleLazyOpen = async () => {
     if (!loadDetail) return
 
@@ -193,17 +200,11 @@ function LetterDownloadMenu({
 
     try {
       const loaded = await loadDetail(surat.id)
-      const loadedOptions = downloadOptions(loaded)
 
       setDetail(loaded)
       setBusy(false)
-
-      if (loadedOptions.length === 1) {
-        await handleSelect(loadedOptions[0], loaded)
-      } else {
-        setPosition(null)
-        setOpen(true)
-      }
+      setPosition(null)
+      setOpen(true)
     } catch (error) {
       setBusy(false)
       alertDialog({
@@ -227,21 +228,6 @@ function LetterDownloadMenu({
         <Download size={16} aria-hidden="true" />
         <span>{busy ? 'Menyiapkan...' : triggerLabel}</span>
         <ChevronDown size={14} aria-hidden="true" className="sid-download-chevron" />
-      </button>
-    )
-  }
-
-  if (options.length === 1) {
-    return (
-      <button
-        type="button"
-        className={`sid-download-trigger ${variant} ${className}`}
-        disabled={disabled || busy}
-        title={title}
-        onClick={() => handleSelect(options[0])}
-      >
-        <Download size={16} aria-hidden="true" />
-        <span>{busy ? 'Menyiapkan...' : triggerLabel}</span>
       </button>
     )
   }
@@ -272,7 +258,7 @@ function LetterDownloadMenu({
           ref={menuRef}
           id={menuId}
           role="menu"
-          aria-label="Pilih dokumen"
+          aria-label="Pilih ukuran kertas dan dokumen"
           className="sid-download-menu"
           style={{
             width: MENU_WIDTH,
@@ -281,6 +267,8 @@ function LetterDownloadMenu({
             visibility: position ? 'visible' : 'hidden',
           }}
         >
+          <PaperSizeToggle value={paper} onChange={setPaper} inMenu />
+
           {options.map((option) => {
             const { icon: Icon, label: optionLabel, hint } = option
 

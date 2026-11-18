@@ -5,12 +5,19 @@
 // Sengaja tidak memakai viewer PDF bawaan browser (tab baru / iframe):
 // viewer itu selalu punya tombol unduh & cetak yang tidak bisa dimatikan
 // secara andal. Unduhan resmi hanya lewat tombol "Unduh/Download Surat".
+//
+// Pilihan A4 | F4 (bawaan F4) di atas pratinjau: PDF diminta ulang dengan
+// ?paper= sehingga yang terlihat sama dengan yang akan dicetak. Pilihan tetap
+// saat berpindah tab dokumen (LetterDocumentsPreview).
 // ==========================================
 
 import { useEffect, useRef, useState } from 'react'
 import { FileText } from 'lucide-react'
 
 import { previewSuratPDF } from '@/features/cetak-surat/utils/generateSuratPDF'
+import { PaperSizeToggle } from '@/features/cetak-surat/components/PaperSizeToggle'
+import { DEFAULT_PAPER } from '@/features/cetak-surat/utils/paperSize'
+import type { PaperSize } from '@/types'
 import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist/types/src/display/api'
 import { loadPdfjs } from '@/lib/pdfjs'
@@ -24,6 +31,7 @@ export function PdfCanvasPreview({ surat, documentKey = 'main' }: PdfCanvasPrevi
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [paper, setPaper] = useState<PaperSize>(DEFAULT_PAPER)
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -44,7 +52,7 @@ export function PdfCanvasPreview({ surat, documentKey = 'main' }: PdfCanvasPrevi
 
       try {
         const [blobUrl, pdfjsLib] = await Promise.all([
-          previewSuratPDF({ id: suratId }, documentKey),
+          previewSuratPDF({ id: suratId }, documentKey, paper),
           loadPdfjs(),
         ])
 
@@ -143,10 +151,14 @@ export function PdfCanvasPreview({ surat, documentKey = 'main' }: PdfCanvasPrevi
 
       loadingTask?.destroy().catch(() => {})
     }
-  }, [suratId, documentKey, attempt])
+  }, [suratId, documentKey, paper, attempt])
 
   return (
     <div className="sid-preview-container" onContextMenu={(event) => event.preventDefault()}>
+      <div className="sid-preview-toolbar">
+        <PaperSizeToggle value={paper} onChange={setPaper} />
+      </div>
+
       {loading && (
         <div className="sid-preview-loading">
           <div className="sid-loading-spinner" />

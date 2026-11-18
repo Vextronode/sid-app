@@ -116,9 +116,14 @@ export type LetterResult = {
   attachments?: LetterAttachment[]
 }
 
+// Ukuran kertas PDF (App\Support\PaperSize).
+export type PaperSize = 'a4' | 'f4'
+
 export type LetterDocument = {
   key: string
   title: string
+  // Kertas bawaan template dokumen; unduhan boleh memakai kertas lain.
+  paper?: PaperSize
 }
 
 // Syarat tampil isian (visible_when), sama dengan AppSupportFieldCondition:
@@ -207,7 +212,7 @@ export type LetterType = {
   // (GET /api/letter-types/{id}/forms/{key}), berisi identitas pemohon.
   handwritten_forms?: HandwrittenForm[]
   // Ukuran kertas dokumen utama: a4 atau f4.
-  paper_size?: 'a4' | 'f4'
+  paper_size?: PaperSize
   flow_id: number | null
   flow?: { id: number; name: string }
   assigned_role: string | null
