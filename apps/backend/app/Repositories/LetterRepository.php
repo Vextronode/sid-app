@@ -423,7 +423,7 @@ class LetterRepository
                 'citizen.rw',
                 'citizen.hamlet',
                 'citizen.mother:id,name',
-                'letterType:id,name,code,category,assigned_role,produces_letter,data_action,form_fields,supporting_template,documents,issues_letter_number,signed_by_village_head,requires_result_upload,result_upload_hint,data_instructions',
+                'letterType:id,name,code,category,assigned_role,produces_letter,data_action,form_fields,supporting_template,documents,paper_size,issues_letter_number,signed_by_village_head,requires_result_upload,result_upload_hint,data_instructions',
                 'approvals.approvedBy:id,name',
                 'flow.steps',
                 'statusLogs.actor:id,name',

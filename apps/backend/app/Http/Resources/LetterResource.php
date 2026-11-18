@@ -121,12 +121,19 @@ class LetterResource extends JsonResource
             'documents' => $this->when(
                 $this->relationLoaded('letterType') && $this->letterType,
                 fn () => array_map(
-                    fn (array $document): array => ['key' => $document['key'], 'title' => $document['title']],
+                    // paper = kertas bawaan dokumen; pengunduh boleh memilih
+                    // kertas lain lewat ?paper= (PDF diskalakan).
+                    fn (array $document): array => [
+                        'key' => $document['key'],
+                        'title' => $document['title'],
+                        'paper' => $document['paper'],
+                    ],
                     LetterDocuments::applicable(
                         (string) ($this->snapshot['title'] ?? $this->letterType->name),
                         null,
                         $this->snapshot['documents'] ?? $this->letterType->documents,
                         is_array($this->payload) ? $this->payload : [],
+                        $this->snapshot['paper_size'] ?? $this->letterType->paper_size,
                     ),
                 )
             ),
