@@ -5,7 +5,8 @@ import type { IsoDateString, Uuid } from '@/types'
 // Peringatan bencana dari SIGAP. Sumber: PublicDisasterAlertResource (bar
 // publik) dan DisasterAlertResource (tab Peringatan SIGAP, Staf SIDUTama).
 
-export type DisasterAlertLevel = 'info' | 'waspada' | 'siaga' | 'awas'
+// SIGAP hanya mengirim tiga level ini (waspada < siaga < awas).
+export type DisasterAlertLevel = 'waspada' | 'siaga' | 'awas'
 export type DisasterAlertStatus = 'active' | 'dismissed' | 'ended' | 'expired'
 
 export type PublicDisasterAlert = {

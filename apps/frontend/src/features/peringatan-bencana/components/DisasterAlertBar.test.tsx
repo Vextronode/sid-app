@@ -46,7 +46,7 @@ describe('DisasterAlertBar', () => {
         alerts={[
           alert(),
           alert({ id: 'a-2', type_label: 'Gempa', level_label: 'Waspada', title: 'Gempa M6.9' }),
-          alert({ id: 'a-3', type_label: 'Gempa', level_label: 'Info', title: 'Gempa susulan' }),
+          alert({ id: 'a-3', type_label: 'Gempa', level_label: 'Waspada', title: 'Gempa susulan' }),
         ]}
       />,
     )

@@ -63,7 +63,7 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
   const dismiss = async (alert: DisasterAlert) => {
     const reason = await promptDialog({
       title: `Turunkan peringatan "${alert.title}"?`,
-      message: `${alert.level_label} · ${alert.type_label}. Peringatan ini hilang dari halaman publik, dan pembaruan dari SIGAP untuk peringatan ini juga tidak tampil sampai Anda menampilkannya lagi.`,
+      message: `${alert.level_label} · ${alert.type_label}. Peringatan ini hilang dari halaman publik, dan pembaruan dari SIGAP untuk peringatan ini juga tidak tampil sampai Anda menampilkannya lagi. Peringatan akan tampil lagi otomatis bila SIGAP menaikkan levelnya atau ada gempa susulan minimal 1 magnitudo lebih besar.`,
       label: 'Alasan menurunkan (wajib)',
       placeholder: 'Mis. alarm palsu, sudah dikonfirmasi BPBD.',
       minLength: 3,
@@ -208,7 +208,8 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
             <h3>Baru diturunkan</h3>
             <p>
               Peringatan yang diturunkan dan masih bisa ditampilkan lagi, selama belum diakhiri
-              SIGAP dan belum lewat masa tayang.
+              SIGAP dan belum lewat masa tayang. Peringatan tampil lagi otomatis bila SIGAP
+              menaikkan levelnya atau ada gempa susulan minimal 1 magnitudo lebih besar.
             </p>
           </div>
         </div>
