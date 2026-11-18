@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Enums\LetterStatus;
 use App\Enums\OfficialPosition;
 use App\Enums\ResidencyType;
+use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\LetterRepository;
@@ -130,6 +132,15 @@ class LetterSnapshotService
                 'marital_status' => $citizen?->marital_status
                     ? CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $citizen->marital_status)
                     : '-',
+                'religion' => $citizen?->religion
+                    ? CitizenLabels::of(CitizenLabels::RELIGION, $citizen->religion)
+                    : '-',
+                // Data penduduk desa hanya memuat WNI (orang asing tidak
+                // tercatat sebagai warga desa).
+                'citizenship' => 'Indonesia',
+                // Wilayah dan Ketua RT/RW pemohon saat pengajuan (letters.rt_id/
+                // rw_id/hamlet_id), mis. "Yang Menerangkan" Pengantar SKCK.
+                'area' => $this->applicantArea($letter),
                 'family_number' => $citizen?->family?->no_kk,
                 'email' => $letter->user?->email,
                 // Rincian KK pemohon untuk formulir pelayanan ({{#each kk_anggota}}).
@@ -156,6 +167,28 @@ class LetterSnapshotService
                 'village_id' => $kades?->village_id,
                 'name' => $kades?->citizen?->name,
             ],
+        ];
+    }
+
+    /**
+     * Nomor RT/RW (3 digit), nama dusun, dan nama Ketua RT/RW aktif di
+     * wilayah pemohon yang tercatat saat pengajuan. Dibekukan bersama
+     * snapshot saat final approve; TTD-nya dibubuhkan basah.
+     *
+     * @return array{rt: ?string, rw: ?string, dusun: ?string, rt_head: ?string, rw_head: ?string}
+     */
+    private function applicantArea(Letter $letter): array
+    {
+        $rt = $letter->rt_id ? Rt::query()->find($letter->rt_id) : null;
+        $rw = $letter->rw_id ? Rw::query()->find($letter->rw_id) : $rt?->rw;
+        $hamlet = $letter->hamlet_id ? Hamlet::query()->find($letter->hamlet_id) : $rw?->hamlet;
+
+        return [
+            'rt' => $rt ? LetterFormSchema::areaNumber($rt->number) : null,
+            'rw' => $rw ? LetterFormSchema::areaNumber($rw->number) : null,
+            'dusun' => $hamlet?->name,
+            'rt_head' => $rt ? $this->officialRepository->findActiveRtByRtId($rt->id)?->citizen?->name : null,
+            'rw_head' => $rw ? $this->officialRepository->findActiveRwByRwId($rw->id)?->citizen?->name : null,
         ];
     }
 

@@ -296,6 +296,14 @@ class PdfService
             // Snapshot surat lama belum menyimpan pekerjaan pemohon.
             '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
             '{{ applicant_marital_status }}' => $context['applicant']['marital_status'] ?? '-',
+            // Snapshot lama belum menyimpan agama, kewarganegaraan, dan wilayah pemohon.
+            '{{ applicant_religion }}' => $context['applicant']['religion'] ?? '-',
+            '{{ applicant_citizenship }}' => $context['applicant']['citizenship'] ?? 'Indonesia',
+            '{{ applicant_rt }}' => $context['applicant']['area']['rt'] ?? '......',
+            '{{ applicant_rw }}' => $context['applicant']['area']['rw'] ?? '......',
+            '{{ applicant_dusun }}' => $context['applicant']['area']['dusun'] ?? '..........................',
+            '{{ pejabat_rt_pemohon_nama }}' => $context['applicant']['area']['rt_head'] ?? '..................................',
+            '{{ pejabat_rw_pemohon_nama }}' => $context['applicant']['area']['rw_head'] ?? '..................................',
             '{{ applicant_family_number }}' => $context['applicant']['family_number'] ?? '________________________',
             '{{ applicant_email }}' => (string) ($context['applicant']['email'] ?? ''),
             '{{ village_kasi_pemerintahan_name }}' => $context['village']['kasi_pemerintahan_name'] ?? '________________________',

@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Citizen;
+use App\Support\DomicileDuration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -51,6 +53,8 @@ class CitizenResource extends JsonResource
             'current_domicile' => $this->current_domicile,
             'residency_type' => $this->residency_type,
             'origin_region' => $this->origin_region,
+            // Nilai awal isian lama berdomisili (prefill_from_applicant), bukan data tersimpan.
+            'domicile_duration_hint' => $this->resource instanceof Citizen ? DomicileDuration::hint($this->resource) : null,
             // Dokumen & keterangan tambahan (F-1.01).
             'title_front' => $this->title_front,
             'title_back' => $this->title_back,
