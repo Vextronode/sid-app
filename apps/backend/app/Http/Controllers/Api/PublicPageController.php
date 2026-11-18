@@ -7,17 +7,20 @@ use App\Http\Requests\PublicNewsListRequest;
 use App\Http\Resources\AnnouncementResource;
 use App\Http\Resources\NewsResource;
 use App\Http\Resources\PublicContactResource;
+use App\Http\Resources\PublicDisasterAlertResource;
 use App\Http\Resources\PublicLetterTypeResource;
 use App\Http\Resources\PublicOfficialResource;
 use App\Http\Resources\RegulationResource;
 use App\Http\Resources\VillageResource;
 use App\Models\Hamlet;
+use App\Services\DisasterAlertService;
 use App\Services\InfoPageService;
 use App\Services\PublicPageService;
 use App\Support\PublicPageCache;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class PublicPageController extends Controller
 {
@@ -46,6 +49,20 @@ class PublicPageController extends Controller
                 ],
             ]);
         });
+    }
+
+    /**
+     * GET /public/disaster-alerts: peringatan SIGAP yang sedang tampil untuk
+     * bar merah, level tertinggi lebih dulu. Sengaja tanpa PublicPageCache
+     * (TTL 10 menit): peringatan berhenti tampil karena waktu (`expires_at`)
+     * tanpa ada data yang berubah, dan turunan staf harus langsung terlihat.
+     * Query-nya ringan dan memakai index (village_id, expires_at).
+     */
+    public function disasterAlerts(Request $request, DisasterAlertService $disasterAlerts): AnonymousResourceCollection
+    {
+        $village = $this->service->requireVillage($request->query('village_code'));
+
+        return PublicDisasterAlertResource::collection($disasterAlerts->displayedForVillage($village->id));
     }
 
     public function villageProfile(Request $request): JsonResponse

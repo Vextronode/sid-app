@@ -1,6 +1,6 @@
 <?php
 
-use NotificationChannels\WebPush\PushSubscription;
+use App\Models\PushSubscription;
 
 return [
 
@@ -18,6 +18,7 @@ return [
     /**
      * This is model that will be used to for push subscriptions.
      */
+    // Turunan model package dengan kolom pemantauan (menu Pelanggan Notifikasi).
     'model' => PushSubscription::class,
 
     /**

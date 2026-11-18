@@ -3,59 +3,60 @@ servers:
     description: Endpoint web autentikasi (tanpa prefix /api)
 post:
   tags: [Epic 3 - Autentikasi]
-  summary: Register akun warga (self-service)
+  summary: Register akun warga (self-service, aktif setelah disetujui petugas wilayah)
   security: []
   description: |
-    UC-17. Request NIK, tanggal lahir, password, dan konfirmasi password
-    (throttle `register`: 5/menit per IP, 10/jam per hash NIK). Sistem
-    memeriksa NIK melalui nik_hash, mencocokkan tanggal lahir dengan
-    `citizens.date_of_birth`, menghasilkan username otomatis, memicu event
-    `Registered`, dan mengembalikan username serta nama. Register tidak
-    membuat sesi; pengguna login terpisah.
+    UC-17. Request NIK, password, konfirmasi password, dan foto wajah dari
+    kamera (multipart; throttle `register`: 5/menit per IP, 10/jam per hash
+    NIK). Sistem memeriksa NIK melalui nik_hash (warga aktif desa), membuat
+    akun **nonaktif** dengan username otomatis, dan membuka satu permintaan
+    aktivasi (`account_registrations`) yang diputuskan petugas wilayah yang
+    saat ini memegangnya: RT, lalu RW, Kepala Dusun, atau Staf SIDUTama
+    bila jenjang di bawahnya kosong (lihat `GET /api/account-registrations`).
+    Foto diperiksa petugas sebagai pengganti verifikasi tanggal lahir dan
+    menjadi foto profil setelah disetujui.
+
+    Semua kegagalan identitas (NIK tidak terdaftar/nonaktif, sudah punya
+    akun aktif atau masih menunggu, NIK diblokir setelah ditolak 3 kali)
+    dijawab 422 dengan pesan yang sama agar endpoint tidak dapat dipakai
+    menebak data kependudukan. Akun yang pendaftaran terakhirnya ditolak
+    boleh mendaftar ulang (kata sandi diganti). Register tidak membuat sesi;
+    login akun yang belum aktif ditolak 403 dengan pesan sesuai status
+    pendaftarannya.
   operationId: registerWarga
   requestBody:
     required: true
     content:
-      application/json:
+      multipart/form-data:
         schema:
           $ref: '../../schemas/auth/auth.yaml#/RegisterRequest'
   responses:
     '201':
-      description: Akun warga berhasil dibuat
+      description: Pendaftaran terkirim (akun nonaktif sampai disetujui)
       content:
         application/json:
           schema:
             $ref: '../../schemas/auth/auth.yaml#/RegisterResponse'
     '422':
-      description: Validasi gagal - NIK tidak ditemukan, NIK sudah punya akun, tanggal lahir tidak cocok, atau format tidak valid
+      description: Validasi gagal - identitas tidak dapat diproses, foto tidak valid, atau kata sandi lemah
       content:
         application/json:
           schema:
             $ref: '../../schemas/common/errors.yaml#/ValidationErrorResponse'
           examples:
-            nik_not_found:
-              summary: NIK tidak terdaftar sebagai warga Desa Cibenda
+            registration_failed:
+              summary: NIK tidak dapat didaftarkan (alasan tidak dibedakan)
               value:
-                message: "The given data was invalid."
+                message: "Pendaftaran tidak dapat diproses. Periksa kembali NIK Anda, atau datang ke kantor desa."
                 errors:
-                  nik: ["NIK tidak terdaftar sebagai warga Desa Cibenda"]
-            nik_already_registered:
-              summary: NIK sudah terdaftar dan punya akun
+                  nik: ["Pendaftaran tidak dapat diproses. Periksa kembali NIK Anda, atau datang ke kantor desa."]
+            invalid_photo:
+              summary: Foto tidak persegi
               value:
-                message: "The given data was invalid."
+                message: "Foto harus persegi (1:1). Ambil ulang dan atur fotonya di aplikasi."
                 errors:
-                  nik: ["NIK sudah terdaftar, silakan login"]
-            dob_mismatch:
-              summary: Tanggal lahir tidak cocok dengan data kependudukan
-              value:
-                message: "Tanggal lahir tidak sesuai dengan data kependudukan"
-                errors:
-                  date_of_birth: ["Tanggal lahir tidak sesuai dengan data kependudukan"]
-            weak_password:
-              summary: Password terlalu lemah
-              value:
-                message: "The given data was invalid."
-                errors:
-                  password: ["Password minimal 8 karakter dan mengandung kombinasi huruf & angka"]
+                  photo: ["Foto harus persegi (1:1). Ambil ulang dan atur fotonya di aplikasi."]
+    '429':
+      description: Terlalu banyak percobaan
     '500':
       $ref: '../../responses/common.yaml#/ServerError'

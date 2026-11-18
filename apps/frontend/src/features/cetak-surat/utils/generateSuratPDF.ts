@@ -3,12 +3,14 @@
 // Unduh dan pratinjau PDF surat dari backend. Surat terbit tanpa TTD dan
 // stempel: desa mencetaknya lalu menandatangani dan menstempel basah.
 // documentKey: kunci dokumen yang terbit bersama (surat.documents); kosong =
-// dokumen utama.
+// dokumen utama. paper: ukuran kertas (bawaan F4); PDF diskalakan backend.
 // ==========================================
 
 import { responseError } from '@/shared/lib/apiError'
 import { MAIN_DOCUMENT } from '@/features/cetak-surat/utils/letterDocuments'
 import type { PrintableLetter } from '@/features/cetak-surat/utils/letterDocuments'
+import { DEFAULT_PAPER } from '@/features/cetak-surat/utils/paperSize'
+import type { PaperSize } from '@/types'
 
 // VITE_API_URL kosong/tidak di-build -> same-origin (sama seperti src/lib/api.ts)
 const apiUrl = () => (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/+$/, '')
@@ -17,17 +19,25 @@ function letterPdfUrl(
   surat: Pick<PrintableLetter, 'id'>,
   action: 'download' | 'preview',
   documentKey: string,
+  paper: PaperSize,
 ) {
-  const query =
-    documentKey && documentKey !== MAIN_DOCUMENT
-      ? `?${new URLSearchParams({ document: documentKey })}`
-      : ''
+  const params = new URLSearchParams()
 
-  return `${apiUrl()}/api/letters/${surat.id}/${action}${query}`
+  if (documentKey && documentKey !== MAIN_DOCUMENT) {
+    params.set('document', documentKey)
+  }
+
+  params.set('paper', paper)
+
+  return `${apiUrl()}/api/letters/${surat.id}/${action}?${params}`
 }
 
-export async function downloadSuratPDF(surat: PrintableLetter, documentKey = MAIN_DOCUMENT) {
-  const url = letterPdfUrl(surat, 'download', documentKey)
+export async function downloadSuratPDF(
+  surat: PrintableLetter,
+  documentKey = MAIN_DOCUMENT,
+  paper: PaperSize = DEFAULT_PAPER,
+) {
+  const url = letterPdfUrl(surat, 'download', documentKey, paper)
   const response = await fetch(url, {
     method: 'GET',
     credentials: 'include',
@@ -47,7 +57,7 @@ export async function downloadSuratPDF(surat: PrintableLetter, documentKey = MAI
   const suffix = documentKey && documentKey !== MAIN_DOCUMENT ? `-${documentKey}` : ''
 
   downloadLink.href = blobUrl
-  downloadLink.download = `surat-${letterNumber}${suffix}.pdf`
+  downloadLink.download = `surat-${letterNumber}${suffix}-${paper}.pdf`
   document.body.appendChild(downloadLink)
   downloadLink.click()
   downloadLink.remove()
@@ -59,8 +69,9 @@ export async function downloadSuratPDF(surat: PrintableLetter, documentKey = MAI
 export async function previewSuratPDF(
   surat: Pick<PrintableLetter, 'id'>,
   documentKey = MAIN_DOCUMENT,
+  paper: PaperSize = DEFAULT_PAPER,
 ) {
-  const url = letterPdfUrl(surat, 'preview', documentKey)
+  const url = letterPdfUrl(surat, 'preview', documentKey, paper)
 
   const response = await fetch(url, {
     method: 'GET',

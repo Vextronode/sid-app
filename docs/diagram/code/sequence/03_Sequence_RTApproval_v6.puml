@@ -40,7 +40,7 @@ MW -> CTRL
 CTRL -> SVC : decision(letter, user, {status, notes})
 SVC -> OFF : getCurrentRt(user)
 SVC -> FLOW : isApplicantOfficial? → 403
-SVC -> REPO : citizen.rt_id == official.rt_id? → 403
+SVC -> SVC : letters.rt_id == official.rt_id? → 403\n(wilayah dibekukan saat pengajuan)
 SVC -> REPO : findCurrentFlowStep = rt? → 409
 
 group DB::transaction

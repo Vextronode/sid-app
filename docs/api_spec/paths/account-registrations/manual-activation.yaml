@@ -1,0 +1,35 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Aktivasi manual akun NIK yang diblokir
+  description: |
+    Hanya Staf SIDUTama di desa yang sama, untuk pendaftaran ditolak
+    terakhir milik NIK yang diblokir (`can_manual_activate`), setelah warga
+    diperiksa langsung di kantor desa. Kata sandi diganti sementara karena
+    pendaftar online belum tentu warga yang datang; tampil sekali di respons.
+  operationId: manualActivateAccountRegistration
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: accountRegistration
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    '200':
+      description: Akun aktif dengan kata sandi sementara
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Akun diaktifkan manual. Berikan kata sandi sementara secara langsung."
+              temporary_password:
+                type: string
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan Staf SIDUTama di desa yang sama
+    '409':
+      description: NIK tidak sedang diblokir (belum ditolak 3 kali)

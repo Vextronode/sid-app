@@ -119,3 +119,15 @@ VillageOrgMemberCreateRequest:
       type: string
       nullable: true
       example: null
+
+PublicOrgMember:
+  type: object
+  nullable: true
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    photo_url:
+      type: string
+      nullable: true

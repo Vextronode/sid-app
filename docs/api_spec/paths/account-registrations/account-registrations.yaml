@@ -1,0 +1,48 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Daftar permintaan aktivasi akun warga (pendaftaran online)
+  description: |
+    Aktor: RT, RW, Kepala Dusun, Staf SIDUTama. Akun hasil `POST /register` dibuat nonaktif lalu
+    diaktifkan petugas wilayah yang SAAT INI memegangnya (RT wilayah warga,
+    lalu RW, Kepala Dusun, atau Staf SIDUTama bila jenjang di bawahnya
+    kosong). Daftar memuat permintaan yang boleh dilihat akun yang login,
+    berpaginasi.
+  operationId: listAccountRegistrations
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [pending, approved, rejected]
+    - name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1 }
+    - name: per_page
+      in: query
+      required: false
+      description: Default 20, maksimum 100.
+      schema: { type: integer, minimum: 1, maximum: 100 }
+  responses:
+    '200':
+      description: Daftar permintaan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/account-requests/account-requests.yaml#/AccountRegistration'
+              meta:
+                $ref: '../../schemas/account-requests/account-requests.yaml#/PageMeta'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

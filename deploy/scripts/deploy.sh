@@ -130,7 +130,8 @@ fi
 
 # ---------- Migrasi (opsional) ----------
 if [ "$DO_MIGRATE" -eq 1 ]; then
-  warn "Selama freeze, migrasi HANYA boleh aditif (tambah tabel/kolom nullable). Tidak ada rollback skema otomatis."
+  [ "$FIRST_DEPLOY" -eq 1 ] \
+    || warn "Selama freeze, migrasi HANYA boleh aditif (tambah tabel/kolom nullable). Tidak ada rollback skema otomatis."
   run_env=()
   if [ "$MODE" = "local" ]; then
     dc up -d sid_db
@@ -139,9 +140,30 @@ if [ "$DO_MIGRATE" -eq 1 ]; then
     run_env=(-e "DB_HOST=$(env_get "$SID_ENV_FILE" DB_HOST_DIRECT)")
   fi
   info "migrasi pending (image $TAG):"
-  dc run --rm --no-deps -T ${run_env[@]+"${run_env[@]}"} sid_api php artisan migrate:status --pending \
-    || die "migrate:status gagal; stack aplikasi tidak disentuh."
-  [ "$FIRST_DEPLOY" -eq 1 ] || confirm "Jalankan migrate --force dengan image $TAG?" ya || die "migrasi dibatalkan pengguna; stack tidak disentuh."
+  # DB yang belum pernah dimigrasi tidak punya tabel `migrations`; Laravel lalu mencetak
+  # "Migration table not found." dan keluar non-nol. Itu berarti "semua migrasi pending",
+  # bukan kegagalan. Error lain (koneksi, kredensial, dll.) tetap fatal.
+  DB_EMPTY=0
+  if status_out="$(dc run --rm --no-deps -T ${run_env[@]+"${run_env[@]}"} sid_api php artisan migrate:status --pending 2>&1)"; then
+    printf '%s\n' "$status_out"
+  else
+    printf '%s\n' "$status_out"
+    printf '%s' "$status_out" | grep -qF "Migration table not found" \
+      || die "migrate:status gagal; stack aplikasi tidak disentuh."
+    DB_EMPTY=1
+    info "tabel migrations belum ada (DB belum pernah dimigrasi): SEMUA migrasi akan dijalankan."
+  fi
+  if [ "$FIRST_DEPLOY" -eq 1 ]; then
+    : # deploy pertama mode local: migrasi otomatis tanpa konfirmasi.
+  elif [ "$DB_EMPTY" -eq 1 ] && [ -n "$PREV_TAG" ]; then
+    # Sudah pernah deploy tetapi DB kosong: volume hilang atau terhubung ke DB yang salah.
+    # Konfirmasi wajib walau --yes, supaya kehilangan data tidak tertutup diam-diam.
+    warn "sudah pernah deploy ($PREV_TAG) tetapi DB (mode $MODE) KOSONG. Kemungkinan volume DB hilang atau DB_* menunjuk ke database yang salah."
+    SID_ASSUME_YES=0 confirm "Yakin memigrasi DB kosong ini dari nol dengan image $TAG?" ya \
+      || die "migrasi dibatalkan; stack tidak disentuh. Periksa volume/konfigurasi DB."
+  else
+    confirm "Jalankan migrate --force dengan image $TAG?" ya || die "migrasi dibatalkan pengguna; stack tidak disentuh."
+  fi
   dc run --rm --no-deps -T ${run_env[@]+"${run_env[@]}"} sid_api php artisan migrate --force \
     || die "migrasi gagal; stack aplikasi tidak diganti (periksa log di atas)."
   log_line "migrasi OK tag=$TAG mode=$MODE"

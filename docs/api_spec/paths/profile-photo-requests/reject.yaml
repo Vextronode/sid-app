@@ -1,0 +1,45 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Tolak ganti foto profil
+  description: |
+    Wajib catatan (5-500 karakter). Hanya pemegang saat ini.
+  operationId: rejectProfilePhotoRequest
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: profilePhotoRequest
+      in: path
+      required: true
+      schema: { type: integer }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [notes]
+          properties:
+            notes:
+              type: string
+              minLength: 5
+              maxLength: 500
+              description: Catatan penolakan (wajib).
+  responses:
+    '200':
+      description: Berhasil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Permintaan ganti foto ditolak."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan pemegang permintaan saat ini
+    '409':
+      description: Permintaan ganti foto ini sudah diputuskan.
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

@@ -5,3 +5,19 @@ VillageCode:
   description: "Kode desa. Opsional bila hanya ada satu desa; wajib (422) bila lebih dari satu desa."
   schema:
     type: string
+
+Paper:
+  name: paper
+  in: query
+  required: false
+  description: |
+    Ukuran kertas PDF pilihan pengunduh. Kosong = kertas bawaan dokumen
+    (`Letter.documents[].paper`, `paper` formulir isi tangan, atau A4 untuk
+    dokumen pendukung). Bila berbeda dari kertas bawaan, PDF dirender di
+    kertas bawaan lalu tiap halaman diskalakan utuh (proporsional, di tengah)
+    ke kertas yang diminta sehingga jumlah halaman tetap; halaman mendatar
+    tetap mendatar. Nilai di luar `a4`/`f4` ditolak 422. FE menawarkan F4
+    sebagai pilihan bawaan di menu unduh/pratinjau.
+  schema:
+    type: string
+    enum: [a4, f4]

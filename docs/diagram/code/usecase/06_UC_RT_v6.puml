@@ -31,6 +31,8 @@ rectangle "SIDUTama" {
   usecase "UC-15: Dashboard RT\n(menunggu, diproses, overdue)" as UC_DASH
   usecase "Notifikasi in-app & Web Push\n(surat baru, termasuk yang\nsempat tertahan)" as UC_NOTIF
   usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+  usecase "Data Penduduk & KK\n(RT-nya, read-only)" as UC_POP
+  usecase "Manajemen Akun:\naktivasi akun & ganti foto\nwarga (sesuai jenjang)" as UC_ACC
 }
 
 RT -- UC_AUTH
@@ -40,6 +42,8 @@ RT -- UC_DECIDE
 RT -- UC_DASH
 RT -- UC_NOTIF
 RT -- UC_SELF
+RT -- UC_POP
+RT -- UC_ACC
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DECIDE : <<extend>>
 
@@ -47,5 +51,10 @@ note bottom of UC_DECIDE
   Approve → FYI ke RW & Kadus, notifikasi
   Kades/Sekdes & pemohon. Reject terminal.
   Surat milik RT sendiri: tahap RT dilewati.
+end note
+note bottom of UC_ACC
+  Pemegang saat ini: RT wilayah warga,
+  lalu RW, Kadus, atau Staf SIDUTama bila
+  jenjang di bawahnya kosong. Tolak wajib catatan.
 end note
 @enduml

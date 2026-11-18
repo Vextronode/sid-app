@@ -2,7 +2,7 @@
 ' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
 ' FILE: 02_ERD_Pendukung_v8.puml
 ' JUDUL: ERD - Pendukung [2/2]
-' SUMBER: migration apps/backend/database/migrations (per 2026-10-16)
+' SUMBER: migration apps/backend/database/migrations (per 2026-11-19)
 '         + TDD-03_Database_Schema.md v5.3
 ' CATATAN: Menggantikan 02_ERD_Pendukung_v7.puml.
 '==================================================================================
@@ -24,7 +24,7 @@ skinparam arrow {
 }
 skinparam linetype ortho
 
-title ERD v8 - PENDUKUNG [2/2] - SIDUTama\n(Organisasi Non-Struktural, Notifikasi & Web Push, Berita & Kategori, Peraturan Desa, Activity Log)\nLihat ERD Core [1/2] untuk definisi lengkap villages dan users
+title ERD v8 - PENDUKUNG [2/2] - SIDUTama\n(Organisasi Non-Struktural, Notifikasi & Web Push, Berita & Kategori, Peraturan Desa, Activity Log,\nPermintaan Akun, Data Hasil Layanan, Integrasi Pihak Ketiga)\nLihat ERD Core [1/2] untuk definisi lengkap villages dan users
 
 ' ─────────────── SHADOW ENTITIES (lihat ERD Core) ───────────────
 entity "villages\n(bayangan)" as VIL #F5F5F5 {
@@ -33,6 +33,15 @@ entity "villages\n(bayangan)" as VIL #F5F5F5 {
 entity "users\n(bayangan)" as USR #F5F5F5 {
   * id : UUID <<PK>>
 }
+entity "citizens\n(bayangan)" as CIT #F5F5F5 {
+  * id : UUID <<PK>>
+}
+entity "letters\n(bayangan)" as LET #F5F5F5 {
+  * id : UUID <<PK>>
+}
+entity "rts / rws / hamlets\n(bayangan)" as WIL #F5F5F5 {
+  * id : BIGINT <<PK>>
+}
 
 ' ─────────────── ORGANISASI NON-STRUKTURAL ───────────────
 entity "village_org_positions" as VOP {
@@ -40,6 +49,7 @@ entity "village_org_positions" as VOP {
   --
   * village_id : UUID <<FK>>
   * org_type : ENUM(bpd, bumdes, lpm, karang_taruna, pkk)
+  * slot : ENUM(ketua, wakil_ketua, anggota)
   * position_label : VARCHAR(100)
   is_single_occupant : BOOLEAN = true
   sort_order : INT = 0
@@ -77,6 +87,8 @@ entity "push_subscriptions" as PSH {
   public_key : VARCHAR(255)
   auth_token : VARCHAR(255)
   content_encoding : VARCHAR(255)
+  device_label : VARCHAR(100) ("Chrome · Android")
+  last_success_at / last_failed_at : TIMESTAMP
 }
 
 note right of PSH
@@ -84,6 +96,10 @@ note right of PSH
   laravel-notification-channels/webpush.
   LetterStatusNotification dikirim ke
   kanal database (sinkron) + WebPush (queue).
+  Listener RecordWebPushDelivery mengisi
+  last_success_at / last_failed_at (menu
+  Pelanggan Notifikasi: aktif bila berhasil
+  dalam 30 hari).
 end note
 
 ' ─────────────── BERITA & PERATURAN ───────────────
@@ -161,7 +177,7 @@ entity "village_info_pages" as VIP {
 entity "activity_log" as ALG {
   * id : BIGINT <<PK>>
   --
-  log_name : VARCHAR(255) (official | citizen | user_signature)
+  log_name : VARCHAR(255) (official | citizen | family | letter |\n user | password_reset_request | account_registration |\n profile_photo_request | citizen_business |\n integration | disaster_alert)
   * description : TEXT
   subject_type / subject_id
   causer_type / causer_id
@@ -169,6 +185,134 @@ entity "activity_log" as ALG {
   event : VARCHAR(255)
   batch_uuid : UUID
 }
+
+' ─────────────── PERMINTAAN AKUN WARGA ───────────────
+entity "account_registrations" as ARG {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * citizen_id : UUID <<FK>>
+  user_id : UUID <<FK>>
+  rt_id / rw_id / hamlet_id : BIGINT <<FK>>
+  status : VARCHAR(20) = pending (pending | approved | rejected)
+  method : VARCHAR(20) = online (online | manual)
+  photo_path : VARCHAR(255) (disk privat)
+  decided_by : UUID <<FK users>>
+  decided_level : VARCHAR(20) (rt | rw | kadus | staf_sid)
+  decided_at : TIMESTAMP
+  decision_notes : TEXT
+  UNIQUE (citizen_id) WHERE status = pending
+}
+
+entity "profile_photo_requests" as PPR {
+  * id : BIGINT <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * user_id : UUID <<FK>>
+  citizen_id : UUID <<FK>>
+  rt_id / rw_id / hamlet_id : BIGINT <<FK>>
+  status : VARCHAR(20) = pending
+  photo_path : VARCHAR(255) (disk privat)
+  decided_by / decided_level / decided_at
+  decision_notes : TEXT
+  UNIQUE (user_id) WHERE status = pending
+}
+
+entity "password_reset_requests" as PRR {
+  * id : BIGINT <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * claim_token_hash : VARCHAR(64) <<UNIQUE>>
+  status : VARCHAR(20) = pending\n(pending | approved | rejected | completed | cancelled)
+  requester_ip : VARCHAR(45)
+  handled_by : UUID <<FK users>>
+  handled_at / approved_until / completed_at : TIMESTAMP
+  response_notes : TEXT
+}
+
+note bottom of ARG
+  Pemegang keputusan aktivasi dan ganti foto
+  ditentukan saat ini (AreaApprovalRouter):
+  RT -> RW -> Kadus -> Staf SIDUTama bila kosong.
+  NIK ditolak 3 kali: aktivasi manual Staf.
+end note
+
+' ─────────────── DATA HASIL LAYANAN ───────────────
+entity "citizen_businesses" as CBZ {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  citizen_id : UUID <<FK>>
+  * letter_id : UUID <<FK UNIQUE>> (A01 SKU)
+  * business_name / business_activity : VARCHAR(255)
+  * category : VARCHAR(30)
+  * email / phone : TEXT (encrypted)
+  * address : TEXT
+  cimart_status : VARCHAR(20)
+  cimart_requested_at / decided_at / cancelled_at
+  cimart_note : TEXT
+}
+
+entity "migrant_workers" as MGW {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  citizen_id : UUID <<FK>> (tidak unik)
+  * letter_id : UUID <<FK UNIQUE>> (F11)
+  height_cm / weight_kg : USMALLINT
+  phone / email : TEXT (encrypted)
+  education_level, school_name, major,\n graduation_year
+  certificates : JSON
+  work_history : TEXT (encrypted array)
+  guardian_relation / guardian_name
+  guardian_address / phone / email : TEXT (encrypted)
+  * destination_country : VARCHAR(100)
+  employer_name, agency_name, agency_contact
+  employer_address / employer_contact : TEXT (encrypted)
+  position : VARCHAR(255)
+  salary_facilities : TEXT (encrypted)
+  contract_start / contract_end : DATE
+}
+
+note bottom of MGW
+  Satu baris per keberangkatan, dicatat saat
+  pengajuan F11 final approve (transaksi yang sama).
+  Status kontrak dihitung dari tanggal.
+end note
+
+' ─────────────── INTEGRASI PIHAK KETIGA ───────────────
+entity "integration_clients" as ICL {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * slug : VARCHAR(50) <<UNIQUE>> (cimart | sigap)
+  * name : VARCHAR(100)
+  * abilities : JSON
+  is_active : BOOLEAN = true
+}
+
+entity "disaster_alerts" as DAL {
+  * id : UUID <<PK>>
+  --
+  * village_id : UUID <<FK>>
+  * integration_client_id : UUID <<FK>>
+  * external_id : VARCHAR(100)
+  * type / level : VARCHAR
+  * level_rank : UTINYINT
+  * title : VARCHAR(150)
+  message : TEXT
+  magnitude, depth_km, location, link_url
+  * occurred_at / sent_at / expires_at : TIMESTAMP
+  ended_at / dismissed_at : TIMESTAMP
+  dismissed_by : UUID <<FK users>>
+  dismiss_reason : TEXT
+  notified_level_rank : UTINYINT
+}
+
+note right of ICL
+  Token bearer client di personal_access_tokens
+  (tokenable = integration_clients), guard integration.
+end note
 
 ' ─────────────── RELASI ───────────────
 VIL ||--o{ VOP
@@ -185,11 +329,36 @@ VIL ||--o| ANN
 VIL ||--o{ VIP
 USR ||--o{ REG : "created_by"
 USR |o--o{ ALG : "causer"
+VIL ||--o{ ARG
+CIT ||--o{ ARG
+USR |o--o{ ARG : "akun / decided_by"
+WIL |o--o{ ARG
+VIL ||--o{ PPR
+USR ||--o{ PPR
+CIT |o--o{ PPR
+WIL |o--o{ PPR
+USR ||--o{ PRR : "akun / handled_by"
+VIL ||--o{ CBZ
+CIT |o--o{ CBZ
+LET ||--o| CBZ
+VIL ||--o{ MGW
+CIT |o--o{ MGW
+LET ||--o| MGW
+VIL ||--o{ ICL
+ICL ||--o{ DAL
+VIL ||--o{ DAL
+USR |o--o{ DAL : "dismissed_by"
 
 ' ==================================================================================
 ' CATATAN REVISI v7 -> v8 (2026-10-16)
 ' - Tabel baru: news_categories, news_category_news (pivot), push_subscriptions.
 ' - news.deleted_at (soft delete) ditampilkan.
 ' - activity_log ditampilkan (log_name aktif: official, citizen, user_signature).
+'
+' REVISI 2026-11-19 (sinkronisasi dengan migration)
+' - Tabel baru: account_registrations, profile_photo_requests, password_reset_requests,
+'   citizen_businesses, migrant_workers, integration_clients, disaster_alerts.
+' - push_subscriptions: device_label, last_success_at, last_failed_at.
+' - village_org_positions.slot; daftar log_name activity_log diperbarui.
 ' ==================================================================================
 @enduml

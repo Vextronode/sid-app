@@ -6,6 +6,7 @@ namespace App\Support;
  * Blok bersyarat di template surat, dinilai terhadap jawaban form sebelum
  * placeholder diganti. Bentuk (boleh bersarang):
  *  - {{#if field}} ... {{/if}}            isian dijawab
+ *  - {{#if !field}} ... {{/if}}           isian tidak dijawab (kosong)
  *  - {{#if field=a}} ... {{/if}}          jawaban sama dengan a
  *  - {{#if field=a|b}} ... {{/if}}        jawaban salah satu dari a, b
  *  - {{#if field!=a|b}} ... {{/if}}       jawaban bukan a atau b
@@ -13,7 +14,7 @@ namespace App\Support;
  */
 class TemplateConditionals
 {
-    private const BLOCK = '/\{\{#if\s+([a-zA-Z0-9_]+)\s*(?:(!=|=)\s*([^}]*?))?\s*\}\}((?:(?!\{\{#if\s).)*?)\{\{\/if\}\}/s';
+    private const BLOCK = '/\{\{#if\s+(!?[a-zA-Z0-9_]+)\s*(?:(!=|=)\s*([^}]*?))?\s*\}\}((?:(?!\{\{#if\s).)*?)\{\{\/if\}\}/s';
 
     /**
      * @param  array<string, mixed>  $payload
@@ -44,7 +45,7 @@ class TemplateConditionals
         $operator = $match[2] ?? '';
 
         if ($operator === '') {
-            return ['field' => $field, 'filled' => true];
+            return ['field' => ltrim($field, '!'), 'filled' => ! str_starts_with($field, '!')];
         }
 
         $values = array_map('trim', explode('|', $match[3] ?? ''));

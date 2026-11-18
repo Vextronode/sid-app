@@ -30,4 +30,9 @@ export type NotificationContext = {
   // dan sisa hari sebenarnya sampai surat terkunci.
   reminder_days?: number
   days_left?: number
+  // Hasil pendaftaran pedagang Cimart: usaha yang diputuskan.
+  business_id?: string
+  // Peringatan bencana SIGAP (status 'disaster_alert'): ID dan levelnya.
+  alert_id?: string
+  level?: string
 }

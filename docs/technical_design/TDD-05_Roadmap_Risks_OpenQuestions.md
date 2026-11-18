@@ -5,13 +5,13 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 5 dari 5 (+ Appendix) |
-| Status | v5.3 — diselaraskan ke source 2026-10-16 |
+| Status | v5.3 — diselaraskan ke source 2026-11-19 |
 | Cakupan | Roadmap pengembangan, asumsi & risiko, pertanyaan prioritas (terjawab & belum), known technical constraints |
 | Dokumen terkait | Seluruh bagian TDD 01–04, `TDD-06_Appendix.md`, OpenAPI Spec v5.3, `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
 > **Cara pakai dokumen ini:** Section 3 (Pertanyaan Prioritas) adalah bagian paling penting untuk dicek berkala — status di sini bisa berubah seiring project jalan, sementara dokumen tidak selalu ikut diperbarui secara real-time. Jika ragu, cek migration/kode terlebih dulu, baru anggap dokumen ini sebagai rujukan kedua.
 
-> **Catatan v5.3:** keputusan yang sudah terkunci sebelumnya tetap berlaku. Keputusan baru yang sudah dieksekusi di source (kategori surat dihapus, jenis surat data-driven, snapshot, tanda tangan pihak terkait, Terapkan, jabatan tanpa akun dinamis, kategori berita, Docker untuk expo) dicatat sebagai terjawab di S3.2.
+> **Catatan v5.3:** keputusan yang sudah terkunci sebelumnya tetap berlaku. Keputusan baru yang sudah dieksekusi di source (kategori surat dihapus, jenis surat data-driven, snapshot, tanda tangan pihak terkait, Terapkan, jabatan tanpa akun dinamis, kategori berita, Docker untuk deploy) dicatat sebagai terjawab di S3.2.
 
 ---
 
@@ -21,8 +21,8 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 
 | Tahap | Fokus | Deliverable | Prasyarat |
 |---|---|---|---|
-| Tahap 1 — Core System (MVP) | Register NIK + tanggal lahir + password, login username; surat dengan isian dinamis, lampiran, tanda tangan pihak terkait; flow RT → Kades/Sekdes final (RW/Kadus FYI); snapshot & nomor surat per kode klasifikasi; Kasi/Kaur unduh & Terapkan perubahan data; PDF on-demand + dokumen pendukung; deadline & overdue; data kependudukan; jabatan berakun & tanpa akun; CMS (profil desa, berita berkategori, peraturan, organisasi); dashboard; notifikasi in-app + Web Push; cache halaman publik; Docker stack expo | Fitur MVP aktif termasuk pengingat approval terjadwal; notifikasi email dan audit akses data sensitif belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
-| Tahap 2 — Penguatan Integritas & Keamanan | Aset & Keuangan Desa; Kelayakan Bantuan Sosial; Redis + Laravel Horizon; backup terjadwal; hardening (force HTTPS, cookie SameSite ketat, audit akses data sensitif); benchmarking & load test | Backup terjadwal tidak diverifikasi terhadap source backend; hasil benchmarking terdokumentasi (hash chain & dynamic form **tidak** termasuk — lihat Next Dev di `TDD-06_Appendix.md`) | Tahap 1 stabil |
+| Tahap 1 — Core System (MVP) | Register NIK + password + foto wajah dengan aktivasi petugas wilayah, login username; surat dengan isian dinamis, lampiran, tanda tangan pihak terkait; flow RT → Kades/Sekdes final (RW/Kadus FYI); snapshot & nomor surat per kode klasifikasi; Kasi/Kaur unduh & Terapkan perubahan data; PDF on-demand + dokumen pendukung; deadline & overdue; data kependudukan; jabatan berakun & tanpa akun; CMS (profil desa, berita berkategori, peraturan, organisasi); dashboard; notifikasi in-app + Web Push; cache halaman publik; Docker stack staging/produksi | Fitur MVP aktif termasuk pengingat approval terjadwal; notifikasi email dan audit akses data sensitif belum tersedia | Arsitektur dan setup project selesai, database termigrasi |
+| Tahap 2 — Penguatan Integritas & Keamanan | Aset & Keuangan Desa; Kelayakan Bantuan Sosial; Redis + Laravel Horizon; backup terjadwal; hardening (force HTTPS, cookie SameSite ketat; audit akses data sensitif sudah ada lewat `identity_viewed`); benchmarking & load test | Backup terjadwal tidak diverifikasi terhadap source backend; hasil benchmarking terdokumentasi (hash chain & dynamic form **tidak** termasuk — lihat Next Dev di `TDD-06_Appendix.md`) | Tahap 1 stabil |
 | Next Dev — Paket 1 | Dynamic Tipe Surat oleh Staf SIDUTama: create tipe surat baru, WYSIWYG template editor, CRUD isian form/aksi data dari UI (infrastruktur data `form_fields` dsb. sudah ada, tetapi hanya diisi developer lewat seeder) | Staf SIDUTama mandiri kelola tipe surat tanpa developer | Tahap 1 stabil — lihat detail di Appendix |
 | Next Dev — Paket 2 | Blockchain-inspired hashing | Validasi integritas data surat | Tahap 1 stabil — lihat detail di Appendix |
 | Tahap 3 — Pengembangan Lanjutan | WA Chatbot; cetak surat mandiri untuk Warga; integrasi API eksternal (Dukcapil); AI (opsional) | Multi-channel access, integrasi eksternal | Tahap 2 stabil, validasi kebutuhan client |
@@ -39,7 +39,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 | Server deployment tersedia dengan spesifikasi minimum: 2 vCPU, 2GB RAM, 20GB SSD | TINGGI | Performa sistem degradasi; implementasi keamanan (HTTPS, fail2ban, firewall) tidak bisa diterapkan penuh | Dokumentasikan minimum server requirement sejak awal; siapkan alternatif managed hosting |
 | Worker queue dijaga berjalan bila Web Push diaktifkan | SEDANG | Push tertunda (notifikasi in-app tetap) | Stack Docker: service `sid_worker` dengan `restart: unless-stopped`; panduan VPS menyediakan konfigurasi Supervisor |
 | PostgreSQL tersedia dan dapat dikonfigurasi di server deployment | RENDAH | Implementasi keamanan tidak bisa diterapkan penuh | Dokumentasikan minimum requirement server; siapkan alternatif shared hosting |
-| Docker dipakai untuk stack expo/demo; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
+| Docker dipakai untuk stack staging/produksi; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
 
 ### 2.2. Asumsi & Risiko Operasional & Sosial
 
@@ -71,14 +71,16 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 
 | Pertanyaan | Status | Jawaban |
 |---|---|---|
-| Queue driver Tahap 1 | Sudah diputuskan | `database` untuk dev/VPS; `sync` untuk stack Docker expo. Hanya Web Push yang diantrekan |
+| Queue driver Tahap 1 | Sudah diputuskan | `database` untuk dev, VPS, dan stack Docker (dikirim `sid_worker`). Yang diantrekan: Web Push dan job notifikasi peringatan SIGAP |
 | Docker untuk deployment | Terjawab (source) | Image `sid-api` (PHP-FPM) dan `sid-web` (Nginx + SPA) dengan compose; Laravel Sail tidak dipakai |
 | Apakah notifikasi email aktif di MVP atau in-app dulu? | Terjawab (source) | In-app (database) + Web Push; email status surat belum ada |
 | Apakah kategori surat (`letter_categories`) dipertahankan? | Terjawab (source) | Dihapus; perilaku per jenis surat diturunkan dari kolom `letter_types` |
 | Apakah `verification_type` (auto/manual/document) dipakai? | Terjawab (source) | Kolom di-drop; persyaratan dokumen dipenuhi lewat isian bertipe file pada `form_fields` |
-| Bagaimana warga mengajukan perubahan data kependudukan? | Terjawab (source) | Lewat jenis surat ber-`data_action`, diterapkan Kasi/Kaur/Staf SIDUTama (UC-26) |
-| Apa makna `produces_letter` bagi alur? | Belum diputuskan | Kolom ada dan dikirim ke frontend, tetapi belum mengubah alur backend |
-| Jenis surat mana yang membutuhkan slot tanda tangan / dokumen pendukung? | Belum diputuskan | Fitur siap, belum ada jenis surat seed yang memakainya |
+| Bagaimana warga mengajukan perubahan data kependudukan? | Terjawab (source) | Lewat jenis surat ber-`data_action`, diterapkan Kasi/Kaur sesuai `assigned_role` (UC-26); Staf SIDUTama mengubah data lewat Data Penduduk, bukan cadangan Terapkan |
+| Apa makna `produces_letter` bagi alur? | Terjawab (source, 2026-11-18) | `false` = layanan pendataan yang hasilnya data, bukan surat (F11 Pendataan CPMI): boleh aktif tanpa template, unduh/pratinjau 404, data dicatat saat final approve |
+| Jenis surat mana yang membutuhkan dokumen pendukung (`supporting_template`)? | Belum diputuskan | Fitur siap, belum ada jenis surat seed yang memakainya. Slot tanda tangan digital sudah dihapus (2026-10-31) |
+| Apakah register tetap memverifikasi tanggal lahir? | Terjawab (source) | Tidak. Register memakai NIK + kata sandi + foto wajah; identitas diperiksa petugas wilayah lewat foto sebelum akun aktif (UC-17, UC-30). Tanggal lahir tetap dipakai untuk lupa kata sandi tanpa email (UC-32) |
+| Siapa yang mengaktifkan akun warga bila RT kosong? | Terjawab (source) | Jenjang naik saat dibaca: RW, lalu Kepala Dusun, lalu Staf SIDUTama (`AreaApprovalRouter`); dipakai juga untuk ganti foto profil |
 | React via REST API atau via Inertia | Sudah diputuskan | REST API (lihat OpenAPI Spec v5.3, `SID-ARCH-FE-001`) |
 | Apakah fitur rotasi jabatan organisasi non-struktural diaktifkan di UI MVP? | Terjawab (source) | Ya. Ketua/Wakil Ketua dapat diganti, dipromosikan dari anggota, diturunkan jadi anggota, atau dikosongkan; rotasi tetap dapat dimatikan per slot dengan `is_active=false` |
 | Apakah Staf SIDUTama boleh lebih dari satu? | Terjawab (source) | Tidak. Peran `staf_sid` (tampil "Staf {nama aplikasi}") hanya satu per desa; pergantian lewat rotasi, termasuk oleh staf itu sendiri. Bila staf lupa kata sandi, server dapat menjalankan `php artisan staf-sid:recover --username=...` (kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat) |
@@ -90,7 +92,7 @@ Bagian ini mendokumentasikan pertanyaan yang perlu dikonfirmasi sebelum atau sel
 | Apa isi lengkap daftar pekerjaan awal dan bagaimana import memetakan nama pekerjaan ke ID? | Belum diputuskan / ditunda | Seeder awal berisi tiga pekerjaan; pemetaan nama saat import belum dilakukan. |
 | Apakah kolom legacy `officials.stamp_img` akan dihapus? | Diputuskan (2026-10-31) | Dihapus bersama `villages.stamp_img` dan `officials.signature_img`; stempel & TTD dibubuhkan basah. |
 | Apakah kolom legacy `letters.purpose` dan `letters.notes` dihapus? | Belum diputuskan | Pengajuan baru selalu NULL; kolom dipertahankan untuk data lama |
-| Bagaimana daftar pekerjaan per desa dan sumber stempel PDF ditentukan? | Terjawab | Pekerjaan baku disimpan per desa di `occupations`; PDF memakai stempel pada profil desa. |
+| Bagaimana daftar pekerjaan per desa ditentukan? | Terjawab | Pekerjaan baku disimpan per desa di `occupations`. PDF tidak memuat stempel digital (dibubuhkan basah). |
 | Apakah sosio-ekonomi dicatat pada individu atau keluarga? | Terjawab | Dicatat per KK di `family_socioeconomics`; tidak ada penghasilan individu. |
 | ~~Konsistensi ENUM `approval_settings.approval_level` terhadap `letter_approvals.approval_level`~~ | **✅ Selesai / Closed** | Sudah diselaraskan — ENUM `approval_settings.approval_level` menggunakan 5 nilai yang sama dengan `letter_approvals.approval_level` (`rt`, `kepala_desa`, `sekretaris_desa`, `kasi_pemerintahan`, `kaur_tu_umum`), dikonfirmasi dari migration project yang berjalan. Riwayat koreksi status ini ada di `TDD-06_Appendix.md`. |
 
@@ -108,14 +110,14 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | `on_behalf_of` nullable di MVP | Warga submit sendiri di MVP, kolom selalu NULL | Kolom tetap ada untuk future use case di mana petugas mungkin perlu input atas nama warga tertentu |
 | Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |
 | Redis belum dipakai | Queue, cache, dan session di database | Cukup untuk traffic desa; switch lewat `.env` |
-| Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan `docs/EXPO_RUNBOOK.md` |
-| Struktur jenis surat (template, isian, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, penugasan, status aktif (UC-21) |
+| Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan README bagian B |
+| Struktur jenis surat (template, isian, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, kategori (menentukan Kasi/Kaur), status aktif (UC-21) |
 | Snapshot/PDF membutuhkan Kepala Desa aktif | Surat approved lama tanpa snapshot tidak dapat diunduh (404) selama jabatan Kades kosong | Pastikan Kades selalu ditetapkan; snapshot dibuat saat final approve bila Kades ada |
 | Surat ditahan bila RT di wilayah pemohon kosong | Surat menunggu sampai RT ditetapkan | Staf SIDUTama dinotifikasi; RT baru langsung diberi tahu |
-| Web Push butuh VAPID di backend & `VITE_VAPID_PUBLIC_KEY` di build frontend | Tanpa keduanya push nonaktif | Image web expo saat ini dibangun tanpa VAPID |
+| Web Push butuh VAPID di backend & `VITE_VAPID_PUBLIC_KEY` di build frontend | Tanpa keduanya push nonaktif | Image web saat ini dibangun tanpa VAPID |
 | Optimasi gambar butuh ekstensi GD (WebP) | Tanpa dukungan, berkas disimpan apa adanya/fallback | Pasang `gd` dengan WebP di image PHP |
 | Cache halaman publik 10 menit | Perubahan via SQL langsung (tanpa event model) tidak menggugurkan cache | Ubah data lewat aplikasi, atau tunggu TTL |
-| Tipe surat dengan `template=NULL` tidak bisa dipakai warga | Warga tidak bisa submit surat yang belum ada template | Guard di backend + badge "Draft" di admin page |
+| Tipe surat dengan `template=NULL` tidak bisa dipakai warga | Warga tidak bisa submit surat yang belum ada template, kecuali layanan tanpa surat (`produces_letter = false`) | Guard di backend (`LetterType::isReady`) + badge "Draft" di admin page |
 | Pengingat approval bergantung pada proses scheduler | Bila `schedule:work` (service `sid_scheduler`) mati, pengingat tidak terkirim; surat tetap ditandai overdue | Pantau `sid_scheduler` (`lib.sh ps`/`logs`); jalankan manual `php artisan approvals:send-reminders` bila perlu |
 | PDF on-demand: generate setiap klik | Slight latency saat download | Acceptable trade-off — tidak signifikan untuk traffic desa kecil |
 | Hanya satu Staf SIDUTama (`staf_sid`) per desa | Bila satu-satunya staf terkunci atau lupa password, tidak ada akun lain yang dapat mengelola sistem | Pergantian rutin lewat rotasi; bootstrap awal `staf-sid:first`; lupa kata sandi dipulihkan lewat `staf-sid:recover` di server (butuh akses server). Bila pemegang jabatan sudah tidak ada sama sekali, tetap perlu langkah manual |
@@ -126,7 +128,10 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | Kecocokan desa antara `citizens` dan `occupations` hanya dijaga di aplikasi | Referensi lintas desa dapat tersimpan bila validasi terlewati | Validasi desa pada service saat assign pekerjaan. |
 | ID pekerjaan berbeda antar desa | Analisis lintas desa tidak dapat membandingkan ID langsung | Bandingkan nama/normalisasi, atau buat pemetaan lintas desa jika kelak dibutuhkan. |
 | Warga pindah desa dengan `occupation_id` terisi | Pekerjaan dapat menunjuk ke katalog desa lama | Kosongkan atau ganti `occupation_id` sesuai katalog desa tujuan saat pindah. |
-| Nama pekerjaan/stempel dapat berubah | Surat approved memakai snapshot (stempel & TTD dibekukan), sedangkan data pemohon (nama, NIK, alamat) tetap dari kolom surat | Snapshot tidak membekukan pekerjaan warga |
+| Nama pekerjaan dapat berubah | Surat approved memakai snapshot (template, kop, nama Kepala Desa dibekukan), sedangkan data pemohon (nama, NIK, alamat) tetap dari kolom surat | Snapshot tidak membekukan pekerjaan warga |
 | Lampiran & hasil instansi bersifat private | FE tidak dapat menautkan path langsung | Gunakan endpoint terproteksi |
+| Aktivasi akun bergantung pada pejabat wilayah | Pendaftaran menumpuk bila RT/RW/Kadus tidak memeriksa | Notifikasi ke pemegang; jenjang naik otomatis ke Staf SIDUTama bila jenjang di bawahnya kosong (bukan bila tidak aktif memeriksa) |
+| Token klaim lupa sandi hanya di browser pengaju | Ganti perangkat/bersihkan data browser = tidak bisa menyelesaikan | Ajukan ulang (permintaan lama otomatis digantikan) |
+| Penskalaan PDF A4/F4 memakai setasign/fpdi + fpdf | Dependensi tambahan; hasil diskalakan (F4 → A4 ±90%) bukan tata letak ulang | Tata letak dan jumlah halaman tetap; pilihan default kertas bawaan dokumen |
 | Surat terbit tanpa TTD/stempel digital | Pemohon tetap harus datang ke kantor desa untuk surat sah | Notifikasi & Surat Saya menjelaskan bahwa surat ber-TTD & stempel basah diambil di kantor desa |
 | ~~`approval_settings.approval_level` ENUM belum diselaraskan dengan `letter_approvals.approval_level`~~ | — | **Sudah tidak berlaku** — ENUM sudah diselaraskan. Lihat Section 3.2 dan `TDD-06_Appendix.md` |

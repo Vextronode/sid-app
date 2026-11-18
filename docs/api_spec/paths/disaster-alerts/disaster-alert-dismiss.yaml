@@ -1,0 +1,53 @@
+parameters:
+  - name: disasterAlert
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+post:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Turunkan satu peringatan SIGAP dari halaman publik
+  description: |
+    Eksklusif Staf SIDUTama, hanya peringatan desanya (lainnya 404) yang
+    sedang tampil (lainnya 409). Alasan wajib. Pembaruan dari SIGAP untuk
+    peringatan ini tetap disimpan tetapi tidak tampil sampai ditampilkan
+    lagi, kecuali pembaruan itu menaikkan level atau berisi gempa susulan
+    dengan magnitudo minimal 1,0 di atas patokan: peringatan otomatis tampil
+    lagi dan notifikasi dikirim (activity log `disaster_alert`, event
+    `redisplayed`, causer client SIGAP). Bila peringatan belum pernah
+    dinotifikasi, level dan magnitudo saat diturunkan menjadi patokan.
+    Dicatat di activity log (`log_name` `disaster_alert`, event
+    `dismissed`, beserta alasan).
+  operationId: dismissDisasterAlert
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [reason]
+          properties:
+            reason:
+              type: string
+              maxLength: 500
+              example: Alarm palsu, sudah dikonfirmasi BPBD.
+  responses:
+    '200':
+      description: Peringatan diturunkan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/disaster-alerts/disaster-alerts.yaml#/DisasterAlertMessage'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '409':
+      $ref: '../../responses/common.yaml#/Conflict'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

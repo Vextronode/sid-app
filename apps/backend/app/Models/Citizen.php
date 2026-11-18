@@ -177,4 +177,10 @@ class Citizen extends Model
     {
         return $this->hasMany(CitizenBusiness::class);
     }
+
+    /** Riwayat pendataan CPMI, satu baris per keberangkatan. */
+    public function migrantWorkers(): HasMany
+    {
+        return $this->hasMany(MigrantWorker::class);
+    }
 }

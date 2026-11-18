@@ -1,7 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/lib/downloadFile', () => ({
+  downloadFile: vi.fn(() => Promise.resolve()),
+  downloadErrorMessage: vi.fn(() => Promise.resolve('Gagal')),
+}))
+
 import { LetterTypePicker } from './LetterTypePicker'
+import { downloadFile } from '@/lib/downloadFile'
 import { partialFixture } from '@/test/fixtures'
 import type { LetterType } from '@/types'
 
@@ -143,5 +149,47 @@ describe('LetterTypePicker', () => {
 
     scrollHeight.mockRestore()
     clientHeight.mockRestore()
+  })
+})
+
+describe('LetterTypePicker handwritten forms', () => {
+  it('offers the prefilled handwritten forms of the chosen type for download', async () => {
+    renderPicker({
+      selectedCode: 'A12',
+      letterTypes: [
+        {
+          id: 12,
+          code: 'A12',
+          name: 'Surat Keterangan Izin Keramaian/Kegiatan',
+          handwritten_forms: [
+            {
+              key: 'daftar',
+              title: 'Surat Pernyataan Ijin Lingkungan (2 lembar)',
+              description: null,
+            },
+            { key: 'pernyataan', title: 'Surat Pernyataan Bermaterai', description: 'Bermaterai.' },
+          ],
+        },
+      ],
+    })
+
+    expect(screen.getByText('Formulir yang diisi tangan')).toBeTruthy()
+    expect(screen.getByText('Bermaterai.')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unduh Surat Pernyataan Bermaterai' }))
+
+    await waitFor(() =>
+      expect(downloadFile).toHaveBeenCalledWith(
+        '/api/letter-types/12/forms/pernyataan',
+        'formulir-a12-pernyataan-f4.pdf',
+        { download: 1, paper: 'f4' },
+      ),
+    )
+  })
+
+  it('shows nothing for types without handwritten forms', () => {
+    renderPicker({ selectedCode: 'SKD' })
+
+    expect(screen.queryByText('Formulir yang diisi tangan')).toBeNull()
   })
 })

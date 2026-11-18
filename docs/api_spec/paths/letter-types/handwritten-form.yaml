@@ -1,0 +1,56 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: Unduh formulir isi tangan sebelum mengajukan surat
+  description: |
+    Formulir dari `letter_types.handwritten_forms` (mis. A12 Izin
+    Keramaian/Kegiatan: `daftar` = Surat Pernyataan Ijin Lingkungan 2 lembar,
+    `pernyataan` = Surat Pernyataan bermaterai). Identitas pemohon (nama, NIK,
+    jenis kelamin, tempat/tanggal lahir, status perkawinan, agama, pekerjaan,
+    alamat, email) terisi dari data penduduk akun yang masuk, dan identitas
+    desa dari profil desa. Isian lain (daftar warga, tanggal, nomor HP, tanda
+    tangan) dibiarkan bertitik untuk ditulis tangan. Hasilnya difoto dan
+    diunggah di isian `file` saat `POST /letters`.
+
+    Hanya akun yang dapat mengajukan surat (LetterPolicy::create: akun aktif
+    dengan data penduduk), di desa jenis surat itu, dan jenis suratnya aktif.
+    Kertas bawaan mengikuti `paper` formulir (A12: F4); pengunduh boleh
+    memilih kertas lain lewat `?paper=` (halaman diskalakan utuh).
+  operationId: letterTypeHandwrittenForm
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letterType
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: key
+      in: path
+      required: true
+      description: "`key` formulir pada `handwritten_forms` jenis surat."
+      schema:
+        type: string
+        example: pernyataan
+    - name: download
+      in: query
+      required: false
+      description: "Bernilai truthy (1/true) untuk unduh sebagai attachment; selain itu stream inline."
+      schema:
+        type: boolean
+    - $ref: '../../parameters/common.yaml#/Paper'
+  responses:
+    '200':
+      description: "PDF `formulir-{kode}-{key}.pdf`, mis. `formulir-a12-pernyataan.pdf` (dengan `?paper=`: `formulir-a12-pernyataan-a4.pdf`)"
+      content:
+        application/pdf:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Akun tidak dapat mengajukan surat (mis. tanpa data penduduk)
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '404':
+      description: Jenis surat bukan milik desa akun, tidak aktif, atau formulir tidak ada

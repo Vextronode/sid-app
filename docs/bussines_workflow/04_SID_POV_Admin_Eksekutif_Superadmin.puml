@@ -1,5 +1,5 @@
 @startuml
-title SID - POV Admin Desa, Eksekutif & Superadmin [Business Workflow] (diselaraskan source 2026-10-16)
+title SID - POV Admin Desa, Eksekutif & Superadmin [Business Workflow] (diselaraskan source 2026-11-19)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -29,17 +29,27 @@ elseif (Jabatan & Akun) then
   :Cari calon via NIK; tetapkan/rotasi/turunkan\npejabat (foto wajib);
   :Kelola jenis jabatan tanpa akun;
   :Reset password akun;
-  :Unggah TTD Kepala Desa aktif;
+  :Aktivasi akun & ganti foto warga\n(bila jenjang RT/RW/Kadus kosong);
+  :Aktivasi manual NIK yang diblokir\n(kata sandi sementara);
+  :Setujui/tolak permintaan lupa sandi\ntanpa email;
   stop
 elseif (Konfigurasi Surat) then
-  :Ubah masa berlaku, penugasan Kasi/Kaur,\nstatus aktif jenis surat;
+  :Ubah masa berlaku, kategori\n(menentukan Kasi/Kaur), status aktif jenis surat;
   :Atur deadline per level (rt, kepala_desa);
   :Lihat flow approval (read-only);
   stop
+elseif (Integrasi) then
+  :Aktifkan/nonaktifkan Cimart & SIGAP,\nterbitkan/cabut token (konfirmasi sandi);
+  :Turunkan / tampilkan lagi peringatan SIGAP;
+  stop
+elseif (Pemantauan) then
+  :Log Aktivitas (data penduduk, surat,\ntindakan akun);
+  :Pelanggan Notifikasi (perangkat Web Push);
+  :Data Usaha Warga & Data CPMI (baca);
+  stop
 else (Monitoring Surat)
   :Lihat seluruh surat desa (semua status);
-  :Tanggapi surat tertahan (tetapkan RT);
-  :Cadangan Terapkan perubahan data;
+  :Tanggapi surat tertahan (tetapkan RT/Kasi/Kaur);
   stop
 endif
 
@@ -51,7 +61,8 @@ endif
 note right
   Kades & Sekdes saling menggantikan
   (first-action-wins, row lock).
-  Eksekutif tidak punya akses CMS.
+  Eksekutif tidak punya akses CMS;
+  membaca Data Penduduk & Data CPMI.
 end note
 if (Keputusan?) then (Tolak)
   |#LightYellow|Sistem|
@@ -59,8 +70,9 @@ if (Keputusan?) then (Tolak)
   stop
 else (Setuju)
   |#LightYellow|Sistem|
-  :approved; nomor surat per kode klasifikasi;
+  :approved; nomor surat per kode klasifikasi\n(Persuratan Desa);
   :Bekukan snapshot (nama Kades saat ini;\ntanpa TTD/stempel, dibubuhkan basah);
+  :Catat data hasil layanan\n(Data Usaha dari A01, Data CPMI dari F11);
   :Notifikasi pemohon & Kasi/Kaur;
   stop
 endif

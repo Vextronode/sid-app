@@ -13,5 +13,10 @@ export const getLetterTypes = async ({ includeInactive = false } = {}) => {
   return response.data.data
 }
 
+// Formulir isi tangan berisi identitas pemohon; diunduh lewat downloadFile
+// (sesi login), bukan tautan publik.
+export const handwrittenFormUrl = (letterTypeId: Id, key: string) =>
+  `/api/letter-types/${letterTypeId}/forms/${key}`
+
 export const updateLetterType = (id: Id, payload: Partial<LetterType>) =>
   api.put<ResourceResponse<LetterType>>(`/api/letter-types/${id}`, payload)

@@ -161,7 +161,8 @@ Letter:
         surat ini: dokumen utama (`key: main`, judul = nama jenis surat)
         lalu dokumen dari `letter_types.documents` yang syarat `when`-nya
         terpenuhi jawaban form. Surat approved memakai daftar yang
-        dibekukan di snapshot. Unduh/pratinjau lewat `?document={key}`.
+        dibekukan di snapshot. Unduh/pratinjau lewat `?document={key}`
+        (opsional `&paper=a4|f4`).
       items:
         type: object
         properties:
@@ -171,6 +172,11 @@ Letter:
           title:
             type: string
             example: "Formulir Pindah"
+          paper:
+            type: string
+            enum: [a4, f4]
+            example: "f4"
+            description: "Kertas bawaan dokumen (dari `letter_types.documents[].paper` atau `paper_size` jenis surat; surat approved dari snapshot). Pengunduh boleh meminta kertas lain lewat `?paper=`."
     result_stage:
       type: string
       nullable: true
@@ -355,6 +361,12 @@ LetterListItem:
           example: "A01"
         signed_by_village_head:
           type: boolean
+          example: true
+        produces_letter:
+          type: boolean
+          description: |
+            false = layanan pendataan (mis. CPMI F11): hasilnya data, tidak ada
+            surat untuk dipratinjau/diunduh (`/download` dan `/preview` 404).
           example: true
     citizen:
       type: object

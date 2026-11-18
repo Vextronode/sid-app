@@ -1,0 +1,40 @@
+get:
+  tags: [Epic 9 - Halaman Publik & Konten]
+  summary: Daftar peringatan SIGAP untuk tab Peringatan SIGAP
+  description: |
+    Eksklusif Staf SIDUTama (role lain 403), dibatasi ke desanya.
+
+    - `status=displayed` (default): sedang tampil, urutan sama dengan bar
+      publik.
+    - `status=dismissed`: diturunkan staf dan masih bisa ditampilkan lagi
+      (belum diakhiri SIGAP, belum lewat masa tayang), terbaru diturunkan
+      dulu.
+  operationId: listDisasterAlerts
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [displayed, dismissed]
+        default: displayed
+  responses:
+    '200':
+      description: Daftar peringatan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/disaster-alerts/disaster-alerts.yaml#/DisasterAlert'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

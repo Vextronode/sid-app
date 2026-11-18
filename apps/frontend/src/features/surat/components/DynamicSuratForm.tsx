@@ -5,19 +5,28 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { getApiErrorMessage, apiErrorBody } from '@/shared/lib/apiError'
 import type { LetterType, Occupation } from '@/types'
-import type { ApplicantFamilyMember, SuratFormConfig, SuratFormValues, VillageArea } from '../types'
+import type {
+  ApplicantFamilyMember,
+  SuratField,
+  SuratFormConfig,
+  SuratFormValues,
+  VillageArea,
+} from '../types'
 import type { NikLookupResult } from './NikLookupHint'
 
 import { getSuratSchema, todayDate } from '../validation/suratSchema'
 import { reportDeadlineWarning } from '../utils/reportDeadline'
 import { buildLetterFormData } from '../utils/letterFormData'
-import { repeaterMinRows, visibleFields } from '../utils/fieldCondition'
+import { matchesCondition, repeaterMinRows, visibleFields } from '../utils/fieldCondition'
 import { getFamilyMembers, getVillageAreas } from '../api/letterExtrasApi'
 import { getOccupations } from '@/features/pekerjaan/api'
+import { getMigrantWorkerPrefill, MIGRANT_WORKER_LETTER_CODE } from '@/features/data-cpmi/api'
+import { GuardianRelationHint } from '@/features/data-cpmi/components/GuardianRelationHint'
 
 import { useSubmitSurat } from '../hooks/useSubmitSurat'
 
 import { AutoFillProfile } from './AutoFillProfile'
+import { ApplicantIdentityCard } from './ApplicantIdentityCard'
 import { FileUploader } from './FileUploader'
 import { OccupationField } from './OccupationField'
 import { FamilyMembersField } from './FamilyMembersField'
@@ -91,6 +100,7 @@ export function DynamicSuratForm({
     register,
     handleSubmit,
     setValue,
+    getValues,
     setError,
     control,
     formState: { errors },
@@ -186,6 +196,51 @@ export function DynamicSuratForm({
     }
   }, [needsAreas])
 
+  // Pendataan CPMI berikutnya: isian yang bertahan antarkeberangkatan
+  // (pendidikan, kompetensi, penanggung jawab, ...) diisi dari pengajuan
+  // CPMI terakhir. Hanya isian yang masih kosong; kontrak selalu baru.
+  const prefillsMigrantWorker = config.code === MIGRANT_WORKER_LETTER_CODE
+  const [prefilledFromHistory, setPrefilledFromHistory] = useState(false)
+
+  useEffect(() => {
+    if (!prefillsMigrantWorker) return undefined
+
+    let active = true
+
+    getMigrantWorkerPrefill()
+      .then((values) => {
+        if (!active) return
+
+        const known = new Set(config.fields.map((field) => field.name))
+        let applied = false
+
+        Object.entries(values).forEach(([name, value]) => {
+          const current = getValues(name)
+          const empty =
+            current === undefined ||
+            current === null ||
+            current === '' ||
+            (Array.isArray(current) &&
+              current.every((row) =>
+                Object.values((row ?? {}) as Record<string, unknown>).every((cell) => !cell),
+              ))
+
+          if (!known.has(name) || !empty) return
+
+          setValue(name, typeof value === 'number' ? String(value) : value)
+          applied = true
+        })
+
+        setPrefilledFromHistory(applied)
+      })
+      // Gagal memuat riwayat: form tetap bisa diisi manual.
+      .catch(() => undefined)
+
+    return () => {
+      active = false
+    }
+  }, [prefillsMigrantWorker, config.fields, getValues, setValue])
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>, name: string, multiple = true) => {
     const files = Array.from(e.target.files || [])
 
@@ -267,6 +322,29 @@ export function DynamicSuratForm({
     }
   }
 
+  // Isian yang benar-benar ditanyakan (selaras dengan syarat sembunyi di
+  // bawah), untuk menentukan di mana judul section perlu muncul.
+  const askedFields = visibleFields(config.fields, watchedFormData ?? {}).filter(
+    (field) =>
+      applicantValue(field, user) === null &&
+      !(field.fromNik && !lookupTyped(field.fromNik)) &&
+      !(field.requiredWhenHead && !newHeadChoice(field, familyMembers, watchedFormData).visible),
+  )
+  // Form ber-section (mis. CPMI): data diri lengkap tampil di section pertama.
+  const firstSection = config.fields.find((field) => field.section)?.section ?? null
+  const sectionStarts = new Set(
+    askedFields
+      .filter((field, index) => field.section && field.section !== askedFields[index - 1]?.section)
+      .map((field) => field.name),
+  )
+  const sectionHeading = (field: SuratField) =>
+    field.section && sectionStarts.has(field.name) ? (
+      <>
+        <h4 className="sid-form-subsection-title">{field.section}</h4>
+        {field.section === firstSection && <ApplicantIdentityCard user={user} />}
+      </>
+    ) : null
+
   const renderError = (name: string) =>
     errors[name]?.message ? (
       <span className="sid-form-field-error" role="alert">
@@ -283,7 +361,14 @@ export function DynamicSuratForm({
       <section className="sid-section">
         <h3 className="sid-section-title">{headings.fields}</h3>
 
-        <AutoFillProfile user={user} />
+        {!firstSection && <AutoFillProfile user={user} />}
+
+        {prefilledFromHistory && (
+          <p className="sid-info" role="status">
+            Sebagian isian diisi dari pendataan CPMI Anda sebelumnya. Periksa dan perbarui bila ada
+            yang berubah.
+          </p>
+        )}
 
         <div
           className="
@@ -336,6 +421,7 @@ export function DynamicSuratForm({
 
             return (
               <div key={field.name} className="sid-form-group">
+                {sectionHeading(field)}
                 <label htmlFor={field.name} className="sid-label">
                   {field.label}
 
@@ -463,6 +549,7 @@ export function DynamicSuratForm({
                     id={field.name}
                     type="date"
                     max={field.past ? todayDate() : undefined}
+                    min={field.upcoming ? todayDate() : undefined}
                     {...register(field.name)}
                     className={inputClass}
                   />
@@ -491,6 +578,10 @@ export function DynamicSuratForm({
                   >
                     <option value="">Pilih...</option>
                     {roleOptions(field, familyMembers, watchedFormData)
+                      // Pilihan bersyarat (mis. Suami/Istri sesuai data pemohon).
+                      .filter((option) =>
+                        matchesCondition(option.visible_when, watchedFormData ?? {}),
+                      )
                       .filter(
                         (option) =>
                           !(
@@ -550,6 +641,13 @@ export function DynamicSuratForm({
                       ),
                     )}
                   </select>
+                )}
+
+                {field.type === 'family_member' && field.relationHint && (
+                  <GuardianRelationHint
+                    members={familyMembers}
+                    memberId={watchedFormData?.[field.name] as string | undefined}
+                  />
                 )}
 
                 {field.type === 'family_member' &&

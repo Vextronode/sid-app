@@ -38,6 +38,15 @@ export const OPERATOR_ROUTE_CAPABILITIES: Record<string, UserRole[]> = {
   // mengikuti jenis surat, jadi menu juga butuh flag dari GET /api/user
   // (lihat FLAG_GATED_ROUTES).
   '/admin/data-usaha': ['kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid'],
+  // Data CPMI (baca saja): Staf SIDUTama, Kades/Sekdes, dan petugas F11
+  // (mengikuti jenis layanan, jadi juga butuh flag dari GET /api/user).
+  '/admin/data-cpmi': [
+    'kepala_desa',
+    'sekretaris_desa',
+    'kasi_pemerintahan',
+    'kaur_tu_umum',
+    'staf_sid',
+  ],
   '/admin/kelola-wilayah': ['staf_sid'],
   '/admin/kelola-pekerjaan': ['staf_sid'],
   // Aktivasi akun dan request ganti foto profil warga (petugas wilayah).
@@ -55,6 +64,10 @@ export const OPERATOR_ROUTE_CAPABILITIES: Record<string, UserRole[]> = {
   '/admin/pengaturan-persetujuan': ['staf_sid'],
   '/admin/alur-persetujuan': ['staf_sid'],
   '/admin/log-aktivitas': ['staf_sid'],
+  // Akun yang mengaktifkan notifikasi browser (Web Push) dan status perangkatnya.
+  '/admin/pelanggan-notifikasi': ['staf_sid'],
+  // Token aplikasi pihak ketiga (Cimart, dll.).
+  '/admin/integrasi': ['staf_sid'],
   '/admin/organisasi/bpd': ['staf_sid'],
   '/admin/organisasi/lembaga': ['staf_sid'],
 }
@@ -85,6 +98,7 @@ export function getOperatorAllowedRoles(route: string) {
 // Route yang selain peran juga butuh hak akses dinamis dari GET /api/user.
 const FLAG_GATED_ROUTES: Record<string, (user: User) => boolean> = {
   '/admin/data-usaha': (user) => user.can_view_citizen_businesses === true,
+  '/admin/data-cpmi': (user) => user.can_view_migrant_workers === true,
 }
 
 // Menu dan route yang boleh dibuka akun ini: peran cocok dan, bila route

@@ -24,6 +24,7 @@ use App\Services\KadesApprovalService;
 use App\Services\LetterFlowService;
 use App\Services\LetterNumberGenerator;
 use App\Services\LetterSnapshotService;
+use App\Services\MigrantWorkerService;
 use App\Services\OfficialService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -57,6 +58,7 @@ class KadesApprovalServiceTest extends TestCase
             new ApprovalSettingService(new ApprovalSettingRepository),
             new LetterSnapshotService(new OfficialRepository, $letterRepository),
             new CitizenBusinessService(new CitizenBusinessRepository),
+            new MigrantWorkerService,
         );
     }
 

@@ -5,14 +5,14 @@ tags:
   - react
   - setup
   - sanctum
-date: 2026-10-18
+date: 2026-11-19
 ---
 
 # Setup Project
 
 Panduan clone dan menjalankan project di lokal. Command ditulis untuk **Windows (PowerShell/CMD)**. macOS/Linux hampir sama, bedanya di cara menyalin file `.env` (`cp`, bukan `copy`).
 
-Untuk menjalankan stack Docker expo (bukan pengembangan lokal), lihat [`EXPO_RUNBOOK.md`](EXPO_RUNBOOK.md).
+Untuk menjalankan stack Docker staging/produksi (bukan pengembangan lokal), lihat README bagian **B. Produksi**.
 
 ---
 
@@ -38,7 +38,7 @@ Monorepo dengan 2 aplikasi di `apps/`:
 - `apps/backend` - Laravel (API, queue, scheduler)
 - `apps/frontend` - React SPA (Vite)
 
-Folder `deploy/` berisi docker compose dan skrip untuk stack expo.
+Folder `deploy/` berisi docker compose dan skrip untuk stack staging/produksi.
 
 ---
 
@@ -97,11 +97,13 @@ MAILTRAP_INBOX_ID=
 |---|---|---|
 | `SID_APP_NAME` | Nama aplikasi untuk pengguna: judul login, `<title>`, manifest PWA, dan label peran staf ("Staf {nama}") | Default `SIDUTama`. Samakan dengan `VITE_APP_NAME` |
 | `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_FAKER_LOCALE` | Bahasa pesan validasi (`lang/id/validation.php`), pesan bawaan framework (`lang/id.json`, `lang/id/*.php`), email reset kata sandi, dan data palsu factory/seeder | Wajib `id`, `id` dan `id_ID` (sudah begitu di `.env.example`; `phpunit.xml` memaksa `APP_LOCALE` dan `APP_FALLBACK_LOCALE` = `id` untuk test). Nilai `en` membuat pesan validasi kembali berbahasa Inggris. Setelah mengubah, jalankan `php artisan config:clear` |
-| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
+| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push dan notifikasi peringatan SIGAP) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
 | `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Kunci Web Push | Buat dengan `php artisan webpush:vapid`. Kosong = push nonaktif, in-app tetap jalan |
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
 | `MAIL_MAILER`, `MAILTRAP_*`, `MAIL_FROM_*` | Email tautan lupa kata sandi dan `php artisan mail:test` | Template memakai `mailtrap-sdk` + `sandbox.api.mailtrap.io`. Tanpa token Mailtrap, ganti ke `MAIL_MAILER=log` (email ditulis ke `storage/logs/laravel.log`). Notifikasi email status surat belum diimplementasi |
 | `FRONTEND_URL` | Asal frontend untuk CORS/Sanctum dan alamat tautan di email reset (`<FRONTEND_URL>/reset-password/<token>`) | Harus sama dengan alamat yang dibuka di browser |
+| `SIGAP_LINK_HOSTS` | Domain SIGAP yang boleh dipakai `link_url` peringatan bencana (https), dipisah koma, mis. `sigap.example.id` | Diisi SID setelah SIGAP memberi tahu domainnya. SID tidak pernah memanggil SIGAP; daftar ini hanya untuk memeriksa link yang tampil di bar merah. Kosong = peringatan yang membawa `link_url` ditolak `422` |
+| `DISASTER_ALERT_DEFAULT_HOURS`, `DISASTER_ALERT_MAX_DAYS` | Masa tayang peringatan SIGAP bila `expires_at` kosong, dan batas maksimalnya | Default `6` jam dan `3` hari (`config/disaster_alerts.php`), menunggu konfirmasi SIGAP |
 
 ### Migrate & isi data
 
@@ -122,7 +124,7 @@ Akun demo untuk mencoba setiap role:
 |---|---|---|
 | Staf SIDUTama (`staf_sid`) | `demo_admin` | Satu-satunya Staf SIDUTama desa demo |
 | Warga | `demo_warga` | Kepala keluarga di RT 001/RW 001 Patrol |
-| Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba saksi/TTD antar-warga) |
+| Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba persetujuan saksi antar-warga) |
 | Warga | `demo_warga3` | Anak tertua `demo_warga`, satu KK |
 | Kepala Dusun | `demo_kadus` | Aditulloh, Kadus Patrol |
 | RW | `demo_rw` | Ketua RW 001 Patrol |
@@ -141,6 +143,8 @@ Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari 
 | RT lain | `rt.<dusun>.<nn>.<nn>` (RW lalu RT), mis. `rt.cibenda.12.03` |
 
 **Password semua akun:** `Password123!`
+
+Akun demo sudah aktif. Untuk mencoba **pendaftaran akun baru**: daftar di halaman Daftar dengan NIK warga seeder yang belum punya akun (lihat Data Penduduk saat login `demo_admin`), ambil foto wajah dari kamera (browser perlu izin kamera; `localhost`/`127.0.0.1` diizinkan tanpa HTTPS), lalu login sebagai Ketua RT wilayah warga itu (mis. `demo_rt` untuk RT 001/RW 001 Patrol) dan setujui di **Manajemen Akun → Aktivasi Akun**. Akun baru tidak bisa login sebelum disetujui. Permintaan ganti foto profil warga diputuskan di menu yang sama.
 
 Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak berjalan di environment `production`. Untuk mengganti data demo lama, gunakan `migrate:fresh --seed` hanya pada database yang boleh dihapus; menjalankan `db:seed` sendiri tidak menghapus data lama.
 
@@ -166,6 +170,27 @@ php artisan staf-sid:recover --username=<username_staf>
 
 Command meminta konfirmasi (tambahkan `--force` untuk eksekusi non-interaktif), hanya berlaku untuk akun `staf_sid` aktif yang memegang jabatan aktif, mencetak kata sandi sementara sekali, mewajibkan ganti kata sandi saat login, mengeluarkan semua sesi dan token lama, dan tercatat di activity log. Bila login terkunci karena 5 kali gagal, kunci terbuka sendiri dalam 1 jam. Pergantian pemegang jabatan tetap lewat Rotasi.
 
+### Integrasi pihak ketiga (Cimart, SIGAP)
+
+Aplikasi pihak ketiga memanggil `https://<domain-sid>/api/integrations/v1` dari server mereka dengan token miliknya sendiri, bukan akun SID. Arahnya selalu dari pihak ketiga ke SID; SID tidak pernah memanggil mereka. Kontrak dan kewajiban mereka ada di `docs/thirdparty/cimart/` dan `docs/thirdparty/sigap/`.
+
+Client dibuat **sekali per aplikasi** lewat terminal. Command mencetak token pertama sekali saja (SID hanya menyimpan hash-nya):
+
+```powershell
+php artisan integration:create cimart --name="Cimart" --abilities=seller-applications:read,seller-applications:update
+php artisan integration:create sigap --name="SIGAP" --abilities=alerts:write
+```
+
+Bila ada lebih dari satu desa, tambahkan `--village=<UUID_DESA>`. Setelah itu Staf SIDUTama mengelola dari menu **Integrasi**: menonaktifkan atau mengaktifkan aplikasi, menerbitkan token baru (token lama tetap berlaku sampai dicabut), dan mencabut token. Command cadangan: `integration:enable`, `integration:disable`, `integration:rotate`, `integration:tokens`, `integration:revoke`, dan `integration:abilities` (mengubah hak akses, hanya lewat terminal).
+
+Yang diserahkan ke tim pihak ketiga lewat jalur aman (jangan grup chat): **domain production SID** dan **token**. Untuk SIGAP, minta juga domain situs mereka untuk `SIGAP_LINK_HOSTS`.
+
+Uji koneksi dengan token yang baru dibuat:
+
+```powershell
+curl.exe -H "Authorization: Bearer <token>" -H "Accept: application/json" http://localhost:8000/api/integrations/v1/ping
+```
+
 ---
 
 ## 3. Menjalankan Backend
@@ -175,8 +200,8 @@ Jalankan di `apps\backend`, masing-masing di **terminal terpisah** dan biarkan t
 | Terminal | Perintah | Fungsi | Wajib? |
 |---|---|---|---|
 | 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
-| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari `activitylog:clean` | Untuk pengingat approval dan pengingat masa berlaku surat |
-| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (bila `QUEUE_CONNECTION=database`) |
+| 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari pukul 02.00 `disaster-alerts:prune` (activity log sengaja tidak dibersihkan) | Untuk pengingat approval, pengingat masa berlaku surat, dan pembersihan pengumuman serta peringatan SIGAP lama |
+| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push, dan **seluruh** notifikasi peringatan SIGAP (in-app maupun push) | Untuk push browser, dan wajib untuk notifikasi peringatan SIGAP (bila `QUEUE_CONNECTION=database`) |
 
 ```powershell
 php artisan serve
@@ -218,6 +243,8 @@ Notifikasi surat dikirim lewat dua jalur: **in-app** (lonceng) ditulis langsung 
 - `QUEUE_CONNECTION=database` (default lokal dan stack Docker): push dicatat dulu di tabel `jobs`, lalu dikirim `queue:work` di belakang layar. Tombol Ajukan/Setujui tetap cepat. Tanpa worker, push tertahan (lonceng tetap masuk) dan langsung terkirim saat worker dinyalakan. Di Docker, worker berjalan otomatis di service `sid_worker`.
 - `QUEUE_CONNECTION=sync`: push dikirim saat itu juga di dalam request, tanpa worker. Lebih praktis untuk lokal, tetapi tombol menunggu push selesai.
 
+**Peringatan bencana SIGAP berbeda:** notifikasinya dikirim ke semua akun aktif desa, jadi seluruh pengirimannya (termasuk lonceng in-app) dijalankan job antrean `SendDisasterAlertNotifications`, bukan di dalam request SIGAP. Tanpa worker, peringatan tetap tampil di bar merah halaman publik, tetapi **tidak ada notifikasi sama sekali** sampai worker dinyalakan.
+
 Cek push yang gagal: `php artisan queue:failed`; coba lagi: `php artisan queue:retry all`.
 
 > Setelah mengubah kode backend atau `.env`, matikan (Ctrl+C) lalu jalankan ulang `schedule:work` dan `queue:work`, karena keduanya memuat kode sekali di awal.
@@ -240,6 +267,8 @@ Email reset kata sandi dikirim langsung saat diminta (tanpa `queue:work`). Di lo
 3. Isi `MAILTRAP_API_KEY` dan `MAILTRAP_INBOX_ID` di `apps/backend/.env` (`MAIL_MAILER=mailtrap-sdk` dan `MAILTRAP_HOST=sandbox.api.mailtrap.io` sudah ada di template), lalu `php artisan config:clear`.
 4. Uji: `php artisan mail:test alamat@contoh.com`, email harus muncul di inbox sandbox.
 5. Uji alur penuh: akun seeder tidak punya email, jadi login (mis. `demo_warga`), isi email di Profil, logout, lalu pakai **Lupa Kata Sandi**.
+
+Akun **tanpa email** memakai jalur lain yang tidak butuh Mailtrap: di halaman Lupa Kata Sandi pilih jalur NIK (`/forgot-password/nik`), isi NIK + tanggal lahir, lalu login sebagai `demo_admin` dan setujui di **Pengajuan Reset**. Kembali ke halaman tadi **di browser yang sama** (token klaim disimpan di browser itu) untuk membuat kata sandi baru dalam 24 jam.
 
 Konfigurasi produksi (Mailtrap Sending dengan domain terverifikasi, kunci VAPID produksi) ada di [README](../README.md#b-produksi).
 
@@ -277,28 +306,30 @@ Frontend jalan di `http://127.0.0.1:5173`. Setelah mengubah `.env` frontend, res
 Project pakai **Laravel Sanctum SPA authentication** - session/cookie based, bukan token di localStorage.
 
 - Jangan simpan token di `localStorage` atau `sessionStorage`
-- Axios instance di `src/lib/api.js` sudah di-setup `withCredentials: true`
-- Sebelum login, wajib panggil `GET /sanctum/csrf-cookie` dulu, baru `POST /login`
+- Axios instance di `src/lib/api.ts` sudah di-setup `withCredentials: true` dan `withXSRFToken: true`
+- Sebelum login, wajib panggil `GET /sanctum/csrf-cookie` dulu, baru `POST /login` (rute web, tanpa prefix `/api`)
 - Setelah login, cookie session otomatis terkirim di setiap request — tidak perlu manual attach header
 
 Contoh flow login:
-```js
-import api from '@/lib/api';
+```ts
+import api from '@/lib/api'
 
-async function login(username, password) {
-  await api.get('/sanctum/csrf-cookie');
-  const { data } = await api.post('/api/login', { username, password });
-  const user = data.user;
-  return user;
+async function login(username: string, password: string) {
+  await api.get('/sanctum/csrf-cookie')
+  const { data } = await api.post('/login', { username, password })
+  return data.user // sama dengan GET /api/user
 }
 ```
+
+Login akun yang belum aktif dijawab `403` dengan pesan sesuai status pendaftarannya (menunggu aktivasi, ditolak, atau diblokir).
 
 ---
 
 ## 6. Test & Pemeriksaan Kode
 
 ```powershell
-# Backend: memakai SQLite in-memory (phpunit.xml), tidak menyentuh database di .env
+# Backend: memakai SQLite in-memory (phpunit.xml), tidak menyentuh database di .env.
+# CI menjalankan suite yang sama di PostgreSQL 16, jadi beberapa error (mis. tipe UUID) hanya muncul di CI.
 cd apps\backend
 php artisan test
 .\vendor\bin\pint --test
@@ -332,6 +363,9 @@ npm run build
 | Pengingat masa berlaku surat tidak datang | `schedule:work` tidak jalan, belum jam kirim desa, titik dimatikan di tab Pengingat Masa Berlaku (Alur & Jenis Surat), akun pemohon nonaktif, atau jatuh tempo titik sebelum surat disetujui | Jalankan `php artisan schedule:work`; uji dengan `php artisan letters:send-expiry-reminders` |
 | Perubahan kode tidak berefek di push/pengingat | Worker/scheduler memakai kode lama | Restart `queue:work` dan `schedule:work` |
 | Staf SIDUTama lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
+| Akun baru tidak bisa login (`403` menunggu aktivasi) | Pendaftaran online belum disetujui petugas wilayah | Login sebagai RT wilayah warga (atau RW/Kadus/`demo_admin` bila jenjang di bawahnya kosong), setujui di Manajemen Akun → Aktivasi Akun |
+| Kamera tidak bisa dibuka di halaman Daftar / ganti foto | Browser menolak kamera di alamat non-HTTPS selain `localhost`/`127.0.0.1`, atau izin kamera ditolak | Buka lewat `127.0.0.1`/`localhost`, izinkan kamera di pengaturan situs |
+| Unduh PDF dengan pilihan kertas lain gagal (`Class "setasign\Fpdi\..." not found`) | Dependensi composer belum terpasang setelah pull | `composer install` di `apps\backend` |
 
 ---
 

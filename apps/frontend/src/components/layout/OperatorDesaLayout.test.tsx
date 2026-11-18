@@ -80,6 +80,25 @@ describe('OperatorDesaLayout role regression', () => {
       'href',
       '/admin/log-aktivitas',
     )
+    expect(screen.getByRole('link', { name: 'Integrasi' })).toHaveAttribute(
+      'href',
+      '/admin/integrasi',
+    )
+  })
+
+  it('hides the Integrasi menu from other officials', () => {
+    useAuth.mockReturnValue({
+      user: { role: 'kaur_tu_umum', name: 'Kaur', role_label: 'Kaur TU & Umum' },
+      logout: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/admin/operator-desa']}>
+        <OperatorDesaLayout>Operator page</OperatorDesaLayout>
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('link', { name: 'Integrasi' })).toBeNull()
   })
 })
 

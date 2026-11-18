@@ -38,7 +38,7 @@ sid-app/
 ├── apps/
 │   ├── backend/     Laravel REST API
 │   └── frontend/    React SPA (Vite)
-├── deploy/          docker compose + skrip deploy stack expo
+├── deploy/          docker compose + skrip deploy (staging/produksi)
 ├── docs/            desain teknis, arsitektur, spesifikasi API, dan panduan tim
 └── README.md
 ```
@@ -194,7 +194,9 @@ Masing-masing di terminal terpisah dan biarkan terbuka:
 
 ## B. Produksi
 
-Stack produksi/expo memakai Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`) dengan image yang dibangun CI dan dijalankan lewat skrip di `deploy/scripts/`. Di Docker, `QUEUE_CONNECTION=database`: push dikirim service `sid_worker` dan scheduler berjalan di `sid_scheduler`, jadi tidak perlu menjalankan worker/scheduler manual. Env runtime ada di `deploy/sid.env` (template `deploy/sid.env.example`, atau `deploy/sid.neon.env.example` untuk DB Neon). Panduan operasional lengkap ada di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
+Stack staging/produksi memakai Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`). Image dibangun di server dari source (`--build`) atau ditarik dari registry, lalu dijalankan lewat skrip di `deploy/scripts/`. Di Docker, `QUEUE_CONNECTION=database`: push dikirim service `sid_worker` dan scheduler berjalan di `sid_scheduler`, jadi tidak perlu menjalankan worker/scheduler manual. Env runtime ada di `deploy/sid.env` (template `deploy/sid.env.example`, atau `deploy/sid.neon.env.example` untuk DB Neon) dan `deploy/compose.env` (template `deploy/compose.env.example`). Semua file env wajib `chmod 600`; skrip menolak jalan bila masih ada placeholder `<...>`.
+
+Satu-satunya port host adalah `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Reverse proxy server harus meneruskan header `Host` asli, mengirim `X-Forwarded-Proto: https` dan `X-Forwarded-For`, serta mengizinkan body minimal 25 MB (unggahan sampai 24 MB).
 
 ### B1. Env backend (`deploy/sid.env` atau `.env` server)
 
@@ -248,6 +250,9 @@ MAIL_FROM_NAME="SIDUTama Desa Cibenda"
 VAPID_SUBJECT="mailto:<email_admin_desa>"
 VAPID_PUBLIC_KEY=<public_key_produksi>
 VAPID_PRIVATE_KEY=<private_key_produksi>
+
+# Peringatan bencana SIGAP: domain situs SIGAP untuk link_url (dari tim SIGAP).
+SIGAP_LINK_HOSTS=<domain_sigap>
 ```
 
 Cara mendapatkan nilainya:
@@ -276,12 +281,63 @@ VITE_VAPID_PUBLIC_KEY=<public_key_produksi>
 
 > Image `sid-web` dari `apps/frontend/Dockerfile` saat ini dibangun tanpa `VITE_VAPID_PUBLIC_KEY`, sehingga push nonaktif di stack Docker walaupun `VAPID_*` diisi di `deploy/sid.env`. Untuk mengaktifkannya, Dockerfile dan workflow rilis perlu menerima kunci publik tersebut sebagai build argument.
 
-### B3. Deploy dan verifikasi
+### B3. Deploy pertama
 
-1. Deploy dengan skrip di `deploy/scripts/` (menjalankan `migrate --force`; entrypoint container menjalankan `config:cache`, jadi perubahan env butuh restart container). Detail di [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md).
-2. Data awal: stack **expo/demo** memakai golden DB dari seed demo (`make-golden.sh`, lihat runbook). Untuk desa **sungguhan**, jangan pakai data demo (seeder demo menolak `APP_ENV=production`); buat Staf SIDUTama pertama dengan `php artisan staf-sid:first`.
-3. Uji email: `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan mail:test <email_admin>`, lalu pantau **Email Logs** Mailtrap.
-4. Pastikan `sid_worker` berjalan (push) dan situs disajikan lewat HTTPS.
+```bash
+cp deploy/compose.env.example deploy/compose.env
+cp deploy/sid.env.example deploy/sid.env
+chmod 600 deploy/compose.env deploy/sid.env
+# isi keduanya, lalu salah satu:
+bash deploy/scripts/setup.sh <tag>           # desa sungguhan: DB kosong, hanya migrasi
+bash deploy/scripts/setup.sh --demo <tag>    # staging/demo: + data demo (butuh SID_ROLE=demo)
+```
+
+`setup.sh` membangun image (5-15 menit pertama kali), menjalankan migrasi, menyalakan stack, lalu smoke test. Menjalankannya lagi hanya memastikan stack hidup; data tidak diubah.
+
+- **Desa sungguhan** (`SID_ROLE=production`, default template): jangan pakai data demo (seeder demo juga menolak `APP_ENV=production`). Buat Staf SIDUTama pertama dengan `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:first ...` (lihat [`docs/SETUP.md`](docs/SETUP.md)).
+- **Staging/demo** (`SID_ROLE=demo`): data diisi dari *golden dump* hasil seed demo (`deploy/backups/golden-*.dump`, dibuat `make-golden.sh`). Login dengan akun demo (`demo_admin`, dll.). Siapa pun yang tahu URL bisa login dengan kata sandi demo yang tercantum di repo, jadi batasi akses di reverse proxy.
+- **Integrasi pihak ketiga** (Cimart, SIGAP): buat client sekali per aplikasi dengan `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan integration:create ...` (lihat [`docs/SETUP.md`](docs/SETUP.md#integrasi-pihak-ketiga-cimart-sigap)), lalu serahkan domain production SID dan token ke tim Cimart/SIGAP lewat jalur aman. Penggantian dan pencabutan token berikutnya dari menu **Integrasi**.
+
+### B4. Rilis baru dan operasional
+
+```bash
+git fetch --tags && git checkout <tag>
+bash deploy/scripts/deploy.sh <tag> --build --migrate   # --migrate menampilkan migrasi pending lalu minta ketik ya
+bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (image lama masih ada)
+```
+
+`deploy.sh` memeriksa konfigurasi, membangun/menarik image (gagal = stack berjalan tidak disentuh), menjalankan migrasi, menyalakan stack, dan smoke test. Bila smoke gagal, skrip otomatis kembali ke tag sebelumnya. Tag aktif ada di `deploy/.state/current_tag`, sebelumnya di `previous_tag`, riwayat di `deploy.log`. Skrip tidak pernah menghapus volume (`down -v`). Entrypoint container menjalankan `config:cache`, jadi perubahan env baru berlaku setelah deploy ulang tag yang sama.
+
+| Kebutuhan | Perintah |
+| --- | --- |
+| Status dan log | `bash deploy/scripts/lib.sh ps`, `bash deploy/scripts/lib.sh logs --tail 100 sid_api` (juga `sid_worker`, `sid_scheduler`, `sid_web`) |
+| Smoke test | `bash deploy/scripts/smoke.sh` (login ikut diuji bila `deploy/smoke.env` berisi `SID_SMOKE_USER`/`SID_SMOKE_PASS`) |
+| Kembalikan data demo (hanya `SID_ROLE=demo`) | `bash deploy/scripts/reset-demo.sh` (`--check` hanya memeriksa syarat). Semua sesi keluar |
+| Buat ulang golden dump (setelah migrasi/seed berubah) | `bash deploy/scripts/make-golden.sh` |
+| Backup database | `docker exec sid_db pg_dump -U sid -d sid -Fc > sid_$(date +%Y%m%d).dump`; ikut cadangkan volume `public` dan `private` (berkas unggahan) |
+| Staf SIDUTama lupa kata sandi | `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force` (kata sandi sementara tampil sekali) |
+| Uji email | `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan mail:test <email_admin>`. Dengan `MAIL_MAILER=log`, tautan reset kata sandi hanya muncul di log `sid_api` |
+| Push / notifikasi peringatan SIGAP gagal | `bash deploy/scripts/lib.sh exec -u www-data sid_worker php artisan queue:failed`, lalu `... queue:retry all` |
+
+`sid_scheduler` dan `sid_worker` tidak punya healthcheck; cek status `Up` lewat `ps`. Worker keluar sendiri tiap jam lalu dinyalakan ulang Docker, jadi uptime pendek itu normal.
+
+**Mode Neon (fallback DB):** `bash deploy/scripts/deploy.sh <tag> --db neon` memakai `deploy/sid.neon.env` (host *pooled*, `DB_SSLMODE=require`); migrasi wajib lewat `DB_HOST_DIRECT`. Kembali dengan `--db local`. `reset-demo.sh` dan `make-golden.sh` selalu menolak mode neon. Mode ini belum teruji.
+
+### B5. Pemecahan masalah
+
+| Gejala | Kemungkinan penyebab | Tindakan |
+| --- | --- | --- |
+| Login gagal **419** / **401** padahal kredensial benar | `SANCTUM_STATEFUL_DOMAINS` tidak sama persis dengan hostname di browser; `APP_URL` salah; proxy tidak mengirim `X-Forwarded-Proto: https` atau tidak meneruskan `Host`; cookie `Secure` ditolak karena diakses lewat `http://` | Samakan hostname di `sid.env` lalu deploy ulang tag yang sama; cek proxy. Untuk akses lokal `http://localhost:<port>` saja, pakai `SESSION_SECURE_COOKIE=false` |
+| **502** dari proxy | `sid_api` belum sehat atau mati | `lib.sh ps`, `lib.sh logs sid_api`, `lib.sh restart sid_api` |
+| Proxy tidak terhubung sama sekali | `sid_web` mati atau port salah | `lib.sh ps`; `curl -i http://127.0.0.1:8100/healthz` |
+| Halaman lama setelah deploy | Service worker PWA memegang versi lama | Muat ulang dua kali / tutup semua tab; bila perlu *Clear site data* |
+| Gagal koneksi DB (`SQLSTATE[08006]`) | `sid_db` belum sehat; sandi berbeda dari saat volume dibuat | `lib.sh logs sid_db`. Mengubah `POSTGRES_PASSWORD` setelah volume dibuat tidak berlaku |
+| `GAGAL: placeholder <...>` / `izin ... harus 600` | Konfigurasi belum lengkap | Perbaiki file yang disebut |
+| `port is already allocated` | Bentrok port | `ss -ltnp \| grep 8100`; ganti `SID_HTTP_PORT` dan sesuaikan proxy |
+| `operasi lain sedang berjalan (.state/lock ada)` | Skrip sebelumnya terhenti paksa | Pastikan tidak ada skrip berjalan, hapus `deploy/.state/lock/owner` lalu `rmdir deploy/.state/lock` |
+| Disk penuh | Image lama menumpuk | `docker system df`; hapus image SID lama satu per satu dengan `docker image rm <registry>/sid-api:<tag-lama>`. Jangan `prune` bila server dipakai sistem lain |
+
+Sebelum dipakai warga sungguhan: pastikan `sid_worker` berjalan (push, dan seluruh notifikasi peringatan SIGAP), situs disajikan lewat HTTPS, dan uji email berhasil.
 
 ## Test dan pemeriksaan kode
 
@@ -311,6 +367,9 @@ npm run build
 | `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
 | `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |
 | `php artisan mail:test <email>` | Kirim email uji lewat mailer aktif (`MAIL_MAILER`), jalur yang sama dengan email reset kata sandi |
+| `php artisan integration:create <slug> --name=... --abilities=...` | Buat client integrasi pihak ketiga (Cimart, SIGAP) beserta token pertamanya (ditampilkan sekali) |
+| `php artisan integration:{enable,disable,rotate,tokens,revoke,abilities} <slug>` | Kelola client integrasi dari terminal (cadangan menu **Integrasi**); mengubah hak akses hanya lewat `integration:abilities` |
+| `php artisan disaster-alerts:prune` | Hapus peringatan SIGAP yang berakhir lebih dari 30 hari (normalnya otomatis harian lewat `schedule:work`) |
 
 ## Konvensi penting
 
@@ -329,7 +388,6 @@ Gunakan branch dari `dev` dengan format `feature/deskripsi`, `fix/deskripsi`, at
 | Dokumen | Kegunaan |
 | --- | --- |
 | [`docs/SETUP.md`](docs/SETUP.md) | Panduan setup lokal (Windows) yang lebih rinci |
-| [`docs/EXPO_RUNBOOK.md`](docs/EXPO_RUNBOOK.md) | Deploy dan operasional stack Docker expo |
 | [`docs/technical_design/TDD-01_Overview_Scope_Roles.md`](docs/technical_design/TDD-01_Overview_Scope_Roles.md) | Tujuan, ruang lingkup MVP, role, dan alur surat |
 | [`docs/technical_design/TDD-02_UseCase_Descriptions.md`](docs/technical_design/TDD-02_UseCase_Descriptions.md) | Aturan bisnis dan use case |
 | [`docs/technical_design/TDD-03_Database_Schema.md`](docs/technical_design/TDD-03_Database_Schema.md) | Skema data, enkripsi, dan strategi indexing |

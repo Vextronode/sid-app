@@ -4,14 +4,20 @@ namespace App\Services;
 
 use App\Enums\LetterStatus;
 use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Support\LetterDocuments;
 use App\Support\LetterValueFormatter;
+use App\Support\PaperSize;
+use App\Support\PdfRescaler;
 use App\Support\TemplateConditionals;
 use App\Support\TemplateLoops;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -28,7 +34,12 @@ class PdfService
         protected LetterSnapshotService $letterSnapshotService,
     ) {}
 
-    public function download(Letter $letter, User $user, ?string $document = null): Response
+    /**
+     * $paper: ukuran kertas yang diminta (a4|f4). Null = kertas bawaan
+     * dokumen. Bila berbeda dari bawaan, PDF diskalakan utuh ke kertas itu
+     * (PdfRescaler) sehingga tampilannya sama, hanya ukurannya yang berubah.
+     */
+    public function download(Letter $letter, User $user, ?string $document = null, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
 
@@ -43,12 +54,10 @@ class PdfService
 
         $this->abortIfExpiredForApplicant($letter, $user);
 
-        [$pdf, $filename] = $this->buildPdf($letter, $document);
-
-        return $pdf->download($filename);
+        return $this->buildPdf($letter, $document, $paper, true);
     }
 
-    public function preview(Letter $letter, User $user, ?string $document = null): Response
+    public function preview(Letter $letter, User $user, ?string $document = null, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
 
@@ -60,9 +69,7 @@ class PdfService
 
         $this->abortIfExpiredForApplicant($letter, $user);
 
-        [$pdf, $filename] = $this->buildPdf($letter, $document);
-
-        return $pdf->stream($filename);
+        return $this->buildPdf($letter, $document, $paper, false);
     }
 
     /**
@@ -70,7 +77,7 @@ class PdfService
      * pernyataan), dengan nama pemohon dan pihak terkait.
      * Dipakai approver dan Kasi/Kaur sebagai bahan pertimbangan.
      */
-    public function supportingDocument(Letter $letter, bool $download): Response
+    public function supportingDocument(Letter $letter, bool $download, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
         $context = $this->letterSnapshotService->supportingContextFor($letter);
@@ -83,9 +90,9 @@ class PdfService
             'letter' => $letter,
             'template' => $this->renderTemplate($letter, $context, $context['supporting_template']),
         ]);
-        $filename = "dokumen-pendukung-{$letter->id}.pdf";
 
-        return $download ? $pdf->download($filename) : $pdf->stream($filename);
+        // Dokumen pendukung dirender di A4 tegak (bawaan view).
+        return $this->respond($pdf, "dokumen-pendukung-{$letter->id}", $download, PaperSize::A4, $paper);
     }
 
     /**
@@ -99,22 +106,24 @@ class PdfService
         }
     }
 
-    /**
-     * @return array{0: \Barryvdh\DomPDF\PDF, 1: string} PDF dan nama berkasnya
-     */
-    private function buildPdf(Letter $letter, ?string $documentKey): array
+    private function buildPdf(Letter $letter, ?string $documentKey, ?string $paper, bool $download): Response
     {
-        // Surat approved dirender dari snapshot final approve.
-        $context = $this->letterSnapshotService->contextFor($letter);
-
         if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
         }
 
+        // Layanan pendataan (mis. CPMI F11): hasilnya data, tidak ada surat.
+        if (! $letter->letterType->produces_letter) {
+            abort(404, 'Layanan ini tidak menerbitkan surat; hasilnya berupa data yang tersimpan di desa.');
+        }
+
+        // Surat approved dirender dari snapshot final approve.
+        $context = $this->letterSnapshotService->contextFor($letter);
+
         $document = $this->documentFor($letter, $context, $documentKey);
-        $filename = $document['key'] === LetterDocuments::MAIN
-            ? "surat-{$letter->id}.pdf"
-            : "surat-{$letter->id}-{$document['key']}.pdf";
+        $basename = $document['key'] === LetterDocuments::MAIN
+            ? "surat-{$letter->id}"
+            : "surat-{$letter->id}-{$document['key']}";
 
         // Formulir Disdukcapil berkotak (mis. F-2.01) butuh memori lebih.
         if (self::memoryLimitBytes() < 512 * 1024 * 1024) {
@@ -126,11 +135,71 @@ class PdfService
             'template' => $this->renderTemplate($letter, $context, (string) $document['template']),
         ]);
 
-        if ($document['orientation'] === 'landscape') {
-            $pdf->setPaper('a4', 'landscape');
+        PaperSize::apply($pdf, $document['paper'], $document['orientation']);
+
+        return $this->respond($pdf, $basename, $download, $document['paper'], $paper);
+    }
+
+    /**
+     * PDF dirender di kertas bawaan ($sourcePaper). Kertas lain yang diminta
+     * diterapkan dengan menskalakan tiap halaman utuh; kertas yang sama
+     * dikirim apa adanya. Nama berkas diberi akhiran ukuran bila diminta.
+     */
+    private function respond(DomPdf $pdf, string $basename, bool $download, string $sourcePaper, ?string $paper): Response
+    {
+        $filename = $paper === null ? "{$basename}.pdf" : "{$basename}-{$paper}.pdf";
+
+        if ($paper === null || $paper === $sourcePaper) {
+            return $download ? $pdf->download($filename) : $pdf->stream($filename);
         }
 
-        return [$pdf, $filename];
+        return new Response(PdfRescaler::rescale($pdf->output(), $paper), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                $download ? HeaderUtils::DISPOSITION_ATTACHMENT : HeaderUtils::DISPOSITION_INLINE,
+                $filename,
+                Str::ascii($filename),
+            ),
+        ]);
+    }
+
+    /**
+     * Formulir isi tangan (letter_types.handwritten_forms) untuk pemohon
+     * yang akan mengajukan: identitas pemohon terisi dari data penduduk,
+     * isian lain (mis. daftar warga yang menyetujui) dibiarkan bertitik
+     * untuk ditulis tangan. Berkas yang sudah diisi lalu difoto dan
+     * diunggah sebagai berkas persyaratan.
+     */
+    public function handwrittenForm(LetterType $letterType, User $user, string $key, bool $download, ?string $paper = null): Response
+    {
+        $form = collect($letterType->handwritten_forms ?? [])->firstWhere('key', $key)
+            ?? abort(404, 'Formulir ini tidak tersedia untuk jenis surat ini.');
+
+        $context = $this->letterSnapshotService->handwrittenFormContext($user);
+        $applicant = $context['applicant'];
+        $replacements = array_map(fn ($value) => e((string) $value), [
+            ...$this->villageReplacements($context['village']),
+            '{{ applicant_name }}' => $applicant['name'] ?? '',
+            '{{ applicant_nik }}' => $applicant['nik'] ?? '',
+            '{{ applicant_address }}' => $applicant['address'] ?? '',
+            '{{ applicant_gender }}' => $applicant['gender'],
+            '{{ applicant_birth_place_date }}' => $applicant['birth_place_date'],
+            '{{ applicant_occupation }}' => $applicant['occupation'],
+            '{{ applicant_marital_status }}' => $applicant['marital_status'],
+            '{{ applicant_religion }}' => $applicant['religion'],
+            '{{ applicant_email }}' => (string) ($applicant['email'] ?? ''),
+        ]);
+        $replacements['{{ logo_img }}'] = $this->logoHtml();
+
+        $html = str_replace(array_keys($replacements), array_values($replacements), (string) ($form['template'] ?? ''));
+        // Placeholder lain tidak punya nilai sebelum pengajuan: ditulis tangan.
+        $html = (string) preg_replace('/\{\{\s*[a-zA-Z0-9_]+\s*}}/', '..............................', $html);
+
+        $pdf = Pdf::loadView(self::VIEW, ['letter' => null, 'template' => $html]);
+        $formPaper = PaperSize::normalize($form['paper'] ?? null);
+        PaperSize::apply($pdf, $formPaper);
+
+        return $this->respond($pdf, 'formulir-'.Str::slug($letterType->code.' '.$key), $download, $formPaper, $paper);
     }
 
     private static function memoryLimitBytes(): int
@@ -157,7 +226,7 @@ class PdfService
      * menyimpan daftar dokumen, jadi memakai definisi jenis surat.
      *
      * @param  array<string, mixed>  $context
-     * @return array{key: string, title: string, template: string|null, orientation: string}
+     * @return array{key: string, title: string, template: string|null, orientation: string, paper: string}
      */
     private function documentFor(Letter $letter, array $context, ?string $key): array
     {
@@ -166,6 +235,8 @@ class PdfService
             $context['template'] ?? null,
             $context['documents'] ?? $letter->letterType?->documents,
             is_array($letter->payload) ? $letter->payload : [],
+            // Snapshot lama belum menyimpan ukuran kertas.
+            $context['paper_size'] ?? $letter->letterType?->paper_size,
         );
 
         return LetterDocuments::find($documents, $key)
@@ -241,24 +312,6 @@ class PdfService
         $signer = $context['signer'];
         $village = $context['village'];
 
-        $logoPath = public_path('images/logo-pangandaran.png');
-        $logoHtml = file_exists($logoPath)
-            ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
-            : '';
-
-        // Kop surat dan wilayah administratif diambil dari profil desa.
-        $villageName = (string) ($village['name'] ?? '');
-        $villageShort = preg_replace('/^Desa\s+/i', '', $villageName);
-        $district = (string) ($village['district'] ?? '');
-        $regency = (string) ($village['regency'] ?? '');
-        $province = (string) ($village['province'] ?? '');
-        $villageRegion = implode(' ', array_filter([
-            $villageShort !== '' ? "Desa {$villageShort}" : null,
-            $district !== '' ? "Kecamatan {$district}" : null,
-            $regency !== '' ? "Kabupaten {$regency}" : null,
-            $province !== '' ? $province : null,
-        ]));
-
         // logo_img adalah HTML buatan sistem; nilai lain
         // berasal dari data warga/isian form dan wajib di-escape karena
         // template dirender mentah ({!! $template !!}).
@@ -272,6 +325,14 @@ class PdfService
             // Snapshot surat lama belum menyimpan pekerjaan pemohon.
             '{{ applicant_occupation }}' => $context['applicant']['occupation'] ?? '-',
             '{{ applicant_marital_status }}' => $context['applicant']['marital_status'] ?? '-',
+            // Snapshot lama belum menyimpan agama, kewarganegaraan, dan wilayah pemohon.
+            '{{ applicant_religion }}' => $context['applicant']['religion'] ?? '-',
+            '{{ applicant_citizenship }}' => $context['applicant']['citizenship'] ?? 'Indonesia',
+            '{{ applicant_rt }}' => $context['applicant']['area']['rt'] ?? '......',
+            '{{ applicant_rw }}' => $context['applicant']['area']['rw'] ?? '......',
+            '{{ applicant_dusun }}' => $context['applicant']['area']['dusun'] ?? '..........................',
+            '{{ pejabat_rt_pemohon_nama }}' => $context['applicant']['area']['rt_head'] ?? '..................................',
+            '{{ pejabat_rw_pemohon_nama }}' => $context['applicant']['area']['rw_head'] ?? '..................................',
             '{{ applicant_family_number }}' => $context['applicant']['family_number'] ?? '________________________',
             '{{ applicant_email }}' => (string) ($context['applicant']['email'] ?? ''),
             '{{ village_kasi_pemerintahan_name }}' => $context['village']['kasi_pemerintahan_name'] ?? '________________________',
@@ -281,20 +342,7 @@ class PdfService
             ...$this->issuedDateParts((string) ($context['issued_at'] ?? $context['submitted_at'])),
             '{{ applicant_resident_phrase }}' => $context['applicant']['resident_phrase']
                 ?? 'benar-benar warga masyarakat Desa kami, dan',
-            '{{ village_name }}' => $villageName,
-            '{{ village_name_short }}' => $villageShort,
-            '{{ village_name_upper }}' => mb_strtoupper($villageShort),
-            '{{ village_district }}' => $district,
-            '{{ village_district_upper }}' => mb_strtoupper($district),
-            '{{ village_regency }}' => $regency,
-            '{{ village_regency_upper }}' => mb_strtoupper($regency),
-            '{{ village_province }}' => $province,
-            '{{ village_region }}' => $villageRegion,
-            '{{ village_address }}' => (string) ($village['address'] ?? ''),
-            '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
-            '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
-            '{{ village_area_code }}' => (string) ($village['area_code'] ?? ''),
-            '{{ village_email }}' => (string) ($village['email'] ?? ''),
+            ...$this->villageReplacements($village),
             '{{ village_head_name }}' => $signer['name'] ?? '________________________________________',
         ];
 
@@ -322,9 +370,56 @@ class PdfService
         }
 
         $replacements = array_map(fn ($value) => e((string) $value), $textReplacements);
-        $replacements['{{ logo_img }}'] = $logoHtml;
+        $replacements['{{ logo_img }}'] = $this->logoHtml();
 
         return [...$payloadHtml, ...$replacements];
+    }
+
+    private function logoHtml(): string
+    {
+        $logoPath = public_path('images/logo-pangandaran.png');
+
+        return file_exists($logoPath)
+            ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
+            : '';
+    }
+
+    /**
+     * Kop surat dan wilayah administratif dari profil desa (belum di-escape).
+     *
+     * @param  array<string, mixed>  $village
+     * @return array<string, string>
+     */
+    private function villageReplacements(array $village): array
+    {
+        $villageName = (string) ($village['name'] ?? '');
+        $villageShort = (string) preg_replace('/^Desa\s+/i', '', $villageName);
+        $district = (string) ($village['district'] ?? '');
+        $regency = (string) ($village['regency'] ?? '');
+        $province = (string) ($village['province'] ?? '');
+        $villageRegion = implode(' ', array_filter([
+            $villageShort !== '' ? "Desa {$villageShort}" : null,
+            $district !== '' ? "Kecamatan {$district}" : null,
+            $regency !== '' ? "Kabupaten {$regency}" : null,
+            $province !== '' ? $province : null,
+        ]));
+
+        return [
+            '{{ village_name }}' => $villageName,
+            '{{ village_name_short }}' => $villageShort,
+            '{{ village_name_upper }}' => mb_strtoupper($villageShort),
+            '{{ village_district }}' => $district,
+            '{{ village_district_upper }}' => mb_strtoupper($district),
+            '{{ village_regency }}' => $regency,
+            '{{ village_regency_upper }}' => mb_strtoupper($regency),
+            '{{ village_province }}' => $province,
+            '{{ village_region }}' => $villageRegion,
+            '{{ village_address }}' => (string) ($village['address'] ?? ''),
+            '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
+            '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
+            '{{ village_area_code }}' => (string) ($village['area_code'] ?? ''),
+            '{{ village_email }}' => (string) ($village['email'] ?? ''),
+        ];
     }
 
     /**

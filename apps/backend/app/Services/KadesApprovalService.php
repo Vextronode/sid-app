@@ -24,6 +24,7 @@ class KadesApprovalService
         protected ApprovalSettingService $approvalSettingService,
         protected LetterSnapshotService $letterSnapshotService,
         protected CitizenBusinessService $citizenBusinessService,
+        protected MigrantWorkerService $migrantWorkerService,
     ) {}
 
     /**
@@ -189,6 +190,9 @@ class KadesApprovalService
         // SKU: data usaha (dan pendaftaran Cimart bila dipilih) dicatat di
         // transaksi yang sama, jadi bila gagal surat juga batal terbit.
         $this->citizenBusinessService->recordFromLetter($letter);
+
+        // CPMI (F11): hasilnya data, bukan surat; dicatat di transaksi yang sama.
+        $this->migrantWorkerService->recordFromLetter($letter);
     }
 
     private function notifyApplicantRejected(Letter $letter, string $approvalLevel): void
@@ -233,6 +237,18 @@ class KadesApprovalService
                     'letter_awaiting_result',
                 ));
             }
+
+            return;
+        }
+
+        // Layanan pendataan (CPMI F11): tidak ada surat yang diambil/diunduh.
+        if ($letter->letterType && ! $letter->letterType->produces_letter) {
+            $citizenUser?->notify(new LetterStatusNotification(
+                $letter,
+                'Pendataan Disetujui',
+                "Pengajuan {$letter->letterType->name} Anda telah disetujui Kepala Desa. Data Anda sudah tersimpan di desa.",
+                'letter_approved_final',
+            ));
 
             return;
         }

@@ -1,0 +1,195 @@
+Area:
+  type: object
+  description: Wilayah warga saat permintaan dibuat.
+  properties:
+    rt: { type: string, nullable: true, example: "001" }
+    rw: { type: string, nullable: true, example: "002" }
+    hamlet: { type: string, nullable: true }
+
+ApprovalLevel:
+  type: string
+  enum: [rt, rw, kadus, staf_sid]
+  description: |
+    Jenjang pemegang (AreaApprovalRouter). Menunggu: jenjang yang SAAT INI
+    memegang (RT wilayah warga, lalu RW, Kepala Dusun, atau Staf SIDUTama bila
+    jenjang di bawahnya kosong; ikut berpindah bila susunan pejabat berubah).
+    Sudah diputuskan: jenjang yang memutuskan (`decided_level`).
+
+PageMeta:
+  type: object
+  properties:
+    current_page: { type: integer }
+    per_page: { type: integer }
+    total: { type: integer }
+    last_page: { type: integer }
+
+AccountRegistration:
+  type: object
+  properties:
+    id: { type: integer }
+    status:
+      type: string
+      enum: [pending, approved, rejected]
+    method:
+      type: string
+      enum: [online, manual]
+      description: "`manual` = diaktifkan manual Staf SIDUTama setelah NIK diblokir."
+    citizen:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        nik_masked: { type: string, nullable: true, example: "************0001" }
+    username: { type: string, nullable: true }
+    area:
+      $ref: '#/Area'
+    level:
+      $ref: '#/ApprovalLevel'
+    can_decide:
+      type: boolean
+      description: Masih menunggu dan akun yang login adalah pemegang saat ini.
+    can_manual_activate:
+      type: boolean
+      description: Hanya Staf SIDUTama, untuk pendaftaran ditolak terakhir milik NIK yang diblokir.
+    has_photo:
+      type: boolean
+      description: Foto kamera tersedia selama diproses atau setelah ditolak; setelah disetujui foto menjadi foto profil akun.
+    rejection_count: { type: integer }
+    banned:
+      type: boolean
+      description: NIK ditolak 3 kali (`MAX_REJECTIONS`) sehingga tidak bisa mendaftar online lagi.
+    decided_by: { type: string, nullable: true }
+    decided_at: { type: string, format: date-time, nullable: true }
+    decision_notes: { type: string, nullable: true }
+    created_at: { type: string, format: date-time }
+
+ProfilePhotoRequest:
+  type: object
+  properties:
+    id: { type: integer }
+    status:
+      type: string
+      enum: [pending, approved, rejected]
+    user:
+      type: object
+      properties:
+        name: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+        nik_masked: { type: string, nullable: true }
+        current_photo_url:
+          type: string
+          nullable: true
+          description: Foto profil yang sedang terpasang, untuk dibandingkan.
+    area:
+      $ref: '#/Area'
+    level:
+      $ref: '#/ApprovalLevel'
+    can_decide: { type: boolean }
+    has_photo: { type: boolean }
+    decided_by: { type: string, nullable: true }
+    decided_at: { type: string, format: date-time, nullable: true }
+    decision_notes: { type: string, nullable: true }
+    created_at: { type: string, format: date-time }
+
+PasswordResetRequest:
+  type: object
+  properties:
+    id: { type: integer }
+    status:
+      type: string
+      enum: [pending, approved, rejected, completed, cancelled, expired]
+      description: Status efektif; `approved` yang lewat `approved_until` terbaca `expired`.
+    requester_ip: { type: string, nullable: true }
+    created_at: { type: string, format: date-time }
+    handled_at: { type: string, format: date-time, nullable: true }
+    approved_until:
+      type: string
+      format: date-time
+      nullable: true
+      description: Batas pengaju membuat kata sandi baru (24 jam setelah disetujui).
+    completed_at: { type: string, format: date-time, nullable: true }
+    response_notes: { type: string, nullable: true }
+    handler:
+      type: object
+      nullable: true
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+    user:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        username: { type: string }
+        role: { type: string }
+        role_label: { type: string, nullable: true }
+        has_email: { type: boolean }
+        nik_masked: { type: string, nullable: true }
+        rt: { type: string, nullable: true }
+        rw: { type: string, nullable: true }
+        hamlet: { type: string, nullable: true }
+
+PushStatus:
+  type: string
+  enum: [aktif, perlu_dicek, belum_teruji]
+  description: |
+    Perangkat `aktif` bila berhasil dikirimi dalam 30 hari terakhir
+    (`meta.active_days`); `perlu_dicek` bila pernah dicoba tetapi tidak
+    memenuhi itu; selain itu `belum_teruji`. Status akun = status terbaik di
+    antara perangkatnya.
+
+WebPushSubscriber:
+  type: object
+  description: Akun desa yang punya minimal satu langganan Web Push.
+  properties:
+    id: { type: string, format: uuid }
+    name: { type: string }
+    username: { type: string }
+    role: { type: string }
+    role_label: { type: string }
+    is_active: { type: boolean }
+    nik_masked: { type: string, nullable: true }
+    wilayah:
+      type: object
+      nullable: true
+      properties:
+        hamlet: { type: string, nullable: true }
+        rw: { type: string, nullable: true }
+        rt: { type: string, nullable: true }
+    device_count: { type: integer }
+    status:
+      $ref: '#/PushStatus'
+    first_subscribed_at: { type: string, format: date-time, nullable: true }
+    last_success_at: { type: string, format: date-time, nullable: true }
+    devices:
+      type: array
+      items:
+        type: object
+        properties:
+          id: { type: integer }
+          device_label: { type: string, nullable: true }
+          push_service:
+            type: string
+            enum: [fcm, mozilla, apple, windows, lainnya]
+          status:
+            $ref: '#/PushStatus'
+          subscribed_at: { type: string, format: date-time, nullable: true }
+          updated_at: { type: string, format: date-time, nullable: true }
+          last_success_at: { type: string, format: date-time, nullable: true }
+          last_failed_at: { type: string, format: date-time, nullable: true }
+
+PasswordResetRequestStatus:
+  description: Status permintaan untuk pengaju (belum login).
+  type: object
+  properties:
+    status:
+      type: string
+      enum: [pending, approved, rejected, completed, cancelled, expired]
+    name: { type: string, nullable: true }
+    username: { type: string, nullable: true }
+    created_at: { type: string, format: date-time }
+    approved_until:
+      type: string
+      format: date-time
+      nullable: true
+      description: Hanya terisi selama kata sandi baru masih bisa dibuat.
+    response_notes: { type: string, nullable: true }

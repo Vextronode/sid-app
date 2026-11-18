@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationAbility;
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\AccountRegistrationController;
 use App\Http\Controllers\Api\ActivityLogController;
@@ -10,11 +11,16 @@ use App\Http\Controllers\Api\CitizenBusinessController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DisasterAlertController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\FamilySocioeconomicController;
 use App\Http\Controllers\Api\HamletController;
 use App\Http\Controllers\Api\IdentityController;
 use App\Http\Controllers\Api\InfoPageController;
+use App\Http\Controllers\Api\Integration\AlertController;
+use App\Http\Controllers\Api\Integration\PingController;
+use App\Http\Controllers\Api\Integration\SellerApplicationController;
+use App\Http\Controllers\Api\IntegrationClientController;
 use App\Http\Controllers\Api\KadesApprovalController;
 use App\Http\Controllers\Api\LetterAttachmentController;
 use App\Http\Controllers\Api\LetterController;
@@ -24,6 +30,7 @@ use App\Http\Controllers\Api\LetterFulfillmentController;
 use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\MigrantWorkerController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
@@ -45,6 +52,8 @@ use App\Http\Controllers\Api\UserPhotoController;
 use App\Http\Controllers\Api\VillageOrgMemberController;
 use App\Http\Controllers\Api\VillageOrgPositionController;
 use App\Http\Controllers\Api\VillageProfileController;
+use App\Http\Controllers\Api\WebPushSubscriberController;
+use App\Models\DisasterAlert;
 use App\Models\VillageOrgPosition;
 use App\Support\InfoPageFields;
 use App\Support\PopulationScope;
@@ -67,7 +76,48 @@ Route::prefix('public')->group(function () {
     Route::get('/contact-us', [PublicPageController::class, 'contactUs']);
     Route::get('/info-pages/{page}', [PublicPageController::class, 'infoPage'])
         ->whereIn('page', array_keys(InfoPageFields::PAGES));
+    // Peringatan bencana SIGAP untuk bar merah; tanpa cache halaman (lihat
+    // PublicPageController::disasterAlerts). Dipanggil berkala tiap halaman
+    // publik yang terbuka, jadi batasnya longgar: banyak warga bisa berbagi
+    // satu IP (NAT operator seluler).
+    Route::get('/disaster-alerts', [PublicPageController::class, 'disasterAlerts'])
+        ->middleware('throttle:300,1');
 });
+
+/*
+|--------------------------------------------------------------------------
+| API Integrasi Pihak Ketiga (v1)
+|--------------------------------------------------------------------------
+| Server ke server dengan bearer token milik client integrasi (Cimart,
+| SIGAP), bukan milik user SID. `auth:integration` hanya menerima token
+| IntegrationClient; `integration.client` menolak session User SID dan
+| client nonaktif. Hak akses per endpoint lewat Sanctum abilities.
+| Kontrak: docs/thirdparty/{cimart,sigap}/api-spec/openapi.yaml.
+*/
+Route::prefix('integrations/v1')
+    ->middleware(['auth:integration', 'integration.client', 'throttle:integration'])
+    ->group(function () {
+        Route::get('/ping', PingController::class);
+
+        Route::middleware(IntegrationAbility::middleware(IntegrationAbility::SellerApplicationsRead))->group(function () {
+            Route::get('/seller-applications', [SellerApplicationController::class, 'index']);
+            Route::get('/seller-applications/{businessRef}', [SellerApplicationController::class, 'show'])
+                ->whereUuid('businessRef');
+        });
+
+        Route::patch('/seller-applications/{businessRef}', [SellerApplicationController::class, 'update'])
+            ->whereUuid('businessRef')
+            ->middleware(IntegrationAbility::middleware(IntegrationAbility::SellerApplicationsUpdate));
+
+        // Peringatan bencana dari SIGAP. Kontrak:
+        // docs/thirdparty/sigap/api-spec/openapi.yaml.
+        Route::middleware(IntegrationAbility::middleware(IntegrationAbility::AlertsWrite))->group(function () {
+            Route::put('/alerts/{externalId}', [AlertController::class, 'upsert'])
+                ->where('externalId', DisasterAlert::EXTERNAL_ID_PATTERN);
+            Route::post('/alerts/{externalId}/end', [AlertController::class, 'end'])
+                ->where('externalId', DisasterAlert::EXTERNAL_ID_PATTERN);
+        });
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -119,6 +169,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/profile/businesses', [CitizenBusinessController::class, 'ownIndex']);
     Route::post('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'requestCimart']);
     Route::delete('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'cancelCimart']);
+    // Data CPMI Saya: riwayat pendataan CPMI (F11) warga sendiri, dan isian
+    // dari pengajuan terakhir untuk mengisi awal form CPMI berikutnya.
+    Route::get('/profile/migrant-workers', [MigrantWorkerController::class, 'ownIndex']);
+    Route::get('/profile/migrant-workers/prefill', [MigrantWorkerController::class, 'ownPrefill']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
     // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
@@ -187,6 +241,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
 
     /*
     |----------------------------------------------------------------------
+    | Data CPMI (Calon Pekerja Migran Indonesia)
+    |----------------------------------------------------------------------
+    | Baca saja, dari pengajuan F11 yang disetujui Kepala Desa. Staf
+    | SIDUTama, Kepala Desa/Sekdes, dan petugas F11; dicek MigrantWorkerPolicy.
+    */
+    Route::prefix('migrant-workers')->group(function () {
+        Route::get('/', [MigrantWorkerController::class, 'index']);
+        Route::get('/{migrantWorker}', [MigrantWorkerController::class, 'show']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
     | Citizens (UC-09)
     |----------------------------------------------------------------------
     | Staf SIDUTama dan Kasi Pemerintahan (pemegang layanan kependudukan /
@@ -250,6 +316,38 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/population', [ActivityLogController::class, 'population']);
             Route::get('/accounts', [ActivityLogController::class, 'accounts']);
             Route::get('/letters', [ActivityLogController::class, 'letters']);
+        });
+
+    /*
+    |----------------------------------------------------------------------
+    | Pelanggan Notifikasi (Web Push)
+    |----------------------------------------------------------------------
+    | Staf SIDUTama memantau akun desa yang mengaktifkan Web Push beserta
+    | status perangkatnya. Hanya baca; endpoint & kunci push tidak dikirim.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->get('/web-push-subscribers', [WebPushSubscriberController::class, 'index']);
+
+    /*
+    |----------------------------------------------------------------------
+    | Integrasi Pihak Ketiga (menu Integrasi)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama: aktif/nonaktif client, terbitkan token
+    | baru (rotate), dan cabut token. Membuat client dan mengubah ability
+    | hanya lewat artisan `integration:*`. Kata sandi diminta ulang saat
+    | mengaktifkan, menerbitkan, dan mencabut token.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('integration-clients')
+        ->group(function () {
+            Route::get('/', [IntegrationClientController::class, 'index']);
+
+            Route::middleware('throttle:10,1')->group(function () {
+                Route::patch('/{integrationClient}/status', [IntegrationClientController::class, 'updateStatus']);
+                Route::post('/{integrationClient}/tokens', [IntegrationClientController::class, 'issueToken']);
+                Route::delete('/{integrationClient}/tokens/{token}', [IntegrationClientController::class, 'revokeToken'])
+                    ->whereUuid('token');
+            });
         });
 
     // Daftar pekerjaan aktif juga dipakai pemohon surat untuk isian
@@ -335,6 +433,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     // Staf SIDUTama saat konfigurasi. ?include_inactive=1 (semua jenis
     // termasuk Draft/Nonaktif) khusus Staf SIDUTama - IndexLetterTypeRequest.
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
+
+    // Formulir isi tangan sebelum mengajukan (letter_types.handwritten_forms),
+    // berisi identitas pemohon: khusus akun warga (LetterPolicy::create).
+    Route::get('/letter-types/{letterType}/forms/{key}', [LetterTypeController::class, 'handwrittenForm'])
+        ->whereNumber('letterType')
+        ->where('key', '[a-z0-9_-]+');
 
     // UC-21: edit konfigurasi tipe surat eksklusif Staf SIDUTama.
     // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang
@@ -463,6 +567,21 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Eksklusif Staf SIDUTama. Satu pengumuman per desa (PUT menggantikan).
     */
+    /*
+    |----------------------------------------------------------------------
+    | Peringatan bencana SIGAP (tab Peringatan SIGAP di halaman Pengumuman)
+    |----------------------------------------------------------------------
+    | Eksklusif Staf SIDUTama, dibatasi ke desanya. Isi dari SIGAP tidak
+    | bisa diubah; staf hanya menurunkan (alasan wajib) dan menampilkan lagi.
+    */
+    Route::middleware(UserRole::middleware(UserRole::StafSid))
+        ->prefix('disaster-alerts')
+        ->group(function () {
+            Route::get('/', [DisasterAlertController::class, 'index']);
+            Route::post('/{disasterAlert}/dismiss', [DisasterAlertController::class, 'dismiss']);
+            Route::post('/{disasterAlert}/restore', [DisasterAlertController::class, 'restore']);
+        });
+
     Route::middleware(UserRole::middleware(UserRole::StafSid))->group(function () {
         Route::get('/announcement', [AnnouncementController::class, 'show']);
         Route::put('/announcement', [AnnouncementController::class, 'save']);

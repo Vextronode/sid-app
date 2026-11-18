@@ -13,6 +13,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Bell,
+  BellRing,
   BriefcaseBusiness,
   ScrollText,
   LayoutGrid,
@@ -32,6 +33,8 @@ import {
   Network,
   PanelLeftClose,
   PanelLeftOpen,
+  Plane,
+  Plug,
   RotateCcw,
   Settings,
   Store,
@@ -167,6 +170,12 @@ const MENU_ITEMS = [
     allowedRoles: getOperatorAllowedRoles('/admin/data-usaha'),
     icon: Store,
   },
+  {
+    label: 'Data CPMI',
+    route: '/admin/data-cpmi',
+    allowedRoles: getOperatorAllowedRoles('/admin/data-cpmi'),
+    icon: Plane,
+  },
   ...areaItems('Manajemen Akun', '/manajemen-akun', UserCog),
   {
     label: 'Kelola Wilayah',
@@ -246,6 +255,18 @@ const MENU_ITEMS = [
     route: '/admin/log-aktivitas',
     allowedRoles: getOperatorAllowedRoles('/admin/log-aktivitas'),
     icon: History,
+  },
+  {
+    label: 'Pelanggan Notifikasi',
+    route: '/admin/pelanggan-notifikasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/pelanggan-notifikasi'),
+    icon: BellRing,
+  },
+  {
+    label: 'Integrasi',
+    route: '/admin/integrasi',
+    allowedRoles: getOperatorAllowedRoles('/admin/integrasi'),
+    icon: Plug,
   },
   {
     label: 'Organisasi BPD',

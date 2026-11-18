@@ -46,6 +46,22 @@ describe('getNotificationTarget', () => {
     expect(getNotificationTarget('warga', { status: 'profile_photo_approved' })).toBe('/profil')
   })
 
+  it('sends Cimart decisions to Usaha Saya on the profile page', () => {
+    expect(getNotificationTarget('warga', { status: 'cimart_accepted' })).toBe('/profil#usaha-saya')
+    expect(getNotificationTarget('warga', { status: 'cimart_rejected' })).toBe('/profil#usaha-saya')
+    expect(getNotificationTarget('rt', { status: 'cimart_rejected' })).toBe(
+      '/admin/profil#usaha-saya',
+    )
+  })
+
+  it('opens the public home page for SIGAP disaster alerts, for every role', () => {
+    const alert = { status: 'disaster_alert', alert_id: 'a-1', level: 'awas' }
+
+    expect(getNotificationTarget('warga', alert)).toBe('/')
+    expect(getNotificationTarget('staf_sid', alert)).toBe('/')
+    expect(getNotificationTarget('rt', alert)).toBe('/')
+  })
+
   it('no longer routes signature reset notifications (feature removed)', () => {
     expect(getNotificationTarget('staf_sid', { status: 'signature_reset_requested' })).toBeNull()
     expect(getNotificationTarget('warga', { status: 'signature_reset_approved' })).toBeNull()

@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | DEV-CODE-001 |
-| Status | Berlaku (Aktif) - Versi 1.0 |
+| Status | Berlaku (Aktif) - Versi 1.4 |
 | Audiens | Seluruh Developer (Frontend & Backend), Reviewer |
 | Sifat Dokumen | Aturan penulisan kode sehari-hari yang konkret dan dapat langsung diterapkan/diperiksa saat code review. Alasan struktural di baliknya ada di `SID-ARCH-FE-001`/`SID-ARCH-BE-001`. |
 
@@ -17,12 +17,12 @@
 | Konteks | Konvensi | Contoh |
 |---|---|---|
 | Nama file & komponen | `PascalCase`, nama file = nama komponen | `ApprovalStepRenderer.tsx` |
-| Nama hook kustom | `camelCase`, diawali `use` | `usePipelineSteps.ts` |
+| Nama hook kustom | `camelCase`, diawali `use` | `useSuratDetail.ts` |
 | Ekstensi file | `.tsx` bila berisi JSX, selain itu `.ts`; file `.js`/`.jsx` baru tidak diterima di `src/` | `LetterTable.tsx`, `statusFlow.ts` |
-| Tipe & interface | `PascalCase`; tipe props komponen bernama `{Komponen}Props` | `LetterTableProps`, `LetterRequest` |
-| Nama variabel & fungsi | `camelCase` | `resolveApproverLabel()` |
-| Nama constant | `UPPER_SNAKE_CASE` | `REJECT_CAPABLE` |
-| Endpoint API (konsumsi di FE) | Mengikuti kontrak Backend, `kebab-case` plural | `/api/letter-requests` |
+| Tipe & interface | `PascalCase`; tipe props komponen bernama `{Komponen}Props` | `LetterTableProps`, `Letter` |
+| Nama variabel & fungsi | `camelCase` | `getApiErrorMessage()` |
+| Nama constant | `UPPER_SNAKE_CASE` | `DEFAULT_PAPER` |
+| Endpoint API (konsumsi di FE) | Mengikuti kontrak Backend, `kebab-case` plural | `/api/letter-types`, `/api/migrant-workers` |
 
 ### A.2 Konvensi Komponen
 
@@ -69,7 +69,7 @@ Source frontend ditulis dalam TypeScript dengan `strict: true` di `tsconfig.json
 1. Props komponen, parameter fungsi yang diekspor, dan nilai balik hook diberi tipe eksplisit.
 2. Tipe data domain/API yang dipakai lintas fitur (user, surat, penduduk, wilayah, profil desa) disimpan di `src/types/`; tipe yang hanya dipakai satu fitur di `features/<fitur>/types.ts`. Bentuk tipe mengikuti kontrak di `docs/api_spec`.
 3. Dilarang menambah `any`, `as any`, `@ts-ignore`, atau `@ts-nocheck` baru. Bila tipe memang belum diketahui, pakai `unknown` lalu persempit; bila terpaksa mengecualikan pemeriksaan, pakai `@ts-expect-error` disertai alasan.
-4. State awal kosong diberi tipe (`useState<LetterRequest[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
+4. State awal kosong diberi tipe (`useState<Letter[]>([])`), bukan `useState([])` yang terbaca sebagai `never[]`.
 5. Parameter opsional ditandai `?` atau diberi nilai default, agar pemanggil tidak dipaksa mengisi semua argumen.
 6. `npm run typecheck` harus 0 error; CI menolak perubahan yang menambah error tipe.
 7. Variabel tak terpakai diperiksa rule `@typescript-eslint/no-unused-vars` (bukan `no-unused-vars` bawaan, yang salah menandai nama parameter di tipe fungsi); komentar pengecualian memakai nama rule tersebut.
@@ -145,3 +145,4 @@ Alur Backend wajib mengikuti: **Controller -> Service -> Repository -> Model**.
 | 1.1 | 2026-09-12 | Menambahkan pedoman struktur Backend, Form Request, API Resource, dan Resource Collection. |
 | 1.2 | 2026-10-30 | Frontend TypeScript: konvensi ekstensi dan nama tipe, props bertipe (menggantikan JSDoc typedef), bagian A.8 TypeScript, `npm run typecheck`. |
 | 1.3 | 2026-10-31 | A.8 diperbarui untuk `strict: true` (guard null, galat `catch`, helper test); A.7: `npm run format:check` di CI dan aturan `no-console`. |
+| 1.4 | 2026-11-19 | Contoh di A.1 dan A.8 diganti nama yang ada di source (`useSuratDetail`, `DEFAULT_PAPER`, `getApiErrorMessage`, tipe `Letter`, endpoint `/api/letter-types`); nama lama dari rancangan awal sudah tidak dipakai. |

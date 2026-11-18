@@ -31,7 +31,7 @@ describe('downloadSuratPDF', () => {
     await downloadSuratPDF({ id: 7, letter_number: 'SURAT/2026/007' })
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringMatching(/\/api\/letters\/7\/download$/),
+      expect.stringMatching(/\/api\/letters\/7\/download\?paper=f4$/),
       expect.objectContaining({
         credentials: 'include',
         headers: { Accept: 'application/pdf' },
@@ -39,7 +39,21 @@ describe('downloadSuratPDF', () => {
     )
     expect(window.URL.createObjectURL).toHaveBeenCalledWith(pdf)
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled()
-    expect(document.querySelector('a[download="surat-SURAT-2026-007.pdf"]')).toBeNull()
+    expect(document.querySelector('a[download="surat-SURAT-2026-007-f4.pdf"]')).toBeNull()
+  })
+
+  it('asks the backend for the chosen paper and document', async () => {
+    vi.mocked(globalThis.fetch, { partial: true }).mockResolvedValue({
+      ok: true,
+      blob: vi.fn().mockResolvedValue(new Blob(['pdf'])),
+    })
+
+    await downloadSuratPDF({ id: 7 }, 'f1_01', 'a4')
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/letters\/7\/download\?document=f1_01&paper=a4$/),
+      expect.anything(),
+    )
   })
 
   it('reports a backend error instead of downloading an error response', async () => {

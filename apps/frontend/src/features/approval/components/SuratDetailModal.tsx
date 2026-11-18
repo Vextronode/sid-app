@@ -34,6 +34,7 @@ import {
   LETTER_PICKUP_HINT,
   isSignedByVillageHead,
 } from '@/features/cetak-surat/utils/letterSigning'
+import { producesLetter } from '@/features/cetak-surat/utils/letterDocuments'
 import { RevealableValue } from '@/components/ui/RevealableValue'
 import { revealLetterApplicantNik } from '@/shared/lib/identityApi'
 
@@ -60,9 +61,16 @@ function getHint({
   canDownload: boolean
   viewerRole: string | null
 }) {
+  // Layanan pendataan (mis. CPMI): tidak ada surat; hasilnya data di desa.
+  const dataOnly = !producesLetter(surat)
+
   if (canDecide) {
     if (!surat.current_step?.is_final) {
       return 'Periksa surat, lalu setujui untuk meneruskan ke Kepala Desa atau tolak dengan alasan.'
+    }
+
+    if (dataOnly) {
+      return 'Persetujuan Anda menyimpan data pengajuan ini di desa; tidak ada surat yang terbit.'
     }
 
     return isSignedByVillageHead(surat)
@@ -71,6 +79,7 @@ function getHint({
   }
 
   if (surat.status === SURAT_STATUS.APPROVED) {
+    if (dataOnly) return 'Pengajuan sudah disetujui; datanya tersimpan di desa.'
     if (!canDownload) return 'Surat sudah terbit.'
 
     return isSignedByVillageHead(surat)

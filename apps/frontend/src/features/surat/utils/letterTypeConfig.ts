@@ -19,6 +19,8 @@ function normalizeField(field: LetterFormField): SuratField {
     multiple: false,
     // Tanggal peristiwa yang sudah terjadi: tidak sesudah hari ini.
     past: Boolean(field.past),
+    // Tanggal rencana (mis. kegiatan): tidak sebelum hari ini.
+    upcoming: Boolean(field.upcoming),
     // Batas waktu pelaporan peristiwa ({ days, event, when }): peringatan saja.
     reportDeadline: field.report_deadline ?? null,
     // Angka: bilangan bulat dan batas bawah (mis. penghasilan rupiah).
@@ -27,6 +29,10 @@ function normalizeField(field: LetterFormField): SuratField {
     visibleWhen: field.visible_when ?? null,
     // Keterangan singkat di bawah label isian.
     help: field.help ?? null,
+    // Judul kelompok isian; form memberi pemisah tiap kali section berganti.
+    section: field.section ?? null,
+    // family_member penanggung jawab: hubungan dengan pemohon dari data KK.
+    relationHint: Boolean(field.relation_hint),
     // Nilai awal isian (mis. pengurusan ke Disdukcapil = sendiri).
     defaultValue: field.default ?? null,
     // family_member: batas jenis kelamin anggota yang dapat dipilih (L/P).
@@ -173,9 +179,14 @@ export function describeLetterTypeOutput(
 ) {
   const parts = []
 
-  if (letterType.produces_letter ?? true) parts.push('Surat')
+  const producesLetter = letterType.produces_letter ?? true
+  if (producesLetter) parts.push('Surat')
   const actionLabel = letterType.data_action ? DATA_ACTION_LABELS[letterType.data_action] : null
   if (actionLabel) parts.push(actionLabel)
+
+  // Layanan pendataan (mis. CPMI F11): hasilnya data yang tersimpan saat
+  // Kepala Desa menyetujui, bukan surat.
+  if (!producesLetter && !actionLabel) return 'Data (tanpa surat)'
 
   return parts.length ? parts.join(' + ') : '-'
 }

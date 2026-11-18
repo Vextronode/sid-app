@@ -37,7 +37,11 @@ post:
                 errors:
                   username: ["Username atau kata sandi salah."]
     '403':
-      description: Akun tidak aktif
+      description: |
+        Akun tidak aktif. Untuk akun hasil pendaftaran online, pesannya
+        mengikuti status pendaftaran terakhir: masih menunggu aktivasi
+        petugas wilayah, ditolak (beserta catatan petugas, boleh daftar
+        ulang), atau sudah ditolak 3 kali (datang ke kantor desa).
       content:
         application/json:
           schema:
@@ -47,6 +51,10 @@ post:
               summary: Akun nonaktif
               value:
                 message: "Akun tidak aktif, hubungi administrator"
+            awaiting_activation:
+              summary: Pendaftaran online masih menunggu aktivasi
+              value:
+                message: "Akun Anda masih menunggu aktivasi oleh petugas wilayah (RT, RW, Kepala Dusun, atau Staf SIDUTama). Silakan coba lagi nanti."
     '429':
       description: Terlalu banyak percobaan login gagal (rate limit)
       content:

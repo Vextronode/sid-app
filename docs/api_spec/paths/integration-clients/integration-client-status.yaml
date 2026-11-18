@@ -1,0 +1,57 @@
+parameters:
+  - name: integrationClient
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+patch:
+  tags: [Integrasi Pihak Ketiga]
+  summary: Aktifkan atau nonaktifkan client integrasi
+  description: |
+    Eksklusif Staf SIDUTama. Menonaktifkan tanpa kata sandi (tindakan
+    darurat); mengaktifkan wajib kata sandi. Token tidak dicabut. Dicatat di
+    activity log (`log_name` `integration`, event `client_enabled` atau
+    `client_disabled`). Dibatasi 10 request per menit.
+  operationId: updateIntegrationClientStatus
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [is_active]
+          properties:
+            is_active:
+              type: boolean
+            password:
+              type: string
+              format: password
+              description: Wajib saat `is_active` bernilai `true`.
+        examples:
+          disable:
+            value:
+              is_active: false
+          enable:
+            value:
+              is_active: true
+              password: "********"
+  responses:
+    '200':
+      description: Status tersimpan
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/integration-clients/integration-clients.yaml#/IntegrationClientMessage'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      $ref: '../../responses/common.yaml#/NotFound'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Melewati batas 10 request per menit

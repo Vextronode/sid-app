@@ -73,6 +73,10 @@ fi
 code="$(req pub -H 'Accept: application/json' "$BASE$PUBLIC_DB_ENDPOINT")"
 if [ "$code" = "200" ] && ctype pub | grep -qi 'application/json'; then
   ok "$PUBLIC_DB_ENDPOINT 200 JSON"
+elif [ "$code" = "404" ] && ctype pub | grep -qi 'application/json' \
+  && grep -qF 'Profil desa belum tersedia' "$WORK/pub.b"; then
+  # DB baru dimigrasi tanpa data: query tabel desa berhasil tetapi belum ada desa.
+  ok "$PUBLIC_DB_ENDPOINT 404 JSON (DB terhubung, profil desa belum diisi)"
 else
   bad "$PUBLIC_DB_ENDPOINT -> $code $(ctype pub) (harap 200 JSON)"
 fi

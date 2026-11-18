@@ -3,8 +3,10 @@
 ' FILE: 08_Sequence_DownloadPDF_Snapshot_v6.puml
 ' JUDUL: Sequence - Unduh PDF Surat dari Snapshot (UC-08)
 ' SUMBER: LetterDownloadController, LetterPolicy::download, PdfService,
-'         LetterSnapshotService, LetterSignatureService, LetterValueFormatter
-' CATATAN: FILE BARU v6.
+'         LetterSnapshotService, LetterSignatureService, LetterValueFormatter,
+'         PaperSize, PdfRescaler (2026-11-19)
+' CATATAN: Revisi 2026-11-19: pilihan kertas ?paper=a4|f4 (PDF diskalakan utuh),
+'          layanan tanpa surat (produces_letter = false) 404.
 '==================================================================================
 @startuml Sequence_DownloadPDF_v6
 skinparam backgroundColor #FFFFFF
@@ -27,13 +29,16 @@ participant "PdfService" as PDF
 participant "LetterSnapshotService" as SNAP
 participant "LetterSignatureService" as SIG
 participant "dompdf" as DOM
+participant "PdfRescaler\n(setasign/fpdi)" as RSC
 database "PostgreSQL" as DB
 
-U -> FE : Unduh PDF
-FE -> CTRL : GET /api/letters/{letter}/download?document=
+U -> FE : Unduh PDF (pilih kertas A4 | F4, bawaan F4;\npilih dokumen bila ada)
+FE -> CTRL : GET /api/letters/{letter}/download?document=&paper=
+CTRL -> CTRL : PaperSize::requested (a4 | f4, lainnya 422)
 CTRL -> POL : approved & (pemohon | desa sama sesuai role)
-CTRL -> PDF : download(letter, user, document)
+CTRL -> PDF : download(letter, user, document, paper)
 PDF -> PDF : pemohon & expires_at lewat → 403
+PDF -> PDF : produces_letter = false (F11) → 404
 PDF -> SNAP : contextFor(letter)
 alt snapshot ada
   SNAP --> PDF : letters.snapshot
@@ -43,8 +48,14 @@ else surat approved lama
 end
 PDF -> SIG : renderData(letter) (nama penanda tangan slot)
 PDF -> PDF : ganti placeholder (escape nilai isian,\nformat tanggal/rupiah/terbilang);\nruang TTD/stempel dikosongkan
-PDF -> DOM : loadView(pdf.templates.letter)
-DOM --> FE : application/pdf (surat-{id}.pdf), tidak disimpan
+PDF -> DOM : loadView(pdf.templates.letter),\nsetPaper sesuai kertas bawaan dokumen\n(paper_size / documents[].paper)
+alt paper kosong atau sama dengan kertas bawaan
+  DOM --> FE : application/pdf (surat-{id}.pdf), tidak disimpan
+else kertas lain
+  PDF -> RSC : rescale(output, paper)
+  RSC -> RSC : tempel tiap halaman utuh ke kertas tujuan,\nskala seragam di tengah (vektor, jumlah halaman tetap)
+  RSC --> FE : application/pdf (surat-{id}-{paper}.pdf)
+end
 note over U, DOM
   PDF tanpa TTD dan stempel. Surat resmi = cetakan yang ditandatangani
   dan distempel basah di kantor desa, diambil pemohon di sana.

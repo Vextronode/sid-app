@@ -7,6 +7,7 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Models\FamilySocioeconomic;
 use App\Models\Hamlet;
+use App\Models\IntegrationClient;
 use App\Models\LetterType;
 use App\Models\News;
 use App\Models\NewsCategory;
@@ -23,12 +24,14 @@ use App\Models\VillageRegulation;
 use App\Observers\PopulationAuditObserver;
 use App\Policies\RegionPolicy;
 use App\Support\AuditContext;
+use App\Support\IntegrationAudit;
 use App\Support\OfficialPositionCatalog;
 use App\Support\PublicPageCache;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -37,6 +40,9 @@ use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /** Batas request API integrasi per client (nilai awal di kontrak Cimart). */
+    public const INTEGRATION_REQUESTS_PER_MINUTE = 60;
+
     /**
      * Register any application services.
      */
@@ -69,6 +75,27 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(5)->by($request->ip()),
                 Limit::perHour(5)->by(hash('sha256', (string) $request->input('nik'))),
             ];
+        });
+
+        // API integrasi: batas per client (bukan per IP), dengan `code` yang
+        // dibaca klien. Pelanggaran dicatat paling banyak sekali per menit
+        // agar klien yang terus mengulang tidak membanjiri activity log.
+        RateLimiter::for('integration', function (Request $request) {
+            $client = $request->user();
+            $key = $client instanceof IntegrationClient ? 'client:'.$client->getKey() : 'ip:'.$request->ip();
+
+            return Limit::perMinute(self::INTEGRATION_REQUESTS_PER_MINUTE)
+                ->by('integration:'.$key)
+                ->response(function (Request $request, array $headers) use ($client) {
+                    if ($client instanceof IntegrationClient && Cache::add('integration:rate-limited:'.$client->getKey(), true, 60)) {
+                        IntegrationAudit::record($client, 'rate_limited', 'Request integrasi melewati batas');
+                    }
+
+                    return response()->json([
+                        'message' => 'Terlalu banyak percobaan. Coba lagi nanti.',
+                        'code' => 'too_many_attempts',
+                    ], 429, $headers);
+                });
         });
 
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);

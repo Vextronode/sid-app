@@ -1,0 +1,39 @@
+get:
+  tags: [Epic 10 - Organisasi Non-Struktural Desa]
+  summary: Cari nama warga desa dari NIK (isi jabatan/tambah anggota)
+  description: |
+    Aktor: Staf SIDUTama. Dipakai form isi jabatan dan tambah anggota
+    lembaga desa. Dibatasi 30 permintaan per menit.
+  operationId: villageOrgCitizenLookup
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: nik
+      in: query
+      required: true
+      description: 16 digit angka
+      schema: { type: string, pattern: '^[0-9]{16}$' }
+  responses:
+    '200':
+      description: Warga ditemukan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  citizen_id: { type: string, format: uuid }
+                  name: { type: string }
+                  nik_masked: { type: string, example: "************0001" }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: NIK tidak terdaftar sebagai warga desa
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Terlalu banyak permintaan

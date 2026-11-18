@@ -16,11 +16,12 @@ class LetterDocuments
     /**
      * @param  array<int, array<string, mixed>>|null  $definitions  letter_types.documents (atau salinannya di snapshot)
      * @param  array<string, mixed>|null  $payload
-     * @return array<int, array{key: string, title: string, template: string|null, orientation: string}>
+     * @param  string|null  $mainPaper  ukuran kertas dokumen utama (letter_types.paper_size)
+     * @return array<int, array{key: string, title: string, template: string|null, orientation: string, paper: string}>
      */
-    public static function applicable(string $mainTitle, ?string $mainTemplate, ?array $definitions, ?array $payload): array
+    public static function applicable(string $mainTitle, ?string $mainTemplate, ?array $definitions, ?array $payload, ?string $mainPaper = null): array
     {
-        $documents = [['key' => self::MAIN, 'title' => $mainTitle, 'template' => $mainTemplate, 'orientation' => 'portrait']];
+        $documents = [['key' => self::MAIN, 'title' => $mainTitle, 'template' => $mainTemplate, 'orientation' => 'portrait', 'paper' => PaperSize::normalize($mainPaper)]];
 
         foreach ($definitions ?? [] as $definition) {
             if (! FieldCondition::matches($definition['when'] ?? null, $payload ?? [])) {
@@ -33,6 +34,7 @@ class LetterDocuments
                 'template' => $definition['template'] ?? null,
                 // Formulir lebar (mis. F-1.01) dicetak mendatar.
                 'orientation' => ($definition['orientation'] ?? null) === 'landscape' ? 'landscape' : 'portrait',
+                'paper' => PaperSize::normalize($definition['paper'] ?? null),
             ];
         }
 
@@ -40,8 +42,8 @@ class LetterDocuments
     }
 
     /**
-     * @param  array<int, array{key: string, title: string, template: string|null, orientation: string}>  $documents
-     * @return array{key: string, title: string, template: string|null, orientation: string}|null
+     * @param  array<int, array{key: string, title: string, template: string|null, orientation: string, paper: string}>  $documents
+     * @return array{key: string, title: string, template: string|null, orientation: string, paper: string}|null
      */
     public static function find(array $documents, ?string $key): ?array
     {

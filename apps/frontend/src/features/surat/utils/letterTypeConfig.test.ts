@@ -3,6 +3,7 @@ import {
   applicantPrefill,
   applicantValue,
   applicantValues,
+  describeLetterTypeOutput,
   getLetterTypeFormConfig,
 } from './letterTypeConfig'
 import { getSuratSchema, todayDate } from '../validation/suratSchema'
@@ -570,6 +571,53 @@ describe('applicantPrefill', () => {
     })
     expect(applicantPrefill(config.fields, null)).toEqual({})
   })
+
+  it('suggests how long the applicant has lived here, still editable (SKCK)', () => {
+    const config = formConfig(
+      partialFixture<LetterType>({
+        code: 'A13',
+        form_fields: [
+          {
+            name: 'lama_berdomisili',
+            type: 'text',
+            prefill_from_applicant: 'domicile_duration_hint',
+          },
+        ],
+      }),
+    )
+
+    expect(
+      applicantPrefill(
+        config.fields,
+        partialFixture<User>({ citizen: { domicile_duration_hint: 'Sejak lahir' } }),
+      ),
+    ).toEqual({ lama_berdomisili: 'Sejak lahir' })
+  })
+
+  it('only asks the marital status when the population data has none', () => {
+    const [field] = formConfig(
+      partialFixture<LetterType>({
+        code: 'A13',
+        form_fields: [
+          {
+            name: 'status_perkawinan',
+            type: 'select',
+            from_applicant: {
+              column: 'marital_status',
+              map: { kawin: 'kawin', cerai_mati: 'cerai_mati' },
+            },
+          },
+        ],
+      }),
+    ).fields
+
+    expect(
+      applicantValue(field, partialFixture<User>({ citizen: { marital_status: 'cerai_mati' } })),
+    ).toBe('cerai_mati')
+    expect(
+      applicantValue(field, partialFixture<User>({ citizen: { marital_status: null } })),
+    ).toBeNull()
+  })
 })
 
 describe('family_member roles', () => {
@@ -585,5 +633,46 @@ describe('family_member roles', () => {
     })
 
     expect(config.fields.map((field) => field.roles)).toEqual([['anak'], null])
+  })
+})
+
+describe('upcoming dates', () => {
+  const config = formConfig(
+    partialFixture<LetterType>({
+      code: 'A12',
+      form_fields: [
+        {
+          name: 'tanggal_kegiatan',
+          label: 'Tanggal Kegiatan',
+          type: 'date',
+          required: true,
+          upcoming: true,
+        },
+      ],
+    }),
+  )
+  const errorsOf = (values: SuratFormValues) =>
+    (getSuratSchema(config).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
+
+  it('rejects an event date before today and accepts today or later', () => {
+    expect(config.fields[0].upcoming).toBe(true)
+    expect(errorsOf({ tanggal_kegiatan: '2000-01-01' })).toEqual([
+      'Tanggal Kegiatan tidak boleh sebelum hari ini',
+    ])
+    expect(errorsOf({ tanggal_kegiatan: todayDate() })).toEqual([])
+    expect(errorsOf({ tanggal_kegiatan: '2999-01-01' })).toEqual([])
+  })
+})
+
+describe('describeLetterTypeOutput', () => {
+  it('names the result of each letter type for Kelola Jenis Surat', () => {
+    expect(describeLetterTypeOutput({ produces_letter: true, data_action: 'none' })).toBe('Surat')
+    expect(describeLetterTypeOutput({ produces_letter: true, data_action: 'create_citizen' })).toBe(
+      'Surat + tambah warga',
+    )
+    // Layanan pendataan tanpa surat (CPMI F11).
+    expect(describeLetterTypeOutput({ produces_letter: false, data_action: 'none' })).toBe(
+      'Data (tanpa surat)',
+    )
   })
 })

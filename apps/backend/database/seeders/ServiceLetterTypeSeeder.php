@@ -10,8 +10,11 @@ use App\Enums\LetterDataAction;
 use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
+use App\Models\MigrantWorker;
 use App\Models\Village;
+use App\Services\MigrantWorkerService;
 use App\Support\CitizenLabels;
+use App\Support\GuardianRelation;
 use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
@@ -267,7 +270,7 @@ class ServiceLetterTypeSeeder extends Seeder
                 ->where('name', ApprovalFlowSeeder::DEFAULT_FLOW_NAME)
                 ->firstOrFail();
 
-            foreach ($this->letterTypes() as $type) {
+            foreach ([...$this->letterTypes(), $this->migrantWorkerType()] as $type) {
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
                     array_merge([
@@ -287,7 +290,8 @@ class ServiceLetterTypeSeeder extends Seeder
                         'assigned_role' => AssignedRole::KasiPemerintahan->value,
                         'issues_letter_number' => false,
                         'signed_by_village_head' => false,
-                        'requires_result_upload' => true,
+                        // Hanya formulir yang dibawa ke instansi luar yang menunggu hasil.
+                        'requires_result_upload' => $type['produces_letter'] ?? true,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -1612,6 +1616,182 @@ class ServiceLetterTypeSeeder extends Seeder
      * @param  array<string, mixed>  $type
      * @return array<string, mixed>
      */
+    /**
+     * F11 Pendataan CPMI: hasilnya data (migrant_workers, dicatat saat
+     * Kades menyetujui), bukan surat. Tanpa surat kuasa karena tidak ada
+     * yang dibawa ke Disdukcapil. Nama isian dibaca MigrantWorkerService.
+     *
+     * @return array<string, mixed>
+     */
+    private function migrantWorkerType(): array
+    {
+        $identity = 'Data Diri & Identitas (Sesuai KTP/KK)';
+        $education = 'Data Pendidikan & Kompetensi';
+        $guardian = 'Data Orang Tua / Wali / Pasangan (Kontak Darurat)';
+        $placement = 'Data Perusahaan, Sponsor, & Negara Tujuan';
+        $documents = 'Dokumen Wajib';
+
+        $inSection = fn (string $section, array $fields): array => array_map(
+            fn (array $field): array => [...$field, 'section' => $section],
+            $fields,
+        );
+        $upload = fn (string $name, string $label, string $help): array => [
+            ...$this->field($name, $label, 'file', true),
+            'help' => $help,
+        ];
+        $guardianFromFamily = ['field' => 'penanggung_jawab_sumber', 'equals' => MigrantWorkerService::GUARDIAN_FROM_FAMILY];
+        $guardianOutside = ['field' => 'penanggung_jawab_sumber', 'equals' => 'luar_kk'];
+
+        return [
+            'code' => MigrantWorker::SOURCE_LETTER_TYPE_CODE,
+            'name' => 'Pendataan Calon Pekerja Migran Indonesia (CPMI)',
+            'description' => 'Pendataan warga yang akan bekerja ke luar negeri. Setelah disetujui RT dan Kepala Desa, data Anda tersimpan di desa (tidak menerbitkan surat).',
+            'requirement_info' => 'Siapkan scan/foto dokumen: pas foto, e-KTP, KK, akta kelahiran, ijazah terakhir, paspor, surat izin keluarga, perjanjian kerja, surat keterangan sehat, dan kepesertaan BPJS Ketenagakerjaan. Masing-masing maks. 2 MB.',
+            'produces_letter' => false,
+            'template' => null,
+            'form_fields' => [
+                ...$inSection($identity, [
+                    // Diambil dari data penduduk; hanya ditanyakan bila kosong.
+                    [
+                        ...$this->select('agama', 'Agama', CitizenLabels::RELIGION),
+                        'from_applicant' => ['column' => 'religion', 'map' => array_combine(array_keys(CitizenLabels::RELIGION), array_keys(CitizenLabels::RELIGION))],
+                        'help' => 'Agama Anda belum tercatat di data penduduk.',
+                    ],
+                    [
+                        ...$this->select('status_perkawinan', 'Status Perkawinan', CitizenLabels::MARITAL_STATUS),
+                        'from_applicant' => ['column' => 'marital_status', 'map' => array_combine(array_keys(CitizenLabels::MARITAL_STATUS), array_keys(CitizenLabels::MARITAL_STATUS))],
+                        'help' => 'Status perkawinan Anda belum tercatat di data penduduk.',
+                    ],
+                    // Penyaring pilihan Suami/Istri penanggung jawab di luar KK.
+                    [
+                        ...$this->select('jenis_kelamin_pemohon', 'Jenis Kelamin', self::GENDER_OPTIONS),
+                        'from_applicant' => ['column' => 'gender', 'map' => ['L' => 'L', 'P' => 'P']],
+                        'help' => 'Jenis kelamin Anda belum tercatat di data penduduk.',
+                    ],
+                    [...$this->number('tinggi_badan', 'Tinggi Badan (cm)', true, 'Contoh: 160'), 'integer' => true, 'min_value' => 100],
+                    [...$this->number('berat_badan', 'Berat Badan (kg)', true, 'Contoh: 55'), 'integer' => true, 'min_value' => 30],
+                    $this->phone('telepon', 'No. HP / WhatsApp Aktif', true, 'Contoh: 081234567890'),
+                    $this->prefilled($this->email('email', 'Email Aktif', true, 'nama@email.com'), 'email'),
+                ]),
+                ...$inSection($education, [
+                    $this->prefilled($this->select('pendidikan_terakhir', 'Pendidikan Terakhir', CitizenLabels::LAST_EDUCATION), 'last_education'),
+                    $this->text('nama_sekolah', 'Nama Sekolah/Universitas', true, 'Contoh: SMK Negeri 1 Cibenda'),
+                    $this->text('jurusan', 'Jurusan', false, 'Contoh: Keperawatan'),
+                    [...$this->number('tahun_lulus', 'Tahun Lulus', true, 'Contoh: 2020'), 'integer' => true, 'min_value' => 1950],
+                    $this->field('sertifikat', 'Sertifikat Keahlian', 'repeater', false, null, [
+                        'max' => 10,
+                        'item_label' => 'sertifikat',
+                        'help' => 'Mis. sertifikat bahasa Jepang/Korea, keperawatan, las. Kosongkan bila tidak ada.',
+                        'fields' => [
+                            $this->text('nama_sertifikat', 'Nama Sertifikat', true, 'Contoh: JLPT N4'),
+                            $this->text('penerbit', 'Penerbit', false, 'Contoh: The Japan Foundation'),
+                            [...$this->number('tahun', 'Tahun', false, 'Contoh: 2023'), 'integer' => true, 'min_value' => 1950],
+                        ],
+                    ]),
+                    $this->field('pengalaman_kerja', 'Pengalaman Kerja', 'repeater', false, null, [
+                        'max' => 10,
+                        'item_label' => 'pengalaman',
+                        'help' => 'Riwayat pekerjaan terdahulu. Kosongkan bila belum pernah bekerja.',
+                        'fields' => [
+                            $this->text('perusahaan', 'Nama Perusahaan', true, 'Contoh: PT Sentosa'),
+                            $this->text('jabatan', 'Jabatan', true, 'Contoh: Operator Produksi'),
+                            $this->text('mulai', 'Mulai', true, 'Contoh: Januari 2021'),
+                            $this->text('selesai', 'Selesai', true, 'Contoh: Desember 2023'),
+                            $this->textarea('deskripsi', 'Deskripsi Tugas', false, 'Tugas utama'),
+                        ],
+                    ]),
+                ]),
+                ...$inSection($guardian, [
+                    [
+                        ...$this->select('penanggung_jawab_sumber', 'Penanggung Jawab Diambil dari', [
+                            MigrantWorkerService::GUARDIAN_FROM_FAMILY => 'Anggota KK saya',
+                            'luar_kk' => 'Di luar KK',
+                        ]),
+                        'help' => 'Orang tua bila belum menikah, suami/istri bila sudah menikah.',
+                    ],
+                    // Dari KK: nama, alamat, dan hubungan diambil dari data
+                    // penduduk (MigrantWorkerService::withGuardianRelation).
+                    ...$this->withCondition($guardianFromFamily, [[
+                        ...$this->field('penanggung_jawab_anggota', 'Anggota KK', 'family_member', true, null, ['not_self' => true, 'relation_hint' => true]),
+                        'help' => 'Nama, alamat, dan hubungan dengan Anda terisi otomatis dari data KK.',
+                    ]]),
+                    // Di luar KK: semuanya diketik. Suami/Istri hanya untuk
+                    // pemohon berstatus kawin, sesuai jenis kelaminnya.
+                    ...$this->withCondition($guardianOutside, [
+                        $this->guardianRelationSelect(),
+                        $this->text('penanggung_jawab_nama', 'Nama Lengkap Penanggung Jawab', true, 'Nama lengkap'),
+                        $this->textarea('penanggung_jawab_alamat', 'Alamat Lengkap Penanggung Jawab', true, 'Alamat lengkap'),
+                    ]),
+                    $this->phone('penanggung_jawab_telepon', 'No. HP Penanggung Jawab (Darurat)', true, 'Contoh: 081234567890'),
+                    $this->email('penanggung_jawab_email', 'Email Penanggung Jawab', false, 'nama@email.com'),
+                ]),
+                ...$inSection($placement, [
+                    $this->select('negara_tujuan', 'Negara Tujuan Penempatan', [
+                        'Malaysia' => 'Malaysia',
+                        'Taiwan' => 'Taiwan',
+                        'Hong Kong' => 'Hong Kong',
+                        'Korea Selatan' => 'Korea Selatan',
+                        'Jepang' => 'Jepang',
+                        'Singapura' => 'Singapura',
+                        'Arab Saudi' => 'Arab Saudi',
+                        'Brunei Darussalam' => 'Brunei Darussalam',
+                        MigrantWorker::OTHER_COUNTRY => 'Lainnya',
+                    ]),
+                    ...$this->withCondition(['field' => 'negara_tujuan', 'equals' => MigrantWorker::OTHER_COUNTRY], [
+                        $this->text('negara_tujuan_lainnya', 'Nama Negara Tujuan', true, 'Contoh: Polandia'),
+                    ]),
+                    $this->text('nama_pemberi_kerja', 'Nama Perusahaan Penerima / Pemberi Kerja (Employer)', true, 'Nama perusahaan atau majikan di luar negeri'),
+                    $this->textarea('alamat_pemberi_kerja', 'Alamat Lengkap Perusahaan/Sponsor di Luar Negeri', true, 'Alamat lengkap'),
+                    $this->text('kontak_pemberi_kerja', 'Kontak Perusahaan/Sponsor', true, 'Telepon atau email'),
+                    [
+                        ...$this->text('nama_p3mi', 'Nama P3MI / PT Swasta / Sponsor', false, 'Contoh: PT Maju Jaya'),
+                        'help' => 'Wajib diisi bila berangkat menggunakan jasa agensi penempatan resmi di Indonesia.',
+                    ],
+                    ...$this->withCondition(['field' => 'nama_p3mi', 'filled' => true], [
+                        $this->text('kontak_p3mi', 'No. Kontak P3MI / Sponsor', true, 'Contoh: 0211234567'),
+                    ]),
+                    $this->text('jabatan_kerja', 'Jabatan / Posisi Kerja di Luar Negeri', true, 'Contoh: Caregiver'),
+                    $this->textarea('gaji_fasilitas', 'Gaji dan Fasilitas yang Dijanjikan (sesuai kontrak)', true, 'Contoh: NTD 20.000/bulan, makan dan asrama'),
+                    $this->date('kontrak_mulai', 'Tanggal Mulai Kontrak'),
+                    [...$this->date('kontrak_selesai', 'Tanggal Berakhir Kontrak'), 'date_order' => [['after' => 'kontrak_mulai', 'label' => 'tanggal mulai kontrak']]],
+                ]),
+                ...$inSection($documents, [
+                    [...$this->image('pas_foto', 'Pas Foto Terbaru'), 'help' => 'Latar merah/biru sesuai ketentuan program, wajah terlihat jelas.'],
+                    $upload('scan_ktp', 'Scan e-KTP', 'Asli, tidak buram.'),
+                    $upload('scan_kk', 'Scan Kartu Keluarga (KK)', 'KK terbaru.'),
+                    $upload('scan_akta_lahir', 'Scan Akta Kelahiran / Surat Kenal Lahir', 'Asli, tidak buram.'),
+                    $upload('scan_ijazah', 'Scan Ijazah Terakhir', 'Ijazah asli.'),
+                    $upload('scan_paspor', 'Scan Paspor', 'Halaman identitas; paspor masih berlaku minimal 1-2 tahun.'),
+                    $upload('scan_izin_keluarga', 'Scan Surat Izin Keluarga', 'Ditandatangani orang tua/wali/suami/istri di atas materai Rp10.000. Kepala Desa membaca surat ini sebelum menyetujui pengajuan.'),
+                    $upload('scan_perjanjian_kerja', 'Scan Perjanjian Kerja / Kontrak Kerja', 'Sudah ditandatangani Anda dan perusahaan/pemberi kerja.'),
+                    $upload('scan_surat_sehat', 'Scan Surat Keterangan Sehat (Fit to Work)', 'Dari RS/klinik yang terdaftar resmi di BP2MI.'),
+                    $upload('scan_bpjs_tk', 'Scan Kepesertaan BPJS Ketenagakerjaan', 'Program Jaminan Sosial PMI.'),
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * Hubungan penanggung jawab CPMI di luar KK. Suami hanya untuk pemohon
+     * perempuan dan Istri hanya untuk pemohon laki-laki, keduanya bila
+     * pemohon berstatus kawin (syarat per pilihan, divalidasi juga di server).
+     *
+     * @return array<string, mixed>
+     */
+    private function guardianRelationSelect(): array
+    {
+        $married = ['field' => 'status_perkawinan', 'in' => ['kawin', 'kawin_belum_tercatat']];
+        $spouseOf = fn (string $gender): array => ['all' => [['field' => 'jenis_kelamin_pemohon', 'equals' => $gender], $married]];
+        $field = $this->select('penanggung_jawab_hubungan', 'Hubungan dengan Anda', GuardianRelation::TYPED);
+        $field['options'] = array_map(fn (array $option): array => match ($option['value']) {
+            'suami' => [...$option, 'visible_when' => $spouseOf('P')],
+            'istri' => [...$option, 'visible_when' => $spouseOf('L')],
+            default => $option,
+        }, $field['options']);
+
+        return $field;
+    }
+
     private function withPowerOfAttorney(array $type): array
     {
         $type['form_fields'] = [

@@ -108,6 +108,13 @@ tags:
     description: Halaman publik, profil desa, berita & kategori, peraturan. UC-16, UC-18, UC-19, UC-24.
   - name: Epic 10 - Organisasi Non-Struktural Desa
     description: BPD/BUMDES/LPM/Karang Taruna/PKK. UC-23.
+  - name: Integrasi Pihak Ketiga
+    description: |
+      Menu Integrasi Staf SIDUTama: status dan token aplikasi pihak ketiga
+      (Cimart, SIGAP). Endpoint yang dipanggil aplikasi itu sendiri
+      (`/api/integrations/v1`) didokumentasikan terpisah di
+      `docs/thirdparty/cimart/api-spec/openapi.yaml` dan
+      `docs/thirdparty/sigap/api-spec/openapi.yaml`.
 
 components:
   securitySchemes:
@@ -153,10 +160,16 @@ paths:
     $ref: 'paths/auth/profile-password-v51.yaml'
   /profile/photo:
     $ref: 'paths/auth/profile-photo.yaml'
+  /profile/photo-request:
+    $ref: 'paths/auth/profile-photo-request.yaml'
   /profile/businesses:
     $ref: 'paths/citizen-businesses/profile-businesses.yaml'
   /profile/businesses/{citizenBusiness}/cimart-application:
     $ref: 'paths/citizen-businesses/cimart-application.yaml'
+  /profile/migrant-workers:
+    $ref: 'paths/migrant-workers/profile-migrant-workers.yaml'
+  /profile/migrant-workers/prefill:
+    $ref: 'paths/migrant-workers/profile-migrant-workers-prefill.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
@@ -207,10 +220,24 @@ paths:
     $ref: 'paths/activity-logs/population.yaml'
   /activity-logs/letters:
     $ref: 'paths/activity-logs/letters.yaml'
+  /activity-logs/accounts:
+    $ref: 'paths/activity-logs/accounts.yaml'
   /citizen-businesses:
     $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
   /citizen-businesses/{citizenBusiness}:
     $ref: 'paths/citizen-businesses/citizen-business-detail.yaml'
+  /migrant-workers:
+    $ref: 'paths/migrant-workers/migrant-workers.yaml'
+  /migrant-workers/{migrantWorker}:
+    $ref: 'paths/migrant-workers/migrant-worker-detail.yaml'
+  /integration-clients:
+    $ref: 'paths/integration-clients/integration-clients.yaml'
+  /integration-clients/{integrationClient}/status:
+    $ref: 'paths/integration-clients/integration-client-status.yaml'
+  /integration-clients/{integrationClient}/tokens:
+    $ref: 'paths/integration-clients/integration-client-tokens.yaml'
+  /integration-clients/{integrationClient}/tokens/{token}:
+    $ref: 'paths/integration-clients/integration-client-token-detail.yaml'
   /occupations:
     $ref: 'paths/occupations/occupations.yaml'
   /occupations/{id}:
@@ -225,6 +252,34 @@ paths:
     $ref: 'paths/users/reset-password-v51.yaml'
   /users/{user}/photo:
     $ref: 'paths/users/user-photo.yaml'
+  /account-registrations:
+    $ref: 'paths/account-registrations/account-registrations.yaml'
+  /account-registrations/{accountRegistration}/photo:
+    $ref: 'paths/account-registrations/photo.yaml'
+  /account-registrations/{accountRegistration}/approve:
+    $ref: 'paths/account-registrations/approve.yaml'
+  /account-registrations/{accountRegistration}/reject:
+    $ref: 'paths/account-registrations/reject.yaml'
+  /account-registrations/{accountRegistration}/manual-activation:
+    $ref: 'paths/account-registrations/manual-activation.yaml'
+  /profile-photo-requests:
+    $ref: 'paths/profile-photo-requests/profile-photo-requests.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/photo:
+    $ref: 'paths/profile-photo-requests/photo.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/approve:
+    $ref: 'paths/profile-photo-requests/approve.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/reject:
+    $ref: 'paths/profile-photo-requests/reject.yaml'
+  /password-reset-requests:
+    $ref: 'paths/password-reset-requests/password-reset-requests.yaml'
+  /password-reset-requests/{resetRequest}/approve:
+    $ref: 'paths/password-reset-requests/approve.yaml'
+  /password-reset-requests/{resetRequest}/reject:
+    $ref: 'paths/password-reset-requests/reject.yaml'
+  /password-reset-requests/status:
+    $ref: 'paths/password-reset-requests/status.yaml'
+  /password-reset-requests/complete:
+    $ref: 'paths/password-reset-requests/complete.yaml'
   /officials:
     $ref: 'paths/officials/officials.yaml'
   /officials/promote:
@@ -251,6 +306,8 @@ paths:
     $ref: 'paths/letter-types/letter-types.yaml'
   /letter-types/{letterType}:
     $ref: 'paths/letter-types/letter-type-detail.yaml'
+  /letter-types/{letterType}/forms/{key}:
+    $ref: 'paths/letter-types/handwritten-form.yaml'
   /approval-flows:
     $ref: 'paths/approval-flows/approval-flows.yaml'
   /approval-flows/{id}:
@@ -267,6 +324,8 @@ paths:
     $ref: 'paths/letters/export.yaml'
   /letters/{letter}/applicant-identity:
     $ref: 'paths/letters/letter-applicant-identity.yaml'
+  /letters/{letter}/payload-identity:
+    $ref: 'paths/letters/letter-payload-identity.yaml'
   /letters/{id}:
     $ref: 'paths/letters/letter-detail.yaml'
   /letters/{letter}/download:
@@ -319,6 +378,8 @@ paths:
     $ref: 'paths/notifications/unread-count.yaml'
   /push-subscriptions:
     $ref: 'paths/push-subscriptions/push-subscriptions.yaml'
+  /web-push-subscribers:
+    $ref: 'paths/push-subscriptions/web-push-subscribers.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 7 - Deadline & Reminder Approval
@@ -357,6 +418,8 @@ paths:
     $ref: 'paths/public/letter-types.yaml'
   /public/regulations:
     $ref: 'paths/public/regulations.yaml'
+  /public/disaster-alerts:
+    $ref: 'paths/public/disaster-alerts.yaml'
   /public/info-pages/{page}:
     $ref: 'paths/public/info-pages.yaml'
   /public/contact-us:
@@ -379,6 +442,12 @@ paths:
     $ref: 'paths/news/news-category-detail.yaml'
   /announcement:
     $ref: 'paths/announcement/announcement.yaml'
+  /disaster-alerts:
+    $ref: 'paths/disaster-alerts/disaster-alerts.yaml'
+  /disaster-alerts/{disasterAlert}/dismiss:
+    $ref: 'paths/disaster-alerts/disaster-alert-dismiss.yaml'
+  /disaster-alerts/{disasterAlert}/restore:
+    $ref: 'paths/disaster-alerts/disaster-alert-restore.yaml'
   /info-pages:
     $ref: 'paths/info-pages/info-pages.yaml'
   /info-pages/{page}:
@@ -393,6 +462,8 @@ paths:
   # ─────────────────────────────────────────────
   /village-org-positions:
     $ref: 'paths/village-org/positions.yaml'
+  /village-org-positions/citizen-lookup:
+    $ref: 'paths/village-org/citizen-lookup.yaml'
   /village-org-positions/{id}:
     $ref: 'paths/village-org/position-detail.yaml'
   /village-org-positions/{position}/members:

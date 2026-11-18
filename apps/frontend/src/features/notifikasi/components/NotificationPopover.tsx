@@ -5,7 +5,7 @@
 // ==========================================
 
 import { useState } from 'react'
-import { Bell, Clock, FileText, PenLine, SquarePen } from 'lucide-react'
+import { AlertTriangle, Bell, Clock, FileText, PenLine, SquarePen, Store } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -28,6 +28,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   edit: SquarePen,
   // Pengingat masa berlaku surat.
   clock: Clock,
+  // Hasil pendaftaran pedagang Cimart.
+  store: Store,
+  // Peringatan bencana SIGAP (warna merah dari backend).
+  alert: AlertTriangle,
 }
 
 const WARNA_MAP: Record<string, string> = {

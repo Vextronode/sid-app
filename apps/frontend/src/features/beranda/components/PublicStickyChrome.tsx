@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react'
 
 import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
+import { PublicDisasterAlertBar } from '@/features/peringatan-bencana/components/DisasterAlertBar'
 import { AnnouncementBar } from './AnnouncementBar'
 import { BerandaHeader } from './BerandaHeader'
 import type { BerandaContent } from '../berandaContent'
 
 const OFFSET_VAR = '--bd-sticky-offset'
 
-// Header publik + bar pengumuman yang menempel di atas layar, dipakai
-// BerandaLayout dan MainLayout sehingga pengumuman tetap terlihat di semua
-// halaman publik (beranda, berita, profil desa, halaman informasi, ...).
+// Bar peringatan bencana SIGAP + header publik + bar pengumuman yang menempel
+// di atas layar, dipakai BerandaLayout dan MainLayout sehingga peringatan dan
+// pengumuman tetap terlihat di semua halaman publik (beranda, berita, profil
+// desa, halaman informasi, ...). Peringatan bencana paling atas.
 // Tingginya disimpan di --bd-sticky-offset (scroll-padding-top di
 // beranda.css) agar tujuan tautan #section tidak tertutup header + bar.
 export function PublicStickyChrome({ content }: { content: BerandaContent }) {
@@ -37,6 +39,7 @@ export function PublicStickyChrome({ content }: { content: BerandaContent }) {
 
   return (
     <div ref={ref} className="bd-root bd-chrome bd-chrome--sticky">
+      <PublicDisasterAlertBar />
       <BerandaHeader content={content} />
       <AnnouncementBar content={content} announcement={announcement} />
     </div>

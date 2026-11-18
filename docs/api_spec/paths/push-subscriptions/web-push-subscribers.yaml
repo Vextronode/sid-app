@@ -1,0 +1,99 @@
+get:
+  tags: [Epic 6 - Sistem Notifikasi]
+  summary: Daftar pelanggan notifikasi Web Push (menu Pelanggan Notifikasi)
+  description: |
+    Aktor: Staf SIDUTama aktif dengan desa. Akun desa yang berlangganan Web
+    Push beserta perangkatnya, berpaginasi, plus ringkasan desa di
+    `meta.summary`. Pencarian 16 digit dicocokkan ke NIK (lewat `nik_hash`),
+    selain itu ke nama/username.
+  operationId: listWebPushSubscribers
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: search
+      in: query
+      required: false
+      schema: { type: string, maxLength: 100 }
+    - name: role
+      in: query
+      required: false
+      schema: { type: string }
+    - name: hamlet_id
+      in: query
+      required: false
+      schema: { type: integer }
+    - name: rw_id
+      in: query
+      required: false
+      schema: { type: integer }
+    - name: rt_id
+      in: query
+      required: false
+      schema: { type: integer }
+    - name: push_service
+      in: query
+      required: false
+      description: Akun yang punya perangkat dengan layanan ini.
+      schema:
+        type: string
+        enum: [fcm, mozilla, apple, windows, lainnya]
+    - name: status
+      in: query
+      required: false
+      description: Akun yang punya perangkat berstatus ini.
+      schema:
+        $ref: '../../schemas/account-requests/account-requests.yaml#/PushStatus'
+    - name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1 }
+    - name: per_page
+      in: query
+      required: false
+      description: Default 20, maksimum 100.
+      schema: { type: integer, minimum: 1, maximum: 100 }
+  responses:
+    '200':
+      description: Daftar pelanggan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Daftar pelanggan notifikasi berhasil diambil."
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/account-requests/account-requests.yaml#/WebPushSubscriber'
+              meta:
+                type: object
+                properties:
+                  current_page: { type: integer }
+                  per_page: { type: integer }
+                  total: { type: integer }
+                  last_page: { type: integer }
+                  active_days:
+                    type: integer
+                    example: 30
+                  summary:
+                    type: object
+                    properties:
+                      subscribed_accounts: { type: integer }
+                      devices: { type: integer }
+                      active_accounts:
+                        type: integer
+                        description: Akun aktif di desa (penyebut cakupan langganan).
+                      devices_by_status:
+                        type: object
+                        properties:
+                          aktif: { type: integer }
+                          perlu_dicek: { type: integer }
+                          belum_teruji: { type: integer }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

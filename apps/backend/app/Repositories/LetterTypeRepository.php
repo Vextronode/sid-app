@@ -33,12 +33,12 @@ class LetterTypeRepository
         return LetterType::query()->whereKey($ids)->pluck('name', 'id')->all();
     }
 
-    public function countActiveWithTemplate(string $villageId): int
+    /** Jumlah jenis surat yang bisa diajukan (LetterType::scopeSubmittable). */
+    public function countSubmittable(string $villageId): int
     {
         return LetterType::query()
             ->where('village_id', $villageId)
-            ->whereNotNull('template')
-            ->where('is_active', true)
+            ->submittable()
             ->count();
     }
 
@@ -50,12 +50,15 @@ class LetterTypeRepository
             ->get();
     }
 
-    public function allActiveWithTemplate(?string $villageId = null): Collection
+    /**
+     * Jenis surat aktif yang bisa diajukan: punya template, atau layanan
+     * pendataan tanpa surat (LetterType::scopeSubmittable).
+     */
+    public function allSubmittable(?string $villageId = null): Collection
     {
         return LetterType::query()
             ->when($villageId !== null, fn ($query) => $query->where('village_id', $villageId))
-            ->whereNotNull('template')
-            ->where('is_active', true)
+            ->submittable()
             ->orderBy('name')
             ->get();
     }

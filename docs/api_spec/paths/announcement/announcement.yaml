@@ -14,6 +14,7 @@ get:
             type: object
             properties:
               data:
+                type: object
                 nullable: true
                 allOf:
                   - $ref: '../../schemas/announcements/announcements.yaml#/Announcement'

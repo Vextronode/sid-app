@@ -30,6 +30,8 @@ rectangle "SIDUTama" {
   usecase "UC-06: Detail Surat (read-only)" as UC_DETAIL
   usecase "UC-15: Dashboard RW (FYI)" as UC_DASH
   usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+  usecase "Data Penduduk & KK\n(RT di RW-nya, read-only)" as UC_POP
+  usecase "Manajemen Akun:\naktivasi akun & ganti foto\nwarga (sesuai jenjang)" as UC_ACC
 }
 
 RW -- UC_AUTH
@@ -38,10 +40,17 @@ RW -- UC_LIST
 RW -- UC_DETAIL
 RW -- UC_DASH
 RW -- UC_SELF
+RW -- UC_POP
+RW -- UC_ACC
 UC_LIST ..> UC_DETAIL : <<include>>
 
 note bottom of UC_LIST
   Tidak ada endpoint keputusan untuk RW;
   RW tidak pernah membuat letter_approvals.
+end note
+note bottom of UC_ACC
+  Pemegang saat ini: RT wilayah warga,
+  lalu RW, Kadus, atau Staf SIDUTama bila
+  jenjang di bawahnya kosong. Tolak wajib catatan.
 end note
 @enduml

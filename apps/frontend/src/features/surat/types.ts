@@ -21,11 +21,14 @@ export type SuratField = {
   imageOnly: boolean
   multiple: boolean
   past: boolean
+  upcoming: boolean
   reportDeadline: LetterFormField['report_deadline']
   integer: boolean
   minValue: number | null
   visibleWhen: FieldCondition | null
   help: string | null
+  section: string | null
+  relationHint: boolean
   defaultValue: LetterFormField['default']
   gender: 'L' | 'P' | null
   roles: string[] | null

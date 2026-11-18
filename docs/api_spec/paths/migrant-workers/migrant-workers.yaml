@@ -1,0 +1,91 @@
+get:
+  tags: [Epic 2 - Users, Citizens, Officials]
+  summary: Data CPMI (berpaginasi, baca saja)
+  description: |
+    Aktor: Staf SIDUTama, Kepala Desa/Sekdes, dan petugas F11, yaitu Kasi/Kaur
+    yang cocok dengan `letter_types.assigned_role` milik F11 di desanya
+    (NULL = Kasi Pemerintahan dan Kaur TU & Umum); role lain 403. Data dari
+    pengajuan Pendataan CPMI (F11) yang disetujui Kepala Desa, satu baris per
+    keberangkatan, satu desa akun login, terbaru dulu. Respons
+    ResourceCollection berpaginasi: `data`, `total`, `links`/`meta`
+    paginator Laravel, serta `filters.countries` (negara tujuan yang ada di
+    data desa, untuk pilihan filter).
+  operationId: listMigrantWorkers
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: search
+      in: query
+      required: false
+      description: Cari nama warga, negara tujuan, pemberi kerja, atau P3MI (case-insensitive).
+      schema:
+        type: string
+        maxLength: 100
+    - name: destination_country
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 100
+    - name: contract_status
+      in: query
+      required: false
+      description: |
+        `akan_berangkat` = mulai kontrak sesudah hari ini; `aktif` = hari ini di
+        dalam masa kontrak (tanggal kosong dianggap terbuka); `berakhir` =
+        selesai kontrak sebelum hari ini.
+      schema:
+        type: string
+        enum: [akan_berangkat, aktif, berakhir]
+    - name: hamlet_id
+      in: query
+      required: false
+      description: Dusun pemohon saat pengajuan.
+      schema:
+        type: integer
+        minimum: 1
+    - name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+    - name: per_page
+      in: query
+      required: false
+      description: Default 20, maksimum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+  responses:
+    '200':
+      description: Daftar CPMI
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../../schemas/migrant-workers/migrant-workers.yaml#/MigrantWorkerSummary'
+              total:
+                type: integer
+              filters:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: string
+              links:
+                type: object
+              meta:
+                $ref: '../../schemas/common/errors.yaml#/PaginationMeta'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

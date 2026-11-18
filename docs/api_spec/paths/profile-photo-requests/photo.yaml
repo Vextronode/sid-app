@@ -1,0 +1,28 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Foto yang diajukan pada permintaan ganti foto
+  description: |
+    Stream dari disk privat untuk petugas yang boleh melihat permintaannya;
+    tersedia selama diproses atau setelah ditolak.
+  operationId: profilePhotoRequestPhoto
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: profilePhotoRequest
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    '200':
+      description: Berkas gambar
+      content:
+        image/*:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Foto tidak tersedia.

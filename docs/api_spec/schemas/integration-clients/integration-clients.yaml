@@ -1,0 +1,76 @@
+IntegrationClient:
+  type: object
+  description: |
+    Aplikasi pihak ketiga (mis. Cimart) yang memanggil
+    `/api/integrations/v1` dengan bearer token miliknya sendiri. Dibuat dan
+    diubah hak aksesnya hanya lewat artisan `integration:*`. Nilai token
+    tidak pernah ada di objek ini.
+  properties:
+    id:
+      type: string
+      format: uuid
+    slug:
+      type: string
+      example: cimart
+    name:
+      type: string
+      example: Cimart
+    is_active:
+      type: boolean
+      description: Saat `false`, semua request client ditolak `403 integration_disabled`.
+    abilities:
+      type: array
+      items:
+        type: object
+        properties:
+          value:
+            type: string
+            example: seller-applications:read
+          label:
+            type: string
+            example: Membaca permohonan pedagang
+    last_used_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Pemakaian terakhir dari token mana pun.
+    tokens:
+      type: array
+      description: Token yang masih berlaku, terbaru lebih dulu.
+      items:
+        $ref: '#/IntegrationToken'
+
+IntegrationToken:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Dipakai untuk mencabut token.
+    name:
+      type: string
+      example: cimart-20261117-090000
+    created_at:
+      type: string
+      format: date-time
+    last_used_at:
+      type: string
+      format: date-time
+      nullable: true
+
+PasswordConfirmation:
+  type: object
+  required: [password]
+  properties:
+    password:
+      type: string
+      format: password
+      description: Kata sandi akun Staf SIDUTama yang sedang login.
+
+IntegrationClientMessage:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/IntegrationClient'
