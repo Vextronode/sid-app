@@ -96,6 +96,7 @@ Main Flow:
 2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members).
 3. Data pemohon (nama, NIK, alamat) diambil otomatis dari citizen akun; `purpose` dan `notes` tidak lagi diisi (keperluan menjadi isian bila diperlukan jenis surat).
 4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan mengisi NIK saksi bila jenis surat memintanya.
+   - Bila jenis surat punya `handwritten_forms` (mis. A12 Izin Keramaian/Kegiatan), ringkasan jenis surat menampilkan tombol **Unduh** per formulir (`GET /letter-types/{id}/forms/{key}?download=1`). PDF memuat identitas pemohon dari data penduduk; pemohon mencetak, melengkapi isian dan tanda tangan basah (A12: daftar warga sekitar 2 lembar beserta Ketua RT/RW dan Kepala Dusun, serta pernyataan bermaterai 10.000), lalu mengunggah fotonya di isian file yang sesuai.
 5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe dan wajib diperiksa).
 6. Dalam `DB::transaction()` sistem:
    - menyimpan surat (`status = pending`, `submitted_at`, `flow_id` snapshot, NIK terenkripsi + hash) dan log "Permohonan surat dibuat";
@@ -110,6 +111,8 @@ Alternative Flow:
 - 5a. Validasi gagal → 422 per field; tidak ada data/berkas tersimpan.
 - 6b. NIK saksi = NIK pemohon, pemohon diblokir pemilik NIK, atau sudah 3× ditolak NIK itu dalam 24 jam → 422 dengan pesan seragam ("tidak dapat dikirim saat ini").
 - 6c. Kegagalan di tengah transaksi → berkas yang sudah tertulis dihapus.
+- 4a. Unduh formulir isi tangan oleh akun tanpa data penduduk → 403; jenis surat desa lain, tidak aktif, atau `key` tidak ada → 404.
+- 4b. Isian tanggal ber-`upcoming` (mis. tanggal kegiatan A12) sebelum hari ini → 422.
 - 8a. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI.
 
 ---

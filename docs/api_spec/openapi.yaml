@@ -266,6 +266,8 @@ paths:
     $ref: 'paths/letter-types/letter-types.yaml'
   /letter-types/{letterType}:
     $ref: 'paths/letter-types/letter-type-detail.yaml'
+  /letter-types/{letterType}/forms/{key}:
+    $ref: 'paths/letter-types/handwritten-form.yaml'
   /approval-flows:
     $ref: 'paths/approval-flows/approval-flows.yaml'
   /approval-flows/{id}:

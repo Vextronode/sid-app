@@ -77,6 +77,21 @@ LetterType:
         attachments:
           type: array
           items: { type: string }
+    handwritten_forms:
+      type: array
+      description: |
+        Formulir isi tangan yang diunduh pemohon SEBELUM mengajukan, diisi
+        dan ditandatangani basah, lalu fotonya diunggah di isian `file`
+        (mis. A12: Surat Pernyataan Ijin Lingkungan 2 lembar dan Surat
+        Pernyataan bermaterai). Template tidak dikirim; unduh lewat
+        `GET /letter-types/{letterType}/forms/{key}`. Kosong bila tidak ada.
+      items:
+        $ref: '#/HandwrittenForm'
+    paper_size:
+      type: string
+      enum: [a4, f4]
+      example: "a4"
+      description: "Ukuran kertas dokumen utama. `f4` = 215 x 330 mm (mis. A12)."
     flow_id:
       type: integer
       example: 1
@@ -216,6 +231,12 @@ LetterFormField:
       nullable: true
       enum: [image]
       description: "Untuk type=file: `image` membatasi ke JPG/PNG; selain itu PDF juga diterima."
+    past:
+      type: boolean
+      description: "Untuk type=date: tanggal tidak boleh sesudah hari ini (peristiwa yang sudah terjadi)."
+    upcoming:
+      type: boolean
+      description: "Untuk type=date: tanggal tidak boleh sebelum hari ini (rencana, mis. tanggal kegiatan A12)."
     visible_when:
       type: object
       nullable: true
@@ -254,6 +275,21 @@ LetterFormField:
       nullable: true
       example: "anak"
       description: "Untuk type=repeater: sebutan satu baris di tombol Tambah/Hapus."
+
+HandwrittenForm:
+  type: object
+  required: [key, title]
+  properties:
+    key:
+      type: string
+      example: "pernyataan"
+    title:
+      type: string
+      example: "Surat Pernyataan Bermaterai"
+    description:
+      type: string
+      nullable: true
+      example: "Pernyataan pemohon siap menaati aturan keramaian, ditandatangani di atas materai 10.000."
 
 LetterDataField:
   type: object
@@ -335,3 +371,11 @@ PublicLetterType:
         attachments:
           type: array
           items: { type: string }
+    handwritten_forms:
+      type: array
+      description: |
+        Judul formulir isi tangan saja. Unduhannya memuat identitas pemohon,
+        jadi hanya lewat `GET /letter-types/{letterType}/forms/{key}` setelah
+        masuk.
+      items:
+        $ref: '#/HandwrittenForm'

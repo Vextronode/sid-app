@@ -338,7 +338,9 @@ Master data jenis surat. Struktur (template, isian, aksi data, flow) diisi devel
 | category | VARCHAR(20) | NOT NULL, DEFAULT `persuratan` | `persuratan` (Persuratan Desa) \| `pelayanan` (Layanan Kependudukan); pengelompokan pilihan jenis surat, diset seeder |
 | template | TEXT | NULL | HTML ber-placeholder; NULL = Draft |
 | documents | JSON | NULL | Dokumen yang terbit bersama dokumen utama: `[{key, title, template, when?, orientation?}]` (`orientation: landscape` untuk formulir lebar, mis. F-1.01). `when` = syarat jawaban form (`{field, equals}` / `{field, in}` / `{field, not_in}` / `{field, filled}`, atau gabungan `{any: [...]}` / `{all: [...]}`); dibekukan di snapshot saat final approve |
-| requirement_info | TEXT | NULL | Informasi persyaratan ("Siapkan: ..."; seed Persuratan Desa dan Layanan Kependudukan: NULL) |
+| paper_size | VARCHAR(10) | NOT NULL, DEFAULT `a4` | Ukuran kertas dokumen utama: `a4` \| `f4` (215 x 330 mm; seed A12). Dokumen di `documents`/`handwritten_forms` memakai `paper` sendiri |
+| handwritten_forms | JSON | NULL | Formulir isi tangan yang diunduh pemohon sebelum mengajukan: `[{key, title, description?, template, paper?}]`. Placeholder yang terisi hanya identitas pemohon (`applicant_*`, termasuk `applicant_religion`) dan desa (`village_*`); sisanya titik-titik. Seed: A12 `daftar` (Surat Pernyataan Ijin Lingkungan 2 lembar) dan `pernyataan` (bermaterai) |
+| requirement_info | TEXT | NULL | Informasi persyaratan ("Siapkan: ..."; seed: A01 foto usaha dan A12 formulir isi tangan, selain itu NULL) |
 | carry_documents | JSON | NULL | Layanan Kependudukan: `{forms: [...], attachments: [...]}` = formulir yang terbit dari pengajuan dan dokumen lain yang dibawa ke Disdukcapil (F-1.07 + KTP-el pemberi/penerima kuasa ditambahkan otomatis); tampil di bawah deskripsi saat jenis surat dipilih |
 | assigned_role | ENUM | NULL | `kasi_pemerintahan` \| `kaur_tu_umum`; NULL = keduanya. Menentukan akses surat selesai & Terapkan |
 | flow_id | BIGINT | FK → approval_flows.id, NOT NULL | |
@@ -398,7 +400,7 @@ Tabel utama sistem. Kolom `applicant_nik` dienkripsi AES-256, `applicant_nik_has
 | rejected_at_step | INT | NULL | Step tempat surat direject, untuk histori/laporan |
 | submitted_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | |
 | processed_at | TIMESTAMP | NULL | Waktu terakhir diproses (approver manapun di step manapun) |
-| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, code, address, phone, district, regency, province, postal_code, area_code, email, kasi_pemerintahan_name}`, `service_officials{kepala_desa, areas}` (nama/NIK pejabat formulir Layanan Kependudukan), `signer{official_id, village_id, name}`; tanpa gambar TTD/stempel |
+| snapshot | JSON | NULL | Konteks render yang dibekukan saat final approve: `captured_at`, `template`, `documents`, `paper_size`, `supporting_template`, `submitted_at`, `issued_at`, `form_fields`, `applicant{gender, birth_place_date, resident_phrase}`, `village{name, code, address, phone, district, regency, province, postal_code, area_code, email, kasi_pemerintahan_name}`, `service_officials{kepala_desa, areas}` (nama/NIK pejabat formulir Layanan Kependudukan), `signer{official_id, village_id, name}`; tanpa gambar TTD/stempel |
 | signed_by_official_id | BIGINT | FK → officials.id, NULL, ON DELETE SET NULL | Kepala Desa yang namanya dibekukan (juga bila Sekdes yang menyetujui); TTD dibubuhkan basah |
 | fulfilled_at | TIMESTAMP | NULL | Waktu perubahan data kependudukan diterapkan |
 | fulfilled_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Aktor Terapkan |

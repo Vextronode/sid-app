@@ -5,7 +5,8 @@
 ' SUMBER: LetterController::store, StoreLetterRequest + LetterFormSchema,
 '         LetterService::createLetter, LetterAttachmentService,
 '         LetterSignatureService::openWitnesses, LetterFlowService (2026-10-31:
-'         tanpa TTD digital, hanya saksi)
+'         tanpa TTD digital, hanya saksi); 2026-11-18: formulir isi tangan
+'         (LetterTypeController::handwrittenForm, PdfService::handwrittenForm)
 ' CATATAN: Menggantikan 01_Sequence_InputSurat_v5.puml.
 '==================================================================================
 @startuml Sequence_InputSurat_v6
@@ -42,6 +43,15 @@ actor "RT / Staf SIDUTama" as APR
 
 P -> FE : pilih jenis surat (GET /api/letter-types)
 FE -> FE : render isian dari form_fields
+
+opt jenis surat punya handwritten_forms (mis. A12)
+  P -> FE : klik Unduh formulir (LetterTypePicker)
+  FE -> CTRL : GET /api/letter-types/{id}/forms/{key}?download=1
+  CTRL -> POL : create (aktif + citizen_id), desa sama, jenis surat aktif
+  CTRL -> DB : identitas pemohon (citizen) + profil desa
+  CTRL --> FE : PDF (F4) berisi identitas pemohon,\nisian lain bertitik
+  P -> P : cetak, isi & tanda tangan basah\n(warga sekitar, RT/RW/Kadus, materai),\nlalu foto
+end
 P -> FE : isi form (termasuk NIK saksi), unggah berkas
 FE -> CTRL : POST /api/letters (multipart:\nletter_type_id, payload[...], files[...])
 CTRL -> REQ : validate
