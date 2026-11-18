@@ -974,7 +974,7 @@ Alternative Flow:
 Main Flow:
 1. Staf SIDUTama membuka menu Integrasi, mengaktifkan/menonaktifkan client, menerbitkan token baru (tampil sekali), atau mencabut token; setiap aksi meminta kata sandi.
 2. SIGAP mengirim/memperbarui peringatan (`PUT /alerts/{external_id}`) dan mengakhirinya (`POST /alerts/{external_id}/end`).
-3. Peringatan aktif tampil sebagai bar merah di semua halaman publik (tanpa cache). Saat peringatan baru tampil atau levelnya naik, semua akun aktif desa menerima notifikasi in-app + Web Push (job antrean).
+3. Peringatan aktif tampil sebagai bar merah di semua halaman publik (tanpa cache). Saat peringatan baru tampil, levelnya naik, atau ada gempa susulan (`external_id` sama) dengan magnitudo minimal 1,0 di atas magnitudo saat notifikasi terakhir, semua akun aktif desa menerima notifikasi in-app + Web Push (job antrean). Peringatan yang diturunkan staf tampil lagi otomatis pada kenaikan yang sama.
 4. Staf SIDUTama dapat menurunkan peringatan dengan alasan wajib atau menampilkannya lagi (tab Peringatan SIGAP di Kelola Pengumuman).
 
 Alternative Flow:

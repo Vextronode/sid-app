@@ -15,7 +15,7 @@ PublicDisasterAlert:
       example: Tsunami
     level:
       type: string
-      enum: [info, waspada, siaga, awas]
+      enum: [waspada, siaga, awas]
       description: Urutan dari terendah ke tertinggi.
     level_label:
       type: string
