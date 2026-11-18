@@ -249,6 +249,8 @@ entity "letter_types" as LT {
   form_fields / data_fields : JSON
   data_subject_field : VARCHAR(100)
   supporting_template : TEXT
+  documents / handwritten_forms : JSON
+  paper_size : VARCHAR(10) = 'a4'
   classification_code : VARCHAR(10) = '470'
   UNIQUE(village_id, code)
 }
@@ -427,5 +429,9 @@ USR ||--o{ SBL
 ' - letters: expiry_notified_days; index (status, expires_at); expires_at dibulatkan
 '   ke akhir hari WIB saat final approve.
 ' - Tabel baru: letter_expiry_reminder_settings (titik H-30..H-1 per desa).
+'
+' REVISI 2026-11-18 (A12 Izin Keramaian/Kegiatan)
+' - letter_types: handwritten_forms (formulir isi tangan sebelum mengajukan)
+'   dan paper_size (a4 | f4).
 ' ==================================================================================
 @enduml

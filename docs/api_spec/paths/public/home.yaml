@@ -57,7 +57,7 @@ get:
                         properties:
                           total_letter_types:
                             type: integer
-                            description: "Jenis surat aktif ber-template."
+                            description: "Jenis surat aktif yang bisa diajukan (ber-template, atau layanan pendataan tanpa surat)."
                   announcement:
                     description: Pengumuman yang masih tayang (menu Pengumuman), atau null.
                     type: object

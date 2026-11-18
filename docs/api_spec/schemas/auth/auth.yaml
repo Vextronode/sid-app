@@ -92,6 +92,14 @@ CurrentUser:
         SKU (A01) desanya (NULL = keduanya). Menu frontend mengikuti flag ini
         karena petugas SKU berpindah bila kategori SKU diubah.
       example: false
+    can_view_migrant_workers:
+      type: boolean
+      description: |
+        Boleh membuka Data CPMI (`GET /migrant-workers`): Staf SIDUTama,
+        Kepala Desa/Sekdes, atau Kasi/Kaur yang cocok dengan `assigned_role`
+        jenis layanan Pendataan CPMI (F11) desanya (NULL = keduanya). Hanya
+        untuk akun sendiri (`GET /user`).
+      example: false
     official:
       type: object
       nullable: true

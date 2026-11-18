@@ -133,6 +133,10 @@ use Illuminate\Validation\Rule;
  *
  * Isian `village_area`: Dusun -> RW -> RT desa ini (id RT); saat pengajuan
  * ditambah `<nama>_dusun`, `<nama>_rw`, `<nama>_rt` siap cetak.
+ *
+ * Isian dengan `section` (judul kelompok, mis. "Data Pendidikan &
+ * Kompetensi") hanya untuk tampilan: form menampilkan judul pemisah setiap
+ * kali section berganti. Tidak memengaruhi validasi maupun payload.
  */
 class LetterFormSchema
 {
@@ -1087,6 +1091,7 @@ class LetterFormSchema
                 ...(($field['village_citizen'] ?? false) ? [$this->villageCitizenRule()] : []),
                 ...(($field['village_family'] ?? false) ? [$this->villageFamilyRule()] : []),
                 ...(isset($field['role_of']) ? [$this->roleGenderRule($field['role_of'], $payload)] : []),
+                ...(self::hasConditionalOptions($field) ? [self::visibleOptionRule($field, $payload)] : []),
                 ...(($field['adoptee'] ?? false) ? [$this->adopteeRule()] : []),
                 ...(($field['opposite_applicant_gender'] ?? false) ? [$this->oppositeApplicantGenderRule($field)] : []),
             ];
@@ -1177,7 +1182,12 @@ class LetterFormSchema
         return match ($field['type'] ?? 'text') {
             'textarea' => ['string', 'max:2000'],
             // `past`: peristiwa yang sudah terjadi, tidak sesudah hari ini.
-            'date' => ['date', ...(($field['past'] ?? false) ? [self::pastDateRule($field)] : [])],
+            // `upcoming`: rencana kegiatan, tidak sebelum hari ini.
+            'date' => [
+                'date',
+                ...(($field['past'] ?? false) ? [self::pastDateRule($field)] : []),
+                ...(($field['upcoming'] ?? false) ? [self::upcomingDateRule($field)] : []),
+            ],
             // Jam 24 jam dari input waktu, mis. 08:30.
             'time' => ['date_format:H:i'],
             // `integer` (bilangan bulat, mis. rupiah) dan `min_value`.
@@ -1194,6 +1204,32 @@ class LetterFormSchema
         };
     }
 
+    /** @param  array<string, mixed>  $field */
+    private static function hasConditionalOptions(array $field): bool
+    {
+        return ($field['type'] ?? null) === 'select'
+            && collect($field['options'] ?? [])->contains(fn (array $option): bool => isset($option['visible_when']));
+    }
+
+    /**
+     * Pilihan select dengan `visible_when` hanya sah bila syaratnya terpenuhi
+     * oleh jawaban form (mis. Suami hanya untuk pemohon perempuan yang
+     * berstatus kawin), sama dengan pilihan yang tampil di form.
+     *
+     * @param  array<string, mixed>  $field
+     * @param  array<string, mixed>  $payload
+     */
+    private static function visibleOptionRule(array $field, array $payload): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field, $payload): void {
+            $option = collect($field['options'] ?? [])->firstWhere('value', $value);
+
+            if ($option !== null && ! FieldCondition::matches($option['visible_when'] ?? null, $payload)) {
+                $fail("Pilihan {$option['label']} tidak sesuai dengan data Anda.");
+            }
+        };
+    }
+
     /**
      * Tanggal tidak boleh sesudah hari ini.
      *
@@ -1206,6 +1242,22 @@ class LetterFormSchema
 
             if ($date !== null && $date->gt(today())) {
                 $fail(($field['label'] ?? $field['name']).' tidak boleh sesudah hari ini.');
+            }
+        };
+    }
+
+    /**
+     * Tanggal tidak boleh sebelum hari ini.
+     *
+     * @param  array<string, mixed>  $field
+     */
+    private static function upcomingDateRule(array $field): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field): void {
+            $date = is_string($value) ? rescue(fn () => Carbon::parse($value)->startOfDay(), null, false) : null;
+
+            if ($date !== null && $date->lt(today())) {
+                $fail(($field['label'] ?? $field['name']).' tidak boleh sebelum hari ini.');
             }
         };
     }

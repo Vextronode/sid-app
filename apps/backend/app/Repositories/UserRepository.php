@@ -125,6 +125,8 @@ class UserRepository
             'citizen.rt',
             'citizen.rw',
             'citizen.occupation',
+            // Nama ibu kandung di kartu Data Diri form CPMI (F11).
+            'citizen.mother:id,name',
             'official.citizen.occupation',
             // Wilayah jabatan RT/RW/Kadus untuk label di dashboard.
             'official.rt',

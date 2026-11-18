@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\LetterFulfillmentController;
 use App\Http\Controllers\Api\LetterResultController;
 use App\Http\Controllers\Api\LetterSignatureController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\MigrantWorkerController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
@@ -168,6 +169,10 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::get('/profile/businesses', [CitizenBusinessController::class, 'ownIndex']);
     Route::post('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'requestCimart']);
     Route::delete('/profile/businesses/{citizenBusiness}/cimart-application', [CitizenBusinessController::class, 'cancelCimart']);
+    // Data CPMI Saya: riwayat pendataan CPMI (F11) warga sendiri, dan isian
+    // dari pengajuan terakhir untuk mengisi awal form CPMI berikutnya.
+    Route::get('/profile/migrant-workers', [MigrantWorkerController::class, 'ownIndex']);
+    Route::get('/profile/migrant-workers/prefill', [MigrantWorkerController::class, 'ownPrefill']);
 
     // Tanda tangan pribadi akun: diisi sekali, tidak dapat diubah sendiri.
     // Pengajuan reset TTD ke Staf SIDUTama (satu pending per akun).
@@ -232,6 +237,18 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     Route::prefix('citizen-businesses')->group(function () {
         Route::get('/', [CitizenBusinessController::class, 'index']);
         Route::get('/{citizenBusiness}', [CitizenBusinessController::class, 'show']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
+    | Data CPMI (Calon Pekerja Migran Indonesia)
+    |----------------------------------------------------------------------
+    | Baca saja, dari pengajuan F11 yang disetujui Kepala Desa. Staf
+    | SIDUTama, Kepala Desa/Sekdes, dan petugas F11; dicek MigrantWorkerPolicy.
+    */
+    Route::prefix('migrant-workers')->group(function () {
+        Route::get('/', [MigrantWorkerController::class, 'index']);
+        Route::get('/{migrantWorker}', [MigrantWorkerController::class, 'show']);
     });
 
     /*
@@ -416,6 +433,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     // Staf SIDUTama saat konfigurasi. ?include_inactive=1 (semua jenis
     // termasuk Draft/Nonaktif) khusus Staf SIDUTama - IndexLetterTypeRequest.
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
+
+    // Formulir isi tangan sebelum mengajukan (letter_types.handwritten_forms),
+    // berisi identitas pemohon: khusus akun warga (LetterPolicy::create).
+    Route::get('/letter-types/{letterType}/forms/{key}', [LetterTypeController::class, 'handwrittenForm'])
+        ->whereNumber('letterType')
+        ->where('key', '[a-z0-9_-]+');
 
     // UC-21: edit konfigurasi tipe surat eksklusif Staf SIDUTama.
     // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang

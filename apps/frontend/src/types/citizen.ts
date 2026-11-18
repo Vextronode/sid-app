@@ -24,6 +24,8 @@ export type Citizen = {
   mother_id: Uuid | null
   father_name_text: string | null
   mother_name_text: string | null
+  // Ibu tertaut atau teks; hanya bila relasi ibu dimuat (mis. GET /api/user).
+  mother_name?: string | null
   marital_status: string | null
   occupation_id: number | null
   occupation: string | null
@@ -33,6 +35,9 @@ export type Citizen = {
   current_domicile: string | null
   residency_type: string | null
   origin_region: string | null
+  // Saran "lama berdomisili" (Pengantar SKCK): "Sejak lahir" untuk warga
+  // lokal, lama sejak tercatat untuk pendatang. Bukan data tersimpan.
+  domicile_duration_hint?: string | null
   title_front: string | null
   title_back: string | null
   birth_certificate_number: string | null

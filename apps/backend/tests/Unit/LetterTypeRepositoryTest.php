@@ -29,15 +29,17 @@ class LetterTypeRepositoryTest extends TestCase
         $this->assertSame($letterType->id, $found->id);
     }
 
-    public function test_all_active_with_template_excludes_inactive_and_null_template(): void
+    public function test_all_submittable_excludes_inactive_and_draft_types(): void
     {
         LetterType::factory()->create(['is_active' => true, 'template' => 'template-a', 'name' => 'B']);
         LetterType::factory()->create(['is_active' => false, 'template' => 'template-b', 'name' => 'A']);
         LetterType::factory()->create(['is_active' => true, 'template' => null, 'name' => 'C']);
+        // Layanan pendataan tanpa surat (mis. CPMI) tidak butuh template.
+        LetterType::factory()->create(['is_active' => true, 'template' => null, 'produces_letter' => false, 'name' => 'D']);
+        LetterType::factory()->create(['is_active' => false, 'template' => null, 'produces_letter' => false, 'name' => 'E']);
 
-        $result = $this->repository->allActiveWithTemplate();
+        $result = $this->repository->allSubmittable();
 
-        $this->assertCount(1, $result);
-        $this->assertSame('template-a', $result->first()->template);
+        $this->assertSame(['B', 'D'], $result->pluck('name')->all());
     }
 }

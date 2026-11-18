@@ -356,6 +356,12 @@ LetterListItem:
         signed_by_village_head:
           type: boolean
           example: true
+        produces_letter:
+          type: boolean
+          description: |
+            false = layanan pendataan (mis. CPMI F11): hasilnya data, tidak ada
+            surat untuk dipratinjau/diunduh (`/download` dan `/preview` 404).
+          example: true
     citizen:
       type: object
       nullable: true

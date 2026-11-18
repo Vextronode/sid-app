@@ -38,7 +38,7 @@ Pengecualian: **Surat Keterangan Ahli Waris** tampil di Layanan Kependudukan dan
 
 Daftar jenis surat:
 
-**Persuratan Desa (10 surat)**
+**Persuratan Desa (12 surat)**
 
 1. Surat Keterangan Usaha
 2. Surat Keterangan Tidak Memiliki Rumah
@@ -50,6 +50,8 @@ Daftar jenis surat:
 8. Surat Keterangan Kelahiran
 9. Surat Keterangan Belum Menikah
 10. Surat Keterangan & Pertama Kali Memiliki Rumah
+11. Surat Keterangan Izin Keramaian/Kegiatan
+12. Surat Pengantar Permohonan SKCK
 
 **Layanan Kependudukan (11 surat)**
 
@@ -84,7 +86,7 @@ Warga                      RT                 Kepala Desa / Sekdes        Kaur T
 Langkah dari sisi warga:
 
 1. Masuk ke akun, buka **Ajukan Surat**.
-2. Di kelompok **Persuratan Desa**, cari dan klik kartu nama surat. Kartu menampilkan deskripsi, masa berlaku ("Berlaku N hari"), dan bagian **Siapkan:** bila ada persyaratan.
+2. Di kelompok **Persuratan Desa**, cari dan klik kartu nama surat. Kartu menampilkan deskripsi, masa berlaku ("Berlaku N hari"), dan bagian **Siapkan:** bila ada persyaratan. Bila surat memakai formulir isi tangan (mis. Izin Keramaian/Kegiatan), tombol **Unduh** formulirnya juga ada di sini.
 3. Data diri pemohon (nama, NIK, tempat/tanggal lahir, jenis kelamin, alamat) **terisi otomatis dari akun**. Warga hanya mengisi isian tambahan khusus surat itu.
 4. Kirim. Status surat: **Menunggu** → **Sedang Diproses** → **Disetujui** (atau **Ditolak** beserta alasannya).
 5. Persetujuan dua tahap: **Ketua RT**, lalu **Kepala Desa** (Sekretaris Desa dapat menggantikan bila Kepala Desa berhalangan). RW dan Kepala Dusun hanya mendapat pemberitahuan setelah RT menyetujui. Secara default tiap tahap punya tenggat 24 jam dengan pengingat 12 jam sebelum tenggat; Staf SIDUTama dapat mengubah angka ini.
@@ -148,6 +150,8 @@ Tabel cepat untuk menjawab: "Saya mengalami X, surat apa yang saya pilih?"
 | Mengajukan KPR rumah pertama | Persuratan Desa | Surat Keterangan & Pertama Kali Memiliki Rumah |
 | Belum punya rumah, butuh bukti untuk bantuan rumah | Persuratan Desa | Surat Keterangan Tidak Memiliki Rumah |
 | Butuh bukti tinggal di desa (termasuk pendatang/ngontrak) | Persuratan Desa | Surat Keterangan Domisili |
+| Mengadakan hajatan/keramaian yang mengumpulkan banyak orang (mis. dengan hiburan organ tunggal) | Persuratan Desa | Surat Keterangan Izin Keramaian/Kegiatan |
+| Melamar kerja/daftar sekolah kedinasan yang meminta SKCK dari Polsek/Polres | Persuratan Desa | Surat Pengantar Permohonan SKCK |
 | Anak daftar beasiswa/sekolah, keluarga tidak mampu | Persuratan Desa | Surat Keterangan Tidak Mampu |
 | Nama berbeda di KK, ijazah, akta, dll. | Persuratan Desa | Surat Keterangan Beda Nama |
 | Melamar kerja/ikut seleksi yang minta status lajang | Persuratan Desa | Surat Keterangan Belum Menikah |
@@ -164,6 +168,7 @@ Tabel cepat untuk menjawab: "Saya mengalami X, surat apa yang saya pilih?"
 | Ada anggota keluarga yang belum pernah punya KK/KTP-el | Layanan Kependudukan | Surat Pernyataan Tidak Memiliki Dokumen Kependudukan |
 | Ayah biologis ingin namanya tercantum di akta anak | Layanan Kependudukan | Pengakuan Anak |
 | Mengangkat anak (sudah ada penetapan pengadilan) | Layanan Kependudukan | Pelaporan Pengangkatan Anak |
+| Akan bekerja ke luar negeri (CPMI), desa perlu mendata | Layanan Kependudukan | Pendataan Calon Pekerja Migran Indonesia (CPMI) |
 
 ---
 
@@ -329,11 +334,52 @@ Suami Nurhayati telah meninggal dan dimakamkan di TPU Cibenda. Bank meminta sura
   - Nama TPU: `Cibenda`
 - **Hasil:** Surat menyatakan Nurhayati benar ahli waris almarhum dan bertanggung jawab bila di kemudian hari ada pihak lain yang mengaku sebagai ahli waris. Dokumen dibawa ke bank.
 
+### 5.12 Surat Keterangan Izin Keramaian/Kegiatan
+
+**Kasus: Pak Udin menggelar hajatan pernikahan anaknya**
+
+Pak Udin akan menggelar syukuran pernikahan anaknya di halaman rumah dengan hiburan organ tunggal. Kegiatan yang mengumpulkan banyak orang perlu izin lingkungan dan surat keterangan dari desa, yang nantinya juga diketahui Camat, Danramil, dan Kapolsek.
+
+- **Pilih di web:** Persuratan Desa → **Surat Keterangan Izin Keramaian/Kegiatan** (berlaku 90 hari). Bagian *Siapkan:* meminta Surat Pernyataan Ijin Lingkungan dan Surat Pernyataan bermaterai.
+- **Sebelum mengisi form, unduh formulir:** di ringkasan jenis surat ada bagian **Formulir yang diisi tangan** dengan dua tombol **Unduh**. Formulir hanya bisa diunduh setelah masuk, karena identitas Pak Udin sudah tercetak di dalamnya.
+  - **Surat Pernyataan Ijin Lingkungan (2 lembar, kertas F4).** Identitas Pak Udin sebagai pihak yang diizinkan sudah terisi. Pak Udin menulis hari, tanggal, RT/RW/Dusun, dan kegiatan, lalu meminta tetangga menulis nama, alamat, dan tanda tangan di tabel (20 baris di lembar 1, 11 baris di lembar 2). Lembar 2 juga memuat tanda tangan Ketua RT, Ketua RW, dan Kepala Dusun. Baris yang tidak terpakai boleh dibiarkan kosong.
+  - **Surat Pernyataan Bermaterai (kertas F4).** Nama, tempat/tanggal lahir, jenis kelamin, status perkawinan, agama, pekerjaan, alamat, dan email sudah terisi. Pak Udin menulis nomor HP dan tanggal, menempel **materai 10.000**, lalu menandatanganinya di atas materai.
+- **Yang diisi di form:**
+  - Kegiatan: `Hajatan pernikahan`
+  - Maksud Kegiatan: `Syukuran pernikahan anak`
+  - Jenis Hiburan: `Organ tunggal` (boleh dikosongkan; tercetak "-")
+  - Tempat Kegiatan: `Halaman rumah pemohon`
+  - Tanggal Kegiatan: `2026-11-28` (tidak boleh sebelum hari ini; nama hari tercetak otomatis)
+  - Jam Mulai: `08:00`, Jam Selesai: `22:00` (Jam Selesai boleh dikosongkan; tercetak "08:00 WIB s.d. selesai")
+  - Foto Surat Pernyataan Ijin Lingkungan Halaman 1, Halaman 2, dan Foto Surat Pernyataan Bermaterai: tiga foto, semuanya wajib (PDF/JPG/PNG, maks. 2 MB per berkas)
+- **Proses:** Ketua RT memeriksa ketiga foto di detail surat (daftar warga dan tanda tangan, serta materai dan tanda tangan di pernyataan). Bila materai atau tanda tangan pemohon tidak ada, atau foto tidak terbaca, RT atau Kepala Desa **menolak** dengan alasan, dan Pak Udin mengajukan ulang dengan foto yang benar. Setelah RT dan Kepala Desa setuju, surat terbit dengan nomor `503/…/Des/…/2026`. Surat ditangani Kaur TU & Umum.
+- **Hasil:** "Surat Keterangan" (kertas F4) berisi identitas Pak Udin dan rincian keramaian, ditandatangani dan distempel basah oleh Kepala Desa di kantor desa. Di bawahnya ada blok **Mengetahui** untuk Camat, Komandan Ramil 2501/Parigi, dan Kapolsek: hanya jabatannya yang tercetak. Pak Udin membawa surat itu ke kantor kecamatan, Koramil, dan Polsek untuk dilengkapi nama, NIP, dan tanda tangannya.
+
+**Skenario lain:** Karang Taruna mengadakan turnamen voli antar-RT tanpa hiburan. Ketua panitia mengajukan atas nama dirinya, Jenis Hiburan dikosongkan, dan Jam Selesai dikosongkan karena acara berlangsung sampai selesai.
+
+### 5.13 Surat Pengantar Permohonan SKCK
+
+**Kasus: Rizal melamar kerja sebagai satpam**
+
+Perusahaan tempat Rizal melamar meminta SKCK. Polsek meminta surat pengantar dari RT/RW yang diketahui desa.
+
+- **Pilih di web:** Persuratan Desa → **Surat Pengantar Permohonan SKCK** (berlaku 90 hari).
+- **Terisi otomatis dari akun:** nama, jenis kelamin, tempat/tanggal lahir, pekerjaan, alamat, agama, dan status perkawinan. Kewarganegaraan dicetak "Indonesia". RT/RW/Dusun di kalimat pembuka diambil dari wilayah Rizal saat mengajukan.
+- **Yang diisi:**
+  - Berapa Lama Berdomisili: terisi `Sejak lahir` karena Rizal warga asli. Pendatang mendapat perkiraan sejak datanya tercatat di desa, mis. `3 tahun`. Isian ini tetap bisa diubah.
+  - Pernah Melanggar Norma-Norma Sosial?: `Tidak Pernah`
+  - Pernah Melakukan Tindak Pidana?: `Tidak Pernah`
+  - Status Perkawinan hanya ditanyakan bila belum tercatat di data penduduk (pilihan: Belum Kawin, Kawin, Kawin Belum Tercatat, Cerai Hidup, Cerai Hidup Belum Tercatat, Cerai Mati).
+- **Proses:** Ketua RT memeriksa kebenaran keterangan (terutama lama berdomisili dan riwayat pelanggaran), lalu Kepala Desa menyetujui.
+- **Hasil:** "Surat Keterangan" kertas F4 tanpa kop dan tanpa nomor surat. Di bagian *KETERANGAN : Coret yang tidak perlu*, opsi yang tidak dipilih sudah tercetak dicoret, mis. "( ~~Pernah~~ / Tidak Pernah )". Bagian **Yang Menerangkan** memuat nama Ketua RT dan Ketua RW wilayah Rizal, sedangkan bagian **Mengetahui** memuat Camat (dikosongkan) dan nama Kepala Desa. Rizal mengambil surat yang sudah ditandatangani basah oleh Ketua RT, Ketua RW, dan Kepala Desa beserta No.Reg desa di kantor desa, lalu melengkapi tanda tangan Camat sebelum ke Polsek.
+
+**Skenario lain:** Bila Rizal pernah tersangkut perkara, ia memilih `Pernah` pada Melakukan Tindak Pidana; yang tercoret adalah "Tidak Pernah". Keterangan ini tetap diperiksa RT sebelum disetujui.
+
 ---
 
 ## 6. Studi Kasus Layanan Kependudukan
 
-Semua kasus di bagian ini mengikuti [Alur Umum Layanan Kependudukan](#3-alur-umum-layanan-kependudukan): pilih layanan, isi form, saksi menyetujui, RT dan Kepala Desa menyetujui, formulir dicetak dan dibawa ke Disdukcapil, hasil diunggah, Kasi Pemerintahan memverifikasi lalu menerapkan.
+Semua kasus di bagian ini mengikuti [Alur Umum Layanan Kependudukan](#3-alur-umum-layanan-kependudukan): pilih layanan, isi form, saksi menyetujui, RT dan Kepala Desa menyetujui, formulir dicetak dan dibawa ke Disdukcapil, hasil diunggah, Kasi Pemerintahan memverifikasi lalu menerapkan. Pengecualiannya [Pendataan CPMI](#611-pendataan-calon-pekerja-migran-indonesia-cpmi), yang tidak menerbitkan formulir: hasilnya data yang tersimpan di desa begitu Kepala Desa menyetujui.
 
 **Batas waktu pelaporan.** Bila tanggal peristiwa yang diisi sudah melewati batas pelaporan, form menampilkan peringatan, tetapi pengajuan tetap bisa dikirim. Disdukcapil dapat mengenakan denda administratif keterlambatan.
 
@@ -614,6 +660,31 @@ Pasangan Firman dan Lilis mengangkat Bayu, keponakan yatim piatu dari desa lain.
   - Bayu, yang belum terdata, ditambahkan sebagai warga baru di KK Firman.
   - Bila Bayu sebelumnya warga desa ini, ia dipindah dari KK asalnya dan kepala KK asal mendapat pemberitahuan.
 
+### 6.11 Pendataan Calon Pekerja Migran Indonesia (CPMI)
+
+Layanan ini **tidak menerbitkan surat atau formulir**. Tidak ada yang dicetak, dibawa ke Disdukcapil, atau diunggah sebagai hasil. Setelah RT dan Kepala Desa menyetujui, data CPMI langsung tersimpan di desa dan bisa dilihat di menu **Data CPMI** oleh Kepala Desa/Sekdes, Kasi Pemerintahan, dan Staf SIDUTama.
+
+**Kasus: Siti berangkat ke Taiwan, lalu tahun berikutnya ke Malaysia**
+
+Siti (24 tahun, belum menikah) diterima bekerja sebagai *caregiver* di Taiwan lewat PT Sinar Abadi, kontrak Maret 2027 sampai Februari 2030.
+
+- **Pilih di web:** Layanan Kependudukan → **Pendataan Calon Pekerja Migran Indonesia (CPMI)**.
+- **Form dibagi lima bagian:**
+  1. **Data Diri & Identitas (Sesuai KTP/KK):** NIK, nama, tempat/tanggal lahir, jenis kelamin, agama, status perkawinan, nama ibu kandung, dan alamat lengkap (RT/RW, dusun, desa sampai provinsi dan kode pos) tampil otomatis dari data penduduk dan tidak bisa diubah di sini. Agama atau status perkawinan hanya ditanyakan bila datanya belum tercatat. Siti mengisi tinggi dan berat badan serta No. HP/WhatsApp; email terisi dari akun.
+  2. **Data Pendidikan & Kompetensi:** jenjang pendidikan terisi dari data penduduk; Siti mengisi nama sekolah, jurusan, tahun lulus, sertifikat (mis. *Sertifikat Caregiver*), dan pengalaman kerja bila ada.
+  3. **Data Orang Tua / Wali / Pasangan (Kontak Darurat):** pertama pilih **Penanggung Jawab Diambil dari**.
+     - *Anggota KK saya*: Siti memilih ibunya dari daftar anggota KK. Nama, alamat, dan **hubungan** (*Ibu*) terisi otomatis dari data KK, tidak dipilih sendiri.
+     - *Di luar KK*: hubungan, nama, dan alamat diketik. Pilihan *Suami*/*Istri* hanya muncul bila pemohon berstatus kawin, dan sesuai jenis kelaminnya (pemohon laki-laki hanya bisa memilih *Istri*).
+     - No. HP penanggung jawab (wajib) dan emailnya (opsional) selalu diisi manual.
+  4. **Data Perusahaan, Sponsor, & Negara Tujuan:** negara tujuan, pemberi kerja beserta alamat dan kontaknya, nama dan kontak P3MI (bila memakai agensi), jabatan, gaji dan fasilitas sesuai kontrak, serta tanggal mulai dan berakhir kontrak.
+  5. **Dokumen Wajib:** 10 unggahan, masing-masing maks. 2 MB: pas foto (gambar), e-KTP, KK, akta kelahiran, ijazah terakhir, paspor, surat izin keluarga (bermaterai), perjanjian kerja, surat keterangan sehat dari sarana kesehatan terdaftar BP2MI, dan kepesertaan BPJS Ketenagakerjaan.
+- **Surat izin keluarga** cukup diunggah. Templatnya dari luar (agensi/BP2MI), dan "diketahui Kepala Desa" terpenuhi karena Kepala Desa membaca dokumen ini sebelum menyetujui pengajuan.
+- **Persetujuan:** RT lalu Kepala Desa/Sekdes. Karena tidak ada surat, rincian pengajuan tidak menampilkan pratinjau surat, melainkan seluruh isian yang tersusun per bagian form, satu isian per baris (sertifikat dan pengalaman kerja dipecah per entri), lengkap dengan tombol untuk membuka ke-10 dokumen.
+- **Setelah Kepala Desa menyetujui:** Siti mendapat notifikasi *Pendataan Disetujui*. Di Surat Saya, pengajuan ini bertanda **Data tersimpan**, tanpa tombol unduh atau pratinjau surat.
+- **Riwayat sendiri:** di halaman **Profil**, kartu **Data CPMI Saya** menampilkan setiap keberangkatan yang sudah disetujui (negara, jabatan, masa dan status kontrak) beserta rinciannya, dan tombol **Daftar CPMI lagi**.
+- **Keberangkatan berikutnya:** tahun 2031 Siti mendaftar lagi ke Malaysia. Form langsung terisi dari pendataan sebelumnya (tinggi/berat, kontak, pendidikan, sertifikat, pengalaman kerja, penanggung jawab), jadi Siti cukup memperbarui yang berubah. Negara tujuan, pemberi kerja, kontrak, dan dokumen selalu diisi baru. Setelah disetujui, Data CPMI memuat **dua baris** untuk Siti (Taiwan dan Malaysia), sehingga riwayat keberangkatannya tetap utuh.
+- **Data penduduk tidak berubah** oleh pendataan ini. Bila identitas di data penduduk tidak sesuai KTP/paspor, ajukan Perubahan Elemen Data Kependudukan terlebih dahulu.
+
 ---
 
 ## 7. Studi Kasus Gabungan (Satu Kejadian, Beberapa Surat)
@@ -763,6 +834,7 @@ Ketiganya diajukan terpisah dan bisa dikirim di hari yang sama. Masing-masing be
 | Situasi | Yang terjadi di web |
 |---|---|
 | **Surat ditolak RT/Kepala Desa** | Status *Ditolak* beserta alasannya. Warga memperbaiki data lalu mengajukan ulang. |
+| **Surat dengan formulir isi tangan** | Formulir diunduh dari ringkasan jenis surat setelah masuk, sudah berisi identitas pemohon. Isi dan tanda tangani dengan tangan, lalu unggah fotonya di isian berkas. Berkas yang kurang (mis. tanpa materai) membuat surat ditolak. Saat ini dipakai Surat Keterangan Izin Keramaian/Kegiatan. |
 | **Saksi atau pihak lain menolak permintaan** | Surat tidak dapat diproses tanpa persetujuan tersebut. Pemohon dapat mengganti saksi. Penerima permintaan juga dapat memblokir pemohon yang mengirim permintaan berulang. |
 | **Permintaan saksi tidak dijawab** | Permintaan punya masa berlaku. Setelah kedaluwarsa, pemohon dapat mengganti saksi. |
 | **Hasil Disdukcapil yang diunggah ditolak Kasi** | Muncul pesan *Unggahan terakhir ditolak desa*. Warga cukup **Unggah ulang** berkas yang benar, tanpa mengajukan ulang. |

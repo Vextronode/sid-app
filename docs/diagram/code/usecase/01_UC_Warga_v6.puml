@@ -51,6 +51,7 @@ rectangle "SIDUTama" {
     usecase "UC-08: Unduh PDF" as UC_DL
     usecase "Unggah Hasil Disdukcapil\n(Layanan Kependudukan)" as UC_RESULT
     usecase "Diurus orang lain\n(Surat Kuasa F-1.07)" as UC_POA
+    usecase "Unduh formulir isi tangan\n(identitas pemohon terisi,\nmis. Izin Keramaian A12)" as UC_HWF
   }
   rectangle "UC-25: Tanda Tangan" #E0F2F1 {
     usecase "Setujui / Tolak\nPermintaan Saksi / Persetujuan\n(saksi, pasangan, penerima kuasa)" as UC_SIGREQ
@@ -82,6 +83,7 @@ WRG -- UC_DETAIL
 WRG -- UC_DL
 WRG -- UC_RESULT
 UC_SUBMIT ..> UC_POA : <<extend>>
+UC_SUBMIT ..> UC_HWF : <<extend>>
 WRG -- UC_SIGREQ
 WRG -- UC_REFILL
 WRG -- UC_BLOCK

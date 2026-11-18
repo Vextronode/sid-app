@@ -13,6 +13,7 @@ import { WargaLayout } from '@/components/layout/WargaLayout'
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
 import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
 import { UsahaSayaCard } from '@/features/data-usaha/components/UsahaSayaCard'
+import { CpmiSayaCard } from '@/features/data-cpmi/components/CpmiSayaCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
 export default function ProfilePage() {
@@ -116,6 +117,8 @@ export default function ProfilePage() {
         <SignatureRequestsCard />
 
         <UsahaSayaCard />
+
+        <CpmiSayaCard />
 
         {/* ======================================
             EDIT MODAL

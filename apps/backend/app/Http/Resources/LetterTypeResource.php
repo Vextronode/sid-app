@@ -25,6 +25,10 @@ class LetterTypeResource extends JsonResource
             'requirements_info' => $this->requirement_info,
             // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
             'carry_documents' => $this->carry_documents,
+            // Formulir isi tangan yang diunduh pemohon sebelum mengajukan
+            // (GET /letter-types/{id}/forms/{key}); template tidak dikirim.
+            'handwritten_forms' => self::handwrittenForms($this->handwritten_forms),
+            'paper_size' => $this->paper_size,
             'flow_id' => $this->flow_id,
             'flow' => $this->when(
                 $this->relationLoaded('flow') && $this->flow,
@@ -48,6 +52,19 @@ class LetterTypeResource extends JsonResource
     }
 
     /**
+     * @param  array<int, array<string, mixed>>|null  $forms
+     * @return array<int, array{key: string, title: string, description: string|null}>
+     */
+    public static function handwrittenForms(?array $forms): array
+    {
+        return array_map(fn (array $form): array => [
+            'key' => (string) $form['key'],
+            'title' => (string) ($form['title'] ?? $form['key']),
+            'description' => $form['description'] ?? null,
+        ], $forms ?? []);
+    }
+
+    /**
      * Derived: template=NULL+is_active=false -> draft;
      * template!=NULL+is_active=true -> aktif;
      * template!=NULL+is_active=false -> dinonaktifkan
@@ -55,7 +72,8 @@ class LetterTypeResource extends JsonResource
      */
     private function statusLabel(): string
     {
-        if (! $this->template) {
+        // Layanan pendataan (mis. CPMI F11) tidak butuh template: bukan draft.
+        if (! $this->resource->isReady()) {
             return 'draft';
         }
 

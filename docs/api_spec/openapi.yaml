@@ -164,6 +164,10 @@ paths:
     $ref: 'paths/citizen-businesses/profile-businesses.yaml'
   /profile/businesses/{citizenBusiness}/cimart-application:
     $ref: 'paths/citizen-businesses/cimart-application.yaml'
+  /profile/migrant-workers:
+    $ref: 'paths/migrant-workers/profile-migrant-workers.yaml'
+  /profile/migrant-workers/prefill:
+    $ref: 'paths/migrant-workers/profile-migrant-workers-prefill.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 1 - Struktur Wilayah
@@ -218,6 +222,10 @@ paths:
     $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
   /citizen-businesses/{citizenBusiness}:
     $ref: 'paths/citizen-businesses/citizen-business-detail.yaml'
+  /migrant-workers:
+    $ref: 'paths/migrant-workers/migrant-workers.yaml'
+  /migrant-workers/{migrantWorker}:
+    $ref: 'paths/migrant-workers/migrant-worker-detail.yaml'
   /integration-clients:
     $ref: 'paths/integration-clients/integration-clients.yaml'
   /integration-clients/{integrationClient}/status:
@@ -266,6 +274,8 @@ paths:
     $ref: 'paths/letter-types/letter-types.yaml'
   /letter-types/{letterType}:
     $ref: 'paths/letter-types/letter-type-detail.yaml'
+  /letter-types/{letterType}/forms/{key}:
+    $ref: 'paths/letter-types/handwritten-form.yaml'
   /approval-flows:
     $ref: 'paths/approval-flows/approval-flows.yaml'
   /approval-flows/{id}:

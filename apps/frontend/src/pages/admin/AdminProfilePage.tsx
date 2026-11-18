@@ -15,6 +15,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import EditProfilWargaModal from '@/features/profil-warga/components/EditProfilWargaModal'
 import { ProfilePhoto } from '@/features/profil-warga/components/ProfilePhoto'
 import { UsahaSayaCard } from '@/features/data-usaha/components/UsahaSayaCard'
+import { CpmiSayaCard } from '@/features/data-cpmi/components/CpmiSayaCard'
 import { SignatureRequestsCard } from '@/features/surat/components/SignatureRequestsCard'
 
 import { SiteFooter } from '@/components/layout/SiteFooter'
@@ -130,6 +131,8 @@ export default function AdminProfilePage() {
           <SignatureRequestsCard />
 
           <UsahaSayaCard />
+
+          <CpmiSayaCard />
 
           {/* ====================================
               EDIT MODAL

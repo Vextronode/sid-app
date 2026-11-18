@@ -5988,6 +5988,124 @@
   margin-top: 2px;
 }
 
+/* Formulir isi tangan: satu baris per formulir (ikon, judul + keterangan,
+   tombol Unduh ringkas). Tombol tidak ikut melebar seperti .sid-btn biasa. */
+.sid-letter-type-carry .sid-letter-type-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  margin: 10px 0 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-letter-type-carry .sid-letter-type-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+
+  margin: 0;
+  padding: 10px 12px;
+
+  border: 1px solid color-mix(in srgb, var(--sid-primary) 18%, transparent);
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-letter-type-form-icon {
+  width: 36px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-primary);
+}
+
+.sid-letter-type-form-text {
+  min-width: 0;
+}
+
+.sid-letter-type-form-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sid-letter-type-form-description {
+  margin: 2px 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sid-letter-type-form .sid-letter-type-form-download {
+  flex: 0 0 auto;
+
+  /* Cukup untuk "Mengunduh" agar lebarnya tidak berubah saat memuat. */
+  min-width: 132px;
+  height: 36px;
+
+  padding: 0 14px;
+
+  background: var(--sid-surface-card);
+
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sid-letter-type-form .sid-letter-type-form-download:hover:not(:disabled) {
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.sid-letter-type-form .sid-letter-type-form-download:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-letter-type-form-download .sid-spin {
+  animation: sid-spin 0.8s linear infinite;
+}
+
+/* Layar sempit: tombol turun ke bawah teks, selebar baris. */
+@media (max-width: 479px) {
+  .sid-letter-type-carry .sid-letter-type-form {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    row-gap: 10px;
+  }
+
+  .sid-letter-type-form .sid-letter-type-form-download {
+    grid-column: 1 / -1;
+
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-letter-type-form-download .sid-spin {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sid-letter-type-option.is-skeleton {
     animation: none;
@@ -25082,4 +25200,168 @@ button.sid-operator-profile {
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.5;
+}
+
+/* =========================================================
+   SECTION ISIAN FORM SURAT (form_fields[].section, mis. CPMI F11)
+   ========================================================= */
+
+.sid-form-subsection-title {
+  margin: 0;
+  padding: 8px 12px;
+
+  border-left: 3px solid var(--sid-primary);
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-text-primary);
+
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Judul dirender di awal isian pertama section-nya; section berikutnya
+   diberi jarak lebih dari jarak antarisian. */
+.sid-form-group > .sid-form-subsection-title {
+  margin: 16px 0 10px;
+}
+
+.sid-form-group:first-child > .sid-form-subsection-title {
+  margin-top: 0;
+}
+
+/* Data diri dari data penduduk: ringkasan baca-saja, bukan isian. */
+.sid-identity-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px 20px;
+
+  margin: 0 0 16px;
+  padding: 14px 16px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md);
+
+  background: var(--sid-surface-page);
+}
+
+@media (min-width: 640px) {
+  .sid-identity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sid-identity-item {
+  min-width: 0;
+}
+
+.sid-identity-item dt {
+  color: var(--sid-text-muted);
+
+  font-size: 12px;
+}
+
+.sid-identity-item dd {
+  margin: 2px 0 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.sid-identity-note {
+  margin: -6px 0 16px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Rincian isian layanan pendataan (FormAnswersReview), pengganti pratinjau
+   surat di modal: satu isian per baris, dikelompokkan per section. */
+.sid-form-review {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 20px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-md);
+
+  background: var(--sid-surface-card);
+
+  color: var(--sid-text-primary);
+}
+
+.sid-form-review-note {
+  margin: 0 0 16px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sid-form-review-section + .sid-form-review-section {
+  margin-top: 20px;
+}
+
+.sid-form-review-section > .sid-form-subsection-title {
+  margin-bottom: 8px;
+}
+
+.sid-form-review-block + .sid-form-review-block {
+  margin-top: 10px;
+}
+
+.sid-form-review-block-title {
+  margin: 0 0 4px;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sid-form-review-list {
+  margin: 0;
+}
+
+.sid-form-review-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+
+  padding: 8px 0;
+
+  border-bottom: 1px solid var(--sid-border);
+}
+
+.sid-form-review-row:last-child {
+  border-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .sid-form-review-row {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 16px;
+  }
+}
+
+.sid-form-review-row dt {
+  color: var(--sid-text-muted);
+
+  font-size: 13px;
+}
+
+.sid-form-review-row dd {
+  margin: 0;
+
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }

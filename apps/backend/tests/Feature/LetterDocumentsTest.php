@@ -71,9 +71,9 @@ class LetterDocumentsTest extends TestCase
             ->getJson("/api/letters/{$withKk}")
             ->assertOk()
             ->assertJsonPath('data.documents', [
-                ['key' => 'main', 'title' => 'Formulir Pindah'],
-                ['key' => 'pendaftaran', 'title' => 'Formulir Pendaftaran'],
-                ['key' => 'pernyataan', 'title' => 'Surat Pernyataan'],
+                ['key' => 'main', 'title' => 'Formulir Pindah', 'paper' => 'a4'],
+                ['key' => 'pendaftaran', 'title' => 'Formulir Pendaftaran', 'paper' => 'a4'],
+                ['key' => 'pernyataan', 'title' => 'Surat Pernyataan', 'paper' => 'a4'],
             ]);
         $this->actingAs($this->applicant['user'])
             ->getJson("/api/letters/{$withoutKk}")

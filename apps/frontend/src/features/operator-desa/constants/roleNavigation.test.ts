@@ -16,6 +16,7 @@ describe('operator role navigation', () => {
       '/admin/surat-saya',
       '/admin/data-warga',
       '/admin/data-usaha',
+      '/admin/data-cpmi',
     ]
 
     expect(ROLE_NAVIGATION.kasi_pemerintahan).toEqual(expectedRoutes)
@@ -35,6 +36,7 @@ describe('operator role navigation', () => {
       '/admin/kades/surat',
       '/admin/surat-saya',
       '/admin/kades/data-penduduk',
+      '/admin/data-cpmi',
     ])
     expect(ROLE_NAVIGATION.sekretaris_desa).toEqual(ROLE_NAVIGATION.kepala_desa)
   })
@@ -81,6 +83,20 @@ describe('operator role navigation', () => {
     expect(canOpenOperatorRoute(null, '/admin/data-usaha')).toBe(false)
     // Route lain tetap mengikuti peran saja.
     expect(canOpenOperatorRoute(user('kaur_tu_umum'), '/admin/data-warga')).toBe(true)
+  })
+
+  it('shows Data CPMI to the village head and F11 officers only when GET /api/user grants it', () => {
+    const user = (role: UserRole, can_view_migrant_workers?: boolean) =>
+      ({ role, can_view_migrant_workers }) as User
+
+    expect(canOpenOperatorRoute(user('kepala_desa', true), '/admin/data-cpmi')).toBe(true)
+    expect(canOpenOperatorRoute(user('sekretaris_desa', true), '/admin/data-cpmi')).toBe(true)
+    expect(canOpenOperatorRoute(user('kasi_pemerintahan', true), '/admin/data-cpmi')).toBe(true)
+    // Bukan petugas F11, atau flag belum dimuat.
+    expect(canOpenOperatorRoute(user('kaur_tu_umum', false), '/admin/data-cpmi')).toBe(false)
+    expect(canOpenOperatorRoute(user('staf_sid'), '/admin/data-cpmi')).toBe(false)
+    // RT dan warga tidak pernah mendapat menunya.
+    expect(canOpenOperatorRoute(user('rt', true), '/admin/data-cpmi')).toBe(false)
   })
 
   it('keeps route capabilities and role navigation in sync', () => {

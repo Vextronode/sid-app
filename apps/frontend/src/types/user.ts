@@ -27,6 +27,8 @@ export type User = {
   nik?: string | null
   // Menu Data Usaha Warga (Staf SIDUTama dan petugas SKU); hanya GET /api/user.
   can_view_citizen_businesses?: boolean
+  // Menu Data CPMI (Staf SIDUTama, Kades/Sekdes, petugas F11); hanya GET /api/user.
+  can_view_migrant_workers?: boolean
   is_active: boolean
   must_change_password: boolean
   created_at: IsoDateString | null

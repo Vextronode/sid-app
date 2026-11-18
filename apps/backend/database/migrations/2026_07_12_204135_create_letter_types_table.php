@@ -25,6 +25,13 @@ return new class extends Migration
             // Dokumen yang terbit bersama dokumen utama: [{key, title, template, when?}]
             // (App\Support\LetterDocuments).
             $table->json('documents')->nullable();
+            // Ukuran kertas dokumen utama: a4 atau f4 (App\Support\PaperSize).
+            $table->string('paper_size', 10)->default('a4');
+            // Formulir kosong yang diunduh pemohon sebelum mengajukan, diisi
+            // tangan, lalu difoto dan diunggah sebagai berkas persyaratan:
+            // [{key, title, description?, template, paper?}]. Identitas pemohon
+            // terisi dari data penduduk (PdfService::handwrittenForm).
+            $table->json('handwritten_forms')->nullable();
             $table->enum('verification_type', ['manual', 'auto', 'document']);
             $table->text('requirement_info')->nullable();
             // Dokumen yang dibawa ke instansi luar (Layanan Kependudukan):

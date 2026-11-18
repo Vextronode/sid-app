@@ -47,6 +47,8 @@ export type LetterListItem = {
     name: string
     code: string
     signed_by_village_head: boolean
+    // false: layanan pendataan (mis. CPMI F11), tidak ada surat untuk diunduh.
+    produces_letter?: boolean
   } | null
   citizen: { id: Uuid; name: string } | null
 }
@@ -114,9 +116,14 @@ export type LetterResult = {
   attachments?: LetterAttachment[]
 }
 
+// Ukuran kertas PDF (App\Support\PaperSize).
+export type PaperSize = 'a4' | 'f4'
+
 export type LetterDocument = {
   key: string
   title: string
+  // Kertas bawaan template dokumen; unduhan boleh memakai kertas lain.
+  paper?: PaperSize
 }
 
 // Syarat tampil isian (visible_when), sama dengan AppSupportFieldCondition:
@@ -132,7 +139,8 @@ export type FieldCondition = {
   all?: FieldCondition[]
 }
 
-export type FieldOption = { value: string; label?: string }
+// `visible_when`: pilihan hanya tampil (dan sah) bila syaratnya terpenuhi.
+export type FieldOption = { value: string; label?: string; visible_when?: FieldCondition | null }
 
 // Satu isian form dinamis dari letter_types.form_fields (snake_case backend).
 export type LetterFormField = {
@@ -145,11 +153,17 @@ export type LetterFormField = {
   // 'image': hanya gambar; selain itu PDF atau gambar.
   accept?: string
   past?: boolean
+  // Tanggal rencana (mis. kegiatan): tidak sebelum hari ini.
+  upcoming?: boolean
   report_deadline?: { days: number; event: string; when?: FieldCondition | null } | null
   integer?: boolean
   min_value?: number | null
   visible_when?: FieldCondition | null
   help?: string | null
+  // Judul kelompok isian (tampilan saja): form memberi pemisah tiap kali berganti.
+  section?: string | null
+  // family_member penanggung jawab CPMI: tampilkan hubungannya dengan pemohon.
+  relation_hint?: boolean
   default?: string | number | boolean | null
   gender?: 'L' | 'P' | null
   roles?: string[]
@@ -177,6 +191,12 @@ export type LetterFormField = {
   family_head_of?: string | null
 }
 
+export type HandwrittenForm = {
+  key: string
+  title: string
+  description: string | null
+}
+
 export type LetterType = {
   id: number
   code: string
@@ -188,6 +208,11 @@ export type LetterType = {
   requirements_info: string | null
   // Dokumen yang dibawa ke instansi luar (Layanan Kependudukan).
   carry_documents: { forms?: string[]; attachments?: string[] } | null
+  // Formulir isi tangan yang diunduh pemohon sebelum mengajukan
+  // (GET /api/letter-types/{id}/forms/{key}), berisi identitas pemohon.
+  handwritten_forms?: HandwrittenForm[]
+  // Ukuran kertas dokumen utama: a4 atau f4.
+  paper_size?: PaperSize
   flow_id: number | null
   flow?: { id: number; name: string }
   assigned_role: string | null

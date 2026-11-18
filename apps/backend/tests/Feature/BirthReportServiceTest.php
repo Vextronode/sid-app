@@ -251,7 +251,8 @@ class BirthReportServiceTest extends TestCase
             ->values()
             ->all();
 
-        $this->assertSame(['rencana_tanggal_pindah', 'tanggal_itas'], $future);
+        // Kontrak kerja CPMI (F11) memang bisa dimulai/berakhir di masa depan.
+        $this->assertSame(['kontrak_mulai', 'kontrak_selesai', 'rencana_tanggal_pindah', 'tanggal_itas'], $future);
     }
 
     public function test_birth_time_must_come_from_the_time_input(): void

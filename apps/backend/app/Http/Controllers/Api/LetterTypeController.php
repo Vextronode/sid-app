@@ -9,6 +9,9 @@ use App\Http\Resources\LetterTypeCollection;
 use App\Http\Resources\LetterTypeResource;
 use App\Models\LetterType;
 use App\Services\LetterTypeService;
+use App\Services\PdfService;
+use App\Support\PaperSize;
+use Illuminate\Http\Request;
 
 class LetterTypeController extends Controller
 {
@@ -27,6 +30,17 @@ class LetterTypeController extends Controller
             'message' => 'Daftar jenis surat berhasil diambil.',
             'data' => new LetterTypeCollection($letterTypes),
         ]);
+    }
+
+    /**
+     * Formulir isi tangan (mis. surat pernyataan bermaterai) dengan
+     * identitas pemohon; ?download=1 untuk mengunduh, selain itu pratinjau.
+     */
+    public function handwrittenForm(Request $request, LetterType $letterType, string $key, PdfService $pdfService)
+    {
+        $letterType = $this->letterTypeService->handwrittenFormType($letterType, $request->user());
+
+        return $pdfService->handwrittenForm($letterType, $request->user(), $key, $request->boolean('download'), PaperSize::requested($request));
     }
 
     public function update(UpdateLetterTypeRequest $request, LetterType $letterType)

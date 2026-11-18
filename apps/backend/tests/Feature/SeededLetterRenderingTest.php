@@ -37,6 +37,8 @@ class SeededLetterRenderingTest extends TestCase
 
     private array $kades;
 
+    private mixed $paper = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -104,6 +106,119 @@ class SeededLetterRenderingTest extends TestCase
         // Pemohon hanyalah pelapor dan tidak boleh tercetak sebagai yang meninggal.
         $this->assertStringNotContainsString('Pelapor Hidup', $html);
         $this->assertStringNotContainsString('________', $html);
+    }
+
+    public function test_event_permit_prints_the_event_and_the_external_acknowledgement_block_on_f4(): void
+    {
+        Storage::fake('private_uploads');
+        $occupation = Occupation::factory()->create(['village_id' => $this->village->id, 'name' => 'Petani']);
+        $this->applicant['citizen']->update(['occupation_id' => $occupation->id, 'address' => 'Dusun Sukamaju RT 001/RW 002']);
+        $photo = fn (string $name) => UploadedFile::fake()->image($name);
+
+        $html = $this->issue('A12', [
+            'kegiatan' => 'Hajatan pernikahan',
+            'maksud_kegiatan' => 'Syukuran pernikahan anak',
+            'tempat_kegiatan' => 'Halaman rumah pemohon',
+            'tanggal_kegiatan' => '2026-10-17',
+            'jam_mulai' => '08:00',
+        ], $letterId, [
+            'foto_daftar_1' => $photo('daftar1.jpg'),
+            'foto_daftar_2' => $photo('daftar2.jpg'),
+            'foto_pernyataan' => $photo('pernyataan.jpg'),
+        ]);
+
+        $this->assertStringContainsString('SURAT KETERANGAN</div>', $html);
+        $this->assertMatchesRegularExpression('#Nomor : 503/\d+/Des/X/2026#', $html);
+        foreach (['Pelapor Hidup', 'Petani', 'Dusun Sukamaju RT 001/RW 002', 'Hajatan pernikahan', 'Syukuran pernikahan anak', 'Halaman rumah pemohon', 'Sabtu', '17 Oktober 2026', 'Kepala Desa Sukamaju Kecamatan Cijulang Kabupaten Pangandaran'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        // Tanpa hiburan dan tanpa jam selesai.
+        $this->assertMatchesRegularExpression('#Jenis Hiburan</td>.*?<td[^>]*>-</td>#s', $html);
+        $this->assertStringContainsString('08:00 WIB s.d. selesai', $html);
+        // Mengetahui: hanya jabatan instansi luar, nama/NIP/TTD diisi basah.
+        foreach (['Mengetahui,', 'Reg. No :', 'CAMAT CIJULANG,', 'Komandan Ramil 2501/Parigi', 'Kepala Polisi Sektor Cijulang,'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        $this->assertSame(3, substr_count($html, 'NIP.'));
+        $this->assertStringNotContainsString('________', $html);
+        $this->assertSame([0.0, 0.0, 609.45, 935.43], $this->paper);
+
+        // Ketiga foto formulir tersimpan sebagai lampiran untuk approver.
+        $this->assertEqualsCanonicalizing(
+            ['foto_daftar_1', 'foto_daftar_2', 'foto_pernyataan'],
+            Letter::query()->findOrFail($letterId)->attachments()->pluck('field')->all(),
+        );
+    }
+
+    public function test_skck_cover_letter_strikes_the_unchosen_answers_and_names_the_applicants_rt_and_rw(): void
+    {
+        $citizen = $this->applicant['citizen'];
+        $rt = $citizen->rt;
+        $rt->update(['number' => '3']);
+        $rt->rw->update(['number' => '13']);
+        $rt->rw->hamlet->update(['name' => 'Cibenda']);
+        $this->rtApprover['citizen']->update(['name' => 'Ketua RT Asep']);
+        $rwHead = $this->makeOfficialUser('rw', $this->village, ['rw_id' => $rt->rw_id]);
+        $rwHead['citizen']->update(['name' => 'Ketua RW Dede']);
+        $citizen->update(['marital_status' => 'cerai_mati', 'religion' => 'islam']);
+        $this->kades['citizen']->update(['name' => 'Kades Sukamaju']);
+
+        $html = $this->issue('A13', [
+            'lama_berdomisili' => 'Sejak lahir',
+            'norma_sosial' => 'tidak_pernah',
+            'tindak_pidana' => 'pernah',
+            // Status perkawinan diambil dari data penduduk, bukan jawaban form.
+            'status_perkawinan' => 'kawin',
+        ], $letterId);
+
+        $struck = fn (string $text): string => '<span style="text-decoration: line-through;">'.$text.'</span>';
+        $this->assertStringContainsString('( '.$struck('Pernah').' / Tidak Pernah )', $html);
+        $this->assertStringContainsString('( Pernah / '.$struck('Tidak Pernah').' )', $html);
+        $this->assertStringContainsString('SURAT KETERANGAN CATATAN KEPOLISIAN', $html);
+        foreach (['KECAMATAN', 'CIJULANG', 'KETUA RT 003 / RW 013 DUSUN Cibenda', 'Pelapor Hidup', 'Indonesia', 'Islam', 'Cerai Mati', 'Sejak lahir', 'Ketua RT Asep', 'Ketua RW Dede', 'Camat Cijulang', 'Kepala Desa Sukamaju', 'Kades Sukamaju'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        // Tanpa kop, nomor surat, dan garis pengganti placeholder.
+        $this->assertStringNotContainsString('Nomor :', $html);
+        $this->assertStringNotContainsString('________', $html);
+        $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
+        $this->assertSame([0.0, 0.0, 609.45, 935.43], $this->paper);
+    }
+
+    public function test_skck_marital_status_is_only_asked_when_the_population_data_has_none(): void
+    {
+        $submit = fn (array $payload) => $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => $this->letterType('A13')->id,
+            'payload' => ['lama_berdomisili' => '5 tahun', 'norma_sosial' => 'tidak_pernah', 'tindak_pidana' => 'tidak_pernah', ...$payload],
+        ]);
+
+        $this->applicant['citizen']->update(['marital_status' => null]);
+        $submit([])->assertStatus(422)->assertJsonValidationErrors(['payload.status_perkawinan']);
+        $submit(['status_perkawinan' => 'cerai_hidup'])->assertCreated()->assertJsonPath('data.payload.status_perkawinan', 'cerai_hidup');
+
+        $this->applicant['citizen']->update(['marital_status' => 'belum_kawin']);
+        // Akun yang sama dipakai lintas request di tes: muat ulang data penduduknya.
+        $this->applicant['user']->unsetRelation('citizen');
+        $submit(['status_perkawinan' => 'kawin'])->assertCreated()->assertJsonPath('data.payload.status_perkawinan', 'belum_kawin');
+    }
+
+    public function test_event_permit_requires_the_three_form_photos_and_an_upcoming_date(): void
+    {
+        $response = $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => $this->letterType('A12')->id,
+            'payload' => [
+                'kegiatan' => 'Hajatan',
+                'maksud_kegiatan' => 'Syukuran',
+                'tempat_kegiatan' => 'Rumah',
+                'tanggal_kegiatan' => '2026-10-11',
+                'jam_mulai' => '08:00',
+                'jam_selesai' => '22:00',
+            ],
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors([
+            'files.foto_daftar_1', 'files.foto_daftar_2', 'files.foto_pernyataan', 'payload.tanggal_kegiatan',
+        ]);
     }
 
     public function test_inheritance_letter_takes_the_deceased_from_the_population_data_by_nik(): void
@@ -267,6 +382,17 @@ class SeededLetterRenderingTest extends TestCase
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/user')
             ->assertJsonPath('data.citizen.occupation_id', $farmer->id);
+    }
+
+    public function test_skck_suggests_how_long_the_applicant_has_lived_here(): void
+    {
+        $field = collect($this->letterType('A13')->form_fields)->firstWhere('name', 'lama_berdomisili');
+
+        $this->assertSame('domicile_duration_hint', $field['prefill_from_applicant']);
+        // Warga lokal (setUp): sejak lahir.
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/user')
+            ->assertJsonPath('data.citizen.domicile_duration_hint', 'Sejak lahir');
     }
 
     public function test_domicile_letter_wording_depends_on_residency_status(): void
@@ -641,16 +767,21 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString('________', $html);
     }
 
-    public function test_requirement_line_is_only_kept_for_the_business_photo(): void
+    public function test_requirement_line_is_only_kept_for_uploaded_documents(): void
     {
+        // Hanya surat yang meminta unggahan: foto usaha (A01) dan formulir
+        // isi tangan izin keramaian (A12).
         $this->assertSame(
-            ['A01' => 'Foto usaha terkini.'],
+            ['A01', 'A12'],
             LetterType::query()
                 ->where('village_id', $this->village->id)
                 ->whereNotNull('requirement_info')
-                ->pluck('requirement_info', 'code')
+                ->orderBy('code')
+                ->pluck('code')
                 ->all(),
         );
+        $this->assertSame('Foto usaha terkini.', $this->letterType('A01')->requirement_info);
+        $this->assertStringContainsString('materai 10.000', $this->letterType('A12')->requirement_info);
     }
 
     public function test_own_nik_is_shown_in_full_to_its_owner_only(): void
@@ -672,7 +803,7 @@ class SeededLetterRenderingTest extends TestCase
         $this->assertStringNotContainsString($nik, json_encode($row));
     }
 
-    public function test_only_the_business_letter_asks_for_an_upload(): void
+    public function test_only_the_business_and_event_permit_letters_ask_for_an_upload(): void
     {
         $withUpload = LetterType::query()
             ->where('village_id', $this->village->id)
@@ -681,7 +812,7 @@ class SeededLetterRenderingTest extends TestCase
             ->pluck('code')
             ->all();
 
-        $this->assertSame(['A01'], array_values($withUpload));
+        $this->assertSame(['A01', 'A12'], array_values($withUpload));
     }
 
     public function test_required_fields_of_seeded_types_are_enforced_on_submission(): void
@@ -847,6 +978,12 @@ class SeededLetterRenderingTest extends TestCase
 
         $rendered = null;
         $pdf = Mockery::mock(DomPdf::class);
+        // Kertas F4 (mis. A12) diatur lewat setPaper; A4 tegak bawaan view.
+        $pdf->shouldReceive('setPaper')->andReturnUsing(function (mixed $size) use ($pdf) {
+            $this->paper = $size;
+
+            return $pdf;
+        });
         $pdf->shouldReceive('download')->once()->andReturn(new Response('', 200));
         Pdf::shouldReceive('loadView')
             ->once()

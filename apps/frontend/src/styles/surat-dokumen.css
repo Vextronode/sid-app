@@ -1432,3 +1432,84 @@
   font-size: 0.875rem;
   font-weight: 700;
 }
+
+/* Pilihan ukuran kertas A4 | F4 (PaperSizeToggle): menu unduh, toolbar
+   pratinjau, dokumen pendukung, dan formulir isi tangan. */
+.sid-paper-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 0.5rem;
+}
+
+.sid-paper-toggle-label {
+  color: var(--sid-text-secondary);
+
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.sid-paper-toggle-options {
+  display: inline-flex;
+
+  padding: 2px;
+
+  border: 1px solid var(--sid-border);
+  border-radius: var(--sid-radius-button);
+
+  background: var(--sid-surface-page);
+}
+
+.sid-paper-toggle-option {
+  min-width: 2.75rem;
+  padding: 0.3rem 0.75rem;
+
+  border: 0;
+  border-radius: var(--sid-radius-button);
+
+  background: transparent;
+  color: var(--sid-text-primary);
+
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.sid-paper-toggle-option[aria-checked='true'] {
+  background: var(--sid-primary);
+  color: #fff;
+}
+
+.sid-paper-toggle-option:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+/* Di menu unduh: baris pertama, dipisah garis dari daftar dokumen. */
+.sid-download-menu .sid-paper-toggle {
+  justify-content: space-between;
+
+  padding: 0.375rem 0.625rem 0.625rem;
+  margin-bottom: 0.25rem;
+
+  border-bottom: 1px solid var(--sid-border);
+}
+
+/* Toolbar di atas pratinjau PDF. */
+.sid-preview-toolbar {
+  display: flex;
+  justify-content: flex-end;
+
+  padding: 0.5rem 0.75rem;
+
+  border-bottom: 1px solid var(--sid-border);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-letter-type-forms-paper {
+  margin: 0.25rem 0 0.5rem;
+}

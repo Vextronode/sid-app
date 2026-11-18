@@ -105,7 +105,7 @@ class PublicPageService
                 ?->loadMissing('hamlet'),
             'latest_news' => $latestNews,
             'public_stats' => [
-                'total_letter_types' => $this->letterTypeRepository->countActiveWithTemplate($village->id),
+                'total_letter_types' => $this->letterTypeRepository->countSubmittable($village->id),
                 ...$this->publicStats($villageCode),
             ],
             'announcement' => $this->announcementService->activeForVillage($village->id),
@@ -210,7 +210,7 @@ class PublicPageService
     public function letterTypeList(?string $villageCode = null): Collection
     {
         $village = $this->requireVillage($villageCode);
-        $types = $this->letterTypeRepository->allActiveWithTemplate($village->id);
+        $types = $this->letterTypeRepository->allSubmittable($village->id);
 
         if ($types->isEmpty()) {
             throw new HttpException(404, 'Belum ada tipe surat aktif yang tersedia.');

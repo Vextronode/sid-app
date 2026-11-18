@@ -48,6 +48,10 @@ import {
   CitizenBusinessAccessGate,
   DATA_USAHA_ROUTE,
 } from '@/features/data-usaha/components/CitizenBusinessAccessGate'
+import {
+  DATA_CPMI_ROUTE,
+  MigrantWorkerAccessGate,
+} from '@/features/data-cpmi/components/MigrantWorkerAccessGate'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
 import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
@@ -110,6 +114,8 @@ const DataWargaAccessPage = lazy(() => import('@/pages/admin/DataWargaAccessPage
 const DataWargaReadOnlyPage = lazy(() => import('@/pages/admin/DataWargaReadOnlyPage'))
 const DataUsahaWargaPage = lazy(() => import('@/pages/admin/DataUsahaWargaPage'))
 const DataUsahaWargaDetailPage = lazy(() => import('@/pages/admin/DataUsahaWargaDetailPage'))
+const DataCpmiPage = lazy(() => import('@/pages/admin/DataCpmiPage'))
+const DataCpmiDetailPage = lazy(() => import('@/pages/admin/DataCpmiDetailPage'))
 const ManajemenAkunPage = lazy(() => import('@/pages/admin/ManajemenAkunPage'))
 const PengajuanResetPage = lazy(() => import('@/pages/admin/PengajuanResetPage'))
 const KelolaBeritaPage = lazy(() => import('@/pages/admin/KelolaBeritaPage'))
@@ -503,6 +509,20 @@ export default function App() {
                           <DataUsahaWargaDetailPage />
                         )}
                       </CitizenBusinessAccessGate>
+                    </ProtectedRoute>
+                  }
+                />
+              ))}
+              {/* Data CPMI: peran operator, lalu hak akses petugas F11 dari backend. */}
+              {[DATA_CPMI_ROUTE, `${DATA_CPMI_ROUTE}/:id`].map((path) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <ProtectedRoute allowedRoles={getOperatorAllowedRoles(DATA_CPMI_ROUTE)}>
+                      <MigrantWorkerAccessGate>
+                        {path === DATA_CPMI_ROUTE ? <DataCpmiPage /> : <DataCpmiDetailPage />}
+                      </MigrantWorkerAccessGate>
                     </ProtectedRoute>
                   }
                 />
