@@ -5988,6 +5988,124 @@
   margin-top: 2px;
 }
 
+/* Formulir isi tangan: satu baris per formulir (ikon, judul + keterangan,
+   tombol Unduh ringkas). Tombol tidak ikut melebar seperti .sid-btn biasa. */
+.sid-letter-type-carry .sid-letter-type-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  margin: 10px 0 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.sid-letter-type-carry .sid-letter-type-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+
+  margin: 0;
+  padding: 10px 12px;
+
+  border: 1px solid color-mix(in srgb, var(--sid-primary) 18%, transparent);
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-surface-card);
+}
+
+.sid-letter-type-form-icon {
+  width: 36px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: var(--sid-radius-sm);
+
+  background: var(--sid-primary-soft);
+
+  color: var(--sid-primary);
+}
+
+.sid-letter-type-form-text {
+  min-width: 0;
+}
+
+.sid-letter-type-form-title {
+  margin: 0;
+
+  color: var(--sid-text-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sid-letter-type-form-description {
+  margin: 2px 0 0;
+
+  color: var(--sid-text-secondary);
+
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sid-letter-type-form .sid-letter-type-form-download {
+  flex: 0 0 auto;
+
+  /* Cukup untuk "Mengunduh" agar lebarnya tidak berubah saat memuat. */
+  min-width: 132px;
+  height: 36px;
+
+  padding: 0 14px;
+
+  background: var(--sid-surface-card);
+
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sid-letter-type-form .sid-letter-type-form-download:hover:not(:disabled) {
+  background: var(--sid-primary);
+
+  color: var(--sid-on-primary);
+}
+
+.sid-letter-type-form .sid-letter-type-form-download:focus-visible {
+  outline: 2px solid var(--sid-primary);
+  outline-offset: 2px;
+}
+
+.sid-letter-type-form-download .sid-spin {
+  animation: sid-spin 0.8s linear infinite;
+}
+
+/* Layar sempit: tombol turun ke bawah teks, selebar baris. */
+@media (max-width: 479px) {
+  .sid-letter-type-carry .sid-letter-type-form {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    row-gap: 10px;
+  }
+
+  .sid-letter-type-form .sid-letter-type-form-download {
+    grid-column: 1 / -1;
+
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid-letter-type-form-download .sid-spin {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sid-letter-type-option.is-skeleton {
     animation: none;

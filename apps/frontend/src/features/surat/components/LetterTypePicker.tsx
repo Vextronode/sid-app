@@ -1,8 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
-import { Check, Search } from 'lucide-react'
+import { Check, Download, FileText, Loader2, Search } from 'lucide-react'
 
+import { downloadErrorMessage, downloadFile } from '@/lib/downloadFile'
 import { groupLetterTypes } from '../utils/letterTypeGroups'
+import { handwrittenFormUrl } from '../api/letterTypeApi'
 import type { LetterType } from '@/types'
 
 // Kolom pencarian baru berguna bila jenis surat cukup banyak.
@@ -63,6 +65,85 @@ function CarryDocuments({ documents }: { documents: LetterType['carry_documents'
             ))}
           </ul>
         </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Formulir isi tangan yang diunduh sebelum mengajukan (mis. surat pernyataan
+ * bermaterai). Identitas pemohon sudah tercetak; sisanya diisi tangan, lalu
+ * fotonya diunggah di isian berkas form pengajuan.
+ */
+function HandwrittenForms({ type }: { type: LetterType }) {
+  const forms = type.handwritten_forms ?? []
+  const [busyKey, setBusyKey] = useState('')
+  const [error, setError] = useState('')
+
+  if (forms.length === 0) return null
+
+  const download = async (key: string) => {
+    setBusyKey(key)
+    setError('')
+
+    try {
+      await downloadFile(
+        handwrittenFormUrl(type.id, key),
+        `formulir-${type.code.toLowerCase()}-${key}.pdf`,
+        { download: 1 },
+      )
+    } catch (downloadError) {
+      setError(await downloadErrorMessage(downloadError, 'Formulir gagal diunduh. Coba lagi.'))
+    } finally {
+      setBusyKey('')
+    }
+  }
+
+  return (
+    <div className="sid-letter-type-carry">
+      <p className="sid-letter-type-carry-title">Formulir yang diisi tangan</p>
+      <p className="sid-letter-type-carry-label">
+        Identitas Anda sudah tercetak. Cetak, lengkapi, dan tanda tangani formulirnya, lalu unggah
+        fotonya di form di bawah.
+      </p>
+      <ul className="sid-letter-type-forms">
+        {forms.map((form) => {
+          const busy = busyKey === form.key
+
+          return (
+            <li key={form.key} className="sid-letter-type-form">
+              <span className="sid-letter-type-form-icon" aria-hidden="true">
+                <FileText size={18} />
+              </span>
+              <div className="sid-letter-type-form-text">
+                <p className="sid-letter-type-form-title">{form.title}</p>
+                {form.description && (
+                  <p className="sid-letter-type-form-description">{form.description}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="sid-btn sid-btn-secondary sid-letter-type-form-download"
+                onClick={() => download(form.key)}
+                disabled={busyKey !== ''}
+                aria-busy={busy}
+                aria-label={`Unduh ${form.title}`}
+              >
+                {busy ? (
+                  <Loader2 size={16} className="sid-spin" aria-hidden="true" />
+                ) : (
+                  <Download size={16} aria-hidden="true" />
+                )}
+                {busy ? 'Mengunduh' : 'Unduh'}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {error && (
+        <p className="sid-form-field-error" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )
@@ -177,6 +258,8 @@ export function LetterTypePicker({
         )}
 
         <CarryDocuments documents={selected.carry_documents} />
+
+        <HandwrittenForms type={selected} />
       </div>
     )
   }
