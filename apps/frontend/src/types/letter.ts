@@ -145,6 +145,8 @@ export type LetterFormField = {
   // 'image': hanya gambar; selain itu PDF atau gambar.
   accept?: string
   past?: boolean
+  // Tanggal rencana (mis. kegiatan): tidak sebelum hari ini.
+  upcoming?: boolean
   report_deadline?: { days: number; event: string; when?: FieldCondition | null } | null
   integer?: boolean
   min_value?: number | null
@@ -177,6 +179,12 @@ export type LetterFormField = {
   family_head_of?: string | null
 }
 
+export type HandwrittenForm = {
+  key: string
+  title: string
+  description: string | null
+}
+
 export type LetterType = {
   id: number
   code: string
@@ -188,6 +196,11 @@ export type LetterType = {
   requirements_info: string | null
   // Dokumen yang dibawa ke instansi luar (Layanan Kependudukan).
   carry_documents: { forms?: string[]; attachments?: string[] } | null
+  // Formulir isi tangan yang diunduh pemohon sebelum mengajukan
+  // (GET /api/letter-types/{id}/forms/{key}), berisi identitas pemohon.
+  handwritten_forms?: HandwrittenForm[]
+  // Ukuran kertas dokumen utama: a4 atau f4.
+  paper_size?: 'a4' | 'f4'
   flow_id: number | null
   flow?: { id: number; name: string }
   assigned_role: string | null

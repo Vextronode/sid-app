@@ -65,18 +65,26 @@ export function todayDate() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-// Isian `past`: tanggal tidak sesudah hari ini.
+// Isian `past`: tanggal tidak sesudah hari ini; `upcoming`: tidak sebelum
+// hari ini.
 const dateSchema = (field: SuratField) => {
   const base: z.ZodType<string | undefined> = field.required
     ? requiredDate(field.label)
     : optionalText
 
-  return field.past
+  const notAfterToday = field.past
     ? base.refine(
         (value) => !value || value <= todayDate(),
         `${field.label} tidak boleh sesudah hari ini`,
       )
     : base
+
+  return field.upcoming
+    ? notAfterToday.refine(
+        (value) => !value || value >= todayDate(),
+        `${field.label} tidak boleh sebelum hari ini`,
+      )
+    : notAfterToday
 }
 
 const numberText = (field: SuratField, required: boolean) => {

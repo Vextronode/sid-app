@@ -587,3 +587,31 @@ describe('family_member roles', () => {
     expect(config.fields.map((field) => field.roles)).toEqual([['anak'], null])
   })
 })
+
+describe('upcoming dates', () => {
+  const config = formConfig(
+    partialFixture<LetterType>({
+      code: 'A12',
+      form_fields: [
+        {
+          name: 'tanggal_kegiatan',
+          label: 'Tanggal Kegiatan',
+          type: 'date',
+          required: true,
+          upcoming: true,
+        },
+      ],
+    }),
+  )
+  const errorsOf = (values: SuratFormValues) =>
+    (getSuratSchema(config).safeParse(values).error?.issues ?? []).map((issue) => issue.message)
+
+  it('rejects an event date before today and accepts today or later', () => {
+    expect(config.fields[0].upcoming).toBe(true)
+    expect(errorsOf({ tanggal_kegiatan: '2000-01-01' })).toEqual([
+      'Tanggal Kegiatan tidak boleh sebelum hari ini',
+    ])
+    expect(errorsOf({ tanggal_kegiatan: todayDate() })).toEqual([])
+    expect(errorsOf({ tanggal_kegiatan: '2999-01-01' })).toEqual([])
+  })
+})

@@ -463,6 +463,7 @@ export function DynamicSuratForm({
                     id={field.name}
                     type="date"
                     max={field.past ? todayDate() : undefined}
+                    min={field.upcoming ? todayDate() : undefined}
                     {...register(field.name)}
                     className={inputClass}
                   />

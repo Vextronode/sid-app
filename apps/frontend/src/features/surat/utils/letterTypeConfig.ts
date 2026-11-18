@@ -19,6 +19,8 @@ function normalizeField(field: LetterFormField): SuratField {
     multiple: false,
     // Tanggal peristiwa yang sudah terjadi: tidak sesudah hari ini.
     past: Boolean(field.past),
+    // Tanggal rencana (mis. kegiatan): tidak sebelum hari ini.
+    upcoming: Boolean(field.upcoming),
     // Batas waktu pelaporan peristiwa ({ days, event, when }): peringatan saja.
     reportDeadline: field.report_deadline ?? null,
     // Angka: bilangan bulat dan batas bawah (mis. penghasilan rupiah).
