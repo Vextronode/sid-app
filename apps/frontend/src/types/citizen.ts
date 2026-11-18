@@ -24,6 +24,8 @@ export type Citizen = {
   mother_id: Uuid | null
   father_name_text: string | null
   mother_name_text: string | null
+  // Ibu tertaut atau teks; hanya bila relasi ibu dimuat (mis. GET /api/user).
+  mother_name?: string | null
   marital_status: string | null
   occupation_id: number | null
   occupation: string | null

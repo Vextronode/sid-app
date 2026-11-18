@@ -27,6 +27,8 @@ export type SuratField = {
   minValue: number | null
   visibleWhen: FieldCondition | null
   help: string | null
+  section: string | null
+  relationHint: boolean
   defaultValue: LetterFormField['default']
   gender: 'L' | 'P' | null
   roles: string[] | null

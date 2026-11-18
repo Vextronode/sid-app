@@ -47,6 +47,8 @@ export type LetterListItem = {
     name: string
     code: string
     signed_by_village_head: boolean
+    // false: layanan pendataan (mis. CPMI F11), tidak ada surat untuk diunduh.
+    produces_letter?: boolean
   } | null
   citizen: { id: Uuid; name: string } | null
 }
@@ -132,7 +134,8 @@ export type FieldCondition = {
   all?: FieldCondition[]
 }
 
-export type FieldOption = { value: string; label?: string }
+// `visible_when`: pilihan hanya tampil (dan sah) bila syaratnya terpenuhi.
+export type FieldOption = { value: string; label?: string; visible_when?: FieldCondition | null }
 
 // Satu isian form dinamis dari letter_types.form_fields (snake_case backend).
 export type LetterFormField = {
@@ -152,6 +155,10 @@ export type LetterFormField = {
   min_value?: number | null
   visible_when?: FieldCondition | null
   help?: string | null
+  // Judul kelompok isian (tampilan saja): form memberi pemisah tiap kali berganti.
+  section?: string | null
+  // family_member penanggung jawab CPMI: tampilkan hubungannya dengan pemohon.
+  relation_hint?: boolean
   default?: string | number | boolean | null
   gender?: 'L' | 'P' | null
   roles?: string[]

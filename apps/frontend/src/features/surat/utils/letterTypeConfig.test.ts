@@ -3,6 +3,7 @@ import {
   applicantPrefill,
   applicantValue,
   applicantValues,
+  describeLetterTypeOutput,
   getLetterTypeFormConfig,
 } from './letterTypeConfig'
 import { getSuratSchema, todayDate } from '../validation/suratSchema'
@@ -660,5 +661,18 @@ describe('upcoming dates', () => {
     ])
     expect(errorsOf({ tanggal_kegiatan: todayDate() })).toEqual([])
     expect(errorsOf({ tanggal_kegiatan: '2999-01-01' })).toEqual([])
+  })
+})
+
+describe('describeLetterTypeOutput', () => {
+  it('names the result of each letter type for Kelola Jenis Surat', () => {
+    expect(describeLetterTypeOutput({ produces_letter: true, data_action: 'none' })).toBe('Surat')
+    expect(describeLetterTypeOutput({ produces_letter: true, data_action: 'create_citizen' })).toBe(
+      'Surat + tambah warga',
+    )
+    // Layanan pendataan tanpa surat (CPMI F11).
+    expect(describeLetterTypeOutput({ produces_letter: false, data_action: 'none' })).toBe(
+      'Data (tanpa surat)',
+    )
   })
 })
