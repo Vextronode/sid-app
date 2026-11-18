@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Notification;
  * bukan di request SIGAP: kanal `database` menulis satu baris per akun.
  *
  * Sebelum mengirim, keadaan peringatan diperiksa ulang dan
- * `notified_level_rank` diperbarui di bawah kunci baris, jadi job yang
+ * `notified_level_rank` serta `notified_magnitude` (patokan gempa susulan)
+ * diperbarui di bawah kunci baris, jadi job yang
  * berjalan dua kali atau dua pembaruan yang berdekatan tidak mengirim dobel.
  * Peringatan yang sudah diturunkan atau diakhiri sebelum job berjalan tidak
  * dikirim.
@@ -32,11 +33,16 @@ class SendDisasterAlertNotifications implements ShouldQueue
         $alert = DB::transaction(function (): ?DisasterAlert {
             $alert = DisasterAlert::query()->lockForUpdate()->find($this->alertId);
 
-            if ($alert === null || ! $alert->isDisplayed() || $alert->level_rank <= ($alert->notified_level_rank ?? 0)) {
+            if ($alert === null || ! $alert->needsNotification()) {
                 return null;
             }
 
-            $alert->update(['notified_level_rank' => $alert->level_rank]);
+            // Level tertinggi yang pernah dikirim; magnitudo saat ini jadi
+            // patokan gempa susulan berikutnya (kosong: patokan lama tetap).
+            $alert->update([
+                'notified_level_rank' => max($alert->level_rank, $alert->notified_level_rank ?? 0),
+                'notified_magnitude' => $alert->magnitude ?? $alert->notified_magnitude,
+            ]);
 
             return $alert;
         });

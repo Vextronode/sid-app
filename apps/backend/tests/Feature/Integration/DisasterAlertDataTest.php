@@ -31,10 +31,10 @@ class DisasterAlertDataTest extends TestCase
         $this->sigap = IntegrationClient::factory()->sigap()->create(['village_id' => $this->village->id]);
     }
 
-    public function test_level_rank_follows_info_waspada_siaga_awas(): void
+    public function test_level_rank_follows_waspada_siaga_awas(): void
     {
         $this->assertSame(
-            ['info' => 1, 'waspada' => 2, 'siaga' => 3, 'awas' => 4],
+            ['waspada' => 1, 'siaga' => 2, 'awas' => 3],
             collect(DisasterAlertLevel::cases())->mapWithKeys(fn (DisasterAlertLevel $level) => [$level->value => $level->rank()])->all(),
         );
     }
@@ -67,7 +67,7 @@ class DisasterAlertDataTest extends TestCase
     public function test_displayed_alerts_are_ordered_by_level_then_newest_and_scoped_to_the_village(): void
     {
         $olderAwas = $this->alert(['sent_at' => now()->subHour()], level: DisasterAlertLevel::Awas);
-        $info = $this->alert(['sent_at' => now()->subMinute()], level: DisasterAlertLevel::Info);
+        $waspada = $this->alert(['sent_at' => now()->subMinute()], level: DisasterAlertLevel::Waspada);
         $newerAwas = $this->alert(['sent_at' => now()->subMinutes(2)], level: DisasterAlertLevel::Awas);
         $siaga = $this->alert(level: DisasterAlertLevel::Siaga);
 
@@ -75,7 +75,7 @@ class DisasterAlertDataTest extends TestCase
         DisasterAlert::factory()->level(DisasterAlertLevel::Awas)->create(['integration_client_id' => $otherVillage->id]);
 
         $this->assertSame(
-            [$newerAwas->id, $olderAwas->id, $siaga->id, $info->id],
+            [$newerAwas->id, $olderAwas->id, $siaga->id, $waspada->id],
             app(DisasterAlertService::class)->displayedForVillage($this->village->id)->pluck('id')->all(),
         );
     }

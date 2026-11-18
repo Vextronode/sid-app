@@ -47,6 +47,7 @@ class DisasterAlert extends Model
         'dismissed_by',
         'dismiss_reason',
         'notified_level_rank',
+        'notified_magnitude',
     ];
 
     protected function casts(): array
@@ -56,6 +57,7 @@ class DisasterAlert extends Model
             'level' => DisasterAlertLevel::class,
             'level_rank' => 'integer',
             'notified_level_rank' => 'integer',
+            'notified_magnitude' => 'float',
             'magnitude' => 'float',
             'depth_km' => 'float',
             'occurred_at' => 'datetime',
@@ -100,6 +102,37 @@ class DisasterAlert extends Model
     public function isDisplayed(): bool
     {
         return $this->status === DisasterAlertStatus::Active;
+    }
+
+    /**
+     * Isi peringatan layak dikirim (lagi) sebagai notifikasi, tanpa melihat
+     * apakah sedang tampil: belum pernah dikirim, levelnya naik melewati
+     * level tertinggi yang pernah dikirim, atau magnitudonya naik minimal
+     * `disaster_alerts.magnitude_renotify_delta` dari patokan (gempa
+     * susulan yang jauh lebih besar). Magnitudo kosong, atau patokan yang
+     * masih kosong, tidak dihitung sebagai naik.
+     */
+    public function hasEscalated(): bool
+    {
+        if ($this->notified_level_rank === null || $this->level_rank > $this->notified_level_rank) {
+            return true;
+        }
+
+        if ($this->magnitude === null || $this->notified_magnitude === null) {
+            return false;
+        }
+
+        // Dibandingkan dalam persepuluhan supaya 6.0 - 5.0 tidak meleset
+        // karena pembulatan float.
+        $delta = (int) round((float) config('disaster_alerts.magnitude_renotify_delta', 1.0) * 10);
+
+        return (int) round($this->magnitude * 10) - (int) round($this->notified_magnitude * 10) >= $delta;
+    }
+
+    /** Sedang tampil dan layak dikirim sebagai notifikasi. */
+    public function needsNotification(): bool
+    {
+        return $this->isDisplayed() && $this->hasEscalated();
     }
 
     /**

@@ -77,7 +77,7 @@ class DisasterAlertManagementTest extends TestCase
 
     public function test_lists_displayed_and_dismissed_alerts(): void
     {
-        $info = $this->alert(DisasterAlertLevel::Info);
+        $waspada = $this->alert(DisasterAlertLevel::Waspada);
         $awas = $this->alert(DisasterAlertLevel::Awas);
         $dismissed = $this->alert(DisasterAlertLevel::Siaga, [
             'dismissed_at' => now(),
@@ -90,7 +90,7 @@ class DisasterAlertManagementTest extends TestCase
 
         $this->actingAs($this->staf, 'web')->getJson('/api/disaster-alerts')
             ->assertOk()
-            ->assertJsonPath('data.*.id', [$awas->id, $info->id])
+            ->assertJsonPath('data.*.id', [$awas->id, $waspada->id])
             ->assertJsonPath('data.0.status', 'active')
             ->assertJsonPath('data.0.source', 'SIGAP');
 
@@ -184,7 +184,43 @@ class DisasterAlertManagementTest extends TestCase
         }
     }
 
-    public function test_sigap_updates_keep_a_dismissed_alert_hidden_until_restored(): void
+    public function test_small_sigap_updates_keep_a_dismissed_alert_hidden(): void
+    {
+        Notification::fake();
+        // Factory: waspada M5.2, belum pernah dinotifikasi.
+        $alert = $this->alert(DisasterAlertLevel::Waspada);
+
+        $this->actingAs($this->staf, 'web')
+            ->postJson("/api/disaster-alerts/{$alert->id}/dismiss", ['reason' => 'Alarm palsu.'])
+            ->assertOk();
+
+        // Isi saat diturunkan jadi patokan.
+        $this->assertSame([1, 5.2], [$alert->fresh()->notified_level_rank, $alert->fresh()->notified_magnitude]);
+
+        $this->upsert($alert, ['level' => 'waspada', 'title' => 'Gempa susulan M6.1', 'magnitude' => 6.1], minutes: 1);
+
+        $this->getJson('/api/public/disaster-alerts')->assertJsonCount(0, 'data');
+        $this->assertSame('Gempa susulan M6.1', $alert->fresh()->title);
+        $this->assertNotNull($alert->fresh()->dismissed_at);
+        Notification::assertNotSentTo($this->staf, DisasterAlertNotification::class);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function escalations(): array
+    {
+        return [
+            'level naik' => [['level' => 'awas', 'title' => 'Level naik', 'magnitude' => 5.2]],
+            'gempa susulan +1M' => [['level' => 'waspada', 'title' => 'Gempa susulan M6.2', 'magnitude' => 6.2]],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $update
+     */
+    #[DataProvider('escalations')]
+    public function test_escalating_sigap_update_shows_a_dismissed_alert_again_and_notifies(array $update): void
     {
         Notification::fake();
         $alert = $this->alert(DisasterAlertLevel::Waspada);
@@ -193,16 +229,50 @@ class DisasterAlertManagementTest extends TestCase
             ->postJson("/api/disaster-alerts/{$alert->id}/dismiss", ['reason' => 'Alarm palsu.'])
             ->assertOk();
 
+        $this->upsert($alert, $update, minutes: 1);
+
+        $fresh = $alert->fresh();
+        $this->assertNull($fresh->dismissed_at);
+        $this->assertNull($fresh->dismissed_by);
+        $this->assertNull($fresh->dismiss_reason);
+        $this->getJson('/api/public/disaster-alerts')->assertJsonPath('data.0.id', $alert->id);
+        Notification::assertSentToTimes($this->staf, DisasterAlertNotification::class, 1);
+
+        $activity = Activity::query()->where('log_name', 'disaster_alert')->where('event', 'redisplayed')->sole();
+        $this->assertSame($alert->id, $activity->subject_id);
+        $this->assertSame($this->sigap->id, $activity->causer_id);
+        $this->assertSame('Alarm palsu.', $activity->properties['dismiss_reason']);
+        $this->assertSame($this->staf->id, $activity->properties['dismissed_by']);
+        $this->assertDatabaseHas('activity_log', ['log_name' => 'integration', 'event' => 'alert_redisplayed']);
+    }
+
+    public function test_escalation_does_not_bring_back_an_ended_alert(): void
+    {
+        Notification::fake();
+        $alert = $this->alert(DisasterAlertLevel::Waspada);
+
+        $this->actingAs($this->staf, 'web')
+            ->postJson("/api/disaster-alerts/{$alert->id}/dismiss", ['reason' => 'Alarm palsu.'])
+            ->assertOk();
+        app(DisasterAlertService::class)->endFromSigap($this->sigap, $alert->external_id);
+
+        $this->upsert($alert, ['level' => 'awas', 'title' => 'Level naik'], minutes: 1);
+
+        $this->assertNotNull($alert->fresh()->dismissed_at);
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function upsert(DisasterAlert $alert, array $data, int $minutes): void
+    {
         app(DisasterAlertService::class)->upsertFromSigap($this->sigap, $alert->external_id, [
             'type' => 'gempa',
-            'level' => 'awas',
-            'title' => 'Level naik',
             'occurred_at' => now()->toIso8601String(),
-            'sent_at' => now()->addMinute()->toIso8601String(),
+            'sent_at' => now()->addMinutes($minutes)->toIso8601String(),
+            ...$data,
         ]);
-
-        $this->getJson('/api/public/disaster-alerts')->assertJsonCount(0, 'data');
-        Notification::assertNotSentTo($this->staf, DisasterAlertNotification::class);
     }
 
     /**

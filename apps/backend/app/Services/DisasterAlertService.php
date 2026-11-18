@@ -81,10 +81,17 @@ class DisasterAlertService
                 abort(409, 'Peringatan ini sudah tidak tampil. Muat ulang daftar.');
             }
 
+            // Diturunkan sebelum notifikasi pertama terkirim: isi saat ini
+            // jadi patokan, supaya hanya kenaikan sesudahnya yang menampilkan
+            // peringatan lagi (lihat upsertFromSigap).
             $locked->update([
                 'dismissed_at' => now(),
                 'dismissed_by' => $actor->id,
                 'dismiss_reason' => $reason,
+                ...($locked->notified_level_rank === null ? [
+                    'notified_level_rank' => $locked->level_rank,
+                    'notified_magnitude' => $locked->magnitude,
+                ] : []),
             ]);
 
             $this->staffAudit($locked, $actor, 'dismissed', 'Peringatan bencana diturunkan', ['reason' => $reason]);
@@ -128,8 +135,11 @@ class DisasterAlertService
      * - Diakhiri bersifat final: pembaruan diabaikan.
      * - `sent_at` yang tidak lebih baru dari yang tersimpan diabaikan
      *   (datang terlambat atau dikirim ulang).
-     * - Peringatan yang diturunkan staf tetap tersembunyi; isinya tetap
-     *   diperbarui.
+     * - Gempa susulan datang sebagai pembaruan (external_id sama).
+     * - Peringatan yang diturunkan staf tetap tersembunyi dan isinya tetap
+     *   diperbarui, kecuali levelnya naik atau magnitudonya naik minimal
+     *   `magnitude_renotify_delta` dari patokan: peringatan tampil lagi dan
+     *   notifikasi dikirim.
      *
      * @param  array<string, mixed>  $data  Hasil UpsertDisasterAlertRequest.
      * @return array{alert: DisasterAlert, created: bool}
@@ -171,9 +181,18 @@ class DisasterAlertService
                 return ['alert' => $alert, 'created' => false];
             }
 
-            $alert->update($this->content($data, $sentAt, $alert->created_at));
+            $alert->fill($this->content($data, $sentAt, $alert->created_at));
+
+            // Magnitudo pertama yang datang setelah notifikasi hanya
+            // melengkapi data: jadi patokan, bukan dihitung sebagai naik.
+            if ($alert->notified_level_rank !== null && $alert->notified_magnitude === null && $alert->magnitude !== null) {
+                $alert->notified_magnitude = $alert->magnitude;
+            }
+
+            $alert->save();
 
             $this->audit($client, $alert, 'alert_updated', 'Peringatan bencana diperbarui SIGAP');
+            $this->redisplayIfEscalated($client, $alert);
             $this->queueNotificationIfNeeded($alert);
 
             return ['alert' => $alert, 'created' => false];
@@ -264,13 +283,60 @@ class DisasterAlertService
     }
 
     /**
-     * Notifikasi hanya untuk peringatan yang tampil dan levelnya lebih tinggi
-     * dari yang pernah dikirim. Job memeriksa ulang di bawah kunci baris,
-     * jadi pembaruan yang berdekatan tidak mengirim dobel.
+     * Peringatan yang diturunkan staf tampil lagi bila pembaruan dari SIGAP
+     * menaikkan level atau magnitudonya cukup jauh (DisasterAlert::hasEscalated),
+     * selama belum berakhir dan belum lewat masa tayang. Notifikasinya
+     * dikirim queueNotificationIfNeeded sesudahnya.
+     */
+    private function redisplayIfEscalated(IntegrationClient $client, DisasterAlert $alert): void
+    {
+        // Tanpa patokan (notified_level_rank kosong) tidak ada yang bisa
+        // dibandingkan; dismiss() selalu mengisinya.
+        if ($alert->dismissed_at === null
+            || $alert->notified_level_rank === null
+            || $alert->ended_at !== null
+            || ! $alert->expires_at->isFuture()
+            || ! $alert->hasEscalated()) {
+            return;
+        }
+
+        $previous = [
+            'dismissed_by' => $alert->dismissed_by,
+            'dismiss_reason' => $alert->dismiss_reason,
+        ];
+
+        $alert->update([
+            'dismissed_at' => null,
+            'dismissed_by' => null,
+            'dismiss_reason' => null,
+        ]);
+
+        $this->audit($client, $alert, 'alert_redisplayed', 'Peringatan yang diturunkan tampil lagi karena level atau magnitudo naik', $previous);
+
+        activity('disaster_alert')
+            ->performedOn($alert)
+            ->causedBy($client)
+            ->event('redisplayed')
+            ->withProperties([
+                'village_id' => $alert->village_id,
+                'subject_label' => $alert->title,
+                'external_id' => $alert->external_id,
+                'level' => $alert->level->value,
+                'magnitude' => $alert->magnitude,
+                ...$previous,
+            ])
+            ->log('Peringatan bencana tampil lagi karena level atau magnitudo naik');
+    }
+
+    /**
+     * Notifikasi hanya untuk peringatan yang tampil dan baru, levelnya naik,
+     * atau magnitudonya naik cukup jauh (DisasterAlert::needsNotification).
+     * Job memeriksa ulang di bawah kunci baris, jadi pembaruan yang
+     * berdekatan tidak mengirim dobel.
      */
     private function queueNotificationIfNeeded(DisasterAlert $alert): void
     {
-        if ($alert->isDisplayed() && $alert->level_rank > ($alert->notified_level_rank ?? 0)) {
+        if ($alert->needsNotification()) {
             SendDisasterAlertNotifications::dispatch($alert->id)->afterCommit();
         }
     }

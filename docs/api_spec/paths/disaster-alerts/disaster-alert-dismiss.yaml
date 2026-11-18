@@ -12,7 +12,12 @@ post:
     Eksklusif Staf SIDUTama, hanya peringatan desanya (lainnya 404) yang
     sedang tampil (lainnya 409). Alasan wajib. Pembaruan dari SIGAP untuk
     peringatan ini tetap disimpan tetapi tidak tampil sampai ditampilkan
-    lagi. Dicatat di activity log (`log_name` `disaster_alert`, event
+    lagi, kecuali pembaruan itu menaikkan level atau berisi gempa susulan
+    dengan magnitudo minimal 1,0 di atas patokan: peringatan otomatis tampil
+    lagi dan notifikasi dikirim (activity log `disaster_alert`, event
+    `redisplayed`, causer client SIGAP). Bila peringatan belum pernah
+    dinotifikasi, level dan magnitudo saat diturunkan menjadi patokan.
+    Dicatat di activity log (`log_name` `disaster_alert`, event
     `dismissed`, beserta alasan).
   operationId: dismissDisasterAlert
   security:

@@ -641,8 +641,8 @@ Peringatan bencana yang dikirim SIGAP lewat `PUT /api/integrations/v1/alerts/{ex
 | integration_client_id | UUID | FK → integration_clients.id, ON DELETE CASCADE | Sumber peringatan |
 | external_id | VARCHAR(100) | NOT NULL | ID dari SIGAP, pola `[A-Za-z0-9._:-]` |
 | type | VARCHAR(30) | NOT NULL | `gempa` \| `tsunami` (`DisasterAlertType`) |
-| level | VARCHAR(20) | NOT NULL | `info` \| `waspada` \| `siaga` \| `awas` (`DisasterAlertLevel`) |
-| level_rank | UNSIGNED TINYINT | NOT NULL | 1–4, untuk urutan tampil |
+| level | VARCHAR(20) | NOT NULL | `waspada` \| `siaga` \| `awas` (`DisasterAlertLevel`) |
+| level_rank | UNSIGNED TINYINT | NOT NULL | 1–3 (waspada–awas), untuk urutan tampil |
 | title | VARCHAR(150) | NOT NULL | |
 | message | TEXT | NULL | |
 | magnitude | DECIMAL(3,1) | NULL | |
@@ -656,7 +656,8 @@ Peringatan bencana yang dikirim SIGAP lewat `PUT /api/integrations/v1/alerts/{ex
 | dismissed_at | TIMESTAMP | NULL | Diturunkan Staf SIDUTama |
 | dismissed_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
 | dismiss_reason | TEXT | NULL | Wajib saat menurunkan |
-| notified_level_rank | UNSIGNED TINYINT | NULL | Level tertinggi yang sudah dikirim sebagai notifikasi; mencegah kiriman dobel |
+| notified_level_rank | UNSIGNED TINYINT | NULL | Level tertinggi yang sudah dikirim sebagai notifikasi; mencegah kiriman dobel. Diisi level saat diturunkan bila belum pernah dinotifikasi |
+| notified_magnitude | DECIMAL(3,1) | NULL | Patokan gempa susulan: magnitudo saat notifikasi terakhir (atau magnitudo pertama yang datang sesudahnya). Notifikasi ulang bila `magnitude` ≥ patokan + `disaster_alerts.magnitude_renotify_delta` (1,0) |
 | created_at, updated_at | TIMESTAMP | NULL | `created_at` = waktu pertama diterima (`received_at` di API) |
 
 Constraint: `UNIQUE(integration_client_id, external_id)` (`uq_disaster_alerts_client_external`). Index: `idx_disaster_alerts_village_expires (village_id, expires_at)`.

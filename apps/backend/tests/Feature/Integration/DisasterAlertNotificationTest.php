@@ -21,7 +21,8 @@ use Tests\TestCase;
 
 /**
  * Notifikasi peringatan bencana ke semua akun aktif di desa (langkah 3):
- * hanya saat peringatan baru tampil atau levelnya naik, tanpa kiriman dobel.
+ * hanya saat peringatan baru tampil, levelnya naik, atau gempa susulan
+ * (external_id sama) minimal 1M di atas patokan, tanpa kiriman dobel.
  */
 class DisasterAlertNotificationTest extends TestCase
 {
@@ -93,7 +94,7 @@ class DisasterAlertNotificationTest extends TestCase
                 && $data['context']['alert_id'] === DisasterAlert::query()->value('id');
         });
 
-        $this->assertSame(4, DisasterAlert::query()->value('notified_level_rank'));
+        $this->assertSame(3, DisasterAlert::query()->value('notified_level_rank'));
     }
 
     public function test_level_rise_notifies_again_but_text_revisions_and_level_drops_do_not(): void
@@ -102,14 +103,142 @@ class DisasterAlertNotificationTest extends TestCase
 
         $this->sendAlert('gempa-881', ['level' => 'waspada', 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
         $this->sendAlert('gempa-881', ['level' => 'waspada', 'title' => 'Gempa M6.9 (revisi)', 'sent_at' => '2026-11-16T14:05:00+07:00'])->assertOk();
-        $this->sendAlert('gempa-881', ['level' => 'info', 'sent_at' => '2026-11-16T14:06:00+07:00'])->assertOk();
+        $this->sendAlert('gempa-881', ['level' => 'siaga', 'sent_at' => '2026-11-16T14:06:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+
+        // Turun lalu naik lagi ke level yang sudah pernah dikirim: tidak dikirim.
         $this->sendAlert('gempa-881', ['level' => 'waspada', 'sent_at' => '2026-11-16T14:07:00+07:00'])->assertOk();
-
-        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
-
         $this->sendAlert('gempa-881', ['level' => 'siaga', 'sent_at' => '2026-11-16T14:08:00+07:00'])->assertOk();
 
         Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+
+        $this->sendAlert('gempa-881', ['level' => 'awas', 'sent_at' => '2026-11-16T14:09:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 3);
+        $this->assertSame(3, DisasterAlert::query()->value('notified_level_rank'));
+    }
+
+    public function test_aftershocks_notify_again_only_when_at_least_one_magnitude_above_the_last_notified(): void
+    {
+        Notification::fake();
+
+        $this->sendAlert('gempa-881', ['magnitude' => 5.0, 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->assertSame(5.0, $this->alertModel()->notified_magnitude);
+
+        // Susulan +0.6 dan +0.9 dari patokan: hanya pembaruan.
+        $this->sendAlert('gempa-881', ['magnitude' => 5.6, 'title' => 'Susulan M5.6', 'sent_at' => '2026-11-16T14:10:00+07:00'])->assertOk();
+        $this->sendAlert('gempa-881', ['magnitude' => 5.9, 'title' => 'Susulan M5.9', 'sent_at' => '2026-11-16T14:20:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+        $this->assertSame('Susulan M5.9', DisasterAlert::query()->value('title'));
+        $this->assertSame(5.0, $this->alertModel()->notified_magnitude);
+
+        // Tepat +1.0 dari patokan (bukan dari susulan sebelumnya): dikirim.
+        $this->sendAlert('gempa-881', ['magnitude' => 6.0, 'title' => 'Susulan M6.0', 'sent_at' => '2026-11-16T14:30:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+        $this->assertSame(6.0, $this->alertModel()->notified_magnitude);
+
+        // Patokan sudah bergeser ke 6.0.
+        $this->sendAlert('gempa-881', ['magnitude' => 6.9, 'sent_at' => '2026-11-16T14:40:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 7.0, 'sent_at' => '2026-11-16T14:50:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 3);
+    }
+
+    public function test_alert_without_magnitude_only_follows_the_level_rule(): void
+    {
+        Notification::fake();
+
+        $this->sendAlert('tsunami-882', ['type' => 'tsunami', 'level' => 'siaga', 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->sendAlert('tsunami-882', ['type' => 'tsunami', 'level' => 'siaga', 'title' => 'Revisi', 'sent_at' => '2026-11-16T14:04:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+
+        $this->sendAlert('tsunami-882', ['type' => 'tsunami', 'level' => 'awas', 'sent_at' => '2026-11-16T14:05:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+        $this->assertNull($this->alertModel()->notified_magnitude);
+    }
+
+    public function test_first_magnitude_after_notification_only_sets_the_baseline(): void
+    {
+        Notification::fake();
+
+        $this->sendAlert('gempa-881', ['sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->assertNull($this->alertModel()->notified_magnitude);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 6.0, 'sent_at' => '2026-11-16T14:04:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+        $this->assertSame(6.0, $this->alertModel()->notified_magnitude);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 6.5, 'sent_at' => '2026-11-16T14:05:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 7.0, 'sent_at' => '2026-11-16T14:06:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+        $this->assertSame(7.0, $this->alertModel()->notified_magnitude);
+    }
+
+    public function test_missing_magnitude_in_an_update_keeps_the_baseline(): void
+    {
+        Notification::fake();
+
+        $this->sendAlert('gempa-881', ['magnitude' => 6.0, 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->sendAlert('gempa-881', ['sent_at' => '2026-11-16T14:04:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+        $this->assertSame(6.0, $this->alertModel()->notified_magnitude);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 7.2, 'sent_at' => '2026-11-16T14:05:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+    }
+
+    public function test_level_rise_without_magnitude_keeps_the_magnitude_baseline(): void
+    {
+        Notification::fake();
+
+        $this->sendAlert('gempa-881', ['magnitude' => 6.0, 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->sendAlert('gempa-881', ['level' => 'awas', 'sent_at' => '2026-11-16T14:04:00+07:00'])->assertOk();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+        $this->assertSame([3, 6.0], [$this->alertModel()->notified_level_rank, $this->alertModel()->notified_magnitude]);
+    }
+
+    public function test_magnitude_threshold_follows_config(): void
+    {
+        Notification::fake();
+        config(['disaster_alerts.magnitude_renotify_delta' => 0.5]);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 5.0, 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $this->sendAlert('gempa-881', ['magnitude' => 5.4, 'sent_at' => '2026-11-16T14:04:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 1);
+
+        $this->sendAlert('gempa-881', ['magnitude' => 5.5, 'sent_at' => '2026-11-16T14:05:00+07:00'])->assertOk();
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+    }
+
+    public function test_aftershock_job_running_twice_does_not_send_twice(): void
+    {
+        Queue::fake();
+        Notification::fake();
+
+        $this->sendAlert('gempa-881', ['magnitude' => 5.0, 'sent_at' => '2026-11-16T14:03:00+07:00'])->assertCreated();
+        $id = DisasterAlert::query()->value('id');
+        (new SendDisasterAlertNotifications($id))->handle();
+
+        $this->sendAlert('gempa-881', ['magnitude' => 6.3, 'sent_at' => '2026-11-16T14:10:00+07:00'])->assertOk();
+        Queue::assertPushed(SendDisasterAlertNotifications::class, 2);
+
+        (new SendDisasterAlertNotifications($id))->handle();
+        (new SendDisasterAlertNotifications($id))->handle();
+
+        Notification::assertSentToTimes($this->residents[0], DisasterAlertNotification::class, 2);
+    }
+
+    private function alertModel(): DisasterAlert
+    {
+        return DisasterAlert::query()->sole();
     }
 
     public function test_ending_or_ignored_updates_do_not_notify(): void
@@ -184,6 +313,7 @@ class DisasterAlertNotificationTest extends TestCase
 
         return $this->withToken($this->token)->putJson('/api/integrations/v1/alerts/'.$externalId, [
             'type' => 'gempa',
+            'level' => 'waspada',
             'title' => 'Gempa M7.1',
             'occurred_at' => '2026-11-16T14:02:00+07:00',
             'sent_at' => '2026-11-16T14:03:00+07:00',

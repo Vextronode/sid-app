@@ -76,7 +76,7 @@ class DisasterAlertPublicEndpointTest extends TestCase
         $other = Village::factory()->create();
         $otherClient = IntegrationClient::factory()->sigap()->create(['village_id' => $other->id]);
         DisasterAlert::factory()->create(['integration_client_id' => $otherClient->id]);
-        $mine = $this->alert(DisasterAlertLevel::Info);
+        $mine = $this->alert(DisasterAlertLevel::Waspada);
 
         $this->getJson(self::URL.'?village_code='.$this->village->code)
             ->assertOk()

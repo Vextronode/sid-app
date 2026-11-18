@@ -93,10 +93,10 @@ class DisasterAlertApiTest extends TestCase
         $this->assertSame(DisasterAlertLevel::Siaga->rank(), $alert->level_rank);
 
         // Retry versi lama yang datang terlambat tidak menurunkan level.
-        $this->sendAlert('gempa-881', $this->payload(['level' => 'info', 'sent_at' => '2026-11-16T14:04:00+07:00']))
+        $this->sendAlert('gempa-881', $this->payload(['level' => 'waspada', 'sent_at' => '2026-11-16T14:04:00+07:00']))
             ->assertOk()
             ->assertJsonPath('data.level', 'siaga');
-        $this->sendAlert('gempa-881', $this->payload(['level' => 'info', 'sent_at' => '2026-11-16T14:05:00+07:00']))
+        $this->sendAlert('gempa-881', $this->payload(['level' => 'waspada', 'sent_at' => '2026-11-16T14:05:00+07:00']))
             ->assertOk()
             ->assertJsonPath('data.level', 'siaga');
 
@@ -190,6 +190,11 @@ class DisasterAlertApiTest extends TestCase
             ->assertJsonPath('errors.type.0', 'Jenis bencana tidak dikenal.');
 
         $this->sendAlert('gempa-x', $this->payload(['level' => 'merah']))
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.level.0', 'Level peringatan tidak dikenal.');
+
+        // SIGAP hanya mengirim waspada, siaga, dan awas.
+        $this->sendAlert('gempa-x', $this->payload(['level' => 'info']))
             ->assertUnprocessable()
             ->assertJsonPath('errors.level.0', 'Level peringatan tidak dikenal.');
 
