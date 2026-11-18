@@ -5,12 +5,14 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 3 dari 5 (+ Appendix) |
-| Status | v5.3 — Surat dinamis, tanda tangan, identitas desa (diselaraskan ke migration 2026-10-16) |
-| Cakupan | ERD, definisi tabel & atribut (29 tabel domain inti + 3 tabel operasional), indexing strategy, strategi enkripsi |
+| Status | v5.3 — diselaraskan ke migration 2026-11-19 |
+| Cakupan | ERD, definisi tabel & atribut (39 tabel domain inti + 3 tabel operasional), indexing strategy, strategi enkripsi |
 | Tabel Next Dev / Tahap 2 (letter_hashes, village_assets, dst) | Lihat `TDD-06_Appendix.md` |
 | Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-02_UseCase_Descriptions.md`, OpenAPI Spec v5.3, `SID-ARCH-BE-001` |
 
 > **v5.3:** `letter_categories` di-drop beserta `letter_types.category_id`, `approval_flows.category_id`, dan `letter_types.verification_type`. Jenis surat kini membawa definisi isian, aksi data, slot tanda tangan, dokumen pendukung, dan kode klasifikasi. Tabel baru: `letter_attachments`, `user_signatures`, `letter_signatures`, `signature_blocks`, `official_position_types`, `news_categories`, `news_category_news`, `push_subscriptions`. `letters` mendapat snapshot & kolom fulfillment; `villages` mendapat kolom kop surat & tampilan publik; `officials.position` menjadi VARCHAR.
+
+> **2026-11-19:** Tabel permintaan akun warga didokumentasikan: `account_registrations` (aktivasi akun pendaftaran online), `profile_photo_requests` (ganti foto profil), `password_reset_requests` (lupa kata sandi tanpa email). `push_subscriptions` mendapat kolom pemantauan `device_label`, `last_success_at`, `last_failed_at`. Akun hasil register dibuat nonaktif sampai disetujui.
 
 > **2026-11-12:** Tabel baru `citizen_businesses` (data usaha dari SKU A01 dan status pendaftaran pedagang Cimart).
 
@@ -26,7 +28,7 @@
 
 ⚠ Diagram tersedia di file terpisah (ERD v8 — Core [1/2] dan Pendukung [2/2], PlantUML) di `docs/diagram/code/erd/`.
 
-ERD mencakup 29 tabel domain inti. Sumber kebenaran adalah migration di `apps/backend/database/migrations/` (termasuk migration perubahan bertanggal 2026-10-09 s.d. 2026-10-12).
+ERD mencakup 39 tabel domain inti beserta tabel operasional `activity_log` dan `push_subscriptions` (diperbarui 2026-11-19). Sumber kebenaran adalah migration di `apps/backend/database/migrations/`.
 
 ---
 
@@ -116,13 +118,13 @@ Password menggunakan Argon2id. Seluruh role sistem disimpan di tabel ini.
 | name | VARCHAR(255) | NOT NULL | Nama lengkap pengguna |
 | username | VARCHAR(30) | UNIQUE, NOT NULL | Identifier login; dibuat saat registrasi dan dapat diubah di profil |
 | email | VARCHAR(255) | UNIQUE, NULL | Email opsional; bukan identifier login |
-| photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai dan dapat diubah selama role `warga` (oleh pemilik atau Staf SIDUTama); akun yang menjabat memakai `officials.photo_img` |
+| photo_img | VARCHAR(255) | NULL | Path foto profil akun di disk public (`user-photos/{village_id}/...`). Hanya dipakai selama role `warga`; diisi dari foto pendaftaran saat aktivasi disetujui, diganti lewat permintaan ganti foto yang disetujui petugas wilayah, atau langsung oleh Staf SIDUTama. Akun yang menjabat memakai `officials.photo_img` |
 | password | VARCHAR(255) | NOT NULL | Hash Argon2id |
 | must_change_password | BOOLEAN | DEFAULT false | Memaksa penggantian setelah reset password sementara |
 | role | ENUM | NULL | `warga` \| `rt` \| `rw` \| `kadus` \| `kasi_pemerintahan` \| `kaur_tu_umum` \| `staf_sid` \| `kepala_desa` \| `sekretaris_desa`. Nullable di migration; diisi saat registrasi atau assignment jabatan |
 | village_id | UUID | FK → villages.id, NULL | NULL untuk akun lintas desa |
 | citizen_id | UUID | FK → citizens.id, NULL | Link ke data kependudukan; NULL untuk akun teknis tanpa data kependudukan |
-| is_active | BOOLEAN | NOT NULL | Status akun aktif/nonaktif; tidak ada default di migration, wajib diisi saat create |
+| is_active | BOOLEAN | NOT NULL | Status akun aktif/nonaktif; tidak ada default di migration, wajib diisi saat create. Akun hasil register online dibuat `false` sampai aktivasinya disetujui (`account_registrations`) |
 | email_verified_at | TIMESTAMP | NULL | |
 | remember_token | VARCHAR(100) | NULL | |
 | created_at, updated_at | TIMESTAMP | | |
@@ -824,6 +826,75 @@ PK `(news_id, news_category_id)`. Satu berita wajib 1–2 kategori (dijaga Form 
 
 ---
 
+### 2.6. Permintaan Akun Warga
+
+Ketiga tabel ini berisi permintaan yang diputuskan petugas, satu baris per permintaan sekaligus riwayatnya. Pemegang keputusan `account_registrations` dan `profile_photo_requests` ditentukan saat dibaca (`AreaApprovalRouter`): RT wilayah warga, lalu RW, Kepala Dusun, atau Staf SIDUTama bila jenjang di bawahnya kosong; jenjang yang memutuskan dicatat di `decided_level`.
+
+**Tabel: account_registrations**
+
+Pendaftaran akun warga dari halaman Daftar (`POST /register`). Akun (`users`) dibuat nonaktif sampai disetujui.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK | |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | |
+| citizen_id | UUID | FK → citizens.id, ON DELETE CASCADE | |
+| user_id | UUID | FK → users.id, NULL, ON DELETE SET NULL | Akun yang diaktifkan |
+| rt_id, rw_id, hamlet_id | BIGINT | FK, NULL, ON DELETE SET NULL | Wilayah warga saat mendaftar (dasar routing) |
+| status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `approved` \| `rejected` |
+| method | VARCHAR(20) | DEFAULT 'online' | `online` (halaman Daftar) \| `manual` (Staf SIDUTama mengaktifkan NIK yang diblokir) |
+| photo_path | VARCHAR(255) | NULL | Foto wajah dari kamera di disk privat (`account-registrations/{village}/{citizen}/`); menjadi `users.photo_img` saat disetujui |
+| decided_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
+| decided_level | VARCHAR(20) | NULL | `rt` \| `rw` \| `kadus` \| `staf_sid` |
+| decided_at | TIMESTAMP | NULL | |
+| decision_notes | TEXT | NULL | Wajib saat menolak (5–500 karakter) |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `idx_account_registrations_village_status (village_id, status)`, `idx_account_registrations_citizen_status (citizen_id, status)`, unique parsial `account_registrations_single_pending_unique (citizen_id) WHERE status = 'pending'` (satu pendaftaran menunggu per warga, juga untuk dua kiriman bersamaan). NIK dengan 3 penolakan (`MAX_REJECTIONS`) tidak dapat mendaftar online lagi.
+
+**Tabel: profile_photo_requests**
+
+Permintaan warga mengganti foto profil akunnya.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK | |
+| village_id | UUID | FK → villages.id, ON DELETE CASCADE | |
+| user_id | UUID | FK → users.id, ON DELETE CASCADE | |
+| citizen_id | UUID | FK → citizens.id, NULL, ON DELETE SET NULL | |
+| rt_id, rw_id, hamlet_id | BIGINT | FK, NULL, ON DELETE SET NULL | Wilayah warga saat meminta |
+| status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `approved` \| `rejected` |
+| photo_path | VARCHAR(255) | NULL | Foto dari kamera di disk privat; dipindah menjadi foto profil saat disetujui |
+| decided_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | |
+| decided_level | VARCHAR(20) | NULL | Jenjang yang memutuskan |
+| decided_at | TIMESTAMP | NULL | |
+| decision_notes | TEXT | NULL | Wajib saat menolak |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `idx_profile_photo_requests_village_status (village_id, status)`, `idx_profile_photo_requests_user_status (user_id, status)`, unique parsial `profile_photo_requests_single_pending_unique (user_id) WHERE status = 'pending'`.
+
+**Tabel: password_reset_requests**
+
+Lupa kata sandi tanpa email: pengaju mengirim NIK + tanggal lahir, Staf SIDUTama desa yang sama menyetujui, lalu pengaju membuat kata sandi baru dari perangkat yang sama.
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | BIGINT | PK | |
+| user_id | UUID | FK → users.id, ON DELETE CASCADE | |
+| claim_token_hash | VARCHAR(64) | UNIQUE | Hash token klaim; token aslinya hanya disimpan di browser pengaju |
+| status | VARCHAR(20) | DEFAULT 'pending' | `pending` \| `approved` \| `rejected` \| `completed` \| `cancelled` (status efektif `expired` dihitung dari `approved_until`, tidak disimpan) |
+| requester_ip | VARCHAR(45) | NULL | |
+| handled_by | UUID | FK → users.id, NULL, ON DELETE SET NULL | Staf SIDUTama yang memutus |
+| handled_at | TIMESTAMP | NULL | |
+| response_notes | TEXT | NULL | Catatan penolakan (opsional) |
+| approved_until | TIMESTAMP | NULL | Batas membuat kata sandi baru (24 jam setelah disetujui) |
+| completed_at | TIMESTAMP | NULL | |
+| created_at, updated_at | TIMESTAMP | NULL | |
+
+Index: `idx_password_reset_requests_status (status, created_at)`, `idx_password_reset_requests_user (user_id, status)`. Pengajuan baru menggantikan permintaan akun itu yang masih terbuka.
+
+### 2.7. Tabel Operasional
+
 **Tabel operasional: push_subscriptions**
 
 Dibuat migration package `laravel-notification-channels/webpush` (dimodifikasi untuk UUID).
@@ -836,13 +907,16 @@ Dibuat migration package `laravel-notification-channels/webpush` (dimodifikasi u
 | public_key | VARCHAR(255) | NULL | `keys.p256dh` |
 | auth_token | VARCHAR(255) | NULL | `keys.auth` |
 | content_encoding | VARCHAR(255) | NULL | `aesgcm` \| `aes128gcm` |
+| device_label | VARCHAR(100) | NULL | Label ringkas dari User-Agent (mis. "Chrome · Android"); User-Agent mentah tidak disimpan |
+| last_success_at | TIMESTAMP | NULL | Pengiriman terakhir yang berhasil (listener `RecordWebPushDelivery`) |
+| last_failed_at | TIMESTAMP | NULL | Pengiriman terakhir yang gagal |
 | created_at, updated_at | TIMESTAMP | NULL | |
 
 ---
 
 **Tabel operasional: activity_log**
 
-Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel domain inti. Migration aplikasi menambahkan `event` dan `batch_uuid` ke skema package.
+Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari tabel domain inti. Tidak dibersihkan otomatis (`activitylog:clean` tidak dijadwalkan). Migration aplikasi menambahkan `event` dan `batch_uuid` ke skema package.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
@@ -858,7 +932,7 @@ Dibuat oleh package `spatie/laravel-activitylog`; bukan bagian dari 29 tabel dom
 
 ## 3. Ringkasan Tabel
 
-Ada **35 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **38 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
+Ada **39 tabel domain inti** dan **3 tabel operasional** (`letter_number_counters`, `activity_log`, `push_subscriptions`), total **42 tabel aplikasi non-framework**. Tabel framework Laravel (`cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`, `personal_access_tokens`) tidak dihitung.
 
 ```
 Wilayah (4): villages, hamlets, rws, rts
@@ -869,7 +943,9 @@ Alur Approval (2): approval_flows, flow_steps
 Surat (7): letter_types, letters, letter_approvals, letter_status_logs,
            letter_attachments, letter_signatures, letter_results
 Saksi (1): signature_blocks
-Usaha Warga (1): citizen_businesses
+Data Hasil Layanan (2): citizen_businesses, migrant_workers
+Permintaan Akun (3): account_registrations, profile_photo_requests,
+                    password_reset_requests
 Integrasi (2): integration_clients, disaster_alerts
 Konfigurasi (2): approval_settings, letter_expiry_reminder_settings
 Konten & Komunikasi (7): notifications, news, news_categories,
@@ -877,9 +953,9 @@ Konten & Komunikasi (7): notifications, news, news_categories,
                          announcements, village_info_pages
 Referensi (1): occupations
 
-Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 1 + 2 + 2 + 7 + 1 = 35 tabel
+Total domain inti: 4 + 4 + 2 + 2 + 2 + 7 + 1 + 2 + 3 + 2 + 2 + 7 + 1 = 39 tabel
 Operasional: letter_number_counters, activity_log, push_subscriptions (3 tabel)
-Total aplikasi non-framework: 38 tabel
+Total aplikasi non-framework: 42 tabel
 Di-drop: letter_categories (v5.3); user_signatures, signature_reset_requests (2026-10-31, TTD digital dihapus)
 ```
 
@@ -985,6 +1061,11 @@ Status: ✅ Aktif = ada di migration; 📋 Planned = rencana, belum di migration
 | notifications | (auto) | (notifiable_type, notifiable_id) | ✅ Aktif |
 | notifications | idx_notif_read_at | read_at | 📋 Planned |
 | push_subscriptions | morph index + unique endpoint | subscribable, endpoint | ✅ Aktif |
+| account_registrations | idx_account_registrations_village_status / _citizen_status | (village_id, status) / (citizen_id, status) | ✅ Aktif |
+| account_registrations | account_registrations_single_pending_unique (parsial) | citizen_id WHERE status = 'pending' | ✅ Aktif |
+| profile_photo_requests | idx_profile_photo_requests_village_status / _user_status | (village_id, status) / (user_id, status) | ✅ Aktif |
+| profile_photo_requests | profile_photo_requests_single_pending_unique (parsial) | user_id WHERE status = 'pending' | ✅ Aktif |
+| password_reset_requests | (unique) / idx_password_reset_requests_status / _user | claim_token_hash / (status, created_at) / (user_id, status) | ✅ Aktif |
 
 **Index pipeline**
 
@@ -1024,8 +1105,10 @@ Sistem mengelola data kependudukan warga (NIK, alamat) yang termasuk kategori da
 | users | password | Hash Argon2id (one-way hash, bukan enkripsi) |
 | letter_signatures | target_nik_hash | SHA-256 NIK target permintaan saksi (NIK plaintext tidak disimpan) |
 | citizen_businesses | email, phone | Kontak usaha warga, dikirim ke Cimart bila warga mendaftar |
+| migrant_workers | phone, email, work_history, guardian_address/phone/email, employer_address/contact, salary_facilities | Kontak, riwayat kerja, dan data kontrak CPMI |
+| password_reset_requests | claim_token_hash | SHA-256 token klaim (bukan enkripsi; token asli tidak disimpan) |
 
-Berkas privat (lampiran surat, hasil dari instansi) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan nama pejabat (dan NIK pejabat formulir Layanan Kependudukan yang memang tercetak), tanpa gambar TTD/stempel.
+Berkas privat (lampiran surat, hasil dari instansi, foto pendaftaran akun dan permintaan ganti foto) disimpan tidak terenkripsi di disk `private_uploads` (`storage/app/private`) dan hanya dilayani lewat endpoint terautentikasi. `letters.snapshot` menyimpan nama pejabat (dan NIK pejabat formulir Layanan Kependudukan yang memang tercetak), tanpa gambar TTD/stempel.
 
 **Strategi Dual-Column**
 

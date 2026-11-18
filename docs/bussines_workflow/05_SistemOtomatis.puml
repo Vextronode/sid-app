@@ -1,5 +1,5 @@
 @startuml
-title SID - Proses Otomatis Sistem (aktif di source 2026-11-12)
+title SID - Proses Otomatis Sistem (aktif di source 2026-11-19)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -34,6 +34,13 @@ fork again
 fork again
   :Final approve;
   :Nomor surat, expires_at (akhir hari WIB),\nsnapshot render;
+  :Catat usaha (A01) / Data CPMI (F11,\nlayanan tanpa surat) di transaksi yang sama;
+fork again
+  :Pendaftaran akun / permintaan ganti foto menunggu;
+  :Pemegang ditentukan saat ini:\nRT → RW → Kadus → Staf SIDUTama;
+fork again
+  :SIGAP mengirim / memperbarui peringatan;
+  :Simpan; bila baru tampil atau level naik,\nantrekan notifikasi ke semua akun aktif desa;
 fork again
   :Data publik berubah (desa, berita, kategori,\nperaturan, jenis surat, pejabat, dusun,\njenis jabatan, pengumuman, halaman informasi);
   :Gugurkan cache halaman publik desa;
@@ -41,6 +48,7 @@ fork again
   :Notifikasi dibuat (setelah commit);
   :Simpan in-app (sinkron);
   :Antrekan Web Push → kirim ke browser;
+  :Catat last_success_at / last_failed_at\nper perangkat (Pelanggan Notifikasi);
 end fork
 
 |#LightGreen|Scheduler (tiap 5 menit)|
@@ -107,6 +115,15 @@ note right
   Pembacaan publik sudah menyaring
   expires_at, jadi pengumuman basi
   tidak tampil walau scheduler terlambat.
+end note
+
+|#LightGreen|Scheduler (harian 02.00)|
+:disaster-alerts:prune;
+:Hapus peringatan SIGAP yang berakhir
+lebih lama dari masa simpan;
+note right
+  Activity log tidak dibersihkan otomatis
+  (bukti bila ada sengketa).
 end note
 stop
 

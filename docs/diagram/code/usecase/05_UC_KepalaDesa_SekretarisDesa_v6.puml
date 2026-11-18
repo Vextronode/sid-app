@@ -35,6 +35,8 @@ rectangle "SIDUTama" {
   usecase "UC-15: Dashboard\n(menunggu keputusan,\ntanpa surat milik sendiri)" as UC_DASH
   usecase "Notifikasi in-app & Web Push" as UC_NOTIF
   usecase "Ajukan Surat untuk Diri Sendiri\n(diputuskan pejabat lain)" as UC_SELF
+  usecase "Data Penduduk & KK\n(seluruh desa, read-only)" as UC_POP
+  usecase "Data CPMI (read-only)" as UC_CPMI
 }
 
 KD -- UC_AUTH
@@ -45,6 +47,8 @@ KD -- UC_DL
 KD -- UC_DASH
 KD -- UC_NOTIF
 KD -- UC_SELF
+KD -- UC_POP
+KD -- UC_CPMI
 SK -- UC_AUTH
 SK -- UC_LIST
 SK -- UC_DETAIL
@@ -53,6 +57,8 @@ SK -- UC_DL
 SK -- UC_DASH
 SK -- UC_NOTIF
 SK -- UC_SELF
+SK -- UC_POP
+SK -- UC_CPMI
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DECIDE : <<extend>>
 

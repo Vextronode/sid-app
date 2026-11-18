@@ -160,6 +160,8 @@ paths:
     $ref: 'paths/auth/profile-password-v51.yaml'
   /profile/photo:
     $ref: 'paths/auth/profile-photo.yaml'
+  /profile/photo-request:
+    $ref: 'paths/auth/profile-photo-request.yaml'
   /profile/businesses:
     $ref: 'paths/citizen-businesses/profile-businesses.yaml'
   /profile/businesses/{citizenBusiness}/cimart-application:
@@ -218,6 +220,8 @@ paths:
     $ref: 'paths/activity-logs/population.yaml'
   /activity-logs/letters:
     $ref: 'paths/activity-logs/letters.yaml'
+  /activity-logs/accounts:
+    $ref: 'paths/activity-logs/accounts.yaml'
   /citizen-businesses:
     $ref: 'paths/citizen-businesses/citizen-businesses.yaml'
   /citizen-businesses/{citizenBusiness}:
@@ -248,6 +252,34 @@ paths:
     $ref: 'paths/users/reset-password-v51.yaml'
   /users/{user}/photo:
     $ref: 'paths/users/user-photo.yaml'
+  /account-registrations:
+    $ref: 'paths/account-registrations/account-registrations.yaml'
+  /account-registrations/{accountRegistration}/photo:
+    $ref: 'paths/account-registrations/photo.yaml'
+  /account-registrations/{accountRegistration}/approve:
+    $ref: 'paths/account-registrations/approve.yaml'
+  /account-registrations/{accountRegistration}/reject:
+    $ref: 'paths/account-registrations/reject.yaml'
+  /account-registrations/{accountRegistration}/manual-activation:
+    $ref: 'paths/account-registrations/manual-activation.yaml'
+  /profile-photo-requests:
+    $ref: 'paths/profile-photo-requests/profile-photo-requests.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/photo:
+    $ref: 'paths/profile-photo-requests/photo.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/approve:
+    $ref: 'paths/profile-photo-requests/approve.yaml'
+  /profile-photo-requests/{profilePhotoRequest}/reject:
+    $ref: 'paths/profile-photo-requests/reject.yaml'
+  /password-reset-requests:
+    $ref: 'paths/password-reset-requests/password-reset-requests.yaml'
+  /password-reset-requests/{resetRequest}/approve:
+    $ref: 'paths/password-reset-requests/approve.yaml'
+  /password-reset-requests/{resetRequest}/reject:
+    $ref: 'paths/password-reset-requests/reject.yaml'
+  /password-reset-requests/status:
+    $ref: 'paths/password-reset-requests/status.yaml'
+  /password-reset-requests/complete:
+    $ref: 'paths/password-reset-requests/complete.yaml'
   /officials:
     $ref: 'paths/officials/officials.yaml'
   /officials/promote:
@@ -292,6 +324,8 @@ paths:
     $ref: 'paths/letters/export.yaml'
   /letters/{letter}/applicant-identity:
     $ref: 'paths/letters/letter-applicant-identity.yaml'
+  /letters/{letter}/payload-identity:
+    $ref: 'paths/letters/letter-payload-identity.yaml'
   /letters/{id}:
     $ref: 'paths/letters/letter-detail.yaml'
   /letters/{letter}/download:
@@ -344,6 +378,8 @@ paths:
     $ref: 'paths/notifications/unread-count.yaml'
   /push-subscriptions:
     $ref: 'paths/push-subscriptions/push-subscriptions.yaml'
+  /web-push-subscribers:
+    $ref: 'paths/push-subscriptions/web-push-subscribers.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 7 - Deadline & Reminder Approval
@@ -426,6 +462,8 @@ paths:
   # ─────────────────────────────────────────────
   /village-org-positions:
     $ref: 'paths/village-org/positions.yaml'
+  /village-org-positions/citizen-lookup:
+    $ref: 'paths/village-org/citizen-lookup.yaml'
   /village-org-positions/{id}:
     $ref: 'paths/village-org/position-detail.yaml'
   /village-org-positions/{position}/members:

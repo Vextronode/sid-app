@@ -29,10 +29,10 @@ actor "Pengunjung\n(Publik)" as PUB
 
 rectangle "SIDUTama" {
   rectangle "Registrasi & Autentikasi" #F0F4FF {
-    usecase "UC-17: Register\n(NIK + tanggal lahir)" as UC_REG
+    usecase "UC-17: Register\n(NIK + foto wajah dari kamera;\naktif setelah disetujui\npetugas wilayah)" as UC_REG
     usecase "UC-01: Login" as UC_LOGIN
     usecase "UC-02: Logout" as UC_LOGOUT
-    usecase "Lupa / Reset /\nGanti Password" as UC_PWD
+    usecase "Lupa / Reset /\nGanti Password\n(email, atau NIK + tanggal lahir\ndisetujui Staf SIDUTama)" as UC_PWD
   }
   rectangle "UC-16: Halaman Publik" #FCE4EC {
     usecase "Beranda\n(statistik, berita terbaru)" as UC_P1
@@ -43,12 +43,14 @@ rectangle "SIDUTama" {
     usecase "Hubungi Kami\n(WA Kasi/Kaur)" as UC_P6
     usecase "Bar Pengumuman\n(semua halaman publik)" as UC_P7
     usecase "Halaman Informasi\n(PPID, Privasi, Aksesibilitas)" as UC_P8
+    usecase "Bar Peringatan Bencana\n(SIGAP)" as UC_P9
   }
   rectangle "Surat" #E8F0FF {
     usecase "UC-03: Ajukan Surat\n(isian dinamis, berkas,\npenanda tangan)" as UC_SUBMIT
     usecase "UC-05: Daftar Surat Saya" as UC_LIST
     usecase "UC-06: Detail & Status\n(lampiran, status saksi)" as UC_DETAIL
-    usecase "UC-08: Unduh PDF" as UC_DL
+    usecase "UC-08: Unduh PDF\n(kertas A4 / F4)" as UC_DL
+    usecase "Pendataan CPMI F11\n(layanan tanpa surat,\nterisi dari pendataan lalu)" as UC_CPMI
     usecase "Unggah Hasil Disdukcapil\n(Layanan Kependudukan)" as UC_RESULT
     usecase "Diurus orang lain\n(Surat Kuasa F-1.07)" as UC_POA
     usecase "Unduh formulir isi tangan\n(identitas pemohon terisi,\nmis. Izin Keramaian A12)" as UC_HWF
@@ -57,6 +59,11 @@ rectangle "SIDUTama" {
     usecase "Setujui / Tolak\nPermintaan Saksi / Persetujuan\n(saksi, pasangan, penerima kuasa)" as UC_SIGREQ
     usecase "Ganti Saksi\n(NIK lain)" as UC_REFILL
     usecase "Kelola Blokir" as UC_BLOCK
+  }
+  rectangle "Profil" #F3E5F5 {
+    usecase "Minta Ganti Foto Profil\n(kamera, disetujui\npetugas wilayah)" as UC_PHOTO
+    usecase "Usaha Saya\n(dari SKU A01;\ndaftar / batal Cimart)" as UC_BIZ
+    usecase "Data CPMI Saya\n(riwayat keberangkatan)" as UC_CPMIME
   }
   rectangle "Notifikasi & Dashboard" #FFF8E1 {
     usecase "Notifikasi in-app" as UC_NOTIF
@@ -73,6 +80,7 @@ PUB -- UC_P5
 PUB -- UC_P6
 PUB -- UC_P7
 PUB -- UC_P8
+PUB -- UC_P9
 PUB -- UC_REG
 WRG -- UC_LOGIN
 WRG -- UC_LOGOUT
@@ -82,6 +90,10 @@ WRG -- UC_LIST
 WRG -- UC_DETAIL
 WRG -- UC_DL
 WRG -- UC_RESULT
+WRG -- UC_PHOTO
+WRG -- UC_BIZ
+WRG -- UC_CPMIME
+UC_SUBMIT ..> UC_CPMI : <<extend>>
 UC_SUBMIT ..> UC_POA : <<extend>>
 UC_SUBMIT ..> UC_HWF : <<extend>>
 WRG -- UC_SIGREQ
@@ -97,7 +109,8 @@ UC_DETAIL ..> UC_DL : <<extend>>
 UC_SIGREQ ..> UC_BLOCK : <<extend>>
 
 note bottom of UC_SUBMIT
-  Hanya jenis surat aktif ber-template.
+  Hanya jenis surat aktif ber-template
+  (atau layanan tanpa surat seperti F11).
   Pejabat juga dapat mengajukan untuk
   dirinya (Surat Saya). Surat menunggu
   persetujuan saksi sebelum masuk RT.

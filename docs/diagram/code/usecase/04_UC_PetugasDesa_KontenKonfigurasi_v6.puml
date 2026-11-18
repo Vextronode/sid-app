@@ -41,12 +41,13 @@ rectangle "SIDUTama" {
   }
   rectangle "UC-27: Pengumuman Beranda" #FFF3E0 {
     usecase "Tayangkan / ubah / hapus\npengumuman (durasi wajib)" as UC_ANN
+    usecase "Turunkan / tampilkan lagi\nperingatan SIGAP" as UC_SIGAP
   }
   rectangle "UC-28: Halaman Informasi" #EDE7F6 {
     usecase "Isi PPID, Kebijakan Privasi,\nAksesibilitas (field tunggal\n& daftar dinamis)" as UC_INFO
   }
   rectangle "UC-21: Konfigurasi Jenis Surat" #FDF2F8 {
-    usecase "Ubah masa berlaku,\npenugasan Kasi/Kaur,\nstatus aktif" as UC_LT
+    usecase "Ubah masa berlaku,\nkategori (menentukan Kasi/Kaur),\nstatus aktif" as UC_LT
     usecase "Lihat Flow Approval\n(read-only)" as UC_FLOW
     usecase "Nyalakan / matikan titik\npengingat masa berlaku\n(H-30, H-14, H-7, H-3, H-1)" as UC_EXP
   }
@@ -59,6 +60,7 @@ PD -- UC_NEWS
 PD -- UC_NEWSCAT
 PD -- UC_REG
 PD -- UC_ANN
+PD -- UC_SIGAP
 PD -- UC_INFO
 PD -- UC_LT
 PD -- UC_FLOW

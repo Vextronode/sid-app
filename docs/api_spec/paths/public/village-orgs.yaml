@@ -32,13 +32,13 @@ get:
                     type: string
                     example: "bpd"
                   ketua:
-                    $ref: '#/components/PublicOrgMember'
+                    $ref: '../../schemas/village-org/village-org.yaml#/PublicOrgMember'
                   wakil_ketua:
-                    $ref: '#/components/PublicOrgMember'
+                    $ref: '../../schemas/village-org/village-org.yaml#/PublicOrgMember'
                   anggota:
                     type: array
                     items:
-                      $ref: '#/components/PublicOrgMember'
+                      $ref: '../../schemas/village-org/village-org.yaml#/PublicOrgMember'
           example:
             data:
               org_type: "bpd"
@@ -48,15 +48,3 @@ get:
                 - { id: 3, name: "Siti Aminah", photo_url: null }
     '404':
       $ref: '../../responses/common.yaml#/NotFound'
-components:
-  PublicOrgMember:
-    type: object
-    nullable: true
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-      photo_url:
-        type: string
-        nullable: true

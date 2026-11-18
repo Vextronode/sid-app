@@ -39,7 +39,20 @@ rectangle "SIDUTama" {
     usecase "Rotasi Pejabat" as UC_ROTATE
     usecase "Ganti Foto Pejabat" as UC_PHOTO
     usecase "Kelola Jenis Jabatan\nTanpa Akun" as UC_POSTYPE
-    usecase "Buat Petugas Pertama\n(petugas:first)" as UC_FIRST
+    usecase "Buat Staf SIDUTama Pertama\n(staf-sid:first)" as UC_FIRST
+    usecase "Pulihkan Staf SIDUTama\n(staf-sid:recover)" as UC_RECOVER
+  }
+  rectangle "Permintaan Akun Warga" #E3F2FD {
+    usecase "Aktivasi akun pendaftaran online\n(bila RT/RW/Kadus kosong)" as UC_ACT
+    usecase "Aktivasi manual NIK diblokir\n(ditolak 3x, kata sandi sementara)" as UC_MANUAL
+    usecase "Setujui / tolak ganti foto warga\n(bila RT/RW/Kadus kosong)" as UC_PHOTOREQ
+    usecase "Setujui / tolak lupa sandi\ntanpa email (NIK + tgl lahir)" as UC_PWREQ
+  }
+  rectangle "Pemantauan & Integrasi" #ECEFF1 {
+    usecase "Log Aktivitas\n(data penduduk, surat, akun)" as UC_LOG
+    usecase "Pelanggan Notifikasi\n(perangkat Web Push)" as UC_SUBS
+    usecase "Integrasi Cimart & SIGAP\n(aktif/nonaktif, token)" as UC_INTEG
+    usecase "Buat client & ability\n(integration:*)" as UC_INTCLI
   }
   rectangle "UC-22: Deadline Approval" #FFF8E1 {
     usecase "Atur deadline_hours /\nreminder_hours (rt, kepala_desa)" as UC_DEADLINE
@@ -61,6 +74,15 @@ PD -- UC_POSTYPE
 PD -- UC_DEADLINE
 PD -- UC_ORG
 DEV -- UC_FIRST
+DEV -- UC_RECOVER
+DEV -- UC_INTCLI
+PD -- UC_ACT
+PD -- UC_MANUAL
+PD -- UC_PHOTOREQ
+PD -- UC_PWREQ
+PD -- UC_LOG
+PD -- UC_SUBS
+PD -- UC_INTEG
 UC_PROMOTE ..> UC_CAND : <<include>>
 UC_ROTATE ..> UC_CAND : <<include>>
 

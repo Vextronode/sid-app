@@ -53,7 +53,8 @@ VQ --> PUSHSVC
 PUSHSVC --> USER : notifikasi push
 
 note right of DHOST
-  Satu port loopback; QUEUE=sync;
+  Satu port loopback; QUEUE_CONNECTION=database
+  (sid_worker), scheduler di sid_scheduler;
   tanpa VAPID (push nonaktif).
   Image dibangun CI per tag atau --build lokal.
 end note

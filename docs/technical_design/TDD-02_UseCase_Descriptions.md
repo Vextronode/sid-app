@@ -5,8 +5,8 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 2 dari 5 (+ Appendix) |
-| Status | v5.3 — Surat dinamis, tanda tangan, identitas desa (diselaraskan ke source 2026-10-16) |
-| Cakupan | Deskripsi seluruh Use Case aktif MVP (UC-01 s/d UC-29, kecuali yang dipindah ke Appendix) |
+| Status | v5.3 — diselaraskan ke source 2026-11-19 |
+| Cakupan | Deskripsi seluruh Use Case aktif (UC-01 s/d UC-36, kecuali yang dipindah ke Appendix) |
 | UC Next Dev / Tahap 2 (UC-07, UC-11, UC-12, UC-13) | Lihat `TDD-06_Appendix.md` |
 | Dokumen terkait | `TDD-01_Overview_Scope_Roles.md`, `TDD-03_Database_Schema.md`, OpenAPI Spec v5.3 |
 
@@ -17,19 +17,22 @@
 > **Pembaruan 2026-10-18:** UC-16 (bar pengumuman di semua halaman publik, sambutan Kepala Desa, kontak telepon/email yang bisa disalin, Peraturan Desa sebagai section Profil Desa, halaman informasi aktif di produksi, BUMDesa/APBDes "Segera hadir") dan UC-18 (titik kantor berupa koordinat, sambutan Kepala Desa) diperbarui. UC baru: **UC-27** Kelola Pengumuman Beranda, **UC-28** Kelola Halaman Informasi.
 
 > **Pembaruan 2026-10-25:** UC baru **UC-29** Unggah dan Verifikasi Hasil dari Instansi (formulir Layanan Kependudukan).
+
+> **Pembaruan 2026-11-19:** UC-17 (register tanpa tanggal lahir, foto wajah, akun aktif setelah disetujui), UC-03 (layanan tanpa surat, opsi select bersyarat), dan UC-08 (pilihan kertas A4/F4) diperbarui. UC baru: **UC-30** Aktivasi Akun Warga, **UC-31** Permintaan Ganti Foto Profil, **UC-32** Lupa Kata Sandi tanpa Email, **UC-33** Pendataan CPMI & Data CPMI, **UC-34** Data Usaha Warga & Pendaftaran Cimart, **UC-35** Peringatan Bencana SIGAP & Integrasi Pihak Ketiga, **UC-36** Pantau Pelanggan Notifikasi & Log Aktivitas.
+
 > Kontrak endpoint ada di OpenAPI Spec v5.3 — dokumen ini fokus pada alur bisnis. Hal yang pernah tertulis tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
 ---
 
 ## Ringkasan Use Case
 
-Sistem ini mendefinisikan **26 Use Case aktif di MVP**. Total UC yang pernah didefinisikan — termasuk yang dipindah keluar MVP tetapi nomornya dipertahankan — adalah **30 UC**.
+Sistem ini mendefinisikan **34 Use Case aktif**. Total UC yang pernah didefinisikan — termasuk yang dipindah keluar MVP tetapi nomornya dipertahankan — adalah **38 UC**.
 
 | Kategori | Jumlah | Daftar |
 |---|---|---|
-| ✅ Aktif di MVP | 26 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW/Kadus), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 |
+| ✅ Aktif | 34 UC | UC-01, 02, 03, 04a (+ sub-flow notif RW/Kadus), 04c, 04d, 05, 06, 08, 09, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 |
 | ❌ Non-MVP (nomor dipertahankan, lihat Appendix) | 4 UC | UC-07, UC-11, UC-12, UC-13 |
-| **Total** | **30 UC** | — |
+| **Total** | **38 UC** | — |
 
 > UC-10 sudah terintegrasi ke UC-03. UC-04b (RW Approval) dan UC-04c versi lama (Kadus Approval) sudah dihapus total — perannya digantikan sub-flow notifikasi pasif (dalam UC-04a) dan UC-04c versi baru (Kades/Sekdes Approval).
 
@@ -88,16 +91,16 @@ Main Flow:
 | Use Case ID | UC-03 |
 | Nama | Input Permohonan Surat |
 | Aktor | Pengguna aktif dengan `citizen_id` (warga, atau pejabat untuk dirinya) |
-| Pre-condition | Login, akun aktif dan terhubung ke citizen; jenis surat aktif ber-template milik desanya. Tidak perlu TTD akun (TTD dibubuhkan basah setelah surat terbit) |
+| Pre-condition | Login, akun aktif dan terhubung ke citizen; jenis surat aktif milik desanya (ber-template, atau layanan tanpa surat `produces_letter = false` seperti F11). Tidak perlu TTD akun (TTD dibubuhkan basah setelah surat terbit) |
 | Post-condition | Surat `pending` tersimpan dengan `flow_id` di-snapshot; `current_step_order` = 0 (menunggu persetujuan saksi) atau step actionable pertama |
 
 Main Flow:
-1. Pemohon membuka "Ajukan Surat" dan memilih jenis surat (hanya `template != NULL AND is_active = true`, desa yang sama).
-2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members).
+1. Pemohon membuka "Ajukan Surat" dan memilih jenis surat (aktif, desa yang sama, dan ber-template atau `produces_letter = false`).
+2. Frontend membangun form dari `letter_types.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members, dst.). Isian ber-`section` dikelompokkan per bagian; opsi `select` ber-`visible_when` hanya tampil bila syaratnya terpenuhi (mis. Suami/Istri sesuai jenis kelamin dan status kawin pemohon). Form F11 terisi awal dari pendataan CPMI sebelumnya (UC-33).
 3. Data pemohon (nama, NIK, alamat) diambil otomatis dari citizen akun; `purpose` dan `notes` tidak lagi diisi (keperluan menjadi isian bila diperlukan jenis surat).
 4. Pemohon mengisi isian, mengunggah berkas isian bertipe file (PDF/JPG/PNG, atau JPG/PNG bila `accept: image`; maks 2 MB), dan mengisi NIK saksi bila jenis surat memintanya.
    - Bila jenis surat punya `handwritten_forms` (mis. A12 Izin Keramaian/Kegiatan), ringkasan jenis surat menampilkan tombol **Unduh** per formulir (`GET /letter-types/{id}/forms/{key}?download=1`). PDF memuat identitas pemohon dari data penduduk; pemohon mencetak, melengkapi isian dan tanda tangan basah (A12: daftar warga sekitar 2 lembar beserta Ketua RT/RW dan Kepala Dusun, serta pernyataan bermaterai 10.000), lalu mengunggah fotonya di isian file yang sesuai.
-5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe dan wajib diperiksa).
+5. Server memvalidasi isian terhadap definisi jenis surat (isian tak dikenal ditolak; tipe, wajib, dan opsi bersyarat diperiksa).
 6. Dalam `DB::transaction()` sistem:
    - menyimpan surat (`status = pending`, `submitted_at`, `flow_id` snapshot, NIK terenkripsi + hash) dan log "Permohonan surat dibuat";
    - menyimpan berkas isian ke disk privat (`letter_attachments`, kind `field`);
@@ -113,6 +116,7 @@ Alternative Flow:
 - 6c. Kegagalan di tengah transaksi → berkas yang sudah tertulis dihapus.
 - 4a. Unduh formulir isi tangan oleh akun tanpa data penduduk → 403; jenis surat desa lain, tidak aktif, atau `key` tidak ada → 404.
 - 4b. Isian tanggal ber-`upcoming` (mis. tanggal kegiatan A12) sebelum hari ini → 422.
+- 5b. Opsi `select` yang syarat `visible_when`-nya tidak terpenuhi jawaban form → 422.
 - 8a. Jika tahap RT dilewati, RW dan Kadus tidak menerima FYI.
 
 ---
@@ -288,11 +292,14 @@ Main Flow:
 4. Sistem mengambil konteks render dari **`letters.snapshot`** (dibekukan saat final approve: template, definisi isian, kop & identitas desa, nama Kepala Desa penanda tangan, tanggal terbit). Surat approved lama tanpa snapshot dibekukan saat unduhan pertama.
 5. Sistem mengganti placeholder: nomor surat, data pemohon, kop desa, isian form (diformat: tanggal, rupiah + terbilang, pilihan), nama penanda tangan slot (`nama_ttd_{slot}`); nilai teks di-escape.
 6. PDF tidak memuat gambar tanda tangan maupun stempel: ruang tanda tangan kosong, nama penanda tangan tetap tercetak. Surat resmi adalah cetakan yang ditandatangani dan distempel basah di kantor desa dan diambil pemohon di sana; unduhan adalah salinan tanpa TTD.
-7. `barryvdh/laravel-dompdf` generate PDF; binary dikirim langsung (tidak disimpan).
+7. `barryvdh/laravel-dompdf` generate PDF di kertas bawaan dokumen (`paper_size` / `documents[].paper`, A4 atau F4); binary dikirim langsung (tidak disimpan).
+8. Pengguna memilih kertas di menu unduh/pratinjau (A4 | F4, bawaan F4; `?paper=`). Bila berbeda dari kertas bawaan, tiap halaman diskalakan utuh ke kertas pilihan (skala seragam, di tengah; jumlah halaman tetap) dan nama berkas diberi akhiran kertas (`surat-{id}-f4.pdf`). Berlaku juga untuk dokumen pendukung dan formulir isi tangan.
 
 Alternative Flow:
 - 3a. Status bukan `approved` → tombol Download tidak muncul; pratinjau juga tidak tersedia bagi pemohon (403 dari `GET /letters/{id}/preview`), sedangkan pejabat yang memutus tetap dapat mem-preview
 - 3b. Pemohon dengan `expires_at` sudah lewat → 403, apa pun role pemohon (berlaku juga untuk `GET /letters/{id}/preview`); di UI tombol tampil nonaktif. Staf SIDUTama, Kades/Sekdes, dan Kasi/Kaur yang berwenang tetap dapat mengunduh untuk arsip.
+- 3d. Layanan tanpa surat (`produces_letter = false`, F11) → 404; rincian pengajuan tampil sebagai daftar isian, dan hasilnya dibaca di Data CPMI (UC-33).
+- 8a. Nilai `paper` selain `a4`/`f4` → 422.
 - 3c. `validity_days` jenis surat diubah Petugas (UC-21) → hanya berlaku untuk surat yang final approve setelahnya; `expires_at` surat yang sudah terbit tidak berubah.
 
 **Alasan struktural:** PDF tidak disimpan, tetapi isi surat approved dibekukan lewat snapshot sehingga penggantian Kepala Desa, perubahan template, atau perubahan data warga tidak mengubah surat yang sudah terbit.
@@ -496,28 +503,29 @@ Notes:
 |---|---|
 | Use Case ID | UC-17 |
 | Nama | Register Akun Warga |
-| Aktor | Calon pengguna (Warga Cibenda) |
-| Pre-condition | Calon pengguna belum memiliki akun; NIK aktif terdaftar di tabel `citizens` |
-| Post-condition | Akun aktif tercipta; respons 201 menampilkan username otomatis. Register tidak membuat sesi — warga login dengan username (UC-01) |
+| Aktor | Calon pengguna (warga desa) |
+| Pre-condition | NIK aktif terdaftar di tabel `citizens`; belum punya akun aktif atau pendaftaran yang masih menunggu; NIK belum diblokir |
+| Post-condition | Akun warga **nonaktif** dan satu permintaan aktivasi `pending` tercipta (UC-30); respons 201 menampilkan username otomatis. Register tidak membuat sesi |
 
 Main Flow:
-1. Warga membuka halaman registrasi
-2. Warga mengisi NIK (16 digit), tanggal lahir, password, dan konfirmasi password
-3. Sistem memvalidasi input dan rate limit registrasi (5/menit per IP, 10/jam per hash NIK)
-4. Sistem generate SHA-256 dari NIK → cari di `citizens.nik_hash`
-5. Jika NIK tidak ditemukan → error "NIK tidak terdaftar sebagai warga Desa Cibenda"
-6. Jika NIK ditemukan tapi sudah punya akun → error "NIK sudah terdaftar, silakan login"
-6a. Jika tanggal lahir tidak sama dengan `citizens.date_of_birth` → error "Tanggal lahir tidak sesuai dengan data kependudukan" (verifikasi kedua selain NIK)
-7. Jika NIK ditemukan, tanggal lahir cocok, dan belum punya akun: INSERT user dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.namabelakang.NNNN` (nama satu kata: `namadepan.NNNN`; NNNN = 4 digit acak, selalu ditambahkan), dan aktif
-8. Sistem memicu event `Registered` dan mengembalikan 201 berisi `username` dan `name` (tanpa membuat sesi)
-9. User dapat mengganti username melalui `PATCH /api/profile`; email bersifat opsional. Password dapat diganti melalui `PUT /api/profile/password`.
+1. Warga membuka halaman registrasi.
+2. Warga mengisi NIK (16 digit), password, konfirmasi password, dan mengambil foto wajah dari kamera (dipotong persegi 1:1 di aplikasi). Tanggal lahir tidak diminta.
+3. Sistem memvalidasi input (foto JPEG/PNG/WebP maks 5 MB, rasio 1:1) dan rate limit registrasi (5/menit per IP, 10/jam per hash NIK).
+4. Sistem generate SHA-256 dari NIK → cari di `citizens.nik_hash` (warga aktif).
+5. Bila NIK tidak terdaftar/nonaktif, sudah punya akun aktif atau masih menunggu aktivasi, atau diblokir (ditolak 3 kali) → 422 dengan **satu pesan yang sama** ("Pendaftaran tidak dapat diproses. Periksa kembali NIK Anda, atau datang ke kantor desa.") agar endpoint tidak bisa dipakai menebak data kependudukan.
+6. Foto disimpan di disk privat. Dalam transaksi: akun baru dibuat **nonaktif** dengan nama dari citizen, role `warga`, username otomatis unik `namadepan.namabelakang.NNNN` (nama satu kata: `namadepan.NNNN`); bila pendaftaran terakhir akun itu ditolak, kata sandinya diganti (daftar ulang). Lalu `account_registrations` baru berstatus `pending` dengan wilayah warga.
+7. Petugas wilayah yang saat ini memegang (RT, lalu RW, Kepala Dusun, atau Staf SIDUTama bila jenjang di bawahnya kosong) menerima notifikasi `account_registration_submitted`.
+8. Sistem memicu event `Registered` dan mengembalikan 201 berisi `username` dan `name` beserta pesan bahwa akun aktif setelah disetujui.
+9. Setelah aktif (UC-30), warga login dengan username (UC-01). Username dapat diganti melalui `PATCH /api/profile`; email opsional; password diganti melalui `PUT /api/profile/password`.
 
 Alternatif Flow:
-- Format NIK salah → error "NIK harus 16 digit angka"
-- Benturan username otomatis → 4 digit acak dibuat ulang (setelah 10 kali gagal, 5 digit)
-- Password terlalu lemah → error dengan panduan password
+- Format NIK salah → "NIK harus 16 digit angka".
+- Foto tidak persegi, bukan gambar, atau > 5 MB → 422 dengan petunjuk mengambil ulang.
+- Dua pendaftaran bersamaan untuk NIK yang sama → yang kalah kena unique index (satu pendaftaran menunggu per warga) dan mendapat pesan yang sama seperti langkah 5.
+- Login sebelum disetujui → 403 dengan pesan sesuai status pendaftaran (menunggu; ditolak beserta catatan petugas; atau sudah ditolak 3 kali, datang ke kantor desa).
+- Password terlalu lemah → error dengan panduan password.
 
-> **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (baik lokal maupun pendatang) selalu punya NIK terverifikasi di `citizens` — pembeda lokal/pendatang murni kolom `residency_type`, bukan tabel/jalur terpisah. Warga yang belum tercatat di `citizens` (baik lokal maupun pendatang) harus dicatat lebih dulu oleh Staf SIDUTama (UC-09) sebelum bisa register.
+> **Catatan penting:** Tidak ada kategori "warga Non-NIK". Setiap warga tercatat (lokal maupun pendatang) punya NIK di `citizens`; pembeda lokal/pendatang adalah kolom `residency_type`. Warga yang belum tercatat harus dicatat lebih dulu oleh Staf SIDUTama (UC-09) sebelum bisa register.
 
 ---
 
@@ -835,3 +843,159 @@ Alternative Flow:
 - Menolak tanpa alasan → 422
 - Memutus unggahan yang bukan terakhir atau sudah diverifikasi → 409
 - Kasi/Kaur yang tidak ditugaskan pada jenis surat → 403
+
+---
+
+## UC-30: Aktivasi Akun Warga
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-30 |
+| Nama | Aktivasi Akun Warga |
+| Aktor | Pemegang saat ini: RT wilayah warga; bila kosong RW, lalu Kepala Dusun, lalu Staf SIDUTama. Staf SIDUTama juga untuk aktivasi manual |
+| Pre-condition | Ada `account_registrations` berstatus `pending` (UC-17) |
+| Post-condition | Disetujui: akun aktif, foto pendaftaran menjadi foto profil. Ditolak: status `rejected` dengan catatan; warga boleh daftar ulang sampai 3 kali ditolak |
+
+Main Flow:
+1. Petugas membuka menu Manajemen Akun → Aktivasi Akun (`GET /account-registrations`, filter status, berhalaman).
+2. Petugas melihat nama, NIK tersamar, wilayah, jenjang pemegang, jumlah penolakan, dan foto wajah (`GET /account-registrations/{id}/photo`), lalu mencocokkannya dengan warga yang dikenalnya.
+3. Petugas memilih **Setujui** (`POST .../approve`) atau **Tolak** dengan catatan minimal 5 karakter (`POST .../reject`). Tombol hanya tampil bila `can_decide`.
+4. Sistem mengunci baris, memeriksa ulang status dan pemegang, mencatat keputusan (`decided_by`, `decided_level`, `decided_at`), dan mencatat activity log `account_registration`.
+
+Alternative Flow:
+- 3a. Permintaan sudah diputuskan → 409; bukan pemegang saat ini → 403.
+- 3b. Susunan pejabat berubah (mis. RT baru ditetapkan) → permintaan yang menunggu ikut berpindah ke pemegang baru.
+- 3c. NIK sudah ditolak 3 kali: warga tidak bisa mendaftar online lagi. Setelah warga diperiksa di kantor desa, Staf SIDUTama menjalankan **Aktivasi manual** (`POST .../manual-activation`, hanya untuk pendaftaran ditolak terakhir milik NIK itu): akun aktif dengan kata sandi sementara yang tampil sekali dan wajib diganti.
+
+---
+
+## UC-31: Permintaan Ganti Foto Profil
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-31 |
+| Nama | Permintaan Ganti Foto Profil |
+| Aktor | Warga (mengajukan); pemegang dengan jenjang yang sama seperti UC-30 (memutus) |
+| Pre-condition | Akun warga aktif (akun yang menjabat memakai foto pejabat yang dikelola Staf SIDUTama); tidak ada permintaan yang masih menunggu |
+| Post-condition | Disetujui: foto permintaan menjadi foto profil akun. Ditolak: foto lama tetap, catatan tampil di Profil |
+
+Main Flow:
+1. Warga membuka Profil, memilih ganti foto, dan mengambil foto dari kamera (persegi 1:1).
+2. Sistem menyimpan permintaan `pending` (`POST /profile/photo-request`, disk privat) dan memberi notifikasi `profile_photo_requested` ke pemegang.
+3. Pemegang membuka Manajemen Akun → Ganti Foto, membandingkan foto baru dengan foto terpasang, lalu menyetujui atau menolak dengan catatan.
+4. Warga menerima notifikasi `profile_photo_approved` / `profile_photo_rejected`; status terakhir tampil di Profil (`GET /profile/photo-request`).
+
+Alternative Flow:
+- 2a. Masih ada permintaan menunggu → 409. Akun bukan warga → 403.
+- 3a. Staf SIDUTama tetap dapat mengganti foto warga langsung dari Manajemen Pengguna.
+
+---
+
+## UC-32: Lupa Kata Sandi tanpa Email
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-32 |
+| Nama | Lupa Kata Sandi tanpa Email |
+| Aktor | Pemilik akun (belum login); Staf SIDUTama desa yang sama |
+| Pre-condition | Akun aktif, bukan Staf SIDUTama. Akun ber-email dapat memakai tautan reset email (`POST /forgot-password`) |
+| Post-condition | Kata sandi baru tersimpan; permintaan `completed` |
+
+Main Flow:
+1. Pengaju membuka `/forgot-password/nik` dan mengirim NIK + tanggal lahir (`POST /password-reset-requests`).
+2. Sistem mencocokkan NIK dan tanggal lahir dengan data penduduk, menggantikan permintaan lama akun itu, menyimpan hash token klaim, dan mengembalikan token klaim (disimpan di browser pengaju). Staf SIDUTama menerima notifikasi `password_reset_requested`.
+3. Staf SIDUTama membuka Pengajuan Reset, memeriksa pengaju, lalu menyetujui atau menolak (catatan opsional).
+4. Pengaju memeriksa status dengan token klaim (`POST /password-reset-requests/status`). Bila disetujui, ia membuat kata sandi baru paling lambat 24 jam setelah persetujuan (`POST /password-reset-requests/complete`).
+
+Alternative Flow:
+- 2a. NIK tidak ada, tanggal lahir salah, belum punya akun, atau akun nonaktif → 422 dengan pesan yang sama. Akun Staf SIDUTama → 403 (pemulihan lewat CLI `staf-sid:recover`).
+- 3a. Permintaan sudah diproses → 409.
+- 4a. Belum disetujui, lewat 24 jam, atau sudah tidak berlaku → 409; token tidak dikenal → 404.
+
+---
+
+## UC-33: Pendataan CPMI & Data CPMI
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-33 |
+| Nama | Pendataan Calon Pekerja Migran Indonesia (F11) & Data CPMI |
+| Aktor | Warga (mengajukan); RT dan Kades/Sekdes (menyetujui, alur UC-04a/UC-04c); Staf SIDUTama, Kades/Sekdes, dan Kasi Pemerintahan (membaca Data CPMI) |
+| Pre-condition | Layanan F11 aktif. Layanan ini `produces_letter = false`: tidak ada surat, formulir, unggah hasil, atau Terapkan |
+| Post-condition | Satu baris `migrant_workers` per keberangkatan tercatat saat final approve; data penduduk tidak berubah |
+
+Main Flow:
+1. Warga memilih Layanan Kependudukan → Pendataan CPMI. Form terbagi lima bagian: data diri (dari data penduduk, tidak bisa diubah; agama/status kawin ditanyakan bila kosong), pendidikan & kompetensi, penanggung jawab (kontak darurat), perusahaan & negara tujuan, dan 10 dokumen wajib (maks 2 MB per berkas).
+2. Penanggung jawab dipilih dari anggota KK (hubungan diturunkan sistem dari SHDK keduanya) atau diketik di luar KK (opsi Suami/Istri hanya untuk pemohon berstatus kawin, sesuai jenis kelaminnya).
+3. Untuk keberangkatan berikutnya, form terisi awal dari pendataan terakhir (`GET /profile/migrant-workers/prefill`); negara, pemberi kerja, kontrak, dan dokumen selalu diisi baru.
+4. RT lalu Kades/Sekdes menyetujui. Rincian pengajuan menampilkan isian per bagian dan tombol membuka dokumen, bukan pratinjau surat.
+5. Saat final approve, sistem mencatat `migrant_workers` di transaksi yang sama dan memberi notifikasi "Pendataan Disetujui" ke pemohon (tanpa notifikasi cetak ke Kasi/Kaur).
+6. Warga melihat riwayatnya di Profil (Data CPMI Saya). Petugas membaca menu Data CPMI (`GET /migrant-workers`, filter negara tujuan, status kontrak, dusun) dan detailnya.
+
+Alternative Flow:
+- 5a. Pencatatan gagal → final approve ikut batal.
+- 6a. Pengguna tanpa hak (`MigrantWorkerPolicy`) → menu tidak tampil dan API 403.
+- 6b. Unduh/pratinjau surat untuk pengajuan F11 → 404.
+
+---
+
+## UC-34: Data Usaha Warga & Pendaftaran Cimart
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-34 |
+| Nama | Data Usaha Warga & Pendaftaran Cimart |
+| Aktor | Warga pemilik usaha; Staf SIDUTama dan Kaur TU & Umum (petugas SKU A01, baca saja); Cimart (aplikasi pihak ketiga) |
+| Pre-condition | Surat Keterangan Usaha (A01) disetujui final dengan data usaha di isiannya |
+| Post-condition | Usaha tercatat di `citizen_businesses`; status pendaftaran Cimart `pending` / `accepted` / `rejected` / `cancelled` |
+
+Main Flow:
+1. Saat A01 final approve, sistem mencatat usaha (nama, kegiatan, kategori, kontak, alamat) dan, bila pemohon memilihnya di form, mendaftarkannya ke Cimart.
+2. Warga melihat usahanya di Profil (Usaha Saya) dan dapat mendaftar atau mendaftar ulang ke Cimart (`POST /profile/businesses/{id}/cimart-application`) selama SKU masih berlaku, atau membatalkan pendaftaran yang belum diproses (`DELETE`).
+3. Cimart membaca permohonan pedagang dan melaporkan status lewat API integrasi; warga menerima notifikasi status.
+4. Petugas membaca menu Data Usaha Warga (cari, filter kategori, status surat, status Cimart) dan detailnya.
+
+Alternative Flow:
+- 2a. SKU sudah tidak berlaku → 422; pendaftaran masih menunggu atau sudah diterima → 409.
+- 2b. Batal setelah Cimart membuat akun pedagang → 409 (hubungi Cimart).
+
+---
+
+## UC-35: Peringatan Bencana SIGAP & Integrasi Pihak Ketiga
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-35 |
+| Nama | Peringatan Bencana SIGAP & Integrasi Pihak Ketiga |
+| Aktor | Staf SIDUTama; SIGAP dan Cimart (server pihak ketiga); pengunjung publik dan semua akun desa (penerima peringatan) |
+| Pre-condition | Client integrasi dibuat developer (`integration:create`, ability) dan diaktifkan Staf SIDUTama |
+| Post-condition | Token client berlaku untuk `/api/integrations/v1`; peringatan bencana tampil dan dinotifikasikan |
+
+Main Flow:
+1. Staf SIDUTama membuka menu Integrasi, mengaktifkan/menonaktifkan client, menerbitkan token baru (tampil sekali), atau mencabut token; setiap aksi meminta kata sandi.
+2. SIGAP mengirim/memperbarui peringatan (`PUT /alerts/{external_id}`) dan mengakhirinya (`POST /alerts/{external_id}/end`).
+3. Peringatan aktif tampil sebagai bar merah di semua halaman publik (tanpa cache). Saat peringatan baru tampil atau levelnya naik, semua akun aktif desa menerima notifikasi in-app + Web Push (job antrean).
+4. Staf SIDUTama dapat menurunkan peringatan dengan alasan wajib atau menampilkannya lagi (tab Peringatan SIGAP di Kelola Pengumuman).
+
+Alternative Flow:
+- 2a. Pembaruan dengan `sent_at` yang tidak lebih baru diabaikan; peringatan yang sudah diakhiri bersifat final; client nonaktif → 403 `integration_disabled`; tanpa ability → 403; > 60 request/menit → 429.
+- Kontrak lengkap: `docs/thirdparty/sigap/api-spec/openapi.yaml` dan `docs/thirdparty/cimart/api-spec/openapi.yaml`.
+
+---
+
+## UC-36: Pantau Pelanggan Notifikasi & Log Aktivitas
+
+| Field | Keterangan |
+|---|---|
+| Use Case ID | UC-36 |
+| Nama | Pantau Pelanggan Notifikasi & Log Aktivitas |
+| Aktor | Staf SIDUTama |
+| Pre-condition | Login sebagai Staf SIDUTama aktif |
+| Post-condition | Tidak ada perubahan data (baca saja) |
+
+Main Flow:
+1. **Pelanggan Notifikasi** (`GET /web-push-subscribers`): daftar akun yang berlangganan Web Push beserta perangkatnya (label browser/OS, layanan push), status `aktif` (berhasil dikirimi dalam 30 hari), `perlu_dicek`, atau `belum_teruji`, dan ringkasan desa (akun berlangganan, perangkat, akun aktif). Filter: cari nama/username/NIK, peran, wilayah, layanan push, status.
+2. **Log Aktivitas**: tab data penduduk (`/activity-logs/population`), status surat (`/activity-logs/letters`), dan tindakan akun (`/activity-logs/accounts`: aktif/nonaktif, ubah akun, reset sandi, keputusan permintaan reset sandi, aktivasi pendaftaran, ganti foto), dengan filter event dan tanggal.
+
+Alternative Flow:
+- Peran lain → 403. Activity log tidak dibersihkan otomatis.

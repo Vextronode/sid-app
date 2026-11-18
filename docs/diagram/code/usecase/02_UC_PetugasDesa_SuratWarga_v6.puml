@@ -43,6 +43,9 @@ rectangle "SIDUTama" {
     usecase "Kelola KK (families)" as UC_FAM
     usecase "Survei Sosio-Ekonomi per KK" as UC_FSE
     usecase "Kelola Daftar Pekerjaan" as UC_OCC
+    usecase "Data Usaha Warga\n(dari SKU A01, status Cimart)" as UC_BIZ
+    usecase "Data CPMI\n(dari F11, per keberangkatan)" as UC_CPMI
+    usecase "Lihat NIK / No. KK utuh\n(tercatat di Log Aktivitas)" as UC_REVEAL
   }
   usecase "UC-15: Dashboard Operasional" as UC_DASH
 }
@@ -61,6 +64,9 @@ PD -- UC_IMPORT
 PD -- UC_FAM
 PD -- UC_FSE
 PD -- UC_OCC
+PD -- UC_BIZ
+PD -- UC_CPMI
+PD -- UC_REVEAL
 PD -- UC_DASH
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DL : <<extend>>

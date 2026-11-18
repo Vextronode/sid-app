@@ -27,6 +27,7 @@ participant "OfficialService" as OFF
 participant "LetterRepository" as REPO
 participant "LetterNumberGenerator" as NUM
 participant "LetterSnapshotService" as SNAP
+participant "CitizenBusinessService /\nMigrantWorkerService" as REC
 database "PostgreSQL" as DB
 actor "Pemohon" as P
 actor "Kasi / Kaur\n(assigned_role)" as KK
@@ -42,10 +43,12 @@ group DB::transaction
   SVC -> SVC : cek ulang status & step (keputusan lain lebih dulu → 409)
   SVC -> DB : UPDATE placeholder approval\n(approval_level = kepala_desa | sekretaris_desa)
   alt approved & is_final
-    SVC -> NUM : next(letter)
-    NUM -> DB : counter (village, classification_code, year) +1
-    NUM --> SVC : "470/001/Des/X/2026"
-    SVC -> DB : UPDATE letters approved, letter_number,\nexpires_at (validity_days), processed_at
+    opt issues_letter_number (Persuratan Desa)
+      SVC -> NUM : next(letter)
+      NUM -> DB : counter (village, classification_code, year) +1
+      NUM --> SVC : "470/001/Des/X/2026"
+    end
+    SVC -> DB : UPDATE letters approved, letter_number,\nexpires_at (akhir hari ke-validity_days), processed_at
     SVC -> SNAP : captureOnFinalApproval(letter)
     SNAP -> DB : Kepala Desa aktif + citizen
     alt ada Kades aktif
@@ -53,13 +56,21 @@ group DB::transaction
     else jabatan kosong
       SNAP -> SNAP : tunda (dibuat saat unduhan pertama)
     end
+    SVC -> REC : recordFromLetter(letter)
+    REC -> DB : A01 → INSERT citizen_businesses\n(+ pendaftaran Cimart bila dipilih);\nF11 → INSERT migrant_workers (per keberangkatan)
+    note right of REC
+      Di transaksi yang sama: gagal mencatat
+      = final approve batal.
+    end note
   else rejected
     SVC -> DB : UPDATE rejected, rejected_at_step
   end
   SVC -> DB : INSERT status log
 end
 
-alt approved
+alt approved & produces_letter = false (F11)
+  SVC -> P : letter_approved_final "Pendataan Disetujui"\n(tanpa notifikasi cetak ke Kasi/Kaur)
+else approved
   SVC -> P : letter_approved_final
   SVC -> KK : letter_needs_fulfillment (data_action != none)\natau letter_ready_for_print
 else rejected

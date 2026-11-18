@@ -2,8 +2,8 @@
 ' SECTION: COMPONENT DIAGRAM
 ' FILE: 02_Component_ArsitekturTeknis_v6.puml
 ' JUDUL: Diagram Arsitektur Teknis
-' SUMBER: apps/frontend (package.json, App.jsx, vite.config.js),
-'         apps/backend (composer.json, bootstrap/app.php, app/*), deploy/ (2026-10-16)
+' SUMBER: apps/frontend (package.json, App.tsx, vite.config.ts),
+'         apps/backend (composer.json, bootstrap/app.php, app/*), deploy/ (2026-11-19)
 ' CATATAN: Menggantikan 02_Component_ArsitekturTeknis_v5.puml. Dihapus: Telescope,
 '          Mail Server untuk notifikasi, letter_categories, event generik.
 '          Ditambah: Web Push, PWA service worker, cache halaman publik, disk privat,
@@ -32,15 +32,15 @@ skinparam arrow {
   FontName Arial
   FontSize 10
 }
-title Diagram Arsitektur Teknis - SIDUTama v5.3
+title Diagram Arsitektur Teknis - SIDUTama (2026-11-19)
 
 rectangle "CLIENT LAYER" #EBF3FB {
   [Browser / PWA\n(9 role + pengunjung publik)] as CLIENT
   rectangle "React 19 SPA (Vite 8, Tailwind 4)" #D6E4F7 {
     [Pages & Layouts\n(PublicShell, OfficialShell,\nGuestRoute, ProtectedRoute)] as PAGES
-    [Features\n(surat, approval, notifikasi,\ndata-warga, kelola-berita, ...)] as FEAT
+    [Features\n(surat, approval, notifikasi, data-warga,\naktivasi-akun, data-cpmi, data-usaha,\nintegrasi, kelola-berita, ...)] as FEAT
     [ApprovalStepRenderer\nDynamicSuratForm\nSignature/Fulfillment panels] as KEY
-    [TanStack Query + Axios\n(lib/api.js, queryKeys)] as AXIOS
+    [TanStack Query + Axios\n(lib/api.ts, queryKeys)] as AXIOS
     [AuthContext\n(Sanctum cookie)] as AUTH
   }
   [Service Worker\n(Workbox + push-handler.js)] as SW
@@ -53,22 +53,24 @@ rectangle "WEB SERVER - Nginx (sid-web)" #E1F5FE {
 
 rectangle "API - Laravel 13 (sid-api, PHP-FPM)" #D5EAD0 {
   rectangle "HTTP" #C8E6C9 {
-    [Middleware\nauth:sanctum, account.active,\npassword.changed, role:, throttle] as MW
+    [Middleware\nauth:sanctum, account.active,\npassword.changed, role:, throttle;\nAPI integrasi: auth:integration,\nintegration.client, abilities] as MW
     [Controllers (Api/*, Auth/*)] as CTRL
     [Form Requests\n(StoreLetterRequest ← LetterFormSchema)] as FREQ
     [API Resources] as ARES
   }
   rectangle "Business" #A5D6A7 {
-    [Surat: LetterService, LetterFlowService,\nRt/KadesApprovalService, LetterNumberGenerator,\nLetterSnapshotService, PdfService,\nLetterAttachmentService, LetterSignatureService,\nLetterFulfillmentService] as SVC_LETTER
+    [Surat: LetterService, LetterFlowService,\nRt/KadesApprovalService, LetterNumberGenerator,\nLetterSnapshotService, PdfService,\nLetterAttachmentService, LetterSignatureService,\nLetterFulfillmentService, LetterResultService,\nMigrantWorkerService (F11), CitizenBusinessService] as SVC_LETTER
     [Kependudukan & Jabatan: Citizen/Family/Occupation,\nOfficial, OfficialAssignment,\nOfficialPositionType Service] as SVC_POP
-    [CMS & Publik: VillageProfile, News,\nNewsCategory, Regulation, PublicPageService] as SVC_CMS
-    [Policies: LetterPolicy, OfficialPolicy,\nRegionPolicy] as POL
+    [CMS & Publik: VillageProfile, News,\nNewsCategory, Regulation, Announcement,\nInfoPage, PublicPageService] as SVC_CMS
+    [Akun: AccountActivation, ProfilePhotoRequest,\nPasswordResetRequest (AreaApprovalRouter),\nUserService, AccountAudit, ActivityLog,\nWebPushSubscriber] as SVC_ACC
+    [Integrasi: IntegrationClient,\nSellerApplication (Cimart),\nDisasterAlert (SIGAP)] as SVC_INT
+    [Policies: LetterPolicy, OfficialPolicy,\nRegionPolicy, MigrantWorkerPolicy,\nCitizenBusinessPolicy] as POL
     [Repositories] as REPO
   }
   rectangle "Support" #B2DFDB {
     [PublicPageCache (10 menit / desa)] as PCACHE
     [VillageImageOptimizer (WebP)] as IMGOPT
-    [dompdf (PDF on-demand)] as PDF
+    [dompdf (PDF on-demand)\n+ PdfRescaler (setasign/fpdi, A4/F4)] as PDF
     [maatwebsite/excel (import warga)] as EXCEL
     [spatie/activitylog] as ALOG
   }
@@ -76,21 +78,24 @@ rectangle "API - Laravel 13 (sid-api, PHP-FPM)" #D5EAD0 {
     [LetterStatusNotification\nkanal database (sync)] as NOTIF_DB
     [WebPushChannel\n(diantrekan)] as NOTIF_PUSH
     [Queue worker\n(database/sync)] as QUEUE
+    [Job SendDisasterAlertNotifications\nListener RecordWebPushDelivery] as JOBS
   }
 }
 
 database "PostgreSQL" as DB {
-  [29 tabel domain + letter_number_counters,\nactivity_log, push_subscriptions,\ncache, sessions, jobs] as TABLES
+  [Tabel domain (lihat ERD v8) + activity_log,\npush_subscriptions, personal_access_tokens,\ncache, sessions, jobs] as TABLES
 }
 
 rectangle "STORAGE LAYER" #FDE8D8 {
-  [disk public: logo, foto beranda,\nfoto pejabat, thumbnail berita] as PUB
-  [disk private_uploads: lampiran surat,\nhasil instansi] as PRIV
+  [disk public: logo, foto beranda,\nfoto pejabat & anggota organisasi,\nfoto profil akun, thumbnail berita] as PUB
+  [disk private_uploads: lampiran surat,\nhasil instansi, foto pendaftaran akun\n& permintaan ganti foto] as PRIV
 }
 
 cloud "EXTERNAL SERVICES" #FEF9E7 {
   [Layanan push browser\n(FCM / Mozilla / Apple)] as PUSHSVC
   [Mail (reset password &\nverifikasi email)] as MAIL
+  [Cimart (server)\nbaca permohonan pedagang,\nlaporkan status] as CIMART
+  [SIGAP (server)\nkirim peringatan bencana] as SIGAP
 }
 
 CLIENT --> PAGES
@@ -109,6 +114,17 @@ CTRL --> SVC_LETTER
 CTRL --> SVC_POP
 CTRL --> SVC_CMS
 CTRL --> ARES
+CTRL --> SVC_ACC
+CTRL --> SVC_INT
+SVC_ACC --> REPO
+SVC_INT --> REPO
+SVC_ACC --> PRIV
+SVC_ACC --> ALOG
+SVC_INT --> ALOG
+SVC_INT --> QUEUE
+QUEUE --> JOBS
+CIMART --> PROXY : /api/integrations/v1\n(bearer token client)
+SIGAP --> PROXY : /api/integrations/v1\n(bearer token client)
 SVC_LETTER --> REPO
 SVC_POP --> REPO
 SVC_CMS --> REPO
@@ -144,7 +160,9 @@ note right of QUEUE
   queue:work di service sid_worker.
   VPS: Supervisor queue:work.
   Scheduler: schedule:work (service sid_scheduler)
-  menjalankan approvals:send-reminders tiap 5 menit
-  dan announcements:prune tiap menit.
+  menjalankan approvals:send-reminders tiap 5 menit,
+  letters:send-expiry-reminders tiap jam,
+  announcements:prune tiap menit, dan
+  disaster-alerts:prune harian 02.00.
 end note
 @enduml

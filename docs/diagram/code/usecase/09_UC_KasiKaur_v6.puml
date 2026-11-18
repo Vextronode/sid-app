@@ -40,6 +40,8 @@ rectangle "SIDUTama" {
   usecase "Kelola Data Penduduk & KK\n(termasuk impor Excel)" as UC_CITMANAGE
   usecase "UC-15: Dashboard" as UC_DASH
   usecase "Surat Saya\n(ajukan untuk diri sendiri)" as UC_SELF
+  usecase "Data CPMI\n(petugas F11, read-only)" as UC_CPMI
+  usecase "Data Usaha Warga\n(petugas SKU A01, read-only)" as UC_BIZ
 }
 
 KASI -- UC_AUTH
@@ -52,6 +54,7 @@ KASI -- UC_RESULT
 KASI -- UC_CITMANAGE
 KASI -- UC_DASH
 KASI -- UC_SELF
+KASI -- UC_CPMI
 KAUR -- UC_AUTH
 KAUR -- UC_NOTIF
 KAUR -- UC_LIST
@@ -61,6 +64,7 @@ KAUR -- UC_FULFILL
 KAUR -- UC_CIT
 KAUR -- UC_DASH
 KAUR -- UC_SELF
+KAUR -- UC_BIZ
 UC_LIST ..> UC_DETAIL : <<include>>
 UC_DETAIL ..> UC_DL : <<extend>>
 UC_DETAIL ..> UC_FULFILL : <<extend>>

@@ -19,7 +19,7 @@ skinparam sequence {
 }
 title Sequence - Terapkan Perubahan Data [v6]
 
-actor "Kasi/Kaur (assigned_role)\natau Staf SIDUTama" as K
+actor "Kasi/Kaur (assigned_role)" as K
 participant "React\n(FulfillmentPanel)" as FE
 participant "LetterFulfillmentController" as CTRL
 participant "LetterPolicy::fulfill" as POL
@@ -36,7 +36,7 @@ note over K, FE
 end note
 K -> FE : buka surat "perlu diterapkan"
 FE -> CTRL : GET /api/letters/{letter}/fulfillment
-CTRL -> POL : approved, desa sama, data_action != none,\nrole sesuai assigned_role / petugas_desa
+CTRL -> POL : approved, desa sama, data_action != none,\nrole sesuai assigned_role (NULL = Kasi & Kaur;\nStaf SIDUTama bukan cadangan)
 CTRL -> SVC : proposal(letter)
 SVC -> DB : warga subjek (pemohon atau NIK payload[data_subject_field])
 SVC --> FE : {action, subject, fields[column, current, proposed, fixed]}
@@ -66,6 +66,11 @@ group DB::transaction
     SVC -> CIT : create(values)
   else deactivate_members / update_members / update_citizens / restructure_family
     SVC -> CIT : update tiap warga terkait\n(nonaktifkan, ubah kolom, pindah KK, SHDK, kepala KK baru)
+  else adopt_child (F10)
+    SVC -> CIT : pindahkan anak angkat ke KK pemohon\n(SHDK pilihan pemohon; belum terdata = create)
+    SVC -> SVC : afterCommit: FamilyMemberMovedNotification\nke kepala KK asal
+  else manual
+    SVC -> SVC : hanya catat "ditandai selesai (dikerjakan manual)"\n+ catatan; data diubah sendiri lewat Data Penduduk
   end
   opt data_options.member_details
     SVC -> CIT : simpan data tambahan anggota (gelar, akta, kelainan)

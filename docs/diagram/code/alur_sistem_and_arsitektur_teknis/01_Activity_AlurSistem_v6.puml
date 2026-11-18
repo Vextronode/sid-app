@@ -4,7 +4,8 @@
 ' JUDUL: Diagram Alur Sistem (pengajuan sampai Terapkan)
 ' SUMBER: LetterService, LetterSignatureService, LetterFlowService,
 '         RtApprovalService, KadesApprovalService, LetterSnapshotService,
-'         LetterFulfillmentService (source 2026-10-16); TDD-01 Table 4
+'         LetterFulfillmentService, LetterResultService, MigrantWorkerService
+'         (source 2026-11-19); TDD-01 Table 4
 ' CATATAN: Menggantikan 01_Activity_AlurSistem_v5.puml. Perubahan: verification_type
 '          dihapus; form dinamis & tanda tangan pihak terkait; surat ditahan saat RT
 '          kosong; FYI Kadus; snapshot & nomor per kode klasifikasi; Terapkan.
@@ -28,7 +29,7 @@ skinparam note {
   FontSize 10
 }
 
-title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekdes)
+title Diagram Alur Sistem - SIDUTama (Flow default RT → Kepala Desa/Sekdes, 2026-11-19)
 
 |#D6E4F7|Pemohon|
 |#D5F5E3|Sistem|
@@ -36,15 +37,18 @@ title Diagram Alur Sistem - SIDUTama v5.3 (Flow default RT → Kepala Desa/Sekde
 |#E8F5E9|RT|
 |#FFF3E0|RW / Kadus (FYI)|
 |#FDEBD0|Kepala Desa / Sekdes|
-|#FFE0B2|Kasi / Kaur / Staf SIDUTama|
+|#FFE0B2|Kasi / Kaur|
 
 |Pemohon|
 start
-:Login; pilih jenis surat aktif ber-template;
+:Login; pilih jenis surat aktif\n(ber-template, atau layanan tanpa surat F11);
+if (Ada formulir isi tangan?) then (ya)
+  :Unduh formulir berisi identitas (A4/F4),\nisi & tanda tangani basah, foto;
+endif
 :Isi form dinamis (form_fields),\nunggah berkas isian,\nisi NIK saksi (bila diminta);
 
 |Sistem|
-:Validasi isian terhadap definisi jenis surat;
+:Validasi isian terhadap definisi jenis surat\n(termasuk opsi select bersyarat visible_when);
 if (Valid?) then (tidak)
   :422 per field;
   stop
@@ -82,7 +86,7 @@ else (ya)
 endif
 
 |RT|
-:Periksa isian, lampiran, TTD,\ndokumen pendukung;
+:Periksa isian, lampiran, saksi,\ndokumen pendukung;
 if (Keputusan RT?) then (tolak)
   |Sistem|
   :rejected, rejected_at_step = 1;\nnotifikasi rt_rejected ke pemohon;
@@ -111,14 +115,30 @@ else (setujui)
 endif
 
 |Sistem|
-:approved; letter_number =\n{kode klasifikasi}/{NNN}/Des/{bulan Romawi}/{tahun};
-:expires_at dari validity_days;
+if (produces_letter = false (F11 CPMI)?) then (ya)
+  :approved; catat migrant_workers\n(satu baris per keberangkatan,\ntransaksi yang sama);
+  :Notifikasi "Pendataan Disetujui" ke pemohon;
+  |Pemohon|
+  :Lihat Data CPMI Saya di Profil;
+  stop
+endif
+|Sistem|
+:approved; letter_number (Persuratan Desa) =\n{kode klasifikasi}/{NNN}/Des/{bulan Romawi}/{tahun};
+:expires_at = akhir hari ke-validity_days;
+:A01: catat citizen_businesses (Usaha Saya, Cimart);
 :Bekukan snapshot render\n(nama Kades saat ini; tanpa TTD/stempel);
 :Notifikasi letter_approved_final ke pemohon\n(ambil surat di kantor desa);
 :Petugas desa mencetak surat,\nTTD & stempel basah;
+if (Layanan Kependudukan (requires_result_upload)?) then (ya)
+  |Pemohon|
+  :Bawa formulir ke Disdukcapil,\nunggah hasilnya (letter_results);
+  |Kasi / Kaur|
+  :Verifikasi hasil (terima / tolak + catatan);
+  |Sistem|
+endif
 if (data_action != none?) then (ya)
   :Notifikasi letter_needs_fulfillment\nke Kasi/Kaur sesuai assigned_role;
-  |Kasi / Kaur / Staf SIDUTama|
+  |Kasi / Kaur|
   :Tinjau usulan (nilai sekarang vs usulan);
   :Koreksi bila perlu → **Terapkan**;
   |Sistem|
@@ -129,6 +149,6 @@ else (tidak)
 endif
 
 |Pemohon|
-:Unduh PDF (dari snapshot)\nselama belum kedaluwarsa;
+:Unduh PDF (dari snapshot, kertas A4/F4)\nselama belum kedaluwarsa;
 stop
 @enduml

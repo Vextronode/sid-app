@@ -1,20 +1,16 @@
 RegisterRequest:
   type: object
-  required: [nik, date_of_birth, password, password_confirmation]
+  required: [nik, password, password_confirmation, photo]
   description: |
-    UC-17. Register dengan NIK, tanggal lahir, dan password. Tanggal lahir
-    harus sama dengan `citizens.date_of_birth` (verifikasi kedua selain NIK);
-    nama diambil dari citizen dan username dibuat otomatis (namadepan.namabelakang.NNNN; satu kata: namadepan.NNNN; NNNN 4 digit acak).
+    UC-17. Register dengan NIK, password, dan foto wajah dari kamera. Tanggal
+    lahir tidak diminta; identitas diperiksa petugas wilayah lewat foto saat
+    aktivasi. Nama diambil dari citizen dan username dibuat otomatis
+    (namadepan.namabelakang.NNNN; satu kata: namadepan.NNNN; NNNN 4 digit acak).
   properties:
     nik:
       type: string
       example: "3201012345670001"
-      description: NIK 16 digit, harus sudah terdaftar di tabel citizens
-    date_of_birth:
-      type: string
-      format: date
-      example: "1990-05-17"
-      description: "Harus cocok dengan data kependudukan; bila tidak → 422 `date_of_birth`."
+      description: NIK 16 digit warga aktif desa
     password:
       type: string
       format: password
@@ -23,13 +19,17 @@ RegisterRequest:
       type: string
       format: password
       example: "RahasiaAman123!"
+    photo:
+      type: string
+      format: binary
+      description: "Foto wajah dari kamera: JPEG/PNG/WebP, maks 5 MB, rasio 1:1 (dipotong 1080 px di aplikasi)."
 
 RegisterResponse:
   type: object
   properties:
     message:
       type: string
-      example: "Akun berhasil dibuat. Simpan username Anda."
+      example: "Pendaftaran terkirim. Akun aktif setelah disetujui petugas wilayah. Simpan username Anda."
     data:
       type: object
       properties:

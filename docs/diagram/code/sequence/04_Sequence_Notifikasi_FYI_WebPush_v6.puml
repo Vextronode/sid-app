@@ -35,7 +35,7 @@ participant "Layanan push browser" as PS
 U -> FE : Aktifkan notifikasi
 FE -> FE : Notification.requestPermission()\nPushManager.subscribe(VITE_VAPID_PUBLIC_KEY)
 FE -> PSC : POST /api/push-subscriptions {endpoint, keys, content_encoding}
-PSC -> PSC : updatePushSubscription (upsert per endpoint)
+PSC -> PSC : updatePushSubscription (upsert per endpoint)\n+ device_label dari User-Agent (UA mentah tidak disimpan)
 
 == Setelah RT menyetujui ==
 RTS -> OREPO : allActiveRwByRwId(citizen.rt.rw_id)
@@ -52,6 +52,7 @@ N -> NDB : kanal database (koneksi sync) setelah commit
 N -> Q : kanal WebPush diantrekan
 Q -> WP : toWebPush(): title, body, tag letter-{id},\ndata.url /buka-notifikasi?surat=..&status=..&mine=..
 WP -> PS : kirim (VAPID)
+WP -> WP : event terkirim/gagal → RecordWebPushDelivery\nisi push_subscriptions.last_success_at / last_failed_at\n(dipakai menu Pelanggan Notifikasi)
 PS -> SW : event push
 SW -> U : showNotification
 U -> SW : klik notifikasi

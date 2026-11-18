@@ -1,0 +1,71 @@
+get:
+  tags: [Epic 3 - Autentikasi]
+  summary: Status permintaan ganti foto terakhir milik akun
+  description: Untuk status di halaman Profil. `data` null bila belum pernah mengajukan.
+  operationId: showOwnProfilePhotoRequest
+  security:
+    - sanctumCookie: []
+  responses:
+    '200':
+      description: Permintaan terakhir
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                nullable: true
+                properties:
+                  id: { type: integer }
+                  status:
+                    type: string
+                    enum: [pending, approved, rejected]
+                  decision_notes: { type: string, nullable: true }
+                  decided_at: { type: string, format: date-time, nullable: true }
+                  created_at: { type: string, format: date-time }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Ajukan ganti foto profil (warga)
+  description: |
+    Hanya akun warga; akun yang menjabat memakai foto pejabat yang dikelola
+    Staf SIDUTama. Foto diambil dari kamera (ditegakkan FE) dan dipotong 1:1
+    (1080 px). Foto terpasang setelah disetujui petugas wilayah (RT, lalu RW,
+    Kepala Dusun, atau Staf SIDUTama). Hanya satu permintaan menunggu per
+    akun. Pemegang menerima notifikasi `profile_photo_requested`.
+  operationId: submitOwnProfilePhotoRequest
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required: [photo]
+          properties:
+            photo:
+              type: string
+              format: binary
+              description: "JPEG/PNG/WebP, maks 5 MB, rasio 1:1."
+  responses:
+    '201':
+      description: Terkirim
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Permintaan ganti foto terkirim. Foto terpasang setelah disetujui petugas wilayah."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan akun warga
+    '409':
+      description: Masih ada permintaan ganti foto yang menunggu
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'

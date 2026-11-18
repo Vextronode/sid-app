@@ -23,9 +23,10 @@ get:
       description: "Bernilai truthy (1/true) untuk unduh sebagai attachment; selain itu stream inline."
       schema:
         type: boolean
+    - $ref: '../../parameters/common.yaml#/Paper'
   responses:
     '200':
-      description: PDF `dokumen-pendukung-{id}.pdf`
+      description: "PDF `dokumen-pendukung-{id}.pdf` (dengan `?paper=`: `dokumen-pendukung-{id}-{paper}.pdf`). Kertas bawaan A4."
       content:
         application/pdf:
           schema:
@@ -35,5 +36,7 @@ get:
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
       $ref: '../../responses/common.yaml#/Forbidden'
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
     '404':
       description: Jenis surat ini tidak memiliki dokumen pendukung

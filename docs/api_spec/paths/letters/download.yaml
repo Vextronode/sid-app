@@ -35,9 +35,10 @@ get:
       schema:
         type: string
         default: main
+    - $ref: '../../parameters/common.yaml#/Paper'
   responses:
     '200':
-      description: File PDF (attachment `surat-{id}.pdf`, atau `surat-{id}-{document}.pdf` untuk dokumen yang terbit bersama)
+      description: File PDF (attachment `surat-{id}.pdf`, atau `surat-{id}-{document}.pdf` untuk dokumen yang terbit bersama; dengan `?paper=` nama file diberi sufiks kertas, mis. `surat-{id}-f4.pdf`)
       content:
         application/pdf:
           schema:
@@ -55,6 +56,8 @@ get:
             expired_for_applicant:
               value:
                 message: "Masa berlaku surat telah habis."
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
     '404':
       description: Surat tidak ditemukan, atau belum ada Kepala Desa aktif untuk membekukan snapshot, atau jenis layanan tidak menerbitkan surat (`letter_types.produces_letter = false`, mis. Pendataan CPMI F11; hasilnya data `migrant_workers`)
     '500':

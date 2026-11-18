@@ -1,0 +1,31 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Setujui permintaan atur ulang kata sandi
+  description: |
+    Hanya Staf SIDUTama di desa yang sama. Pengaju dapat membuat kata sandi
+    baru dalam 24 jam (`approved_until`).
+  operationId: approvePasswordResetRequest
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: resetRequest
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    '200':
+      description: Berhasil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Permintaan disetujui. Pengaju dapat membuat kata sandi baru dalam 24 jam."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan Staf SIDUTama di desa yang sama
+    '409':
+      description: Permintaan ini sudah diproses.

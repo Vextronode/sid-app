@@ -1,5 +1,5 @@
 @startuml
-title SID - POV Warga [Business Workflow] (diselaraskan source 2026-10-16)
+title SID - POV Warga [Business Workflow] (diselaraskan source 2026-11-19)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -14,15 +14,36 @@ skinparam note {
 
 |#LightBlue|Warga|
 start
+if (Sudah punya akun aktif?) then (belum)
+  :Daftar: NIK + kata sandi\n+ foto wajah dari kamera;
+  |#LightYellow|Sistem|
+  :Buat akun nonaktif + permintaan aktivasi\nke RT (RW, Kadus, atau Staf SIDUTama\nbila jenjang di bawahnya kosong);
+  |#MistyRose|Petugas wilayah|
+  :Setujui (akun aktif, foto jadi foto profil)\n/ Tolak dengan catatan;
+  note right
+    Ditolak 3 kali: NIK tidak bisa
+    mendaftar online lagi; Staf SIDUTama
+    mengaktifkan manual di kantor desa.
+  end note
+  |#LightBlue|Warga|
+endif
 :Login;
 note right
   Tidak ada kategori "warga Non-NIK":
-  register mensyaratkan NIK terdaftar
-  dan tanggal lahir yang cocok.
+  register mensyaratkan NIK warga terdaftar;
+  identitas diperiksa petugas lewat foto.
+  Lupa kata sandi tanpa email: ajukan
+  NIK + tanggal lahir, tunggu persetujuan
+  Staf SIDUTama, buat sandi baru (24 jam)
+  dari perangkat yang sama.
 end note
 :Buka "Ajukan Surat";
-:Pilih jenis surat aktif ber-template;
-:Isi form dinamis (isian sesuai jenis surat),\nunggah berkas isian bila diminta;
+:Pilih jenis surat/layanan aktif;
+if (Ada formulir isi tangan (mis. A12)?) then (ya)
+  :Unduh formulir berisi identitas,\nisi & tanda tangani basah, foto;
+else (tidak)
+endif
+:Isi form dinamis per bagian (isian sesuai\njenis surat; F11 terisi awal dari pendataan\nsebelumnya), unggah berkas bila diminta;
 if (Jenis surat meminta saksi?) then (ya)
   :Isi NIK saksi\n(tanpa TTD digital);
 else (tidak)
@@ -52,8 +73,24 @@ if (Hasil?) then (ditolak di tahap mana pun)
   :Terima notifikasi penolakan;
   stop
 else (disetujui final)
-  :Nomor surat, masa berlaku, snapshot PDF;
+  if (Layanan tanpa surat (F11 CPMI)?) then (ya)
+    :Catat Data CPMI (satu baris per keberangkatan);
+    :Notifikasi "Pendataan Disetujui";
+    |#LightBlue|Warga|
+    :Lihat di Profil: Data CPMI Saya;
+    stop
+  else (tidak)
+  endif
+  |#LightYellow|Sistem|
+  :Nomor surat (Persuratan Desa), masa berlaku,\nsnapshot PDF; usaha A01 dicatat ke Data Usaha;
   :Notifikasi ke warga (in-app + Web Push);
+  if (Layanan Kependudukan (F01-F10)?) then (ya)
+    |#LightBlue|Warga|
+    :Bawa formulir ke Disdukcapil,\nunggah hasilnya di surat yang sama;
+    |#LightYellow|Sistem|
+    :Kasi Pemerintahan memverifikasi hasil;
+  else (tidak)
+  endif
   if (Jenis surat mengubah data kependudukan?) then (ya)
     :Kasi/Kaur menerapkan perubahan\n(mis. data almarhum dinonaktifkan,\nanak lahir ditambahkan);
     :Notifikasi "Data Kependudukan Diperbarui";
@@ -62,14 +99,18 @@ else (disetujui final)
 endif
 
 |#LightBlue|Warga|
-:Unduh PDF selama belum kedaluwarsa;
+:Unduh PDF (kertas A4/F4) selama belum kedaluwarsa;\nambil surat ber-TTD & stempel basah di kantor desa;
 stop
 
 note right
   Warga tidak mengedit data kependudukan
   secara langsung; perubahan hanya lewat
   jenis surat ber-aksi data yang
-  diterapkan Kasi/Kaur/Staf SIDUTama.
+  diterapkan Kasi/Kaur.
+  Ganti foto profil: ambil foto dari kamera,
+  terpasang setelah disetujui petugas wilayah.
+  Usaha A01 dapat didaftarkan ke Cimart
+  dari Usaha Saya di Profil.
 end note
 
 @enduml

@@ -1,0 +1,30 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Setujui ganti foto profil
+  description: |
+    Foto permintaan menjadi foto profil akun warga. Hanya pemegang saat ini.
+  operationId: approveProfilePhotoRequest
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: profilePhotoRequest
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    '200':
+      description: Berhasil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Foto profil warga diganti."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan pemegang permintaan saat ini
+    '409':
+      description: Permintaan ganti foto ini sudah diputuskan.

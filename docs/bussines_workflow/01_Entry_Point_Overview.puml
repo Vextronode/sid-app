@@ -1,5 +1,5 @@
 @startuml
-title SID - General Overview: Peta RBAC & Entry Point per POV (diselaraskan source 2026-10-16)
+title SID - General Overview: Peta RBAC & Entry Point per POV (diselaraskan source 2026-11-19)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -14,19 +14,19 @@ skinparam note {
 
 start
 :Akses SID (halaman publik tanpa login);
-:Login (username) / Register (NIK + tanggal lahir);
+:Login (username) / Register (NIK + kata sandi\n+ foto wajah, aktif setelah disetujui petugas wilayah) /\nLupa kata sandi (email, atau NIK + tanggal lahir);
 
 if (Role Login?) then (warga)
-  :Lihat **02_SID_POV_Warga_NIK_NonNIK.puml**\n(ajukan surat, tanda tangan,\npermintaan tanda tangan, unduh);
+  :Lihat **02_SID_POV_Warga_NIK_NonNIK.puml**\n(ajukan surat & layanan, persetujuan saksi,\nunduh A4/F4, ganti foto, Usaha Saya,\nData CPMI Saya);
   stop
 elseif (rt / rw / kadus) then
-  :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(RT: keputusan tahap 1.\nRW & Kadus: FYI read-only);
+  :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(RT: keputusan tahap 1.\nRW & Kadus: FYI read-only.\nKetiganya: aktivasi akun & ganti foto\nwarga sesuai jenjang);
   stop
 elseif (kasi_pemerintahan / kaur_tu_umum) then
-  :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(notifikasi surat final, unduh,\nTerapkan perubahan data; bukan approver);
+  :Lihat **03_SID_POV_RTRW_StaffDesa.puml**\n(notifikasi surat final, unduh,\nverifikasi hasil & Terapkan perubahan data,\nData Usaha / Data CPMI; bukan approver);
   stop
 elseif (staf_sid) then
-  :Lihat **04_SID_POV_Admin_Eksekutif_Superadmin.puml**\n(CMS, kependudukan, jabatan,\nkonfigurasi, seluruh surat desa);
+  :Lihat **04_SID_POV_Admin_Eksekutif_Superadmin.puml**\n(CMS, kependudukan, jabatan & akun,\nkonfigurasi, seluruh surat desa,\nintegrasi, log & pelanggan notifikasi);
   stop
 elseif (kepala_desa / sekretaris_desa) then
   :Lihat **04_SID_POV_Admin_Eksekutif_Superadmin.puml**\n(approver final, first-action-wins);

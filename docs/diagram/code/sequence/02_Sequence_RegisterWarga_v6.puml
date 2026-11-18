@@ -1,10 +1,12 @@
 '==================================================================================
 ' SECTION: SEQUENCE DIAGRAM
 ' FILE: 02_Sequence_RegisterWarga_v6.puml
-' JUDUL: Sequence - Register Warga (UC-17)
+' JUDUL: Sequence - Register Warga & Aktivasi Akun (UC-17)
 ' SUMBER: routes/auth.php, RegisteredUserController, RegisterUserRequest,
-'         Auth\AuthService::registerWarga, UsernameGenerator (2026-10-16)
-' CATATAN: Menggantikan 02_Sequence_RegisterWarga_v5.puml (tambah tanggal lahir).
+'         Auth\AuthService::registerWarga, UsernameGenerator,
+'         AccountActivationService, AreaApprovalRouter, LoginRequest (2026-11-19)
+' CATATAN: Revisi 2026-11-19: tanggal lahir tidak lagi diminta; foto wajah dari
+'          kamera wajib dan akun aktif setelah disetujui petugas wilayah.
 '==================================================================================
 @startuml Sequence_RegisterWarga_v6
 skinparam backgroundColor #FFFFFF
@@ -17,39 +19,66 @@ skinparam sequence {
   NoteBackgroundColor #FFF9C4
   NoteBorderColor #F9A825
 }
-title Sequence - Register Warga [v6] (NIK + tanggal lahir + password)
+title Sequence - Register Warga & Aktivasi Akun [v6] (NIK + password + foto wajah)
 
 actor "Calon Warga" as W
 participant "React\n(RegisterPage)" as FE
 participant "throttle:register\n(5/menit IP, 10/jam hash NIK)" as RL
 participant "RegisteredUserController" as CTRL
-participant "RegisterUserRequest" as REQ
 participant "AuthService" as SVC
-participant "UsernameGenerator" as UG
+participant "AccountActivationService" as ACT
+participant "AreaApprovalRouter" as RTR
 database "PostgreSQL" as DB
+actor "Petugas wilayah\n(RT / RW / Kadus /\nStaf SIDUTama)" as P
 
-W -> FE : isi NIK, tanggal lahir, password, konfirmasi
+W -> FE : isi NIK, password, konfirmasi;\nambil foto wajah dari kamera (dipotong 1:1)
 FE -> FE : GET /sanctum/csrf-cookie
-FE -> RL : POST /register
+FE -> RL : POST /register (multipart)
 RL -> CTRL
-CTRL -> REQ : validate (nik digits:16, date_of_birth date,\npassword confirmed)
-CTRL -> SVC : registerWarga(data)
+CTRL -> CTRL : RegisterUserRequest (nik digits:16,\npassword confirmed, photo image 1:1 maks 5 MB)
+CTRL -> SVC : registerWarga(data, photo)
 SVC -> DB : SELECT citizens WHERE nik_hash = sha256(nik)
-alt NIK tidak ditemukan
-  SVC --> FE : 422 nik "NIK tidak terdaftar ..."
-else sudah punya akun
-  SVC --> FE : 422 nik "NIK sudah terdaftar, silakan login"
-else tanggal lahir != citizens.date_of_birth
-  SVC --> FE : 422 date_of_birth "Tanggal lahir tidak sesuai dengan data kependudukan"
+alt NIK tidak terdaftar/nonaktif, akun aktif atau masih menunggu,\natau NIK diblokir (ditolak 3 kali)
+  SVC --> FE : 422 nik "Pendaftaran tidak dapat diproses ..."\n(pesan sama untuk semua alasan)
 else valid
-  SVC -> UG : generate(citizen.name)
-  UG -> DB : cek usernameExists (ulang bila bentrok)
-  SVC -> DB : INSERT users (role warga, aktif, village_id, citizen_id)
-  CTRL -> CTRL : event Registered
+  SVC -> ACT : storePhoto (disk private_uploads)
+  SVC -> DB : BEGIN
+  alt pendaftaran terakhir ditolak (daftar ulang)
+    SVC -> DB : UPDATE users SET password
+  else akun baru
+    SVC -> DB : INSERT users (role warga, is_active = false,\nusername otomatis unik)
+  end
+  SVC -> ACT : open(user, citizen, photoPath)
+  ACT -> DB : INSERT account_registrations (pending,\nwilayah warga; unique pending per warga)
+  ACT -> RTR : route(registration)
+  RTR -> DB : pejabat aktif RT → RW → Kadus → Staf SIDUTama
+  ACT -> P : AccountApprovalNotification\n(account_registration_submitted)
+  SVC -> DB : COMMIT
   CTRL --> FE : 201 {data: {name, username}, message}
-  note right of FE
-    Register tidak membuat sesi;
-    warga login dengan username.
+end
+
+== Aktivasi ==
+P -> FE : Manajemen Akun → Aktivasi Akun
+FE -> CTRL : GET /api/account-registrations\n(+ /{id}/photo)
+alt Setujui (hanya pemegang saat ini, can_decide)
+  FE -> ACT : POST /api/account-registrations/{id}/approve
+  ACT -> DB : lock; users.is_active = true;\nfoto jadi users.photo_img; status approved,\ndecided_level; activity log account_registration
+else Tolak (catatan wajib)
+  FE -> ACT : POST /api/account-registrations/{id}/reject
+  ACT -> DB : status rejected + decision_notes
+  note right of ACT
+    Ditolak 3 kali: NIK tidak bisa daftar
+    online; Staf SIDUTama dapat
+    POST .../manual-activation
+    (kata sandi sementara tampil sekali).
   end note
+end
+
+W -> FE : login
+FE -> CTRL : POST /login
+alt akun belum aktif
+  CTRL --> FE : 403 pesan sesuai status pendaftaran\n(menunggu / ditolak + catatan / diblokir)
+else aktif
+  CTRL --> FE : 200 sesi
 end
 @enduml

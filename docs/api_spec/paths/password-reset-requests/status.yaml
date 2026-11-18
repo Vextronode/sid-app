@@ -1,0 +1,34 @@
+servers:
+  - url: /
+    description: Endpoint web autentikasi (tanpa prefix /api)
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Cek status permintaan atur ulang kata sandi lewat token klaim
+  description: Middleware `guest`, throttle 30/menit.
+  operationId: passwordResetRequestStatus
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [token]
+          properties:
+            token: { type: string, minLength: 64, maxLength: 64 }
+  responses:
+    '200':
+      description: Status permintaan
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/account-requests/account-requests.yaml#/PasswordResetRequestStatus'
+    '404':
+      description: Permintaan tidak ditemukan (token tidak dikenal atau sudah digantikan)
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Terlalu banyak permintaan

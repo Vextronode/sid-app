@@ -5,7 +5,7 @@ tags:
   - react
   - setup
   - sanctum
-date: 2026-10-18
+date: 2026-11-19
 ---
 
 # Setup Project
@@ -97,7 +97,7 @@ MAILTRAP_INBOX_ID=
 |---|---|---|
 | `SID_APP_NAME` | Nama aplikasi untuk pengguna: judul login, `<title>`, manifest PWA, dan label peran staf ("Staf {nama}") | Default `SIDUTama`. Samakan dengan `VITE_APP_NAME` |
 | `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_FAKER_LOCALE` | Bahasa pesan validasi (`lang/id/validation.php`), pesan bawaan framework (`lang/id.json`, `lang/id/*.php`), email reset kata sandi, dan data palsu factory/seeder | Wajib `id`, `id` dan `id_ID` (sudah begitu di `.env.example`; `phpunit.xml` memaksa `APP_LOCALE` dan `APP_FALLBACK_LOCALE` = `id` untuk test). Nilai `en` membuat pesan validasi kembali berbahasa Inggris. Setelah mengubah, jalankan `php artisan config:clear` |
-| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
+| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push dan notifikasi peringatan SIGAP) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
 | `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Kunci Web Push | Buat dengan `php artisan webpush:vapid`. Kosong = push nonaktif, in-app tetap jalan |
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
 | `MAIL_MAILER`, `MAILTRAP_*`, `MAIL_FROM_*` | Email tautan lupa kata sandi dan `php artisan mail:test` | Template memakai `mailtrap-sdk` + `sandbox.api.mailtrap.io`. Tanpa token Mailtrap, ganti ke `MAIL_MAILER=log` (email ditulis ke `storage/logs/laravel.log`). Notifikasi email status surat belum diimplementasi |
@@ -124,7 +124,7 @@ Akun demo untuk mencoba setiap role:
 |---|---|---|
 | Staf SIDUTama (`staf_sid`) | `demo_admin` | Satu-satunya Staf SIDUTama desa demo |
 | Warga | `demo_warga` | Kepala keluarga di RT 001/RW 001 Patrol |
-| Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba saksi/TTD antar-warga) |
+| Warga | `demo_warga2` | Istri `demo_warga`, satu KK (mis. untuk mencoba persetujuan saksi antar-warga) |
 | Warga | `demo_warga3` | Anak tertua `demo_warga`, satu KK |
 | Kepala Dusun | `demo_kadus` | Aditulloh, Kadus Patrol |
 | RW | `demo_rw` | Ketua RW 001 Patrol |
@@ -143,6 +143,8 @@ Pejabat lain yang punya peran di aplikasi juga mendapat akun, supaya surat dari 
 | RT lain | `rt.<dusun>.<nn>.<nn>` (RW lalu RT), mis. `rt.cibenda.12.03` |
 
 **Password semua akun:** `Password123!`
+
+Akun demo sudah aktif. Untuk mencoba **pendaftaran akun baru**: daftar di halaman Daftar dengan NIK warga seeder yang belum punya akun (lihat Data Penduduk saat login `demo_admin`), ambil foto wajah dari kamera (browser perlu izin kamera; `localhost`/`127.0.0.1` diizinkan tanpa HTTPS), lalu login sebagai Ketua RT wilayah warga itu (mis. `demo_rt` untuk RT 001/RW 001 Patrol) dan setujui di **Manajemen Akun → Aktivasi Akun**. Akun baru tidak bisa login sebelum disetujui. Permintaan ganti foto profil warga diputuskan di menu yang sama.
 
 Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak berjalan di environment `production`. Untuk mengganti data demo lama, gunakan `migrate:fresh --seed` hanya pada database yang boleh dihapus; menjalankan `db:seed` sendiri tidak menghapus data lama.
 
@@ -266,6 +268,8 @@ Email reset kata sandi dikirim langsung saat diminta (tanpa `queue:work`). Di lo
 4. Uji: `php artisan mail:test alamat@contoh.com`, email harus muncul di inbox sandbox.
 5. Uji alur penuh: akun seeder tidak punya email, jadi login (mis. `demo_warga`), isi email di Profil, logout, lalu pakai **Lupa Kata Sandi**.
 
+Akun **tanpa email** memakai jalur lain yang tidak butuh Mailtrap: di halaman Lupa Kata Sandi pilih jalur NIK (`/forgot-password/nik`), isi NIK + tanggal lahir, lalu login sebagai `demo_admin` dan setujui di **Pengajuan Reset**. Kembali ke halaman tadi **di browser yang sama** (token klaim disimpan di browser itu) untuk membuat kata sandi baru dalam 24 jam.
+
 Konfigurasi produksi (Mailtrap Sending dengan domain terverifikasi, kunci VAPID produksi) ada di [README](../README.md#b-produksi).
 
 ---
@@ -302,28 +306,30 @@ Frontend jalan di `http://127.0.0.1:5173`. Setelah mengubah `.env` frontend, res
 Project pakai **Laravel Sanctum SPA authentication** - session/cookie based, bukan token di localStorage.
 
 - Jangan simpan token di `localStorage` atau `sessionStorage`
-- Axios instance di `src/lib/api.js` sudah di-setup `withCredentials: true`
-- Sebelum login, wajib panggil `GET /sanctum/csrf-cookie` dulu, baru `POST /login`
+- Axios instance di `src/lib/api.ts` sudah di-setup `withCredentials: true` dan `withXSRFToken: true`
+- Sebelum login, wajib panggil `GET /sanctum/csrf-cookie` dulu, baru `POST /login` (rute web, tanpa prefix `/api`)
 - Setelah login, cookie session otomatis terkirim di setiap request — tidak perlu manual attach header
 
 Contoh flow login:
-```js
-import api from '@/lib/api';
+```ts
+import api from '@/lib/api'
 
-async function login(username, password) {
-  await api.get('/sanctum/csrf-cookie');
-  const { data } = await api.post('/api/login', { username, password });
-  const user = data.user;
-  return user;
+async function login(username: string, password: string) {
+  await api.get('/sanctum/csrf-cookie')
+  const { data } = await api.post('/login', { username, password })
+  return data.user // sama dengan GET /api/user
 }
 ```
+
+Login akun yang belum aktif dijawab `403` dengan pesan sesuai status pendaftarannya (menunggu aktivasi, ditolak, atau diblokir).
 
 ---
 
 ## 6. Test & Pemeriksaan Kode
 
 ```powershell
-# Backend: memakai SQLite in-memory (phpunit.xml), tidak menyentuh database di .env
+# Backend: memakai SQLite in-memory (phpunit.xml), tidak menyentuh database di .env.
+# CI menjalankan suite yang sama di PostgreSQL 16, jadi beberapa error (mis. tipe UUID) hanya muncul di CI.
 cd apps\backend
 php artisan test
 .\vendor\bin\pint --test
@@ -357,6 +363,9 @@ npm run build
 | Pengingat masa berlaku surat tidak datang | `schedule:work` tidak jalan, belum jam kirim desa, titik dimatikan di tab Pengingat Masa Berlaku (Alur & Jenis Surat), akun pemohon nonaktif, atau jatuh tempo titik sebelum surat disetujui | Jalankan `php artisan schedule:work`; uji dengan `php artisan letters:send-expiry-reminders` |
 | Perubahan kode tidak berefek di push/pengingat | Worker/scheduler memakai kode lama | Restart `queue:work` dan `schedule:work` |
 | Staf SIDUTama lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
+| Akun baru tidak bisa login (`403` menunggu aktivasi) | Pendaftaran online belum disetujui petugas wilayah | Login sebagai RT wilayah warga (atau RW/Kadus/`demo_admin` bila jenjang di bawahnya kosong), setujui di Manajemen Akun → Aktivasi Akun |
+| Kamera tidak bisa dibuka di halaman Daftar / ganti foto | Browser menolak kamera di alamat non-HTTPS selain `localhost`/`127.0.0.1`, atau izin kamera ditolak | Buka lewat `127.0.0.1`/`localhost`, izinkan kamera di pengaturan situs |
+| Unduh PDF dengan pilihan kertas lain gagal (`Class "setasign\Fpdi\..." not found`) | Dependensi composer belum terpasang setelah pull | `composer install` di `apps\backend` |
 
 ---
 

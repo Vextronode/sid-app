@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-FE-001 |
-| Status | Berlaku (Aktif) - Versi 1.2 (diselaraskan ke source `apps/frontend` per 2026-10-16) |
+| Status | Berlaku (Aktif) - Versi 1.18 (diselaraskan ke source `apps/frontend` per 2026-11-19) |
 | Audiens | Frontend Developer, Reviewer, Tech Lead |
 | Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan kode sehari-hari ada di `DEV-CODE-001`. |
 | Dokumen Induk | `SID-ARCH-SYS-001` |
@@ -66,12 +66,23 @@ src/
     cetak-surat/          PdfCanvasPreview (pratinjau canvas pdf.js), DownloadSuratMenu
                           (pilih kertas + dokumen), PaperSizeToggle, generateSuratPDF
     warga-surat/, warga-help/
-    profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil)
+    profil-warga/         EditProfilWargaModal, ProfilePhoto (foto profil akun di halaman Profil;
+                          warga mengganti foto lewat permintaan dari kamera)
     approval/             ApprovalStepRenderer, SuratDetailModal (approver), canDecideOnLetter,
                           api keputusan, useSuratDetail (detail surat untuk semua modal peran)
     approval-rt/, approval-rw/, approval-kadus/, approval-kades/ (pembungkus modal per peran)
     operator-desa/        roleNavigation (kapabilitas route operator), kartu dashboard
     data-warga/, pekerjaan/, kelola-wilayah/, manajemen-user/
+    aktivasi-akun/        AktivasiAkunSection (pendaftaran akun menunggu aktivasi: foto, setujui,
+                          tolak dengan catatan, aktivasi manual NIK yang diblokir) dan
+                          FotoProfilRequestSection (permintaan ganti foto), PhotoZoom
+    activity-log/         API & label Log Aktivitas (data penduduk, surat, tindakan akun)
+    pelanggan-notifikasi/ API & label menu Pelanggan Notifikasi (akun berlangganan Web Push)
+    data-usaha/           Data Usaha Warga (CitizenBusinessAccessGate) dan UsahaSayaCard (Usaha Saya,
+                          daftar/batal ke Cimart) di halaman Profil
+    data-cpmi/            Data CPMI (MigrantWorkerAccessGate, CpmiLetterModal rincian pengajuan),
+                          CpmiSayaCard (Data CPMI Saya di Profil), guardianRelation (hubungan
+                          penanggung jawab dari SHDK, sama dengan backend `GuardianRelation`)
     organisasi/           OrganisasiManager (slot Ketua/Wakil/Anggota, promosi, foto anggota)
     kelola-berita/        berita + kategori berita
     profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, titik kantor
@@ -155,10 +166,10 @@ Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat war
 | Kelompok | Route utama |
 |---|---|
 | Publik | `/`, `/berita`, `/berita/:id`, `/profil-desa` (`#peraturan-desa`, `#perangkat-desa`), `/bpd`, `/lembaga-desa` (`?lembaga=lpm\|karang_taruna\|pkk`), `/kebijakan-privasi`, `/aksesibilitas`, `/ppid`; `/peraturan-desa` diarahkan ke `/profil-desa#peraturan-desa` |
-| Auth | `/login`, `/register`, `/forgot-password`, `/reset-password/:token`, `/change-password` |
+| Auth | `/login`, `/register`, `/forgot-password`, `/forgot-password/nik`, `/reset-password/:token`, `/change-password` |
 | Warga | `/surat-saya` (Beranda: ringkasan Surat Saya), `/jenis-surat` (Ajukan Surat: form pengajuan), `/pengajuan-surat/:kode?`, `/surat-saya/daftar`, `/profil` |
-| RT/RW/Kadus/Kades | `/admin/{rt,rw,kadus,kades}`, `/admin/{rt,rw,kadus,kades}/surat` |
-| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/integrasi` (token aplikasi pihak ketiga, khusus Staf SIDUTama), `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman` (`?bagian=desa` Pengumuman Desa, `?bagian=sigap` Peringatan SIGAP), `/admin/halaman-informasi` |
+| RT/RW/Kadus/Kades | `/admin/{rt,rw,kadus,kades}`, `/admin/{rt,rw,kadus,kades}/surat`, `/admin/{rt,rw,kadus,kades}/data-penduduk`, `/admin/{rt,rw,kadus}/manajemen-akun` (aktivasi akun & ganti foto warga) |
+| Operator | `/admin/operator-desa`, `/admin/operator-desa/surat`, `/admin/data-warga`, `/admin/manajemen-user`, `/admin/pejabat-desa`, `/admin/kelola-{wilayah,pekerjaan,berita,peraturan,profil-desa}`, `/admin/pengaturan-persetujuan`, `/admin/alur-persetujuan`, `/admin/log-aktivitas`, `/admin/pengajuan-reset` (lupa sandi tanpa email), `/admin/pelanggan-notifikasi`, `/admin/data-usaha` (+ `/:id`), `/admin/data-cpmi` (+ `/:id`; juga Kasi/Kaur/Kades/Sekdes sesuai flag backend), `/admin/integrasi` (token aplikasi pihak ketiga, khusus Staf SIDUTama), `/admin/organisasi/{bpd,lembaga}`, `/admin/pengumuman` (`?bagian=desa` Pengumuman Desa, `?bagian=sigap` Peringatan SIGAP), `/admin/halaman-informasi` |
 | Pejabat (umum, termasuk Staf SIDUTama) | `/admin/profil`, `/admin/surat-saya` |
 
 ---
@@ -169,7 +180,7 @@ Semua route didefinisikan di `App.tsx`; path publik, auth, profil, dan surat war
 Merender tombol Setuju/Tolak (tahap final: "Setujui & terbitkan") di footer popup detail hanya bila `canDecideOnLetter` terpenuhi: step aktif (`current_step.approver_position`) cocok dengan role user (`rt` → rt; `kepala_desa` → kepala_desa/sekretaris_desa), status surat masih dapat diputuskan (`pending` atau `in_progress`, termasuk surat RT yang tahap RT-nya dilewati), dan belum ada keputusan untuk level itu. RW, Kadus, Kasi/Kaur tidak pernah mendapat tombol. Tolak membuka kotak alasan wajib; Escape/Batal meminta konfirmasi bila alasan sudah diketik.
 
 ### 6.2 `DynamicSuratForm`
-Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.ts`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`). Tidak ada slot tanda tangan: surat ditandatangani basah setelah terbit. Validasi akhir tetap di backend.
+Membangun form pengajuan dari `letter_type.form_fields` (text, textarea, date, number, nik, select, file, occupation, repeater, family_members; isian bersyarat `visible_when` disembunyikan, begitu pula opsi `select` ber-`visible_when` yang syaratnya tidak terpenuhi; isian ber-`section` dikelompokkan di bawah judul bagian dengan kartu data diri pemohon di atasnya; isian tanggal ber-`report_deadline` menampilkan peringatan tidak memblokir bila tanggal peristiwa melewati batas pelaporan, `utils/reportDeadline.ts`), lalu mengirim `multipart/form-data` (`payload[...]`, `files[...]`). Tidak ada slot tanda tangan: surat ditandatangani basah setelah terbit. Validasi akhir tetap di backend.
 
 ### 6.3 Saksi & Terapkan
 `SignatureRequestsCard` ("Permintaan Saksi": setujui dengan kata sandi/tolak/blokir permintaan saksi dan persetujuan; profil warga & pejabat), `LetterExtrasPanel` (status saksi, ganti saksi yang menolak/kedaluwarsa), `FulfillmentPanel` (tinjau & Terapkan perubahan data untuk Kasi/Kaur/Petugas), `LetterTypeSettingsPanel` (masa berlaku, kategori Persuratan Desa / Layanan Kependudukan dengan petugas yang mengikutinya, status aktif).
@@ -190,7 +201,13 @@ Bar pagination memakai `PageNumbers` (jendela tiga nomor bergeser dengan elipsis
 - Pratinjau selalu dirender sebagai canvas pdf.js di dalam halaman (klik kanan diblok), tidak pernah di tab/iframe viewer PDF browser yang punya tombol unduh. Pemohon hanya melihat pratinjau setelah surat terbit; pejabat yang memutus melihatnya selama proses (lihat `GET /letters/{letter}/preview`).
 - `DownloadSuratMenu`: tanpa pilihan format TTD (surat terbit tanpa TTD dan stempel, dibubuhkan basah di kantor desa). Menu selalu dibuka: baris pertama `PaperSizeToggle` (A4 | F4, bawaan F4 = `DEFAULT_PAPER` di `utils/paperSize.ts`, peran `menuitemradio`), lalu dokumen (`surat.documents`, petunjuk menyebut kertas template `documents[].paper`). Pilihan kertas dikirim sebagai `?paper=`; backend menskalakan PDF utuh sehingga tampilan sama, hanya ukurannya berubah. `PdfCanvasPreview` punya toggle yang sama di atas pratinjau (tetap saat berpindah tab dokumen), begitu pula dokumen pendukung (`LetterExtrasPanel`) dan formulir isi tangan (`LetterTypePicker`). Pilihan tidak disimpan; tiap menu/pratinjau mulai dari F4. Petunjuk di detail surat (`LETTER_PICKUP_HINT`, `FORM_DOWNLOAD_HINT`) mengarahkan pemohon mengambil surat/formulir bertanda tangan di kantor desa.
 
-### 6.7 Surat Saya
+### 6.7 Layanan tanpa surat (F11 Pendataan CPMI)
+Jenis surat dengan `produces_letter = false` tidak punya pratinjau atau unduhan. Popup detail menampilkan rincian isian per section (satu isian per baris, repeater dipecah per entri, tombol buka lampiran), dan `DownloadSuratMenu` diganti label **Data tersimpan**. Kelola Jenis Surat menampilkan hasilnya sebagai "Data (tanpa surat)". Form F11 diisi awal dari pendataan sebelumnya (`GET /profile/migrant-workers/prefill`) dan menampilkan hubungan penanggung jawab dari KK (`GuardianRelationHint`) sebelum dikirim. Menu Data CPMI (`/admin/data-cpmi`, `/admin/data-cpmi/:id`) dan Data Usaha (`/admin/data-usaha`, `/admin/data-usaha/:id`) dijaga dua lapis: peran operator di `roleNavigation`, lalu flag dari `/api/user` (`can_view_migrant_workers`, `can_view_citizen_businesses`) lewat komponen AccessGate.
+
+### 6.8 Permintaan akun
+`ManajemenAkunPage` (`/admin/{rt,rw,kadus}/manajemen-akun`, dan bagian dari `/admin/manajemen-user` untuk Staf SIDUTama) memuat `AktivasiAkunSection` dan `FotoProfilRequestSection`: daftar permintaan berhalaman dengan foto (zoom), jenjang pemegang, dan tombol Setujui/Tolak hanya bila `can_decide`. Halaman Daftar mewajibkan foto wajah dari kamera (dipotong 1:1). `/forgot-password/nik` (`PasswordResetRequestPage`) untuk akun tanpa email: mengirim NIK + tanggal lahir, menyimpan token klaim di browser, memeriksa status, lalu membuat kata sandi baru setelah disetujui; Staf SIDUTama memutuskannya di `/admin/pengajuan-reset`.
+
+### 6.9 Surat Saya
 `MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.ts` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`. Ringkasan jenis surat terpilih menampilkan persyaratan, `carry_documents`, dan bagian "Formulir yang diisi tangan" (`HandwrittenForms`) bila `handwritten_forms` tidak kosong: tombol Unduh per formulir memanggil `downloadFile(handwrittenFormUrl(id, key), 'formulir-<kode>-<key>.pdf', { download: 1 })` (sesi login, PDF berisi identitas pemohon), galatnya dibaca `downloadErrorMessage`. Isian tanggal `upcoming` dibatasi `min` hari ini di input dan ditolak skema zod bila sebelum hari ini (kebalikan `past`). Nilai awal isian `prefill_from_applicant` dibaca dari `user.citizen`, termasuk `domicile_duration_hint` (saran lama berdomisili Pengantar SKCK dari backend: "Sejak lahir" untuk warga lokal, lama sejak tercatat untuk pendatang); isian `from_applicant` seperti status perkawinan SKCK disembunyikan bila datanya ada dan baru ditanyakan bila kosong.
 
 ---
@@ -239,6 +256,7 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.11 | 2026-10-31 | `noImplicitAny: true` di `tsconfig.json` (kode aplikasi dan test bebas `any` implisit); `DeepPartial` diekspor dari `src/test/fixtures.ts` |
 | 1.12 | 2026-10-31 | `strictNullChecks: true` di `tsconfig.json`; helper test `present()` di `src/test/fixtures.ts`; `FamilyNumberValue` untuk No. KK di Data Warga; relasi wilayah pejabat (`rt`/`rw`/`hamlet`) boleh `null` |
 | 1.13 | 2026-10-31 | `strict: true` di `tsconfig.json`, migrasi TypeScript selesai; galat `catch` dibaca lewat `getApiErrorMessage`, `apiErrorStatus`, dan `apiErrorBody` (`shared/lib/apiError.ts`) |
+| 1.18 | 2026-11-19 | Sinkronisasi dengan source: folder `aktivasi-akun`, `activity-log`, `pelanggan-notifikasi`, `data-usaha`, `data-cpmi`; route manajemen akun, pengajuan reset, pelanggan notifikasi, Data Usaha, Data CPMI, `/forgot-password/nik`; form ber-section dan opsi select bersyarat; layanan tanpa surat (6.7); permintaan akun (6.8) |
 | 1.17 | 2026-11-19 | Pilihan kertas A4/F4 (bawaan F4) untuk unduh dan pratinjau semua PDF: `PaperSizeToggle`, `utils/paperSize.ts`, tipe `PaperSize` dan `LetterDocument.paper`; `DownloadSuratMenu` selalu membuka menu |
 | 1.16 | 2026-11-18 | `Citizen.domicile_duration_hint` untuk nilai awal lama berdomisili (A13 Pengantar SKCK) |
 | 1.15 | 2026-11-18 | Formulir isi tangan di `LetterTypePicker` (`HandwrittenForms`, `handwrittenFormUrl`), tipe `HandwrittenForm` dan `LetterType.handwritten_forms`/`paper_size`, isian tanggal `upcoming` |

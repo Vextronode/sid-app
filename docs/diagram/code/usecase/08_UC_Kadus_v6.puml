@@ -30,6 +30,8 @@ rectangle "SIDUTama" {
   usecase "UC-06: Detail Surat (read-only)" as UC_DETAIL
   usecase "UC-15: Dashboard Kadus (FYI)" as UC_DASH
   usecase "Ajukan Surat untuk Diri Sendiri" as UC_SELF
+  usecase "Data Penduduk & KK\n(RW/RT di dusunnya, read-only)" as UC_POP
+  usecase "Manajemen Akun:\naktivasi akun & ganti foto\nwarga (sesuai jenjang)" as UC_ACC
 }
 
 KADUS -- UC_AUTH
@@ -38,9 +40,16 @@ KADUS -- UC_LIST
 KADUS -- UC_DETAIL
 KADUS -- UC_DASH
 KADUS -- UC_SELF
+KADUS -- UC_POP
+KADUS -- UC_ACC
 UC_LIST ..> UC_DETAIL : <<include>>
 note bottom of UC_LIST
   Kadus bukan approver; tampil juga di
   Profil Desa publik per dusun (dengan foto).
+end note
+note bottom of UC_ACC
+  Pemegang saat ini: RT wilayah warga,
+  lalu RW, Kadus, atau Staf SIDUTama bila
+  jenjang di bawahnya kosong. Tolak wajib catatan.
 end note
 @enduml

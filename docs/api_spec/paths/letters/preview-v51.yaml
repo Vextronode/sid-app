@@ -8,7 +8,8 @@ get:
     atau memantau (RT, RW, Kadus, Kades/Sekdes) dapat mem-preview selama
     proses. Surat yang belum approved dirender dari data hidup dengan
     Kepala Desa aktif saat ini; surat approved dirender dari snapshot.
-    Di-stream inline (`surat-{id}.pdf`).
+    Di-stream inline (`surat-{id}.pdf`; dengan `?paper=` menjadi
+    `surat-{id}-{paper}.pdf`).
 
     PDF tidak memuat gambar tanda tangan maupun stempel (dibubuhkan basah
     setelah dicetak di kantor desa). FE menampilkan pratinjau
@@ -35,6 +36,7 @@ get:
       schema:
         type: string
         default: main
+    - $ref: '../../parameters/common.yaml#/Paper'
   responses:
     '200':
       description: PDF preview
@@ -53,5 +55,7 @@ get:
             $ref: '../../schemas/common/errors.yaml#/ErrorResponse'
           example:
             message: "Masa berlaku surat telah habis."
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
     '404':
       description: Surat tidak ditemukan atau belum ada Kepala Desa aktif, atau jenis layanan tidak menerbitkan surat (`letter_types.produces_letter = false`, mis. Pendataan CPMI F11; hasilnya data `migrant_workers`)

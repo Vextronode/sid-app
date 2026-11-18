@@ -3,7 +3,7 @@
 ' FILE: 01_Class_Core_v6.puml
 ' JUDUL: Class Diagram - Core [1/2] (Surat, Approval, Tanda Tangan, Kependudukan, Jabatan)
 ' SUMBER: apps/backend/app (Controllers, Requests, Services, Repositories, Models,
-'         Policies, Support) per 2026-10-16
+'         Policies, Support) per 2026-11-19
 ' CATATAN: Menggantikan 01_Class_Core_v5.puml. Atribut model ringkas; definisi kolom
 '          lengkap di ERD v8 / TDD-03. Method yang ditampilkan adalah method publik.
 '==================================================================================
@@ -38,9 +38,9 @@ package "Controller (Api)" #F0F4FF {
     +destroy(letter)
   }
   class LetterDownloadController {
-    +download(letter)
-    +preview(letter)
-    +supportingDocument(letter)
+    +download(letter) ?document=&paper=
+    +preview(letter) ?document=&paper=
+    +supportingDocument(letter) ?download=&paper=
   }
   class LetterAttachmentController {
     +show(letter, attachment)
@@ -67,7 +67,12 @@ package "Controller (Api)" #F0F4FF {
   }
   class LetterTypeController {
     +index()
+    +handwrittenForm(letterType, key) ?paper=
     +update(UpdateLetterTypeRequest, letterType)
+  }
+  class MigrantWorkerController {
+    +index() / show(migrantWorker)
+    +ownIndex() / ownPrefill()
   }
   class ApprovalFlowController {
     +index()
@@ -119,6 +124,21 @@ package "Support" #EFFAF0 {
     +label(position, villageId) : ?string
     +forget(villageId)
   }
+  class PaperSize {
+    A4 / F4
+    +{static} requested(request) : ?string (422 bila lain)
+    +{static} apply(pdf, paper, orientation)
+  }
+  class PdfRescaler {
+    +{static} rescale(pdf, paper) : string (FPDI)
+  }
+  class LetterIdentityMask {
+    +{static} apply(payload) : {payload, paths}
+    +{static} valueAt(payload, path)
+  }
+  class GuardianRelation {
+    hubungan penanggung jawab CPMI\ndari SHDK di KK
+  }
 }
 
 package "Service" #E8F5E9 {
@@ -154,9 +174,11 @@ package "Service" #E8F5E9 {
     +signerFor(letter, context) : Official
   }
   class PdfService {
-    +download(letter, user, template)
-    +preview(letter, user, template)
-    +supportingDocument(letter, download)
+    +download(letter, user, document, paper)
+    +preview(letter, user, document, paper)
+    +supportingDocument(letter, download, paper)
+    +handwrittenForm(letterType, user, key, download, paper)
+    produces_letter = false -> 404
   }
   class LetterAttachmentService {
     +store(letter, file, uploader, kind, field)
@@ -179,7 +201,17 @@ package "Service" #E8F5E9 {
   }
   class LetterTypeService {
     +getActiveWithTemplate(user)
+    +handwrittenFormType(letterType, user)
     +update(letterType, data, user)
+  }
+  class MigrantWorkerService {
+    +recordFromLetter(letter) (F11)
+    +{static} withGuardianRelation(type, citizen, payload)
+    +prefillFor(citizenId)
+  }
+  class CitizenBusinessService {
+    +recordFromLetter(letter) (A01)
+    +requestCimart() / cancelCimart()
   }
   class ApprovalFlowService {
     +list(user) / findWithStepsOrFail(id, user)
@@ -201,7 +233,7 @@ package "Service" #E8F5E9 {
     +findCandidateByNik(actor, nik, position)
     +demote(actor, official, notes)
     +rotate(actor, official, data)
-    +bootstrapFirstPetugas(data)
+    +bootstrapFirstPetugas(data) (staf-sid:first)
   }
   class OfficialPositionTypeService {
     +list() / create() / update() / delete()
@@ -211,7 +243,7 @@ package "Service" #E8F5E9 {
     +create() / update() / delete() / importFromExcel()
   }
   class "Auth\\AuthService" as AuthService {
-    +registerWarga(data) (cek NIK + tanggal lahir)
+    +registerWarga(data, photo)\n(akun nonaktif + permintaan aktivasi)
   }
 }
 
@@ -221,6 +253,10 @@ package "Policy" #FDECEA {
     +download() / fulfill() / delete()
   }
   class OfficialPolicy
+  class MigrantWorkerPolicy {
+    +viewAny() / view()
+  }
+  class CitizenBusinessPolicy
 }
 
 package "Repository" #F3E5F5 {
@@ -260,7 +296,13 @@ package "Model (Eloquent)" #FFFDE7 {
   class LetterType {
     data_action : LetterDataAction
     form_fields / data_fields : array
+    produces_letter : bool
+    paper_size : a4 | f4
+    handwritten_forms / documents : array
   }
+  class LetterResult
+  class MigrantWorker
+  class CitizenBusiness
   class ApprovalFlow
   class FlowStep
   class LetterApproval
@@ -293,6 +335,12 @@ package "Enum" #ECEFF1 {
     none
     update_citizen
     create_citizen
+    deactivate_members
+    update_members
+    update_citizens
+    restructure_family
+    adopt_child
+    manual
   }
   enum LetterFlowLogReason {
     RtStageSkippedForOfficialApplicant
@@ -303,7 +351,7 @@ package "Enum" #ECEFF1 {
   }
   enum OfficialPosition {
     kepala_desa, sekretaris_desa, rt, rw, kadus,
-    kasi_pemerintahan, kaur_tu_umum, petugas_desa
+    kasi_pemerintahan, kaur_tu_umum, staf_sid
   }
 }
 
@@ -343,6 +391,16 @@ RtApprovalService --> LetterFlowService
 KadesApprovalService --> LetterFlowService
 KadesApprovalService --> LetterNumberGenerator
 KadesApprovalService --> LetterSnapshotService
+KadesApprovalService --> MigrantWorkerService
+KadesApprovalService --> CitizenBusinessService
+MigrantWorkerController --> MigrantWorkerService
+MigrantWorkerController ..> MigrantWorkerPolicy
+MigrantWorkerService ..> GuardianRelation
+LetterService ..> MigrantWorkerService : withGuardianRelation
+LetterDownloadController ..> PaperSize
+PdfService ..> PaperSize
+PdfService ..> PdfRescaler
+LetterTypeController --> PdfService
 LetterNumberGenerator --> LetterNumberCounterRepository
 LetterSnapshotService --> OfficialRepository
 PdfService --> LetterSnapshotService
@@ -364,6 +422,10 @@ Letter "1" -- "*" LetterApproval
 Letter "1" -- "*" LetterStatusLog
 Letter "1" -- "*" LetterAttachment
 Letter "1" -- "*" LetterSignature
+Letter "1" -- "*" LetterResult
+Letter "1" -- "0..1" MigrantWorker
+Letter "1" -- "0..1" CitizenBusiness
+Citizen "1" -- "*" MigrantWorker
 User "1" -- "*" SignatureBlock
 Official "*" -- "1" Citizen
 Letter ..> LetterStatus

@@ -2,7 +2,7 @@
 ' SECTION: ERD (ENTITY RELATIONSHIP DIAGRAM)
 ' FILE: 01_ERD_Core_v8.puml
 ' JUDUL: ERD - Core [1/2]
-' SUMBER: migration apps/backend/database/migrations (per 2026-10-16)
+' SUMBER: migration apps/backend/database/migrations (per 2026-11-19)
 '         + TDD-03_Database_Schema.md v5.3
 ' CATATAN: Menggantikan 01_ERD_Core_v7.puml. Perubahan v7 -> v8 di catatan
 '          revisi bawah file ini.
@@ -89,10 +89,12 @@ entity "users" as USR {
   * name : VARCHAR(255)
   * username : VARCHAR(30) <<UNIQUE>>
   email : VARCHAR(255) <<UNIQUE>>
+  email_verified_at : TIMESTAMP
+  photo_img : VARCHAR(255) (foto profil, public)
   * password : Argon2id
   role : ENUM(9 role)
   must_change_password : BOOLEAN = false
-  * is_active : BOOLEAN
+  * is_active : BOOLEAN (false sampai aktivasi\n pendaftaran online disetujui)
 }
 
 entity "officials" as OFF {
@@ -148,6 +150,11 @@ entity "citizens" as CIT {
   father_id / mother_id : UUID <<FK self>>
   residency_type : ENUM = lokal
   domicile_status, current_domicile, origin_region
+  father_name_text / mother_name_text : VARCHAR
+  title_front / title_back : VARCHAR
+  birth_/marriage_/divorce_certificate_number : TEXT (encrypted)
+  marriage_date / divorce_date : DATE
+  has_disorder : BOOLEAN, disability : TEXT (encrypted)
   data_source, sync_status, last_verified_at
   is_active : BOOLEAN = true
 }
@@ -242,12 +249,17 @@ entity "letter_types" as LT {
   description / template / requirement_info : TEXT
   assigned_role : ENUM(kasi_pemerintahan, kaur_tu_umum)
   * flow_id : BIGINT <<FK>>
+  category : VARCHAR (persuratan | pelayanan)
+  carry_documents : JSON
   validity_days : UINT
   * is_active : BOOLEAN
-  produces_letter : BOOLEAN = true
+  produces_letter : BOOLEAN = true (false = F11, hasil data)
+  issues_letter_number / signed_by_village_head : BOOLEAN = true
+  requires_result_upload : BOOLEAN, result_upload_hint : TEXT
   data_action : VARCHAR(30) = none
   form_fields / data_fields : JSON
   data_subject_field : VARCHAR(100)
+  data_instructions : TEXT, data_options : JSON
   supporting_template : TEXT
   documents / handwritten_forms : JSON
   paper_size : VARCHAR(10) = 'a4'
@@ -313,6 +325,7 @@ entity "letter_attachments" as LAT {
   * letter_id : UUID <<FK CASCADE>>
   kind : VARCHAR(30) (field | result | attachment)
   field : VARCHAR(100)
+  letter_result_id : BIGINT <<FK>>
   * original_name / path : VARCHAR(255)
   * mime_type : VARCHAR(100)
   * size : UINT
@@ -334,6 +347,16 @@ entity "letter_signatures" as LSG {
   signer_name : VARCHAR(100)
   expires_at / responded_at : TIMESTAMP
   response_notes : TEXT
+}
+
+entity "letter_results" as LRS {
+  * id : BIGINT <<PK>>
+  --
+  * letter_id : UUID <<FK CASCADE>>
+  status : VARCHAR(20) = submitted\n(submitted | accepted | rejected)
+  submitted_by / reviewed_by : UUID <<FK users>>
+  reviewed_at : TIMESTAMP
+  review_notes : TEXT
 }
 
 entity "signature_blocks" as SBL {
@@ -358,9 +381,11 @@ entity "letter_number_counters" as LNC {
 note bottom of LET
   Final approve: letter_number
   {classification_code}/{NNN}/Des/{Romawi}/{tahun},
-  expires_at (akhir hari WIB), snapshot render (TTD & stempel Kades saat itu),
+  expires_at (akhir hari WIB), snapshot render (nama Kades saat itu, tanpa TTD/stempel),
   signed_by_official_id. data_action != none -> Terapkan
-  mengisi fulfilled_* (UC-26).
+  mengisi fulfilled_* (UC-26). Layanan Kependudukan: hasil Disdukcapil
+  diunggah ke letter_results. produces_letter = false (F11):
+  tanpa surat, data dicatat ke migrant_workers (ERD Pendukung).
 end note
 
 ' ─────────────── RELASI ───────────────
@@ -400,6 +425,8 @@ FST |o--o{ LA
 LET ||--o{ LSL
 LET ||--o{ LAT
 LET ||--o{ LSG
+LET ||--o{ LRS
+LRS |o--o{ LAT
 USR ||--o{ SBL
 
 ' ==================================================================================
@@ -433,5 +460,13 @@ USR ||--o{ SBL
 ' REVISI 2026-11-18 (A12 Izin Keramaian/Kegiatan)
 ' - letter_types: handwritten_forms (formulir isi tangan sebelum mengajukan)
 '   dan paper_size (a4 | f4).
+'
+' REVISI 2026-11-19 (sinkronisasi dengan migration)
+' - users: email_verified_at, photo_img; akun pendaftaran online nonaktif sampai disetujui.
+' - citizens: nama orang tua teks, gelar, nomor akta (terenkripsi), tanggal kawin/cerai,
+'   kelainan & disabilitas.
+' - letter_types: category, carry_documents, issues_letter_number, signed_by_village_head,
+'   requires_result_upload, result_upload_hint, data_instructions, data_options.
+' - Tabel letter_results (hasil instansi) dan letter_attachments.letter_result_id.
 ' ==================================================================================
 @enduml

@@ -117,3 +117,39 @@ LetterActivityLog:
     created_at:
       type: string
       format: date-time
+
+AccountLog:
+  type: object
+  properties:
+    id:
+      type: integer
+    log_name:
+      type: string
+      enum: [user, password_reset_request, account_registration, profile_photo_request]
+    event:
+      type: string
+      enum: [activated, deactivated, updated, password_reset_by_staff, staf_sid_recovered, approved, rejected, registration_approved, registration_rejected, registration_manual_activated]
+    description:
+      type: string
+    subject_label:
+      type: string
+      nullable: true
+    notes:
+      type: string
+      nullable: true
+    via:
+      type: string
+      nullable: true
+    changes:
+      type: object
+      description: "{field: {old, new}} untuk field yang berubah."
+      additionalProperties:
+        type: object
+        properties:
+          old: {}
+          new: {}
+    actor:
+      $ref: '#/ActivityActor'
+    created_at:
+      type: string
+      format: date-time

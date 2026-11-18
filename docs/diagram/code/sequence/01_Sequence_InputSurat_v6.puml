@@ -41,27 +41,28 @@ collections "Disk private_uploads" as DISK
 actor "Pemilik NIK (saksi)" as NIK
 actor "RT / Staf SIDUTama" as APR
 
-P -> FE : pilih jenis surat (GET /api/letter-types)
+P -> FE : pilih jenis surat (GET /api/letter-types; aktif dan\nber-template, atau layanan tanpa surat seperti F11)
 FE -> FE : render isian dari form_fields
 
 opt jenis surat punya handwritten_forms (mis. A12)
   P -> FE : klik Unduh formulir (LetterTypePicker)
-  FE -> CTRL : GET /api/letter-types/{id}/forms/{key}?download=1
+  FE -> CTRL : GET /api/letter-types/{id}/forms/{key}?download=1&paper=
   CTRL -> POL : create (aktif + citizen_id), desa sama, jenis surat aktif
   CTRL -> DB : identitas pemohon (citizen) + profil desa
-  CTRL --> FE : PDF (F4) berisi identitas pemohon,\nisian lain bertitik
+  CTRL --> FE : PDF di kertas formulir (A12: F4; diskalakan bila\n?paper= lain) berisi identitas pemohon, isian lain bertitik
   P -> P : cetak, isi & tanda tangan basah\n(warga sekitar, RT/RW/Kadus, materai),\nlalu foto
 end
 P -> FE : isi form (termasuk NIK saksi), unggah berkas
 FE -> CTRL : POST /api/letters (multipart:\nletter_type_id, payload[...], files[...])
 CTRL -> REQ : validate
 REQ -> DB : ambil letter_type (desa pemohon)
-REQ -> REQ : payloadRules() — isian tak dikenal → 422,\ntipe & wajib per isian, aturan berkas
+REQ -> REQ : payloadRules() — isian tak dikenal → 422,\ntipe & wajib per isian, aturan berkas,\nopsi select ber-visible_when yang tidak sesuai → 422
 CTRL -> POL : authorize create (aktif + citizen_id)
 CTRL -> SVC : createLetter(validated)
 
 group DB::transaction
-  SVC -> DB : INSERT letters (pending, flow_id snapshot,\napplicant_* dari citizen, purpose/notes NULL)
+  SVC -> SVC : resolve payload (anggota KK, wilayah, nama dari NIK, ...);\nF11: hubungan penanggung jawab dari SHDK\n(MigrantWorkerService::withGuardianRelation)
+  SVC -> DB : INSERT letters (pending, flow_id snapshot,\napplicant_* dari citizen, rt/rw/hamlet pemohon,\npurpose/notes NULL)
   SVC -> DB : INSERT letter_status_logs ("Permohonan surat dibuat")
   SVC -> ATT : storeSubmission(files)
   ATT -> DISK : simpan letter-attachments/{village}/{letter}/...

@@ -13,7 +13,8 @@ get:
 
     Hanya akun yang dapat mengajukan surat (LetterPolicy::create: akun aktif
     dengan data penduduk), di desa jenis surat itu, dan jenis suratnya aktif.
-    Kertas mengikuti `paper` formulir (A12: F4).
+    Kertas bawaan mengikuti `paper` formulir (A12: F4); pengunduh boleh
+    memilih kertas lain lewat `?paper=` (halaman diskalakan utuh).
   operationId: letterTypeHandwrittenForm
   security:
     - sanctumCookie: []
@@ -36,9 +37,10 @@ get:
       description: "Bernilai truthy (1/true) untuk unduh sebagai attachment; selain itu stream inline."
       schema:
         type: boolean
+    - $ref: '../../parameters/common.yaml#/Paper'
   responses:
     '200':
-      description: PDF `formulir-{kode}-{key}.pdf`, mis. `formulir-a12-pernyataan.pdf`
+      description: "PDF `formulir-{kode}-{key}.pdf`, mis. `formulir-a12-pernyataan.pdf` (dengan `?paper=`: `formulir-a12-pernyataan-a4.pdf`)"
       content:
         application/pdf:
           schema:
@@ -48,5 +50,7 @@ get:
       $ref: '../../responses/common.yaml#/Unauthenticated'
     '403':
       description: Akun tidak dapat mengajukan surat (mis. tanpa data penduduk)
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
     '404':
       description: Jenis surat bukan milik desa akun, tidak aktif, atau formulir tidak ada

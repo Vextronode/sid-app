@@ -1,0 +1,43 @@
+servers:
+  - url: /
+    description: Endpoint web autentikasi (tanpa prefix /api)
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Buat kata sandi baru setelah permintaan disetujui
+  description: |
+    Middleware `guest`, throttle 6/menit. Hanya pemegang token klaim, paling
+    lambat 24 jam setelah disetujui (`approved_until`).
+  operationId: completePasswordResetRequest
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [token, password, password_confirmation]
+          properties:
+            token: { type: string, minLength: 64, maxLength: 64 }
+            password: { type: string, format: password }
+            password_confirmation: { type: string, format: password }
+  responses:
+    '200':
+      description: Kata sandi dibuat
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Kata sandi berhasil dibuat. Silakan login dengan kata sandi baru."
+    '403':
+      description: Akun tidak aktif
+    '404':
+      description: Permintaan tidak ditemukan. Ajukan permintaan baru.
+    '409':
+      description: Belum disetujui, batas waktu lewat, atau sudah tidak berlaku
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Terlalu banyak permintaan

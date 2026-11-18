@@ -1,0 +1,44 @@
+get:
+  tags: [Epic 5 - Alur Pengajuan & Approval Surat]
+  summary: NIK / No. KK utuh pihak lain di isian surat (tombol "lihat")
+  description: |
+    NIK / No. KK di isian surat (ayah/ibu, saksi, anggota KK, dst.) tampil
+    tersamar di API; daftar path-nya ada di `masked_payload_paths` pada
+    rincian surat. Boleh dibuka siapa pun yang boleh melihat surat
+    (LetterPolicy::view); pembukaan oleh selain pemohon dicatat di Log
+    Aktivitas (`identity_viewed`). Dibatasi 60 permintaan per menit.
+  operationId: revealLetterPayloadIdentity
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: letter
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    - name: path
+      in: query
+      required: true
+      description: "Path isian, mis. `nik_ayah` atau `kk_pendaftaran.1.nik`."
+      schema: { type: string, maxLength: 200 }
+  responses:
+    '200':
+      description: Nilai utuh
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  value: { type: string }
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      $ref: '../../responses/common.yaml#/Forbidden'
+    '404':
+      description: Isian NIK/No. KK ini tidak ditemukan pada surat.
+    '422':
+      $ref: '../../responses/common.yaml#/ValidationError'
+    '429':
+      description: Terlalu banyak permintaan

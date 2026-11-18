@@ -1,0 +1,31 @@
+post:
+  tags: [Epic 3 - Autentikasi]
+  summary: Setujui aktivasi akun warga
+  description: |
+    Akun diaktifkan dan foto kamera pendaftaran menjadi foto profil akun.
+    Hanya pemegang saat ini (`can_decide`).
+  operationId: approveAccountRegistration
+  security:
+    - sanctumCookie: []
+  parameters:
+    - name: accountRegistration
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    '200':
+      description: Berhasil
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Akun warga diaktifkan."
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: Bukan pemegang permintaan saat ini
+    '409':
+      description: Permintaan aktivasi ini sudah diputuskan.

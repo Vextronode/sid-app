@@ -1,5 +1,5 @@
 @startuml
-title SID - POV RT/RW/Kadus & Staff Desa (Kasi/Kaur) [Business Workflow] (diselaraskan source 2026-10-16)
+title SID - POV RT/RW/Kadus & Staff Desa (Kasi/Kaur) [Business Workflow] (diselaraskan source 2026-11-19)
 
 skinparam activity {
   BackgroundColor #EBF3FB
@@ -16,7 +16,7 @@ skinparam note {
 start
 :Login; terima notifikasi surat baru;
 :Buka daftar surat wilayah RT;
-:Periksa detail: isian, lampiran,\nstatus tanda tangan, dokumen pendukung;
+:Periksa detail: isian, lampiran,\nstatus saksi, dokumen pendukung\n(NIK pihak lain tersamar, tombol lihat tercatat);
 :Putuskan Setuju / Tolak (catatan wajib bila tolak);
 if (Keputusan?) then (Tolak)
   |#LightYellow|Sistem|
@@ -48,6 +48,11 @@ end fork
 :Setelah final approve: notifikasi ke\nKasi/Kaur sesuai assigned_role;
 
 |#LightGreen|Kasi Pemerintahan / Kaur TU & Umum|
+if (Layanan Kependudukan?) then (ya)
+  :Tunggu pemohon mengunggah hasil Disdukcapil;
+  :Verifikasi hasil (terima / minta unggah ulang);
+else (tidak)
+endif
 if (Jenis surat punya aksi data?) then (ya)
   :Buka surat "perlu diterapkan";
   :Tinjau nilai sekarang vs usulan,\nkoreksi bila perlu;
@@ -63,6 +68,14 @@ stop
 note right
   Kasi/Kaur bukan approver flow; dapat
   membaca daftar warga (read-only).
+  Kaur TU & Umum membaca Data Usaha (A01);
+  Kasi Pemerintahan membaca Data CPMI (F11).
+  F11 tidak menerbitkan surat: tidak ada
+  cetak, unggah hasil, atau Terapkan.
+  RT/RW/Kadus: menu Manajemen Akun untuk
+  aktivasi akun & ganti foto warga
+  (pemegang: RT, lalu RW, lalu Kadus,
+  lalu Staf SIDUTama bila kosong).
   Kelola data warga, wilayah, CMS tetap
   kewenangan Staf SIDUTama (04).
 end note
