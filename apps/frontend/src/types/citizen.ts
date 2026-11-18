@@ -33,6 +33,9 @@ export type Citizen = {
   current_domicile: string | null
   residency_type: string | null
   origin_region: string | null
+  // Saran "lama berdomisili" (Pengantar SKCK): "Sejak lahir" untuk warga
+  // lokal, lama sejak tercatat untuk pendatang. Bukan data tersimpan.
+  domicile_duration_hint?: string | null
   title_front: string | null
   title_back: string | null
   birth_certificate_number: string | null

@@ -570,6 +570,53 @@ describe('applicantPrefill', () => {
     })
     expect(applicantPrefill(config.fields, null)).toEqual({})
   })
+
+  it('suggests how long the applicant has lived here, still editable (SKCK)', () => {
+    const config = formConfig(
+      partialFixture<LetterType>({
+        code: 'A13',
+        form_fields: [
+          {
+            name: 'lama_berdomisili',
+            type: 'text',
+            prefill_from_applicant: 'domicile_duration_hint',
+          },
+        ],
+      }),
+    )
+
+    expect(
+      applicantPrefill(
+        config.fields,
+        partialFixture<User>({ citizen: { domicile_duration_hint: 'Sejak lahir' } }),
+      ),
+    ).toEqual({ lama_berdomisili: 'Sejak lahir' })
+  })
+
+  it('only asks the marital status when the population data has none', () => {
+    const [field] = formConfig(
+      partialFixture<LetterType>({
+        code: 'A13',
+        form_fields: [
+          {
+            name: 'status_perkawinan',
+            type: 'select',
+            from_applicant: {
+              column: 'marital_status',
+              map: { kawin: 'kawin', cerai_mati: 'cerai_mati' },
+            },
+          },
+        ],
+      }),
+    ).fields
+
+    expect(
+      applicantValue(field, partialFixture<User>({ citizen: { marital_status: 'cerai_mati' } })),
+    ).toBe('cerai_mati')
+    expect(
+      applicantValue(field, partialFixture<User>({ citizen: { marital_status: null } })),
+    ).toBeNull()
+  })
 })
 
 describe('family_member roles', () => {
