@@ -153,6 +153,17 @@ Citizen:
       nullable: true
       example: null
       description: "BARU v5.0 - asal daerah, relevan jika residency_type='pendatang'"
+    domicile_duration_hint:
+      type: string
+      nullable: true
+      readOnly: true
+      example: "Sejak lahir"
+      description: |
+        Turunan, bukan kolom tersimpan. Saran "lama berdomisili" untuk nilai
+        awal isian surat (`prefill_from_applicant`, Pengantar SKCK A13):
+        "Sejak lahir" untuk residency_type lokal; untuk pendatang lama sejak
+        datanya dicatat (`created_at`), mis. "3 tahun", "5 bulan", "Kurang
+        dari 1 bulan". Pemohon tetap dapat mengubahnya.
     title_front:
       type: string
       nullable: true

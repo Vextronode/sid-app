@@ -38,7 +38,7 @@ Pengecualian: **Surat Keterangan Ahli Waris** tampil di Layanan Kependudukan dan
 
 Daftar jenis surat:
 
-**Persuratan Desa (11 surat)**
+**Persuratan Desa (12 surat)**
 
 1. Surat Keterangan Usaha
 2. Surat Keterangan Tidak Memiliki Rumah
@@ -51,6 +51,7 @@ Daftar jenis surat:
 9. Surat Keterangan Belum Menikah
 10. Surat Keterangan & Pertama Kali Memiliki Rumah
 11. Surat Keterangan Izin Keramaian/Kegiatan
+12. Surat Pengantar Permohonan SKCK
 
 **Layanan Kependudukan (11 surat)**
 
@@ -150,6 +151,7 @@ Tabel cepat untuk menjawab: "Saya mengalami X, surat apa yang saya pilih?"
 | Belum punya rumah, butuh bukti untuk bantuan rumah | Persuratan Desa | Surat Keterangan Tidak Memiliki Rumah |
 | Butuh bukti tinggal di desa (termasuk pendatang/ngontrak) | Persuratan Desa | Surat Keterangan Domisili |
 | Mengadakan hajatan/keramaian yang mengumpulkan banyak orang (mis. dengan hiburan organ tunggal) | Persuratan Desa | Surat Keterangan Izin Keramaian/Kegiatan |
+| Melamar kerja/daftar sekolah kedinasan yang meminta SKCK dari Polsek/Polres | Persuratan Desa | Surat Pengantar Permohonan SKCK |
 | Anak daftar beasiswa/sekolah, keluarga tidak mampu | Persuratan Desa | Surat Keterangan Tidak Mampu |
 | Nama berbeda di KK, ijazah, akta, dll. | Persuratan Desa | Surat Keterangan Beda Nama |
 | Melamar kerja/ikut seleksi yang minta status lajang | Persuratan Desa | Surat Keterangan Belum Menikah |
@@ -353,6 +355,24 @@ Pak Udin akan menggelar syukuran pernikahan anaknya di halaman rumah dengan hibu
 - **Hasil:** "Surat Keterangan" (kertas F4) berisi identitas Pak Udin dan rincian keramaian, ditandatangani dan distempel basah oleh Kepala Desa di kantor desa. Di bawahnya ada blok **Mengetahui** untuk Camat, Komandan Ramil 2501/Parigi, dan Kapolsek: hanya jabatannya yang tercetak. Pak Udin membawa surat itu ke kantor kecamatan, Koramil, dan Polsek untuk dilengkapi nama, NIP, dan tanda tangannya.
 
 **Skenario lain:** Karang Taruna mengadakan turnamen voli antar-RT tanpa hiburan. Ketua panitia mengajukan atas nama dirinya, Jenis Hiburan dikosongkan, dan Jam Selesai dikosongkan karena acara berlangsung sampai selesai.
+
+### 5.13 Surat Pengantar Permohonan SKCK
+
+**Kasus: Rizal melamar kerja sebagai satpam**
+
+Perusahaan tempat Rizal melamar meminta SKCK. Polsek meminta surat pengantar dari RT/RW yang diketahui desa.
+
+- **Pilih di web:** Persuratan Desa → **Surat Pengantar Permohonan SKCK** (berlaku 90 hari).
+- **Terisi otomatis dari akun:** nama, jenis kelamin, tempat/tanggal lahir, pekerjaan, alamat, agama, dan status perkawinan. Kewarganegaraan dicetak "Indonesia". RT/RW/Dusun di kalimat pembuka diambil dari wilayah Rizal saat mengajukan.
+- **Yang diisi:**
+  - Berapa Lama Berdomisili: terisi `Sejak lahir` karena Rizal warga asli. Pendatang mendapat perkiraan sejak datanya tercatat di desa, mis. `3 tahun`. Isian ini tetap bisa diubah.
+  - Pernah Melanggar Norma-Norma Sosial?: `Tidak Pernah`
+  - Pernah Melakukan Tindak Pidana?: `Tidak Pernah`
+  - Status Perkawinan hanya ditanyakan bila belum tercatat di data penduduk (pilihan: Belum Kawin, Kawin, Kawin Belum Tercatat, Cerai Hidup, Cerai Hidup Belum Tercatat, Cerai Mati).
+- **Proses:** Ketua RT memeriksa kebenaran keterangan (terutama lama berdomisili dan riwayat pelanggaran), lalu Kepala Desa menyetujui.
+- **Hasil:** "Surat Keterangan" kertas F4 tanpa kop dan tanpa nomor surat. Di bagian *KETERANGAN : Coret yang tidak perlu*, opsi yang tidak dipilih sudah tercetak dicoret, mis. "( ~~Pernah~~ / Tidak Pernah )". Bagian **Yang Menerangkan** memuat nama Ketua RT dan Ketua RW wilayah Rizal, sedangkan bagian **Mengetahui** memuat Camat (dikosongkan) dan nama Kepala Desa. Rizal mengambil surat yang sudah ditandatangani basah oleh Ketua RT, Ketua RW, dan Kepala Desa beserta No.Reg desa di kantor desa, lalu melengkapi tanda tangan Camat sebelum ke Polsek.
+
+**Skenario lain:** Bila Rizal pernah tersangkut perkara, ia memilih `Pernah` pada Melakukan Tindak Pidana; yang tercoret adalah "Tidak Pernah". Keterangan ini tetap diperiksa RT sebelum disetujui.
 
 ---
 
