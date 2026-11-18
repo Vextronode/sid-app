@@ -8,6 +8,8 @@ use App\Enums\ResidencyType;
 use App\Models\Letter;
 use App\Models\Official;
 use App\Models\Rt;
+use App\Models\User;
+use App\Models\Village;
 use App\Repositories\LetterRepository;
 use App\Repositories\OfficialRepository;
 use App\Support\CitizenLabels;
@@ -110,6 +112,7 @@ class LetterSnapshotService
             'title' => $letter->letterType?->name,
             'template' => $letter->letterType?->template,
             'documents' => $letter->letterType?->documents ?? [],
+            'paper_size' => $letter->letterType?->paper_size,
             'supporting_template' => $letter->letterType?->supporting_template,
             'submitted_at' => $submittedAt->translatedFormat('d F Y'),
             // Tanggal surat = tanggal persetujuan akhir.
@@ -141,16 +144,7 @@ class LetterSnapshotService
                     ->all(),
             ],
             'village' => [
-                'name' => $letter->village?->name,
-                'code' => $letter->village?->code,
-                'address' => $letter->village?->address,
-                'phone' => $letter->village?->phone,
-                'district' => $letter->village?->district,
-                'regency' => $letter->village?->regency,
-                'province' => $letter->village?->province,
-                'postal_code' => $letter->village?->postal_code,
-                'area_code' => $letter->village?->area_code,
-                'email' => $letter->village?->email,
+                ...$this->villageIdentity($letter->village),
                 // Petugas pada formulir F-1.02.
                 'kasi_pemerintahan_name' => $this->officialRepository
                     ->findActiveByPositionWithCitizen($letter->village_id, OfficialPosition::KasiPemerintahan->value)
@@ -162,6 +156,60 @@ class LetterSnapshotService
                 'village_id' => $kades?->village_id,
                 'name' => $kades?->citizen?->name,
             ],
+        ];
+    }
+
+    /**
+     * Konteks formulir isi tangan (letter_types.handwritten_forms) yang
+     * diunduh pemohon sebelum mengajukan: identitas pemohon dari data
+     * penduduk dan identitas desa dari profil desa. Belum ada surat,
+     * jadi tidak ada nomor, tanggal terbit, atau penanda tangan.
+     *
+     * @return array<string, mixed>
+     */
+    public function handwrittenFormContext(User $user): array
+    {
+        $user->loadMissing(['citizen.occupation', 'village']);
+        $citizen = $user->citizen;
+
+        return [
+            'applicant' => [
+                'name' => $citizen?->name,
+                'nik' => $citizen?->nik,
+                'address' => $citizen?->address,
+                'gender' => $this->genderLabel($citizen?->gender),
+                'birth_place_date' => $this->birthPlaceDate($citizen),
+                'occupation' => $citizen?->occupation?->name ?: '-',
+                'marital_status' => $citizen?->marital_status
+                    ? CitizenLabels::of(CitizenLabels::MARITAL_STATUS, $citizen->marital_status)
+                    : '-',
+                'religion' => $citizen?->religion
+                    ? CitizenLabels::of(CitizenLabels::RELIGION, $citizen->religion)
+                    : '-',
+                'email' => $user->email,
+            ],
+            'village' => $this->villageIdentity($user->village),
+        ];
+    }
+
+    /**
+     * Kop surat dan wilayah administratif dari profil desa.
+     *
+     * @return array<string, mixed>
+     */
+    private function villageIdentity(?Village $village): array
+    {
+        return [
+            'name' => $village?->name,
+            'code' => $village?->code,
+            'address' => $village?->address,
+            'phone' => $village?->phone,
+            'district' => $village?->district,
+            'regency' => $village?->regency,
+            'province' => $village?->province,
+            'postal_code' => $village?->postal_code,
+            'area_code' => $village?->area_code,
+            'email' => $village?->email,
         ];
     }
 

@@ -20,6 +20,8 @@ class LetterType extends Model
         'category',
         'template',
         'documents',
+        'paper_size',
+        'handwritten_forms',
         'requirement_info',
         'flow_id',
         'assigned_role',
@@ -46,6 +48,7 @@ class LetterType extends Model
         'issues_letter_number' => true,
         'signed_by_village_head' => true,
         'requires_result_upload' => false,
+        'paper_size' => 'a4',
     ];
 
     protected $casts = [
@@ -61,6 +64,7 @@ class LetterType extends Model
         'carry_documents' => 'array',
         'data_options' => 'array',
         'documents' => 'array',
+        'handwritten_forms' => 'array',
     ];
 
     public function flow(): BelongsTo

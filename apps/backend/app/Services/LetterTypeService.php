@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LetterTypeCategory;
+use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
 use App\Repositories\LetterTypeRepository;
@@ -46,6 +47,26 @@ class LetterTypeService
         }
 
         return $this->letterTypeRepository->update($letterType, $data);
+    }
+
+    /**
+     * Formulir isi tangan hanya untuk pemohon (akun warga aktif yang dapat
+     * mengajukan surat) di desa jenis surat itu, dan hanya untuk jenis
+     * surat yang sedang dapat diajukan. Identitas pemohon ikut tercetak.
+     */
+    public function handwrittenFormType(LetterType $letterType, User $user): LetterType
+    {
+        if ($user->cannot('create', Letter::class)) {
+            abort(403, 'Formulir hanya dapat diunduh oleh warga yang akan mengajukan surat.');
+        }
+
+        $letterType = $this->letterTypeRepository->findOrFail($letterType->id, $this->villageId($user));
+
+        if (! $letterType->is_active || $letterType->template === null) {
+            abort(404, 'Jenis surat ini sedang tidak dapat diajukan.');
+        }
+
+        return $letterType;
     }
 
     private function villageId(User $user): string

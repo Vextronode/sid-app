@@ -25,6 +25,10 @@ class LetterTypeResource extends JsonResource
             'requirements_info' => $this->requirement_info,
             // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
             'carry_documents' => $this->carry_documents,
+            // Formulir isi tangan yang diunduh pemohon sebelum mengajukan
+            // (GET /letter-types/{id}/forms/{key}); template tidak dikirim.
+            'handwritten_forms' => self::handwrittenForms($this->handwritten_forms),
+            'paper_size' => $this->paper_size,
             'flow_id' => $this->flow_id,
             'flow' => $this->when(
                 $this->relationLoaded('flow') && $this->flow,
@@ -45,6 +49,19 @@ class LetterTypeResource extends JsonResource
             'has_supporting_document' => $this->supporting_template !== null,
             'status_label' => $this->statusLabel(),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>|null  $forms
+     * @return array<int, array{key: string, title: string, description: string|null}>
+     */
+    public static function handwrittenForms(?array $forms): array
+    {
+        return array_map(fn (array $form): array => [
+            'key' => (string) $form['key'],
+            'title' => (string) ($form['title'] ?? $form['key']),
+            'description' => $form['description'] ?? null,
+        ], $forms ?? []);
     }
 
     /**

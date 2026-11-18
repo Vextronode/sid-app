@@ -23,6 +23,9 @@ class PublicLetterTypeResource extends JsonResource
             'requirements_info' => $this->requirement_info,
             // Layanan Kependudukan: {forms, attachments} yang dibawa ke Disdukcapil.
             'carry_documents' => $this->carry_documents,
+            // Formulir isi tangan: hanya judulnya. Unduhannya memuat identitas
+            // pemohon, jadi lewat endpoint terautentikasi setelah masuk.
+            'handwritten_forms' => LetterTypeResource::handwrittenForms($this->handwritten_forms),
         ];
     }
 }

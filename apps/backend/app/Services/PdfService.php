@@ -4,14 +4,17 @@ namespace App\Services;
 
 use App\Enums\LetterStatus;
 use App\Models\Letter;
+use App\Models\LetterType;
 use App\Models\User;
 use App\Repositories\LetterRepository;
 use App\Support\LetterDocuments;
 use App\Support\LetterValueFormatter;
+use App\Support\PaperSize;
 use App\Support\TemplateConditionals;
 use App\Support\TemplateLoops;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -126,11 +129,48 @@ class PdfService
             'template' => $this->renderTemplate($letter, $context, (string) $document['template']),
         ]);
 
-        if ($document['orientation'] === 'landscape') {
-            $pdf->setPaper('a4', 'landscape');
-        }
+        PaperSize::apply($pdf, $document['paper'], $document['orientation']);
 
         return [$pdf, $filename];
+    }
+
+    /**
+     * Formulir isi tangan (letter_types.handwritten_forms) untuk pemohon
+     * yang akan mengajukan: identitas pemohon terisi dari data penduduk,
+     * isian lain (mis. daftar warga yang menyetujui) dibiarkan bertitik
+     * untuk ditulis tangan. Berkas yang sudah diisi lalu difoto dan
+     * diunggah sebagai berkas persyaratan.
+     */
+    public function handwrittenForm(LetterType $letterType, User $user, string $key, bool $download): Response
+    {
+        $form = collect($letterType->handwritten_forms ?? [])->firstWhere('key', $key)
+            ?? abort(404, 'Formulir ini tidak tersedia untuk jenis surat ini.');
+
+        $context = $this->letterSnapshotService->handwrittenFormContext($user);
+        $applicant = $context['applicant'];
+        $replacements = array_map(fn ($value) => e((string) $value), [
+            ...$this->villageReplacements($context['village']),
+            '{{ applicant_name }}' => $applicant['name'] ?? '',
+            '{{ applicant_nik }}' => $applicant['nik'] ?? '',
+            '{{ applicant_address }}' => $applicant['address'] ?? '',
+            '{{ applicant_gender }}' => $applicant['gender'],
+            '{{ applicant_birth_place_date }}' => $applicant['birth_place_date'],
+            '{{ applicant_occupation }}' => $applicant['occupation'],
+            '{{ applicant_marital_status }}' => $applicant['marital_status'],
+            '{{ applicant_religion }}' => $applicant['religion'],
+            '{{ applicant_email }}' => (string) ($applicant['email'] ?? ''),
+        ]);
+        $replacements['{{ logo_img }}'] = $this->logoHtml();
+
+        $html = str_replace(array_keys($replacements), array_values($replacements), (string) ($form['template'] ?? ''));
+        // Placeholder lain tidak punya nilai sebelum pengajuan: ditulis tangan.
+        $html = (string) preg_replace('/\{\{\s*[a-zA-Z0-9_]+\s*}}/', '..............................', $html);
+
+        $pdf = Pdf::loadView(self::VIEW, ['letter' => null, 'template' => $html]);
+        PaperSize::apply($pdf, $form['paper'] ?? null);
+        $filename = 'formulir-'.Str::slug($letterType->code.' '.$key).'.pdf';
+
+        return $download ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
     private static function memoryLimitBytes(): int
@@ -157,7 +197,7 @@ class PdfService
      * menyimpan daftar dokumen, jadi memakai definisi jenis surat.
      *
      * @param  array<string, mixed>  $context
-     * @return array{key: string, title: string, template: string|null, orientation: string}
+     * @return array{key: string, title: string, template: string|null, orientation: string, paper: string}
      */
     private function documentFor(Letter $letter, array $context, ?string $key): array
     {
@@ -166,6 +206,8 @@ class PdfService
             $context['template'] ?? null,
             $context['documents'] ?? $letter->letterType?->documents,
             is_array($letter->payload) ? $letter->payload : [],
+            // Snapshot lama belum menyimpan ukuran kertas.
+            $context['paper_size'] ?? $letter->letterType?->paper_size,
         );
 
         return LetterDocuments::find($documents, $key)
@@ -241,24 +283,6 @@ class PdfService
         $signer = $context['signer'];
         $village = $context['village'];
 
-        $logoPath = public_path('images/logo-pangandaran.png');
-        $logoHtml = file_exists($logoPath)
-            ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
-            : '';
-
-        // Kop surat dan wilayah administratif diambil dari profil desa.
-        $villageName = (string) ($village['name'] ?? '');
-        $villageShort = preg_replace('/^Desa\s+/i', '', $villageName);
-        $district = (string) ($village['district'] ?? '');
-        $regency = (string) ($village['regency'] ?? '');
-        $province = (string) ($village['province'] ?? '');
-        $villageRegion = implode(' ', array_filter([
-            $villageShort !== '' ? "Desa {$villageShort}" : null,
-            $district !== '' ? "Kecamatan {$district}" : null,
-            $regency !== '' ? "Kabupaten {$regency}" : null,
-            $province !== '' ? $province : null,
-        ]));
-
         // logo_img adalah HTML buatan sistem; nilai lain
         // berasal dari data warga/isian form dan wajib di-escape karena
         // template dirender mentah ({!! $template !!}).
@@ -281,20 +305,7 @@ class PdfService
             ...$this->issuedDateParts((string) ($context['issued_at'] ?? $context['submitted_at'])),
             '{{ applicant_resident_phrase }}' => $context['applicant']['resident_phrase']
                 ?? 'benar-benar warga masyarakat Desa kami, dan',
-            '{{ village_name }}' => $villageName,
-            '{{ village_name_short }}' => $villageShort,
-            '{{ village_name_upper }}' => mb_strtoupper($villageShort),
-            '{{ village_district }}' => $district,
-            '{{ village_district_upper }}' => mb_strtoupper($district),
-            '{{ village_regency }}' => $regency,
-            '{{ village_regency_upper }}' => mb_strtoupper($regency),
-            '{{ village_province }}' => $province,
-            '{{ village_region }}' => $villageRegion,
-            '{{ village_address }}' => (string) ($village['address'] ?? ''),
-            '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
-            '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
-            '{{ village_area_code }}' => (string) ($village['area_code'] ?? ''),
-            '{{ village_email }}' => (string) ($village['email'] ?? ''),
+            ...$this->villageReplacements($village),
             '{{ village_head_name }}' => $signer['name'] ?? '________________________________________',
         ];
 
@@ -322,9 +333,56 @@ class PdfService
         }
 
         $replacements = array_map(fn ($value) => e((string) $value), $textReplacements);
-        $replacements['{{ logo_img }}'] = $logoHtml;
+        $replacements['{{ logo_img }}'] = $this->logoHtml();
 
         return [...$payloadHtml, ...$replacements];
+    }
+
+    private function logoHtml(): string
+    {
+        $logoPath = public_path('images/logo-pangandaran.png');
+
+        return file_exists($logoPath)
+            ? '<img src="'.$logoPath.'" style="width: 75px; height: auto;">'
+            : '';
+    }
+
+    /**
+     * Kop surat dan wilayah administratif dari profil desa (belum di-escape).
+     *
+     * @param  array<string, mixed>  $village
+     * @return array<string, string>
+     */
+    private function villageReplacements(array $village): array
+    {
+        $villageName = (string) ($village['name'] ?? '');
+        $villageShort = (string) preg_replace('/^Desa\s+/i', '', $villageName);
+        $district = (string) ($village['district'] ?? '');
+        $regency = (string) ($village['regency'] ?? '');
+        $province = (string) ($village['province'] ?? '');
+        $villageRegion = implode(' ', array_filter([
+            $villageShort !== '' ? "Desa {$villageShort}" : null,
+            $district !== '' ? "Kecamatan {$district}" : null,
+            $regency !== '' ? "Kabupaten {$regency}" : null,
+            $province !== '' ? $province : null,
+        ]));
+
+        return [
+            '{{ village_name }}' => $villageName,
+            '{{ village_name_short }}' => $villageShort,
+            '{{ village_name_upper }}' => mb_strtoupper($villageShort),
+            '{{ village_district }}' => $district,
+            '{{ village_district_upper }}' => mb_strtoupper($district),
+            '{{ village_regency }}' => $regency,
+            '{{ village_regency_upper }}' => mb_strtoupper($regency),
+            '{{ village_province }}' => $province,
+            '{{ village_region }}' => $villageRegion,
+            '{{ village_address }}' => (string) ($village['address'] ?? ''),
+            '{{ village_phone }}' => (string) ($village['phone'] ?? ''),
+            '{{ village_postal_code }}' => (string) ($village['postal_code'] ?? ''),
+            '{{ village_area_code }}' => (string) ($village['area_code'] ?? ''),
+            '{{ village_email }}' => (string) ($village['email'] ?? ''),
+        ];
     }
 
     /**

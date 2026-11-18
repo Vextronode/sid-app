@@ -417,6 +417,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     // termasuk Draft/Nonaktif) khusus Staf SIDUTama - IndexLetterTypeRequest.
     Route::get('/letter-types', [LetterTypeController::class, 'index']);
 
+    // Formulir isi tangan sebelum mengajukan (letter_types.handwritten_forms),
+    // berisi identitas pemohon: khusus akun warga (LetterPolicy::create).
+    Route::get('/letter-types/{letterType}/forms/{key}', [LetterTypeController::class, 'handwrittenForm'])
+        ->whereNumber('letterType')
+        ->where('key', '[a-z0-9_-]+');
+
     // UC-21: edit konfigurasi tipe surat eksklusif Staf SIDUTama.
     // PUT (bukan PATCH) mengikuti backlog - beda dari api_spec yang
     // menulis PATCH untuk endpoint ini.
