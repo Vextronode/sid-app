@@ -10,11 +10,12 @@ use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
 use App\Models\LetterType;
 use App\Models\Village;
+use App\Support\CitizenLabels;
 use Database\Seeders\Concerns\DefinesLetterTypes;
 use Illuminate\Database\Seeder;
 
 /**
- * Dua belas jenis surat keterangan (A01-A12). Redaksi dan susunan tiap
+ * Tiga belas jenis surat keterangan (A01-A13). Redaksi dan susunan tiap
  * template mengikuti template fisik kantor desa di
  * docs/template-surat-fisik/. Setiap jenis surat didefinisikan utuh di
  * satu tempat: isian form, template, kode klasifikasi nomor surat, dan
@@ -25,6 +26,8 @@ use Illuminate\Database\Seeder;
  * kecuali A11 Ahli Waris (Kasi Pemerintahan).
  * A12 Izin Keramaian/Kegiatan memakai formulir isi tangan
  * (`handwritten_forms`) yang diunduh pemohon, diisi, lalu fotonya diunggah.
+ * A13 Pengantar SKCK memakai template utuh (`template`): tanpa kop dan tanpa
+ * nomor surat, diterangkan Ketua RT/RW dan diketahui Camat serta Kepala Desa.
  */
 class LetterTypeSeeder extends Seeder
 {
@@ -38,6 +41,9 @@ class LetterTypeSeeder extends Seeder
     // Meninggal tidak sebelum lahir: dari data penduduk bila NIK terdaftar
     // (termasuk nonaktif), selain itu tanggal lahir yang diketik.
     private const AFTER_DECEASED_BORN = ['after' => 'birth:nik_almarhum|tanggal_lahir_almarhum', 'label' => 'tanggal lahir almarhum/almarhumah'];
+
+    // Jawaban "Pernah / Tidak Pernah" di Pengantar SKCK (A13).
+    private const PERNAH_OPTIONS = ['pernah' => 'Pernah', 'tidak_pernah' => 'Tidak Pernah'];
 
     private const GENDER_OPTIONS = [
         ['value' => 'L', 'label' => 'Laki-laki'],
@@ -53,11 +59,14 @@ class LetterTypeSeeder extends Seeder
                 ->firstOrFail();
 
             foreach ($this->letterTypes() as $type) {
-                $sections = $type['sections'];
+                $sections = $type['sections'] ?? [];
                 $opening = $type['opening'] ?? null;
                 $heading = $type['heading'] ?? $type['name'];
                 $footer = $type['footer'] ?? null;
-                unset($type['sections'], $type['opening'], $type['heading'], $type['footer']);
+                // Template utuh untuk surat yang susunannya bukan surat
+                // keterangan desa biasa (tanpa kop/blok TTD Kepala Desa).
+                $template = $type['template'] ?? $this->page($heading, $sections, $opening, $footer);
+                unset($type['sections'], $type['opening'], $type['heading'], $type['footer'], $type['template']);
 
                 LetterType::updateOrCreate(
                     ['village_id' => $village->id, 'code' => $type['code']],
@@ -73,9 +82,10 @@ class LetterTypeSeeder extends Seeder
                         'data_subject_field' => null,
                         'paper_size' => 'a4',
                         'handwritten_forms' => null,
+                        'issues_letter_number' => true,
                     ], $type, [
                         'village_id' => $village->id,
-                        'template' => $this->page($heading, $sections, $opening, $footer),
+                        'template' => $template,
                         'is_active' => true,
                         'flow_id' => $flow->id,
                     ])
@@ -454,7 +464,111 @@ class LetterTypeSeeder extends Seeder
                 // Nama, NIP, dan tanda tangan instansi luar dibubuhkan basah.
                 'footer' => $this->izinMengetahuiBlock(),
             ],
+            [
+                'code' => 'A13',
+                'name' => 'Surat Pengantar Permohonan SKCK',
+                'description' => 'Pengantar dari Ketua RT/RW yang diketahui Kepala Desa untuk mengurus SKCK (Surat Keterangan Catatan Kepolisian) di kepolisian.',
+                'validity_days' => 90,
+                // Template fisik F4, tanpa nomor surat desa: No.Reg Camat dan
+                // Kepala Desa ditulis tangan. Kepala Desa tetap menandatangani
+                // basah sebagai "Mengetahui".
+                'paper_size' => 'f4',
+                'issues_letter_number' => false,
+                'form_fields' => [
+                    [
+                        ...$this->prefilled($this->text('lama_berdomisili', 'Berapa Lama Berdomisili', true, 'Contoh: 15 tahun'), 'domicile_duration_hint'),
+                        'help' => 'Terisi perkiraan dari data penduduk (warga asli: sejak lahir; pendatang: sejak tercatat di desa). Ubah bila tidak sesuai.',
+                    ],
+                    $this->select('norma_sosial', 'Pernah Melanggar Norma-Norma Sosial?', self::PERNAH_OPTIONS),
+                    $this->select('tindak_pidana', 'Pernah Melakukan Tindak Pidana?', self::PERNAH_OPTIONS),
+                    // Diambil dari data penduduk; hanya ditanyakan bila kosong.
+                    [
+                        ...$this->select('status_perkawinan', 'Status Perkawinan', CitizenLabels::MARITAL_STATUS),
+                        'from_applicant' => [
+                            'column' => 'marital_status',
+                            'map' => array_combine(array_keys(CitizenLabels::MARITAL_STATUS), array_keys(CitizenLabels::MARITAL_STATUS)),
+                        ],
+                        'help' => 'Status perkawinan Anda belum tercatat di data penduduk.',
+                    ],
+                ],
+                'template' => $this->skckTemplate(),
+            ],
         ];
+    }
+
+    // ------------------------------------------------------------------
+    // A13 Pengantar SKCK (template fisik: docs/template-surat/pengantar SKCK.doc)
+    // ------------------------------------------------------------------
+
+    /**
+     * Pilihan "Coret yang tidak perlu" dalam kurung, "( Pernah / Tidak
+     * Pernah )": yang tidak dipilih dicetak dicoret.
+     */
+    private function struckChoice(string $field): string
+    {
+        $struck = fn (string $text): string => '<span style="text-decoration: line-through;">'.$text.'</span>';
+
+        return '( '
+            .'{{#if '.$field.'=pernah}}Pernah / '.$struck('Tidak Pernah').'{{/if}}'
+            .'{{#if '.$field.'=tidak_pernah}}'.$struck('Pernah').' / Tidak Pernah{{/if}}'
+            .' )';
+    }
+
+    /**
+     * Pengantar SKCK: tanpa kop dan nomor surat. Wilayah dan nama Ketua RT/RW
+     * dari wilayah pemohon saat pengajuan, nama Kepala Desa dari snapshot;
+     * Camat dan kedua No.Reg ditulis tangan.
+     */
+    private function skckTemplate(): string
+    {
+        $row = fn (string $no, string $label, string $value): string => '<tr>'
+            .'<td style="width: 22px; vertical-align: top; padding: 1px 0;">'.$no.'</td>'
+            .'<td style="width: 240px; vertical-align: top; padding: 1px 0;">'.$label.'</td>'
+            .'<td style="width: 14px; vertical-align: top; padding: 1px 0;">:</td>'
+            .'<td style="vertical-align: top; padding: 1px 0;">'.$value.'</td>'
+            .'</tr>';
+        $signer = fn (string $top, string $title, string $name, string $bottom = ''): string => '<td style="width: 50%; text-align: center; vertical-align: top;">'
+            .$top.'<div>'.$title.'</div>'
+            .'<div style="height: 70px;"></div>'
+            .'<div style="font-weight: bold; text-decoration: underline;">'.$name.'</div>'
+            .$bottom.'</td>';
+        $dots = str_repeat('.', 30);
+        $reg = '<div style="text-align: left; padding-left: 20px;">No.Reg: '.$dots.'</div>';
+
+        return '<div style="font-family: '."'Times New Roman'".', serif; font-size: 12pt; line-height: 1.4; color: #000;">'
+            .'<table style="border-collapse: collapse;"><tr>'
+            .'<td style="width: 150px;">KECAMATAN</td><td style="width: 14px;">:</td><td>{{ village_district_upper }}</td>'
+            .'</tr></table>'
+            .'<div style="text-align: center; font-weight: bold; text-decoration: underline; margin: 18px 0 14px 0;">SURAT KETERANGAN</div>'
+            .'<p style="text-align: justify; text-transform: uppercase; margin: 0 0 6px 0;">PENGANTAR PERMOHONAN SKCK (SURAT KETERANGAN CATATAN KEPOLISIAN) YANG BERTANDA TANGAN DIBAWAH INI, KETUA RT {{ applicant_rt }} / RW {{ applicant_rw }} DUSUN {{ applicant_dusun }} MENERANGKAN BAHWA:</p>'
+            .'<table style="width: 100%; border-collapse: collapse;">'
+            .$row('1', 'Nama', '{{ applicant_name }}')
+            .$row('2', 'Jenis Kelamin', '{{ applicant_gender }}')
+            .$row('3', 'Tempat, Tanggal Lahir', '{{ applicant_birth_place_date }}')
+            .$row('4', 'Pekerjaan', '{{ applicant_occupation }}')
+            .$row('5', 'Alamat', '{{ applicant_address }}')
+            .$row('6', 'Kewarganegaraan', '{{ applicant_citizenship }}')
+            .$row('7', 'Agama', '{{ applicant_religion }}')
+            .$row('8', 'Status Perkawinan', '{{ status_perkawinan }}')
+            .'</table>'
+            .'<p style="margin: 14px 0 4px 0; text-decoration: underline;">KETERANGAN : Coret yang tidak perlu</p>'
+            .'<table style="width: 100%; border-collapse: collapse;">'
+            .$row('', 'Berapa lama berdomisili', '{{ lama_berdomisili }}')
+            .$row('', 'Melanggar norma-norma sosial', $this->struckChoice('norma_sosial'))
+            .$row('', 'Melakukan Tindak Pidana', $this->struckChoice('tindak_pidana'))
+            .'</table>'
+            .'<table style="width: 100%; border-collapse: collapse; margin-top: 28px;">'
+            .'<tr><td style="width: 50%;"></td><td style="width: 50%; text-align: center;">{{ village_name_short }}, {{ issued_at }}<br>Yang Menerangkan</td></tr>'
+            .'<tr>'
+            .$signer('', 'KETUA RW {{ applicant_rw }}', '{{ pejabat_rw_pemohon_nama }}')
+            .$signer('', 'KETUA RT {{ applicant_rt }}', '{{ pejabat_rt_pemohon_nama }}')
+            .'</tr></table>'
+            .'<div style="text-align: center; margin: 24px 0 10px 0;">Mengetahui:</div>'
+            .'<table style="width: 100%; border-collapse: collapse;"><tr>'
+            .$signer($reg, 'Camat {{ village_district }}', $dots, '<div style="text-align: left; padding-left: 20px;">NIP:</div>')
+            .$signer($reg, 'Kepala Desa {{ village_name_short }}', '{{ village_head_name }}')
+            .'</tr></table>'
+            .'</div>';
     }
 
     // ------------------------------------------------------------------

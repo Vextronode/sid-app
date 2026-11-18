@@ -150,6 +150,58 @@ class SeededLetterRenderingTest extends TestCase
         );
     }
 
+    public function test_skck_cover_letter_strikes_the_unchosen_answers_and_names_the_applicants_rt_and_rw(): void
+    {
+        $citizen = $this->applicant['citizen'];
+        $rt = $citizen->rt;
+        $rt->update(['number' => '3']);
+        $rt->rw->update(['number' => '13']);
+        $rt->rw->hamlet->update(['name' => 'Cibenda']);
+        $this->rtApprover['citizen']->update(['name' => 'Ketua RT Asep']);
+        $rwHead = $this->makeOfficialUser('rw', $this->village, ['rw_id' => $rt->rw_id]);
+        $rwHead['citizen']->update(['name' => 'Ketua RW Dede']);
+        $citizen->update(['marital_status' => 'cerai_mati', 'religion' => 'islam']);
+        $this->kades['citizen']->update(['name' => 'Kades Sukamaju']);
+
+        $html = $this->issue('A13', [
+            'lama_berdomisili' => 'Sejak lahir',
+            'norma_sosial' => 'tidak_pernah',
+            'tindak_pidana' => 'pernah',
+            // Status perkawinan diambil dari data penduduk, bukan jawaban form.
+            'status_perkawinan' => 'kawin',
+        ], $letterId);
+
+        $struck = fn (string $text): string => '<span style="text-decoration: line-through;">'.$text.'</span>';
+        $this->assertStringContainsString('( '.$struck('Pernah').' / Tidak Pernah )', $html);
+        $this->assertStringContainsString('( Pernah / '.$struck('Tidak Pernah').' )', $html);
+        $this->assertStringContainsString('SURAT KETERANGAN CATATAN KEPOLISIAN', $html);
+        foreach (['KECAMATAN', 'CIJULANG', 'KETUA RT 003 / RW 013 DUSUN Cibenda', 'Pelapor Hidup', 'Indonesia', 'Islam', 'Cerai Mati', 'Sejak lahir', 'Ketua RT Asep', 'Ketua RW Dede', 'Camat Cijulang', 'Kepala Desa Sukamaju', 'Kades Sukamaju'] as $value) {
+            $this->assertStringContainsString($value, $html);
+        }
+        // Tanpa kop, nomor surat, dan garis pengganti placeholder.
+        $this->assertStringNotContainsString('Nomor :', $html);
+        $this->assertStringNotContainsString('________', $html);
+        $this->assertNull(Letter::query()->findOrFail($letterId)->letter_number);
+        $this->assertSame([0.0, 0.0, 609.45, 935.43], $this->paper);
+    }
+
+    public function test_skck_marital_status_is_only_asked_when_the_population_data_has_none(): void
+    {
+        $submit = fn (array $payload) => $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
+            'letter_type_id' => $this->letterType('A13')->id,
+            'payload' => ['lama_berdomisili' => '5 tahun', 'norma_sosial' => 'tidak_pernah', 'tindak_pidana' => 'tidak_pernah', ...$payload],
+        ]);
+
+        $this->applicant['citizen']->update(['marital_status' => null]);
+        $submit([])->assertStatus(422)->assertJsonValidationErrors(['payload.status_perkawinan']);
+        $submit(['status_perkawinan' => 'cerai_hidup'])->assertCreated()->assertJsonPath('data.payload.status_perkawinan', 'cerai_hidup');
+
+        $this->applicant['citizen']->update(['marital_status' => 'belum_kawin']);
+        // Akun yang sama dipakai lintas request di tes: muat ulang data penduduknya.
+        $this->applicant['user']->unsetRelation('citizen');
+        $submit(['status_perkawinan' => 'kawin'])->assertCreated()->assertJsonPath('data.payload.status_perkawinan', 'belum_kawin');
+    }
+
     public function test_event_permit_requires_the_three_form_photos_and_an_upcoming_date(): void
     {
         $response = $this->actingAs($this->applicant['user'])->postJson('/api/letters', [
@@ -330,6 +382,17 @@ class SeededLetterRenderingTest extends TestCase
         $this->actingAs($this->applicant['user'])
             ->getJson('/api/user')
             ->assertJsonPath('data.citizen.occupation_id', $farmer->id);
+    }
+
+    public function test_skck_suggests_how_long_the_applicant_has_lived_here(): void
+    {
+        $field = collect($this->letterType('A13')->form_fields)->firstWhere('name', 'lama_berdomisili');
+
+        $this->assertSame('domicile_duration_hint', $field['prefill_from_applicant']);
+        // Warga lokal (setUp): sejak lahir.
+        $this->actingAs($this->applicant['user'])
+            ->getJson('/api/user')
+            ->assertJsonPath('data.citizen.domicile_duration_hint', 'Sejak lahir');
     }
 
     public function test_domicile_letter_wording_depends_on_residency_status(): void

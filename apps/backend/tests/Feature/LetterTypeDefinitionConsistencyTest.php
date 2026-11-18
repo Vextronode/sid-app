@@ -32,7 +32,9 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
         'village_regency', 'village_regency_upper', 'village_province', 'village_region',
         'village_address', 'village_phone', 'village_postal_code', 'village_email',
         'village_head_name', 'applicant_family_number', 'village_kasi_pemerintahan_name',
-        'applicant_marital_status',
+        'applicant_marital_status', 'applicant_religion', 'applicant_citizenship',
+        // Wilayah dan Ketua RT/RW pemohon saat pengajuan (Pengantar SKCK).
+        'applicant_rt', 'applicant_rw', 'applicant_dusun', 'pejabat_rt_pemohon_nama', 'pejabat_rw_pemohon_nama',
         // TTD formulir pelayanan (PdfService::serviceSignatureReplacements).
         'tanda_tangan_pemohon', 'tanda_tangan_kepala_desa', 'tanda_tangan_kasi_pemerintahan',
         'pejabat_kepala_desa_nama',
@@ -129,7 +131,7 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
 
         // Persuratan Desa (Axx) + Layanan Kependudukan (Fxx dan A11 Ahli Waris).
         $this->assertSame(
-            ['persuratan' => 11, 'pelayanan' => 11],
+            ['persuratan' => 12, 'pelayanan' => 11],
             $letterTypes->countBy(fn (LetterType $type) => $type->category->value)->all(),
         );
 
@@ -147,7 +149,10 @@ class LetterTypeDefinitionConsistencyTest extends TestCase
                     : ['kaur_tu_umum', LetterTypeCategory::Persuratan];
                 $this->assertSame($role, $letterType->assigned_role, "{$letterType->code} ditangani {$role}.");
                 $this->assertSame($category, $letterType->category, "{$letterType->code} termasuk {$category->value}.");
-                $this->assertTrue($letterType->issues_letter_number && $letterType->signed_by_village_head);
+                // Pengantar SKCK (A13) tanpa nomor surat desa: No.Reg ditulis
+                // tangan, Kepala Desa tetap bertanda tangan sebagai "Mengetahui".
+                $this->assertSame($letterType->code !== 'A13', $letterType->issues_letter_number, "{$letterType->code} nomor surat.");
+                $this->assertTrue($letterType->signed_by_village_head);
                 $this->assertFalse($letterType->requires_result_upload);
             } else {
                 // Formulir Disdukcapil: tanpa nomor dan TTD Kepala Desa,
