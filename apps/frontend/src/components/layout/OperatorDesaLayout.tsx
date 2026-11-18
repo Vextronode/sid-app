@@ -33,6 +33,7 @@ import {
   Network,
   PanelLeftClose,
   PanelLeftOpen,
+  Plane,
   Plug,
   RotateCcw,
   Settings,
@@ -168,6 +169,12 @@ const MENU_ITEMS = [
     route: '/admin/data-usaha',
     allowedRoles: getOperatorAllowedRoles('/admin/data-usaha'),
     icon: Store,
+  },
+  {
+    label: 'Data CPMI',
+    route: '/admin/data-cpmi',
+    allowedRoles: getOperatorAllowedRoles('/admin/data-cpmi'),
+    icon: Plane,
   },
   ...areaItems('Manajemen Akun', '/manajemen-akun', UserCog),
   {
