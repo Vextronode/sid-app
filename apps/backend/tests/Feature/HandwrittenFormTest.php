@@ -12,6 +12,8 @@ use Database\Seeders\LetterTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Mockery;
+use setasign\Fpdi\Fpdi;
+use setasign\Fpdi\PdfParser\StreamReader;
 use Tests\Concerns\BuildsLetterScenario;
 use Tests\TestCase;
 
@@ -118,6 +120,21 @@ class HandwrittenFormTest extends TestCase
 
         $public = collect($this->getJson('/api/public/letter-types')->assertOk()->json('data'))->firstWhere('code', 'A12');
         $this->assertSame(['daftar', 'pernyataan'], array_column($public['handwritten_forms'], 'key'));
+    }
+
+    public function test_f4_form_can_be_downloaded_on_a4_paper(): void
+    {
+        $response = $this->actingAs($this->applicant['user'])
+            ->get("/api/letter-types/{$this->letterType()->id}/forms/pernyataan?download=1&paper=a4")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertStringContainsString('formulir-a12-pernyataan-a4.pdf', (string) $response->headers->get('content-disposition'));
+
+        $reader = new Fpdi('P', 'mm');
+        $reader->setSourceFile(StreamReader::createByString($response->getContent()));
+        $size = $reader->getTemplateSize($reader->importPage(1));
+        $this->assertSame([210, 297], [(int) round($size['width']), (int) round($size['height'])]);
     }
 
     private function letterType(): LetterType

@@ -10,11 +10,14 @@ use App\Repositories\LetterRepository;
 use App\Support\LetterDocuments;
 use App\Support\LetterValueFormatter;
 use App\Support\PaperSize;
+use App\Support\PdfRescaler;
 use App\Support\TemplateConditionals;
 use App\Support\TemplateLoops;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -31,7 +34,12 @@ class PdfService
         protected LetterSnapshotService $letterSnapshotService,
     ) {}
 
-    public function download(Letter $letter, User $user, ?string $document = null): Response
+    /**
+     * $paper: ukuran kertas yang diminta (a4|f4). Null = kertas bawaan
+     * dokumen. Bila berbeda dari bawaan, PDF diskalakan utuh ke kertas itu
+     * (PdfRescaler) sehingga tampilannya sama, hanya ukurannya yang berubah.
+     */
+    public function download(Letter $letter, User $user, ?string $document = null, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
 
@@ -46,12 +54,10 @@ class PdfService
 
         $this->abortIfExpiredForApplicant($letter, $user);
 
-        [$pdf, $filename] = $this->buildPdf($letter, $document);
-
-        return $pdf->download($filename);
+        return $this->buildPdf($letter, $document, $paper, true);
     }
 
-    public function preview(Letter $letter, User $user, ?string $document = null): Response
+    public function preview(Letter $letter, User $user, ?string $document = null, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
 
@@ -63,9 +69,7 @@ class PdfService
 
         $this->abortIfExpiredForApplicant($letter, $user);
 
-        [$pdf, $filename] = $this->buildPdf($letter, $document);
-
-        return $pdf->stream($filename);
+        return $this->buildPdf($letter, $document, $paper, false);
     }
 
     /**
@@ -73,7 +77,7 @@ class PdfService
      * pernyataan), dengan nama pemohon dan pihak terkait.
      * Dipakai approver dan Kasi/Kaur sebagai bahan pertimbangan.
      */
-    public function supportingDocument(Letter $letter, bool $download): Response
+    public function supportingDocument(Letter $letter, bool $download, ?string $paper = null): Response
     {
         $letter = $this->letterRepository->loadForPdf($letter);
         $context = $this->letterSnapshotService->supportingContextFor($letter);
@@ -86,9 +90,9 @@ class PdfService
             'letter' => $letter,
             'template' => $this->renderTemplate($letter, $context, $context['supporting_template']),
         ]);
-        $filename = "dokumen-pendukung-{$letter->id}.pdf";
 
-        return $download ? $pdf->download($filename) : $pdf->stream($filename);
+        // Dokumen pendukung dirender di A4 tegak (bawaan view).
+        return $this->respond($pdf, "dokumen-pendukung-{$letter->id}", $download, PaperSize::A4, $paper);
     }
 
     /**
@@ -102,10 +106,7 @@ class PdfService
         }
     }
 
-    /**
-     * @return array{0: \Barryvdh\DomPDF\PDF, 1: string} PDF dan nama berkasnya
-     */
-    private function buildPdf(Letter $letter, ?string $documentKey): array
+    private function buildPdf(Letter $letter, ?string $documentKey, ?string $paper, bool $download): Response
     {
         if (! $letter->letterType) {
             abort(500, 'Template surat tidak ditemukan. Hubungi administrator.');
@@ -120,9 +121,9 @@ class PdfService
         $context = $this->letterSnapshotService->contextFor($letter);
 
         $document = $this->documentFor($letter, $context, $documentKey);
-        $filename = $document['key'] === LetterDocuments::MAIN
-            ? "surat-{$letter->id}.pdf"
-            : "surat-{$letter->id}-{$document['key']}.pdf";
+        $basename = $document['key'] === LetterDocuments::MAIN
+            ? "surat-{$letter->id}"
+            : "surat-{$letter->id}-{$document['key']}";
 
         // Formulir Disdukcapil berkotak (mis. F-2.01) butuh memori lebih.
         if (self::memoryLimitBytes() < 512 * 1024 * 1024) {
@@ -136,7 +137,30 @@ class PdfService
 
         PaperSize::apply($pdf, $document['paper'], $document['orientation']);
 
-        return [$pdf, $filename];
+        return $this->respond($pdf, $basename, $download, $document['paper'], $paper);
+    }
+
+    /**
+     * PDF dirender di kertas bawaan ($sourcePaper). Kertas lain yang diminta
+     * diterapkan dengan menskalakan tiap halaman utuh; kertas yang sama
+     * dikirim apa adanya. Nama berkas diberi akhiran ukuran bila diminta.
+     */
+    private function respond(DomPdf $pdf, string $basename, bool $download, string $sourcePaper, ?string $paper): Response
+    {
+        $filename = $paper === null ? "{$basename}.pdf" : "{$basename}-{$paper}.pdf";
+
+        if ($paper === null || $paper === $sourcePaper) {
+            return $download ? $pdf->download($filename) : $pdf->stream($filename);
+        }
+
+        return new Response(PdfRescaler::rescale($pdf->output(), $paper), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                $download ? HeaderUtils::DISPOSITION_ATTACHMENT : HeaderUtils::DISPOSITION_INLINE,
+                $filename,
+                Str::ascii($filename),
+            ),
+        ]);
     }
 
     /**
@@ -146,7 +170,7 @@ class PdfService
      * untuk ditulis tangan. Berkas yang sudah diisi lalu difoto dan
      * diunggah sebagai berkas persyaratan.
      */
-    public function handwrittenForm(LetterType $letterType, User $user, string $key, bool $download): Response
+    public function handwrittenForm(LetterType $letterType, User $user, string $key, bool $download, ?string $paper = null): Response
     {
         $form = collect($letterType->handwritten_forms ?? [])->firstWhere('key', $key)
             ?? abort(404, 'Formulir ini tidak tersedia untuk jenis surat ini.');
@@ -172,10 +196,10 @@ class PdfService
         $html = (string) preg_replace('/\{\{\s*[a-zA-Z0-9_]+\s*}}/', '..............................', $html);
 
         $pdf = Pdf::loadView(self::VIEW, ['letter' => null, 'template' => $html]);
-        PaperSize::apply($pdf, $form['paper'] ?? null);
-        $filename = 'formulir-'.Str::slug($letterType->code.' '.$key).'.pdf';
+        $formPaper = PaperSize::normalize($form['paper'] ?? null);
+        PaperSize::apply($pdf, $formPaper);
 
-        return $download ? $pdf->download($filename) : $pdf->stream($filename);
+        return $this->respond($pdf, 'formulir-'.Str::slug($letterType->code.' '.$key), $download, $formPaper, $paper);
     }
 
     private static function memoryLimitBytes(): int

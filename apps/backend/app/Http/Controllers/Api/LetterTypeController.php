@@ -10,6 +10,7 @@ use App\Http\Resources\LetterTypeResource;
 use App\Models\LetterType;
 use App\Services\LetterTypeService;
 use App\Services\PdfService;
+use App\Support\PaperSize;
 use Illuminate\Http\Request;
 
 class LetterTypeController extends Controller
@@ -39,7 +40,7 @@ class LetterTypeController extends Controller
     {
         $letterType = $this->letterTypeService->handwrittenFormType($letterType, $request->user());
 
-        return $pdfService->handwrittenForm($letterType, $request->user(), $key, $request->boolean('download'));
+        return $pdfService->handwrittenForm($letterType, $request->user(), $key, $request->boolean('download'), PaperSize::requested($request));
     }
 
     public function update(UpdateLetterTypeRequest $request, LetterType $letterType)

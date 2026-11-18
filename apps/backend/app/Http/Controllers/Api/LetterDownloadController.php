@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Letter;
 use App\Services\PdfService;
+use App\Support\PaperSize;
 use Illuminate\Http\Request;
 
 class LetterDownloadController extends Controller
@@ -23,6 +24,7 @@ class LetterDownloadController extends Controller
             $letter,
             $request->user(),
             $request->query('document'),
+            PaperSize::requested($request),
         );
     }
 
@@ -36,6 +38,7 @@ class LetterDownloadController extends Controller
             $letter,
             $request->user(),
             $request->query('document'),
+            PaperSize::requested($request),
         );
     }
 
@@ -47,7 +50,8 @@ class LetterDownloadController extends Controller
 
         return $this->pdfService->supportingDocument(
             $letter,
-            $request->boolean('download')
+            $request->boolean('download'),
+            PaperSize::requested($request),
         );
     }
 }
