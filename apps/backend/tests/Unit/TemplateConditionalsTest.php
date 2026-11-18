@@ -27,4 +27,13 @@ class TemplateConditionalsTest extends TestCase
         $this->assertSame('<p>{{ nama }} / {{ sponsor }}</p>', TemplateConditionals::apply($template, ['warga' => 'wna', 'sponsor' => 'PT X']));
         $this->assertSame('', TemplateConditionals::apply($template, ['warga' => 'wni', 'sponsor' => 'PT X']));
     }
+
+    public function test_negated_block_is_kept_only_when_the_answer_is_empty(): void
+    {
+        $template = '{{ jam_mulai }} s.d. {{#if jam_selesai}}{{ jam_selesai }}{{/if}}{{#if !jam_selesai}}selesai{{/if}}';
+
+        $this->assertSame('{{ jam_mulai }} s.d. selesai', TemplateConditionals::apply($template, []));
+        $this->assertSame('{{ jam_mulai }} s.d. selesai', TemplateConditionals::apply($template, ['jam_selesai' => '']));
+        $this->assertSame('{{ jam_mulai }} s.d. {{ jam_selesai }}', TemplateConditionals::apply($template, ['jam_selesai' => '22:00']));
+    }
 }

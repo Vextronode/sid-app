@@ -1177,7 +1177,12 @@ class LetterFormSchema
         return match ($field['type'] ?? 'text') {
             'textarea' => ['string', 'max:2000'],
             // `past`: peristiwa yang sudah terjadi, tidak sesudah hari ini.
-            'date' => ['date', ...(($field['past'] ?? false) ? [self::pastDateRule($field)] : [])],
+            // `upcoming`: rencana kegiatan, tidak sebelum hari ini.
+            'date' => [
+                'date',
+                ...(($field['past'] ?? false) ? [self::pastDateRule($field)] : []),
+                ...(($field['upcoming'] ?? false) ? [self::upcomingDateRule($field)] : []),
+            ],
             // Jam 24 jam dari input waktu, mis. 08:30.
             'time' => ['date_format:H:i'],
             // `integer` (bilangan bulat, mis. rupiah) dan `min_value`.
@@ -1206,6 +1211,22 @@ class LetterFormSchema
 
             if ($date !== null && $date->gt(today())) {
                 $fail(($field['label'] ?? $field['name']).' tidak boleh sesudah hari ini.');
+            }
+        };
+    }
+
+    /**
+     * Tanggal tidak boleh sebelum hari ini.
+     *
+     * @param  array<string, mixed>  $field
+     */
+    private static function upcomingDateRule(array $field): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($field): void {
+            $date = is_string($value) ? rescue(fn () => Carbon::parse($value)->startOfDay(), null, false) : null;
+
+            if ($date !== null && $date->lt(today())) {
+                $fail(($field['label'] ?? $field['name']).' tidak boleh sebelum hari ini.');
             }
         };
     }
