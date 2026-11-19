@@ -9,6 +9,14 @@
     <link rel="apple-touch-icon" href="/assets/icons/icon-192.png" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Sanctum mengenali request SPA sebagai stateful dari header Referer/Origin.
+      Proxy di depan stack bisa mengirim `Referrer-Policy: no-referrer`; tanpa
+      Referer, GET /api/* jadi stateless dan selalu 401. Meta ini menimpa
+      kebijakan header untuk dokumen, sehingga request same-origin tetap
+      membawa Referer dan tidak ada yang bocor ke situs lain.
+    -->
+    <meta name="referrer" content="same-origin" />
     <title>__APP_NAME__</title>
   </head>
   <body>
