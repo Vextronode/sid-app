@@ -22,6 +22,17 @@ export const queryKeys = {
     list: ['notifications', 'list'],
     unreadCount: ['notifications', 'unread-count'],
   },
+  // Peringatan bencana SIGAP: bar publik dan tab Peringatan SIGAP (staf).
+  disasterAlerts: {
+    all: ['disaster-alerts'],
+    public: ['disaster-alerts', 'public'],
+    staffAll: ['disaster-alerts', 'staff'],
+    staff: (status: string) => ['disaster-alerts', 'staff', status],
+  },
+  dashboard: {
+    // Grafik pengajuan surat per hari (SuratStatChart); diikuti tanggal dan jenis.
+    letterStats: ['dashboard', 'letter-stats'],
+  },
   cms: {
     news: ['cms', 'news'],
     regulations: ['cms', 'regulations'],
