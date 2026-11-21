@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { TestQueryProvider } from '@/test/TestQueryProvider'
 import type { PublicDisasterAlert } from '../api'
 
 const api = vi.hoisted(() => ({ getPublicDisasterAlerts: vi.fn() }))
@@ -100,7 +101,7 @@ describe('PublicDisasterAlertBar', () => {
       alert({ expires_at: new Date(Date.now() + 30_000).toISOString() }),
     ])
 
-    render(<PublicDisasterAlertBar />)
+    render(<PublicDisasterAlertBar />, { wrapper: TestQueryProvider })
 
     expect(await screen.findByRole('region', { name: 'Peringatan bencana' })).toBeInTheDocument()
 
@@ -113,7 +114,7 @@ describe('PublicDisasterAlertBar', () => {
 
   it('refreshes every minute only while the tab is visible', async () => {
     api.getPublicDisasterAlerts.mockResolvedValue([])
-    render(<PublicDisasterAlertBar />)
+    render(<PublicDisasterAlertBar />, { wrapper: TestQueryProvider })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0)
     })
@@ -133,7 +134,8 @@ describe('PublicDisasterAlertBar', () => {
     // Langsung dimuat lagi saat tab kembali terlihat.
     setVisibility('visible')
     await act(async () => {
-      document.dispatchEvent(new Event('visibilitychange'))
+      // Seperti di browser, event ini naik sampai window (didengar React Query).
+      document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
       await vi.advanceTimersByTimeAsync(0)
     })
     expect(api.getPublicDisasterAlerts).toHaveBeenCalledTimes(3)
@@ -144,7 +146,7 @@ describe('PublicDisasterAlertBar', () => {
       .mockResolvedValueOnce([alert()])
       .mockRejectedValueOnce(new Error('Network Error'))
 
-    render(<PublicDisasterAlertBar />)
+    render(<PublicDisasterAlertBar />, { wrapper: TestQueryProvider })
     expect(await screen.findByRole('region', { name: 'Peringatan bencana' })).toBeInTheDocument()
 
     await act(async () => {

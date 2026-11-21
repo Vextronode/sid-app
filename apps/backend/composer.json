@@ -10,6 +10,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel-notification-channels/webpush": "^13.0",
         "laravel/framework": "^13.8",
+        "laravel/reverb": "^1.14",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "maatwebsite/excel": "^4.0",

@@ -8,6 +8,7 @@ use App\Models\Family;
 use App\Models\FamilySocioeconomic;
 use App\Models\Hamlet;
 use App\Models\IntegrationClient;
+use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\News;
 use App\Models\NewsCategory;
@@ -21,6 +22,7 @@ use App\Models\VillageInfoPage;
 use App\Models\VillageOrgMember;
 use App\Models\VillageOrgPosition;
 use App\Models\VillageRegulation;
+use App\Observers\LetterRealtimeObserver;
 use App\Observers\PopulationAuditObserver;
 use App\Policies\RegionPolicy;
 use App\Support\AuditContext;
@@ -62,6 +64,10 @@ class AppServiceProvider extends ServiceProvider
         foreach ([Citizen::class, Family::class, FamilySocioeconomic::class] as $populationModel) {
             $populationModel::observe(PopulationAuditObserver::class);
         }
+
+        // Sinyal realtime (Reverb) setiap kali surat berubah, dari service
+        // mana pun; lihat docs/task/feature/realtime-reverb.md.
+        Letter::observe(LetterRealtimeObserver::class);
 
         RateLimiter::for('register', function (Request $request) {
             return [

@@ -16,6 +16,11 @@
   3 warning `operation-4xx-response` pada `/`, `/up`, dan
   `/sanctum/csrf-cookie` (endpoint itu memang tidak punya respons 4xx).
 
+**Tambahan 2026-11-21 (realtime):** `GET /realtime/config` dan
+`POST /broadcasting/auth` (`paths/realtime/`, `schemas/realtime/`). Diperiksa
+lokal tanpa jaringan: semua YAML ter-parse, kedua path terdaftar, semua
+`$ref` resolve, `operationId` unik. `redocly lint` belum dijalankan ulang.
+
 Fitur yang pernah ada di spec tetapi tidak ada di source dicatat di
 `../audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
 
@@ -35,6 +40,7 @@ api_spec/
 │   ├── rt/, kades/   aksi keputusan saja
 │   ├── signatures/   permintaan saksi/persetujuan, blokir
 │   ├── notifications/, push-subscriptions/  (+ web-push-subscribers)
+│   ├── realtime/     konfigurasi Echo, otorisasi channel Reverb
 │   ├── account-registrations/, profile-photo-requests/, password-reset-requests/
 │   ├── activity-logs/
 │   ├── approval-settings/, letter-expiry-reminder-settings/, dashboard/
@@ -72,6 +78,7 @@ api_spec/
 | Akun & jabatan | `/users`, `/users/{user}/reset-password`, `/users/{user}/toggle-status`, `/users/{user}/photo` (POST/DELETE, akun warga), `/officials` (+ promote, candidates/lookup, demote, rotate, photo POST/DELETE), `/official-position-types`, `GET /activity-logs/population\|letters\|accounts` (Log Aktivitas) | Staf SIDUTama (`staf_sid`, satu per desa) |
 | Wilayah | `/hamlets`, `/rws`, `/rts`; `GET /village-areas` (pohon Dusun -> RW -> RT aktif untuk isian `village_area` form surat) | Staf SIDUTama; `/village-areas` semua role |
 | Notifikasi | `/notifications`, `/notifications/unread-count` (`{ data: { count } }`), `/notifications/read-all`, `/notifications/{id}/read`, `POST/DELETE /push-subscriptions`; `GET /web-push-subscribers` (menu Pelanggan Notifikasi, ringkasan di `meta.summary`) hanya Staf SIDUTama | Semua user |
+| Realtime | `GET /realtime/config` (publik; `{ data: { enabled, key, host, port, scheme } }`, `enabled=false` = frontend polling), `POST /broadcasting/auth` (otorisasi channel private). Channel: `private-App.Models.User.{id}` (`notification.created`, `letter.changed`), `private-letters.staff` (`letter.changed`, akun non-warga), `disaster-alerts` publik (`disaster-alerts.changed`); payload hanya `{ type, id }` | Publik (config); semua user login (auth) |
 | Dashboard | `/dashboard`, `/dashboard/gender-stats`, `/dashboard/letter-stats` (keduanya dibungkus `data`) | Semua role (data di-scope) |
 | CMS | `/villages/profile` (GET semua user; PATCH Petugas), `/villages/profile/logo\|hero-image\|resolve-map-link`, `/news`, `/news-categories`, `/regulations`, `/announcement` (GET/PUT/DELETE, satu per desa), `/info-pages` (+ `/{page}`), `/village-org-positions` (GET slot tetap; + members, members/{id}/end, members/{id}/photo, `GET citizen-lookup?nik=`) | Staf SIDUTama |
 | Publik | `/public/home` (+ `village_head`), `/public/village-profile`, `/public/news`, `/public/letter-types`, `/public/regulations`, `/public/contact-us`, `/public/village-orgs/{orgType}` (opsional `?village_code=`; cache 10 menit per desa); `/public/disaster-alerts` (peringatan SIGAP untuk bar merah, **tanpa cache**, 300 request/menit per IP) | Tanpa login |

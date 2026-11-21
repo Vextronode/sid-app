@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, EyeOff, RotateCcw } from 'lucide-react'
 
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { formatDateTime } from '@/features/activity-log/labels'
+import { REALTIME_QUERY_META } from '@/features/realtime/constants'
+import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
 import { getApiErrorMessage } from '@/shared/lib/apiError'
 import { confirmDialog, promptDialog } from '@/shared/lib/dialog'
+import { queryKeys } from '@/shared/lib/queryKeys'
 import { notifySuccess } from '@/shared/lib/toast'
 import { dismissDisasterAlert, getDisasterAlerts, restoreDisasterAlert } from '../api'
-import type { DisasterAlert } from '../api'
+import type { DisasterAlert, DisasterAlertList } from '../api'
+import { useUnexpiredAlerts } from '../hooks/useUnexpiredAlerts'
 import { ALERT_REFRESH_MS, levelTone } from '../utils'
 
 type PeringatanSigapPanelProps = {
@@ -16,45 +21,60 @@ type PeringatanSigapPanelProps = {
   onDisplayedCountChange?: (count: number) => void
 }
 
+const EMPTY_ALERTS: DisasterAlert[] = []
+
 /**
  * Tab Peringatan SIGAP di halaman Pengumuman (Staf SIDUTama). Isi dari
  * SIGAP tidak bisa diubah; staf hanya menurunkan peringatan satu per satu
- * dengan alasan, dan menampilkan lagi yang salah diturunkan. Dimuat ulang
- * otomatis selama tab browser terlihat.
+ * dengan alasan, dan menampilkan lagi yang salah diturunkan.
+ *
+ * Diperbarui lewat sinyal realtime `disaster-alerts.changed`; saat
+ * WebSocket mati atau putus, dimuat ulang otomatis selama tab browser
+ * terlihat. Peringatan yang lewat masa tayang langsung hilang dari daftar.
  */
 export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigapPanelProps) {
-  const [displayed, setDisplayed] = useState<DisasterAlert[]>([])
-  const [dismissed, setDismissed] = useState<DisasterAlert[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
+  const refetchInterval = useLiveRefetchInterval('disaster-alerts', ALERT_REFRESH_MS)
+  const [actionError, setActionError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      const [shown, hidden] = await Promise.all([
-        getDisasterAlerts('displayed'),
-        getDisasterAlerts('dismissed'),
-      ])
-      setDisplayed(shown)
-      setDismissed(hidden)
-      setError('')
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Gagal memuat peringatan SIGAP.'))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const listQuery = (status: DisasterAlertList) => ({
+    queryKey: queryKeys.disasterAlerts.staff(status),
+    queryFn: () => getDisasterAlerts(status),
+    refetchInterval,
+    refetchIntervalInBackground: false,
+    meta: REALTIME_QUERY_META,
+  })
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load()
+  const displayedQuery = useQuery(listQuery('displayed'))
+  const dismissedQuery = useQuery(listQuery('dismissed'))
 
-    const interval = setInterval(() => {
-      if (document.visibilityState !== 'hidden') void load()
-    }, ALERT_REFRESH_MS)
+  const displayed = useUnexpiredAlerts(
+    displayedQuery.data ?? EMPTY_ALERTS,
+    displayedQuery.dataUpdatedAt,
+  )
+  const dismissed = useUnexpiredAlerts(
+    dismissedQuery.data ?? EMPTY_ALERTS,
+    dismissedQuery.dataUpdatedAt,
+  )
+  const loading = displayedQuery.isPending || dismissedQuery.isPending
+  const loadError = displayedQuery.error ?? dismissedQuery.error
+  const error =
+    actionError ||
+    (loadError ? getApiErrorMessage(loadError, 'Gagal memuat peringatan SIGAP.') : '')
 
-    return () => clearInterval(interval)
-  }, [load])
+  const load = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: queryKeys.disasterAlerts.staffAll }),
+    [queryClient],
+  )
+
+  const setList = (
+    status: DisasterAlertList,
+    update: (current: DisasterAlert[]) => DisasterAlert[],
+  ) =>
+    queryClient.setQueryData<DisasterAlert[]>(queryKeys.disasterAlerts.staff(status), (current) =>
+      update(current ?? EMPTY_ALERTS),
+    )
 
   useEffect(() => {
     if (!loading) onDisplayedCountChange?.(displayed.length)
@@ -73,15 +93,18 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
     if (reason === null) return
 
     setBusyId(alert.id)
-    setError('')
+    setActionError('')
 
     try {
       const result = await dismissDisasterAlert(alert.id, reason)
       notifySuccess(result.message)
-      setDisplayed((current) => current.filter((item) => item.id !== alert.id))
-      setDismissed((current) => [result.data, ...current.filter((item) => item.id !== alert.id)])
+      setList('displayed', (current) => current.filter((item) => item.id !== alert.id))
+      setList('dismissed', (current) => [
+        result.data,
+        ...current.filter((item) => item.id !== alert.id),
+      ])
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Gagal menurunkan peringatan.'))
+      setActionError(getApiErrorMessage(requestError, 'Gagal menurunkan peringatan.'))
       await load()
     } finally {
       setBusyId(null)
@@ -99,7 +122,7 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
     if (!confirmed) return
 
     setBusyId(alert.id)
-    setError('')
+    setActionError('')
 
     try {
       const result = await restoreDisasterAlert(alert.id)
@@ -107,11 +130,16 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
       // Urutan tampil (level, lalu terbaru) ditentukan backend.
       await load()
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Gagal menampilkan lagi peringatan.'))
+      setActionError(getApiErrorMessage(requestError, 'Gagal menampilkan lagi peringatan.'))
       await load()
     } finally {
       setBusyId(null)
     }
+  }
+
+  const refresh = async () => {
+    setActionError('')
+    await load()
   }
 
   return (
@@ -136,7 +164,7 @@ export function PeringatanSigapPanel({ onDisplayedCountChange }: PeringatanSigap
             <h3>Peringatan yang sedang tampil</h3>
             <p>Peringatan teratas tampil di bar merah halaman publik.</p>
           </div>
-          <RefreshButton onRefresh={load} refreshing={loading} disabled={busyId !== null} />
+          <RefreshButton onRefresh={refresh} refreshing={loading} disabled={busyId !== null} />
         </div>
 
         <div className="sid-wilayah-table-wrap">

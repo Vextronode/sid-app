@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
+import { queryKeys } from '@/shared/lib/queryKeys'
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -33,6 +35,11 @@ vi.mock('../api', () => ({
   markNotificationAsRead: vi.fn(),
 }))
 
+// Bawaan: realtime tidak hidup, jadi interval polling tetap seperti biasa.
+vi.mock('@/features/realtime/hooks/useLiveRefetchInterval', () => ({
+  useLiveRefetchInterval: vi.fn((_scope: string, fallbackMs: number) => fallbackMs),
+}))
+
 const notifications = [
   { id: 'notification-1', title: 'Surat diproses', read: false },
   { id: 'notification-2', title: 'Surat selesai', read: true },
@@ -49,6 +56,7 @@ function renderNotifications() {
 describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(useLiveRefetchInterval).mockImplementation((_scope, fallbackMs) => fallbackMs)
     mockedGetNotifications.mockResolvedValue({ data: { data: notifications } })
     mockedGetUnreadNotificationCount.mockResolvedValue({ data: { data: { count: 1 } } })
     mockedMarkNotificationAsRead.mockResolvedValue({ data: { message: 'ok' } })
@@ -109,6 +117,38 @@ describe('useNotifications', () => {
 
     expect(result.current.notifications[0].read).toBe(false)
     expect(result.current.error).toBe('Gagal menandai notifikasi sebagai dibaca.')
+  })
+
+  it('polls the unread count every 30 seconds while realtime is not live', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children)
+
+    const { result } = renderHook(() => useNotifications(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const countQuery = client
+      .getQueryCache()
+      .find({ queryKey: queryKeys.notifications.unreadCount })
+    expect(useLiveRefetchInterval).toHaveBeenCalledWith('notifications', 30_000)
+    expect(countQuery?.observers[0]?.options.refetchInterval).toBe(30_000)
+  })
+
+  it('relaxes polling and marks both queries for refetch after reconnect when realtime is live', async () => {
+    vi.mocked(useLiveRefetchInterval).mockReturnValue(5 * 60 * 1000)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children)
+
+    const { result } = renderHook(() => useNotifications(), { wrapper })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const cache = client.getQueryCache()
+    const countQuery = cache.find({ queryKey: queryKeys.notifications.unreadCount })
+    const listQuery = cache.find({ queryKey: queryKeys.notifications.list })
+    expect(countQuery?.observers[0]?.options.refetchInterval).toBe(5 * 60 * 1000)
+    expect(countQuery?.meta).toEqual({ realtime: true })
+    expect(listQuery?.meta).toEqual({ realtime: true })
   })
 
   it('marks all local notifications as read after BE succeeds', async () => {

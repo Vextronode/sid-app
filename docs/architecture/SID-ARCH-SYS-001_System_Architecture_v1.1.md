@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-SYS-001 |
-| Status | Berlaku (Aktif) - Versi 1.5 (diselaraskan ke source 2026-11-19) |
+| Status | Berlaku (Aktif) - Versi 1.6 (diselaraskan ke source 2026-11-21) |
 | Nama Aplikasi | SIDUTama (nama desa dan identitasnya diambil dari data `villages`, bukan di-hardcode) |
 | Kode Proyek | SID |
 | Audiens | Seluruh developer, Reviewer, Tech Lead, QA Coordinator, kontributor baru |
@@ -44,26 +44,30 @@ Aplikasi pihak ketiga memanggil `/api/integrations/v1` dari server-nya dengan be
 ## 3. Komponen Sistem
 
 ```
-┌───────────────────────┐   HTTPS (satu origin)   ┌────────────────────────┐
-│ Browser / PWA         │◄──────────────────────►│ Nginx (sid-web)        │
-│ React SPA + SW push   │                         │  - file statis SPA     │
-└───────────────────────┘                         │  - /api,/sanctum,      │
-        ▲  Web Push (VAPID)                       │    /storage → PHP-FPM  │
-        │                                         └──────────┬─────────────┘
-┌───────┴───────────────┐                                    │ FastCGI
-│ Layanan push browser  │◄──── WebPushChannel ───┐ ┌─────────▼─────────────┐
-└───────────────────────┘                        └─┤ Laravel API (sid-api) │
-                                                   │ Sanctum, Policy,      │
-                                                   │ dompdf, activitylog   │
-                                                   └───┬──────────┬────────┘
-                                                       │          │
-                                         ┌─────────────▼──┐  ┌────▼──────────────┐
-                                         │ PostgreSQL     │  │ Storage           │
-                                         │ (lokal / Neon) │  │ public | private  │
-                                         └────────────────┘  └───────────────────┘
+┌───────────────────────┐  HTTPS + WSS (satu origin)  ┌────────────────────────┐
+│ Browser / PWA         │◄──────────────────────────►│ Nginx (sid-web)        │
+│ React SPA + SW push   │                             │  - file statis SPA     │
+│ Laravel Echo (lazy)   │                             │  - /api,/sanctum,      │
+└───────────────────────┘                             │    /storage → PHP-FPM  │
+        ▲  Web Push (VAPID)                           │  - /app/ → Reverb (WS) │
+        │                                             └───┬───────────────┬────┘
+┌───────┴───────────────┐                                 │ FastCGI       │ WebSocket
+│ Layanan push browser  │◄─ WebPushChannel ─┐ ┌───────────▼─────────┐ ┌───▼──────────────┐
+└───────────────────────┘                   └─┤ Laravel API         │ │ Reverb           │
+                                              │ (sid-api; worker &  │ │ (sid_reverb)     │
+                                              │ scheduler satu      ├─► :8080, sinyal    │
+                                              │ image)              │ │ realtime         │
+                                              └───┬──────────┬──────┘ └──────────────────┘
+                                                  │          │   event broadcast dari sid_worker
+                                    ┌─────────────▼──┐  ┌────▼──────────────┐
+                                    │ PostgreSQL     │  │ Storage           │
+                                    │ (lokal / Neon) │  │ public | private  │
+                                    └────────────────┘  └───────────────────┘
 ```
 
-Aplikasi pihak ketiga (Cimart, SIGAP) memanggil `sid-api` lewat `/api/integrations/v1` dengan bearer token client. Antrean (`sid_worker`) mengirim Web Push dan notifikasi peringatan SIGAP; scheduler (`sid_scheduler`) menjalankan pengingat approval, pengingat masa berlaku surat, dan pembersihan pengumuman/peringatan.
+Aplikasi pihak ketiga (Cimart, SIGAP) memanggil `sid-api` lewat `/api/integrations/v1` dengan bearer token client. Antrean (`sid_worker`) mengirim Web Push, notifikasi peringatan SIGAP, dan event broadcast realtime ke Reverb; scheduler (`sid_scheduler`) menjalankan pengingat approval, pengingat masa berlaku surat, dan pembersihan pengumuman/peringatan.
+
+**Realtime.** Reverb (`sid_reverb`) meneruskan sinyal `{ type, id }` lewat WebSocket: notifikasi baru, perubahan surat, dan perubahan peringatan bencana. Browser lalu mengambil ulang data lewat REST seperti biasa. Realtime bersifat opsional: bila Reverb, worker, atau proxy WebSocket bermasalah, frontend kembali ke polling (30–60 detik) tanpa ada fitur yang rusak. Detail: `SID-ARCH-BE-001` 7.1, `SID-ARCH-FE-001` 6.10.
 
 Autentikasi Frontend–Backend: Laravel Sanctum SPA cookie (HttpOnly) + XSRF token. Detail di `SID-ARCH-FE-001` dan `SID-ARCH-BE-001`.
 
@@ -89,9 +93,9 @@ Pejabat dengan citizen juga dapat mengajukan surat untuk dirinya (menu "Surat Sa
 
 | Mode | Isi | Rujukan |
 |---|---|---|
-| Docker (staging/produksi) | `sid_web` (Nginx + SPA, satu-satunya port host loopback), `sid_api` (PHP-FPM), `sid_scheduler` (`schedule:work`), `sid_worker` (`queue:work`), `sid_db` (PostgreSQL 18, profil `localdb`) atau DB Neon; volume `public`/`private`; `QUEUE_CONNECTION=database`, Web Push nonaktif bila VAPID kosong | `deploy/docker-compose.yml`, README bagian B |
+| Docker (staging/produksi) | `sid_web` (Nginx + SPA, satu-satunya port host loopback; `/app/` diteruskan ke Reverb), `sid_api` (PHP-FPM), `sid_scheduler` (`schedule:work`), `sid_worker` (`queue:work`), `sid_reverb` (`reverb:start`, WebSocket realtime), `sid_db` (PostgreSQL 18, profil `localdb`) atau DB Neon; volume `public`/`private`; `QUEUE_CONNECTION=database`, Web Push nonaktif bila VAPID kosong, realtime nonaktif bila `BROADCAST_CONNECTION` bukan `reverb`. Proxy tim di depan `sid_web` (TLS) harus meneruskan WebSocket | `deploy/docker-compose.yml`, README bagian B |
 | VPS (Nginx + PHP-FPM) | SPA statis + Laravel, Supervisor queue worker untuk Web Push, opcache | `docs/deploy/README.md` |
-| Development | Vite dev server (proxy `/api`, `/sanctum` ke `127.0.0.1:8000`) + `php artisan serve` + PostgreSQL lokal | `docs/SETUP.md` |
+| Development | Vite dev server (proxy `/api`, `/sanctum` ke `127.0.0.1:8000`) + `php artisan serve` + PostgreSQL lokal; realtime opsional lewat `php artisan reverb:start` (`127.0.0.1:8080`) | `docs/SETUP.md` |
 
 Lokasi hosting staging/produksi (kampus/desa) **tidak diverifikasi** dari source.
 
@@ -120,5 +124,6 @@ Lokasi hosting staging/produksi (kampus/desa) **tidak diverifikasi** dari source
 | 1.1 | - | Tier vs role, terminologi pipeline, koreksi Non-NIK, CMS eksklusif Staf SIDUTama |
 | 1.2 | 2026-10-06 | Sosio-ekonomi KK dan pekerjaan baku per desa |
 | 1.3 | 2026-10-16 | Kategori surat dihapus; jenis surat data-driven, TTD pihak terkait, snapshot, aksi data; Web Push; identitas desa dari DB & halaman publik; topologi Docker/VPS; kotak "Endpoint Verifikasi QR" dihapus dari diagram komponen karena tidak ada di source |
+| 1.6 | 2026-11-21 | Realtime Laravel Reverb: komponen `sid_reverb` dan jalur WebSocket `/app/` di diagram, topologi Docker dan development, polling jadi cadangan |
 | 1.5 | 2026-11-19 | F11 Pendataan CPMI (layanan tanpa surat) dan Data CPMI; Data Usaha Warga; pilihan kertas A4/F4; aktivasi akun dan ganti foto berjenjang wilayah; lupa sandi tanpa email; pelanggan notifikasi; 2.5 integrasi pihak ketiga (Cimart, SIGAP); pembagian Persuratan Desa/Layanan Kependudukan per Kasi/Kaur dikoreksi |
 | 1.4 | 2026-10-31 | TTD digital, TTD akun, TTD jabatan, stempel digital, dan reset TTD dihapus; surat terbit tanpa TTD/stempel (dibubuhkan basah di kantor desa); tersisa persetujuan saksi |

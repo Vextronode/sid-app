@@ -1,7 +1,8 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { TestQueryProvider } from '@/test/TestQueryProvider'
 import type { DisasterAlert } from '../api'
 
 const api = vi.hoisted(() => ({
@@ -32,7 +33,8 @@ function alert(overrides: Partial<DisasterAlert> = {}): DisasterAlert {
     location: null,
     link_url: null,
     occurred_at: '2026-11-16T14:06:00+07:00',
-    expires_at: '2026-11-16T20:06:00+07:00',
+    // Relatif terhadap sekarang: peringatan yang lewat masa tayang disaring.
+    expires_at: new Date(Date.now() + 6 * 3_600_000).toISOString(),
     status: 'active',
     source: 'SIGAP',
     sent_at: '2026-11-16T14:06:30+07:00',
@@ -72,7 +74,9 @@ describe('PeringatanSigapPanel', () => {
     const onCount = vi.fn()
     mockLists([tsunami, gempa])
 
-    render(<PeringatanSigapPanel onDisplayedCountChange={onCount} />)
+    render(<PeringatanSigapPanel onDisplayedCountChange={onCount} />, {
+      wrapper: TestQueryProvider,
+    })
 
     const shown = await screen.findByText('Peringatan dini tsunami')
     expect(shown.closest('tr')).toHaveTextContent('Tampil di bar beranda')
@@ -88,7 +92,7 @@ describe('PeringatanSigapPanel', () => {
   it('shows the empty state when nothing is displayed', async () => {
     mockLists([])
 
-    render(<PeringatanSigapPanel />)
+    render(<PeringatanSigapPanel />, { wrapper: TestQueryProvider })
 
     expect(
       await screen.findByText('Tidak ada peringatan dari SIGAP yang sedang tampil.'),
@@ -109,7 +113,7 @@ describe('PeringatanSigapPanel', () => {
       message: 'Peringatan diturunkan dari halaman publik.',
     })
 
-    render(<PeringatanSigapPanel />)
+    render(<PeringatanSigapPanel />, { wrapper: TestQueryProvider })
     const row = (await screen.findByText('Peringatan dini tsunami')).closest('tr') as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Turunkan' }))
 
@@ -135,7 +139,7 @@ describe('PeringatanSigapPanel', () => {
     mockLists([tsunami])
     dialog.promptDialog.mockResolvedValue(null)
 
-    render(<PeringatanSigapPanel />)
+    render(<PeringatanSigapPanel />, { wrapper: TestQueryProvider })
     await user.click(await screen.findByRole('button', { name: 'Turunkan' }))
 
     expect(api.dismissDisasterAlert).not.toHaveBeenCalled()
@@ -153,11 +157,55 @@ describe('PeringatanSigapPanel', () => {
     dialog.confirmDialog.mockResolvedValue(true)
     api.restoreDisasterAlert.mockResolvedValue({ data: tsunami, message: 'Ditampilkan lagi.' })
 
-    render(<PeringatanSigapPanel />)
+    render(<PeringatanSigapPanel />, { wrapper: TestQueryProvider })
     await user.click(await screen.findByRole('button', { name: 'Tampilkan lagi' }))
 
     expect(api.restoreDisasterAlert).toHaveBeenCalledWith('a-1')
     // Kedua daftar dimuat ulang supaya urutan tampil mengikuti backend.
     await waitFor(() => expect(api.getDisasterAlerts).toHaveBeenCalledTimes(4))
+  })
+
+  it('drops an alert as soon as its display time ends, without reloading', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    try {
+      mockLists([alert({ expires_at: new Date(Date.now() + 30_000).toISOString() })])
+      const onCount = vi.fn()
+
+      render(<PeringatanSigapPanel onDisplayedCountChange={onCount} />, {
+        wrapper: TestQueryProvider,
+      })
+      expect(await screen.findByText('Peringatan dini tsunami')).toBeInTheDocument()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(31_000)
+      })
+
+      expect(screen.queryByText('Peringatan dini tsunami')).toBeNull()
+      expect(onCount).toHaveBeenLastCalledWith(0)
+      expect(api.getDisasterAlerts).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an action error visible after the lists reload', async () => {
+    const user = userEvent.setup()
+    mockLists([tsunami])
+    dialog.promptDialog.mockResolvedValue('Alarm palsu.')
+    api.dismissDisasterAlert.mockRejectedValue({
+      response: {
+        status: 409,
+        data: { message: 'Peringatan ini sudah tidak tampil. Muat ulang daftar.' },
+      },
+    })
+
+    render(<PeringatanSigapPanel />, { wrapper: TestQueryProvider })
+    await user.click(await screen.findByRole('button', { name: 'Turunkan' }))
+
+    await waitFor(() => expect(api.getDisasterAlerts).toHaveBeenCalledTimes(4))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Peringatan ini sudah tidak tampil. Muat ulang daftar.',
+    )
   })
 })

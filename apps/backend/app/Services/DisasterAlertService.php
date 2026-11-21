@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DisasterAlertLevel;
+use App\Events\DisasterAlertsChanged;
 use App\Jobs\SendDisasterAlertNotifications;
 use App\Models\DisasterAlert;
 use App\Models\IntegrationClient;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\DB;
  *
  * Penerimaan dari SIGAP dan aksi staf (turunkan / tampilkan lagi) memakai
  * kunci baris yang sama, jadi diproses bergantian.
+ *
+ * Setiap perubahan yang tersimpan mengirim sinyal realtime
+ * DisasterAlertsChanged (setelah transaksi selesai); pembaruan yang
+ * diabaikan (basi atau sudah diakhiri) tidak.
  */
 class DisasterAlertService
 {
@@ -95,6 +100,7 @@ class DisasterAlertService
             ]);
 
             $this->staffAudit($locked, $actor, 'dismissed', 'Peringatan bencana diturunkan', ['reason' => $reason]);
+            DisasterAlertsChanged::dispatch($locked->id);
 
             return $locked->load('dismissedBy:id,name');
         });
@@ -124,6 +130,7 @@ class DisasterAlertService
             ]);
 
             $this->staffAudit($locked, $actor, 'restored', 'Peringatan bencana ditampilkan lagi');
+            DisasterAlertsChanged::dispatch($locked->id);
 
             return $locked;
         });
@@ -165,6 +172,7 @@ class DisasterAlertService
 
                 $this->audit($client, $alert, 'alert_created', 'Peringatan bencana diterima dari SIGAP');
                 $this->queueNotificationIfNeeded($alert);
+                DisasterAlertsChanged::dispatch($alert->id);
 
                 return ['alert' => $alert, 'created' => true];
             }
@@ -194,6 +202,7 @@ class DisasterAlertService
             $this->audit($client, $alert, 'alert_updated', 'Peringatan bencana diperbarui SIGAP');
             $this->redisplayIfEscalated($client, $alert);
             $this->queueNotificationIfNeeded($alert);
+            DisasterAlertsChanged::dispatch($alert->id);
 
             return ['alert' => $alert, 'created' => false];
         });
@@ -219,6 +228,7 @@ class DisasterAlertService
                 $alert->update(['ended_at' => now()]);
 
                 $this->audit($client, $alert, 'alert_ended', 'Peringatan bencana diakhiri SIGAP');
+                DisasterAlertsChanged::dispatch($alert->id);
             }
 
             return $alert;
@@ -227,7 +237,8 @@ class DisasterAlertService
 
     /**
      * Menghapus peringatan yang berakhir atau kedaluwarsa lebih lama dari
-     * masa simpan. Dijadwalkan harian (`disaster-alerts:prune`).
+     * masa simpan. Dijadwalkan harian (`disaster-alerts:prune`). Tanpa
+     * sinyal realtime: yang dihapus sudah tidak tampil di daftar mana pun.
      */
     public function prune(): int
     {

@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ProfilePhotoRequestController;
 use App\Http\Controllers\Api\PublicPageController;
 use App\Http\Controllers\Api\PushSubscriptionController;
+use App\Http\Controllers\Api\RealtimeConfigController;
 use App\Http\Controllers\Api\RegulationController;
 use App\Http\Controllers\Api\RtApprovalController;
 use App\Http\Controllers\Api\RtController;
@@ -83,6 +84,10 @@ Route::prefix('public')->group(function () {
     Route::get('/disaster-alerts', [PublicPageController::class, 'disasterAlerts'])
         ->middleware('throttle:300,1');
 });
+
+// Konfigurasi Laravel Echo (Reverb) untuk browser; publik karena halaman
+// tanpa login juga mendengarkan channel publik. Lihat RealtimeConfigController.
+Route::get('/realtime/config', RealtimeConfigController::class);
 
 /*
 |--------------------------------------------------------------------------

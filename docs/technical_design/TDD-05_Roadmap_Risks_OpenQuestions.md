@@ -5,7 +5,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 5 dari 5 (+ Appendix) |
-| Status | v5.3 — diselaraskan ke source 2026-11-19 |
+| Status | v5.3 — diselaraskan ke source 2026-11-21 |
 | Cakupan | Roadmap pengembangan, asumsi & risiko, pertanyaan prioritas (terjawab & belum), known technical constraints |
 | Dokumen terkait | Seluruh bagian TDD 01–04, `TDD-06_Appendix.md`, OpenAPI Spec v5.3, `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
@@ -40,6 +40,7 @@ Roadmap ini sangat terbuka pada requirement client setelah observasi pertama.
 | Worker queue dijaga berjalan bila Web Push diaktifkan | SEDANG | Push tertunda (notifikasi in-app tetap) | Stack Docker: service `sid_worker` dengan `restart: unless-stopped`; panduan VPS menyediakan konfigurasi Supervisor |
 | PostgreSQL tersedia dan dapat dikonfigurasi di server deployment | RENDAH | Implementasi keamanan tidak bisa diterapkan penuh | Dokumentasikan minimum requirement server; siapkan alternatif shared hosting |
 | Docker dipakai untuk stack staging/produksi; development tetap manual | RENDAH | Environment dev berbeda antar mesin | `deploy/docker-compose.yml` + `docs/SETUP.md`; PHP ^8.3, PostgreSQL |
+| Proxy tim di depan stack meneruskan WebSocket, dan koneksi internet desa cukup stabil untuk WebSocket | RENDAH | Realtime tidak tersambung atau sering putus | Polling cadangan otomatis (30–60 detik) dan pengambilan ulang saat tersambung kembali; realtime bisa dimatikan (`BROADCAST_CONNECTION=null`) tanpa mengubah kode. Konfigurasi proxy dikonfirmasi ke pengelola sebelum rilis |
 
 ### 2.2. Asumsi & Risiko Operasional & Sosial
 
@@ -109,7 +110,10 @@ Bagian ini mendokumentasikan keterbatasan teknis yang sudah dapat diprediksi seb
 | `APP_KEY` tidak boleh berubah di production | Semua data terenkripsi tidak bisa didekripsi | Simpan `APP_KEY` di tempat aman; jangan pernah regenerate di prod |
 | `on_behalf_of` nullable di MVP | Warga submit sendiri di MVP, kolom selalu NULL | Kolom tetap ada untuk future use case di mana petugas mungkin perlu input atas nama warga tertentu |
 | Tabel `officials` sebaiknya punya minimal 1 RT aktif per wilayah | Gate approval bergantung pada RT aktif; resolver tidak melakukan fallback broadcast jika RT tidak ditemukan | Validasi konfigurasi dan pantau wilayah tanpa RT aktif; keputusan approval tetap membutuhkan pejabat RT |
-| Redis belum dipakai | Queue, cache, dan session di database | Cukup untuk traffic desa; switch lewat `.env` |
+| Redis belum dipakai | Queue, cache, dan session di database; Reverb hanya satu instance (tanpa scaling) | Cukup untuk traffic desa; switch lewat `.env`. Scaling Reverb horizontal butuh Redis (`REVERB_SCALING_ENABLED`) |
+| Realtime bergantung pada `sid_reverb`, `sid_worker`, dan proxy WebSocket | Bila salah satunya mati, sinyal tidak sampai | Frontend kembali polling; pantau `lib.sh logs sid_reverb` dan `queue:failed` (`BroadcastEvent`); smoke test memperingatkan bila handshake `/app/` gagal |
+| Event loop bawaan Reverb (`stream_select`) dibatasi ±1.024 file terbuka | Koneksi WebSocket serentak di atas ±1.000 tidak bisa dilayani | `REVERB_APP_MAX_CONNECTIONS=900`, sisanya polling; bila perlu lebih, pasang ext-uv di image `sid-api` |
+| Reverb tidak mengirim ulang event yang terlewat | Perubahan selama koneksi putus tidak tersinyalkan | Query realtime diambil ulang saat tersambung kembali; polling pengaman tiap 5 menit selama tersambung |
 | Entrypoint Docker tidak menjalankan migrate/seed | Deploy baru membutuhkan langkah manual | Ikuti `deploy/scripts/*` dan README bagian B |
 | Struktur jenis surat (template, isian, aksi data, flow) diisi developer via seeder | Staf SIDUTama tidak bisa mandiri menambah/mengubah jenis surat | Petugas menghubungi developer; Petugas hanya mengatur masa berlaku, kategori (menentukan Kasi/Kaur), status aktif (UC-21) |
 | Snapshot/PDF membutuhkan Kepala Desa aktif | Surat approved lama tanpa snapshot tidak dapat diunduh (404) selama jabatan Kades kosong | Pastikan Kades selalu ditetapkan; snapshot dibuat saat final approve bila Kades ada |

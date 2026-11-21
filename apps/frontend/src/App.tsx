@@ -53,6 +53,7 @@ import {
   MigrantWorkerAccessGate,
 } from '@/features/data-cpmi/components/MigrantWorkerAccessGate'
 import { getOperatorAllowedRoles } from '@/features/operator-desa/constants/roleNavigation'
+import { RealtimeBridge } from '@/features/realtime/components/RealtimeBridge'
 import { letterTargetForRole, roleHomePath } from '@/features/auth/utils/letterLinks'
 
 // Halaman yang diekspor dengan nama (bukan default) dimuat lazy.
@@ -241,6 +242,8 @@ function OfficialShell() {
 export default function App() {
   return (
     <AuthProvider>
+      {/* Realtime (Reverb): sinyal -> invalidasi cache React Query. */}
+      <RealtimeBridge />
       <BrowserRouter>
         <ScrollToTop />
         <Suspense fallback={<PageLoader fullscreen />}>

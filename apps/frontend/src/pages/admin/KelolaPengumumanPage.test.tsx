@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { TestQueryProvider } from '@/test/TestQueryProvider'
+
 const api = vi.hoisted(() => ({
   getAnnouncement: vi.fn(),
   saveAnnouncement: vi.fn(),
@@ -52,6 +54,7 @@ const renderPage = () =>
     <MemoryRouter>
       <KelolaPengumumanPage />
     </MemoryRouter>,
+    { wrapper: TestQueryProvider },
   )
 
 describe('KelolaPengumumanPage', () => {
