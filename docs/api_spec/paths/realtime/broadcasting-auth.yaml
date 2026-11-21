@@ -1,0 +1,51 @@
+post:
+  tags: [Realtime]
+  summary: Otorisasi channel private Reverb untuk koneksi WebSocket yang sedang dibuka
+  description: |
+    Dipanggil Laravel Echo (pusher-js) saat berlangganan channel private,
+    memakai sesi Sanctum SPA dan header `X-XSRF-TOKEN` seperti request lain.
+    Middleware sama dengan grup API terautentikasi: `auth:sanctum`,
+    `account.active` (403 `account_inactive`), `password.changed`
+    (403 `password_change_required`).
+
+    Aturan channel (`routes/channels.php`):
+    - `private-App.Models.User.{id}`: hanya akun dengan id itu.
+    - `private-letters.staff`: semua akun yang perannya bukan `warga`.
+
+    Channel `disaster-alerts` publik dan tidak melewati endpoint ini.
+  operationId: authorizeBroadcastChannel
+  security:
+    - sanctumCookie: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [socket_id, channel_name]
+          properties:
+            socket_id:
+              type: string
+              description: Id koneksi WebSocket dari Reverb (`<angka>.<angka>`)
+              example: '1234.5678'
+            channel_name:
+              type: string
+              example: private-App.Models.User.0195f3c2-7d1e-7a4b-9c3d-2e1f0a9b8c7d
+  responses:
+    '200':
+      description: Tanda tangan untuk dikirim ke Reverb bersama permintaan subscribe
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/realtime/realtime.yaml#/ChannelAuthorization'
+    '401':
+      $ref: '../../responses/common.yaml#/Unauthenticated'
+    '403':
+      description: |
+        Channel tidak dikenal atau bukan milik akun ini, akun nonaktif
+        (`account_inactive`), atau wajib ganti kata sandi
+        (`password_change_required`).
+      content:
+        application/json:
+          schema:
+            $ref: '../../schemas/common/errors.yaml#/ForbiddenResponse'

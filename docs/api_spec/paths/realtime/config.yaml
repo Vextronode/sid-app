@@ -1,0 +1,47 @@
+get:
+  tags: [Realtime]
+  summary: Konfigurasi Laravel Echo (Reverb) untuk browser (tanpa login)
+  security: []
+  description: |
+    Dibaca frontend saat langganan realtime pertama, karena image `sid-web`
+    dibangun sekali tanpa env per lingkungan. Publik: bar peringatan bencana
+    juga dipakai pengunjung tanpa login (channel publik `disaster-alerts`).
+
+    - `enabled`: `true` bila `BROADCAST_CONNECTION=reverb` dan
+      `REVERB_APP_KEY` terisi. `false` = saklar mati: frontend tidak membuka
+      WebSocket dan tetap polling. Saat `false`, semua field lain `null`.
+    - `key`: app key Reverb (publik, seperti key Pusher). Secret tidak pernah
+      dikirim.
+    - `host`, `port`, `scheme`: alamat WebSocket untuk browser
+      (`REVERB_CLIENT_*`). `null` = ikut origin halaman; di stack Docker,
+      Nginx `sid_web` meneruskan `/app/` ke service `sid_reverb`.
+
+    Channel dan event yang tersedia: `private-App.Models.User.{id}`
+    (`notification.created`, `letter.changed`), `private-letters.staff`
+    (`letter.changed`, akun non-warga), dan `disaster-alerts` publik
+    (`disaster-alerts.changed`). Payload event hanya `{ type, id }`; data
+    diambil ulang lewat endpoint REST masing-masing.
+  operationId: getRealtimeConfig
+  responses:
+    '200':
+      description: Konfigurasi realtime
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '../../schemas/realtime/realtime.yaml#/RealtimeConfig'
+          examples:
+            docker:
+              summary: Stack Docker (satu origin)
+              value:
+                data: { enabled: true, key: 3f1c9a0d7b2e4c5a8d6f0b1e2a3c4d5e, host: null, port: null, scheme: null }
+            lokal:
+              summary: Dev lokal (frontend 5173, Reverb 8080)
+              value:
+                data: { enabled: true, key: sid-local-key, host: 127.0.0.1, port: 8080, scheme: http }
+            mati:
+              summary: Realtime dimatikan
+              value:
+                data: { enabled: false, key: null, host: null, port: null, scheme: null }
