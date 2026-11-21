@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\NotificationCreated;
 use App\Models\DisasterAlert;
 use App\Models\User;
 use App\Notifications\DisasterAlertNotification;
@@ -53,12 +54,18 @@ class SendDisasterAlertNotifications implements ShouldQueue
 
         $notification = new DisasterAlertNotification($alert);
 
+        // Kanal `database` berjalan sinkron, jadi setelah send() baris
+        // notifikasi satu kelompok sudah tersimpan; sinyal realtime-nya
+        // dikirim sekali untuk seluruh kelompok (lihat BroadcastsInBulk).
         User::query()
             ->where('village_id', $alert->village_id)
             ->where('is_active', true)
             ->chunkById(
                 (int) config('disaster_alerts.notification_chunk', 200),
-                fn ($users) => Notification::send($users, $notification),
+                function ($users) use ($notification): void {
+                    Notification::send($users, $notification);
+                    NotificationCreated::dispatch(array_map('strval', $users->modelKeys()));
+                },
             );
     }
 }

@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | DEV-TEST-001 |
-| Status | Berlaku (Aktif) - Versi 1.2 |
+| Status | Berlaku (Aktif) - Versi 1.3 |
 | Audiens | Developer, QA Coordinator, Tech Lead |
 
 ---
@@ -27,6 +27,12 @@ Mengingat batasan waktu program (target stabilitas ±2 bulan untuk SIDUTama seba
 - Logika yang juga ada di backend dan harus sama hasilnya, mis. hubungan penanggung jawab CPMI (`features/data-cpmi/guardianRelation.test.ts`).
 - Modul API fitur baru (mis. `activity-log/api.test.ts`, `pelanggan-notifikasi/api.test.ts`) dan komponen dengan aturan tampil per peran/flag (mis. `AktivasiAkunSection`, `CpmiSayaCard`).
 
+**Realtime (Laravel Echo):** test tidak membuka WebSocket.
+- `features/realtime/realtimeClient.test.ts` mengganti `laravel-echo` dan `pusher-js` dengan Echo palsu (`vi.hoisted` + `vi.mock`) lalu memicu status koneksi, subscribe sukses/gagal, dan event. Modul menyimpan status di level modul, jadi tiap test memuat salinan baru (`vi.resetModules()` + `await import(...)`).
+- Komponen/hook yang memakai `useLiveRefetchInterval` diuji dengan mock hook itu (bawaan: kembalikan interval polling), lalu memeriksa `query.observers[0].options.refetchInterval` dan `query.meta` di cache React Query (contoh: `useNotifications.test.ts`, `useSuratListQuery.test.tsx`).
+- `RealtimeBridge.test.tsx` me-mock `realtimeClient` dan `useAuth`, lalu memanggil handler event langsung (pakai fake timer untuk debounce surat dan jeda acak peringatan publik).
+- Komponen yang kini memakai React Query (mis. bar peringatan bencana di layout publik) dirender dengan `wrapper: TestQueryProvider` (`src/test/TestQueryProvider.tsx`). React Query mendengarkan `visibilitychange` di `window`; di test, kirim event dengan `{ bubbles: true }` seperti browser.
+
 **Tidak wajib pada tahap ini:** pengujian end-to-end (E2E) menyeluruh terhadap seluruh alur pipeline.
 
 ---
@@ -36,6 +42,8 @@ Mengingat batasan waktu program (target stabilitas ±2 bulan untuk SIDUTama seba
 **Tools yang digunakan:** PHPUnit melalui Laravel Test Runner (`php artisan test`). Konfigurasi suite tersedia di `apps/backend/phpunit.xml` dengan database SQLite in-memory untuk menjalankan test di lokal.
 
 **CI memakai PostgreSQL, bukan SQLite.** Job backend di `.github/workflows/ci.yml` menjalankan service `postgres:16`, `php artisan migrate --force`, `vendor/bin/pint --test`, lalu `php artisan test` dengan `DB_CONNECTION=pgsql`. Akibatnya beberapa kesalahan hanya muncul di CI, terutama tipe kolom: mencari kolom UUID dengan string yang bukan UUID lolos di SQLite tetapi gagal di PostgreSQL. Validasi nilai seperti itu (mis. `Str::isUuid`) sebelum dipakai di query, dan jangan menganggap test lokal yang hijau berarti CI juga hijau.
+
+**Realtime (broadcast).** `phpunit.xml` memakai `BROADCAST_CONNECTION=null`, jadi tidak ada koneksi ke Reverb. Pengiriman event diuji dengan `Event::fake([NamaEvent::class])` lalu `Event::assertDispatched(...)` (lihat `tests/Feature/Realtime/*`). Driver `null` tidak menjalankan otorisasi channel, jadi test `POST /api/broadcasting/auth` memakai trait `Tests\Concerns\UsesReverbBroadcaster` (`useReverbBroadcaster()` mengganti ke driver reverb dengan kredensial palsu, tanpa jaringan, lalu mendaftarkan ulang `routes/channels.php`; `authorizeChannel('private-...')` mengirim request seperti Echo). Reverb yang mati disimulasikan dengan broadcaster palsu yang selalu melempar `BroadcastException` (`Broadcast::extend`) ditambah `Exceptions::fake()`, lalu dipastikan aksinya tetap tersimpan dan galatnya hanya dilaporkan (`RealtimeSignalFailureTest`).
 
 Beberapa test menjaga aturan lintas kode, misalnya `tests/Unit/EloquentOnlyWritesTest` (tidak ada mass update langsung ke tabel tertentu) dan `tests/Feature/LetterTypeDefinitionConsistencyTest` (definisi jenis surat di seeder konsisten dengan template dan aturan isiannya).
 
@@ -91,4 +99,5 @@ Selaras dengan struktur task baku program (PIC, Reviewer, Deadline, Definition o
 |---|---|---|
 | 1.0 | - | Rancangan Awal |
 | 1.1 | 2026-09-12 | Menambahkan strategi pengujian Backend dengan PHPUnit, Unit Test, dan Feature Test endpoint. |
+| 1.3 | 2026-11-21 | Pengujian realtime: frontend (Echo palsu, mock `useLiveRefetchInterval`, `TestQueryProvider`, event `visibilitychange` ber-bubble) dan backend (`Event::fake` untuk event broadcast, trait `UsesReverbBroadcaster` untuk otorisasi channel) |
 | 1.2 | 2026-11-19 | Frontend: setup dan berkas test TypeScript, helper `src/test/fixtures.ts`, langkah CI; daftar wajib-uji diganti komponen yang ada (`canDecideOnLetter`, utilitas form surat, logika yang dicerminkan backend). Backend: CI berjalan di PostgreSQL 16 dengan migrate dan Pint, beda perilaku SQLite vs PostgreSQL, test arsitektur, `--filter` |

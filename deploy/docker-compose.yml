@@ -114,6 +114,31 @@ services:
     stop_grace_period: 30s
     logging: *logging
 
+  # Server WebSocket Laravel Reverb (realtime notifikasi/surat/peringatan).
+  # Browser terhubung lewat Nginx sid_web (/app/ -> sid_reverb:8080, satu origin);
+  # sid_worker mengirim event ke sini lewat HTTP di jaringan internal.
+  # Opsional: bila mati atau BROADCAST_CONNECTION bukan reverb, frontend
+  # otomatis kembali polling. Tidak butuh DB maupun internet.
+  sid_reverb:
+    image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-api:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
+    container_name: ${SID_PROJECT:-sid}_reverb
+    restart: unless-stopped
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    env_file:
+      - ${SID_ENV_FILE:-sid.env}
+    networks:
+      - sid_net
+    # Healthcheck image (ping PHP-FPM) tidak berlaku; pakai GET /up milik Reverb.
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/up') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # SIGTERM: Reverb menutup koneksi; browser tersambung ulang otomatis.
+    stop_grace_period: 10s
+    logging: *logging
+
   sid_web:
     image: ${SID_REGISTRY:?SID_REGISTRY wajib diisi di compose.env}/sid-web:${SID_IMAGE_TAG:?SID_IMAGE_TAG wajib diisi (mis. v1.2.3)}
     container_name: ${SID_PROJECT:-sid}_web

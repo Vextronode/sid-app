@@ -1,7 +1,8 @@
 import type { StatusTone } from '@/components/ui/StatusPill'
 import type { DisasterAlertLevel, PublicDisasterAlert } from './api'
 
-// Pembaruan berkala bar peringatan dan tab Peringatan SIGAP.
+// Pembaruan berkala bar peringatan dan tab Peringatan SIGAP saat realtime
+// mati atau putus (saat hidup, data diperbarui lewat sinyal Reverb).
 export const ALERT_REFRESH_MS = 60_000
 
 // setTimeout tidak bisa menunggu lebih dari ~24,8 hari.

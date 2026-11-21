@@ -1,0 +1,35 @@
+RealtimeConfig:
+  type: object
+  description: Konfigurasi Laravel Echo (`RealtimeConfigController`).
+  required: [enabled, key, host, port, scheme]
+  properties:
+    enabled:
+      type: boolean
+      description: '`false` = realtime mati, frontend tetap polling'
+    key:
+      type: string
+      nullable: true
+      description: App key Reverb (publik); `null` bila `enabled` false
+    host:
+      type: string
+      nullable: true
+      description: Host WebSocket; `null` = host halaman
+    port:
+      type: integer
+      nullable: true
+      description: Port WebSocket; `null` = port halaman
+    scheme:
+      type: string
+      nullable: true
+      enum: [http, https, null]
+      description: '`https` = wss://; `null` = mengikuti protokol halaman'
+
+ChannelAuthorization:
+  type: object
+  description: Respons otorisasi channel private protokol Pusher.
+  required: [auth]
+  properties:
+    auth:
+      type: string
+      description: '`<app key>:<HMAC-SHA256 dari "socket_id:channel_name">`'
+      example: 'sid-local-key:5b3c...e1'

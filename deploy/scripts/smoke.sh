@@ -97,7 +97,30 @@ else
   bad "/ -> $code (harap 200 HTML berisi id=\"root\")"
 fi
 
-# 7. Login demo (opsional).
+# 7. Realtime (Laravel Reverb) lewat Nginx /app/. Bila aktif tetapi handshake gagal,
+#    hanya PERINGATAN (bukan GAGAL): frontend otomatis kembali polling, jadi tidak
+#    perlu rollback. Yang diperiksa hanya jalur Nginx -> sid_reverb (status 101);
+#    proxy tim di depan Nginx tidak ikut teruji di sini.
+code="$(req rtcfg -H 'Accept: application/json' "$BASE/api/realtime/config")"
+if [ "$code" != "200" ]; then
+  bad "/api/realtime/config -> $code (harap 200)"
+elif grep -q '"enabled":true' "$WORK/rtcfg.b"; then
+  rt_key="$(sed -n 's/.*"key":"\([^"]*\)".*/\1/p' "$WORK/rtcfg.b")"
+  # Server membiarkan WebSocket terbuka, jadi curl berhenti karena -m; cukup status 101.
+  code="$(curl -sS --http1.1 -m 3 -o /dev/null -D "$WORK/ws.h" -w '%{http_code}' \
+    -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
+    -H 'Sec-WebSocket-Key: c2lkLXNtb2tlLXRlc3QxMg==' \
+    "$BASE/app/$rt_key?protocol=7&client=js&version=8.4.0&flash=false" 2>/dev/null || true)"
+  if [ "$code" = "101" ] || grep -q '^HTTP/1\.1 101' "$WORK/ws.h" 2>/dev/null; then
+    ok "WebSocket /app/ 101 (Reverb)"
+  else
+    warn "realtime aktif tetapi handshake WebSocket /app/ -> ${code:-tanpa respons} (harap 101). Periksa service sid_reverb (bash deploy/scripts/lib.sh logs --tail 50 sid_reverb). Frontend tetap jalan dengan polling."
+  fi
+else
+  ok "/api/realtime/config 200 (realtime nonaktif; frontend polling)"
+fi
+
+# 8. Login demo (opsional).
 # Cookie sesi ber-flag Secure tidak dikirim balik oleh cookie jar curl lewat HTTP biasa,
 # jadi cookie ditangani eksplisit: Set-Cookie diurai, dikirim ulang lewat header Cookie,
 # token XSRF di-URL-decode ke X-XSRF-TOKEN, dan X-Forwarded-Proto: https dikirim seperti proxy.

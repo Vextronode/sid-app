@@ -4,7 +4,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-FE-001 |
-| Status | Berlaku (Aktif) - Versi 1.18 (diselaraskan ke source `apps/frontend` per 2026-11-19) |
+| Status | Berlaku (Aktif) - Versi 1.19 (diselaraskan ke source `apps/frontend` per 2026-11-21) |
 | Audiens | Frontend Developer, Reviewer, Tech Lead |
 | Sifat Dokumen | Keputusan struktural & alasan di baliknya. Aturan kode sehari-hari ada di `DEV-CODE-001`. |
 | Dokumen Induk | `SID-ARCH-SYS-001` |
@@ -19,7 +19,8 @@
 | Bahasa | TypeScript (`.ts`/`.tsx`, `tsconfig.json`) | `strict: true` (termasuk `noImplicitAny`, `strictNullChecks`, `useUnknownInCatchVariables`); `npm run typecheck` wajib 0 error dan dijalankan CI (Vite hanya membuang tipe, tidak memeriksanya). Aturan penulisan di `DEV-CODE-001` A.8 |
 | Build | Vite 8 (Rolldown) | Alias `@` → `src`; `build` membuang `console.*`/`debugger`; vendor dipisah ke chunk `react`, `charts`, `pdfjs` |
 | Styling | Tailwind CSS 4 via `@tailwindcss/vite` | Token di `index.css` (`@theme static`, palet `pb-*`) dan CSS custom property `--sid-*` di `styles/sid-global.css`; font Bricolage Grotesque & Plus Jakarta Sans (`@fontsource`) |
-| Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus |
+| Server state | TanStack Query 5 | `staleTime` 60 detik, `retry` 1, tanpa refetch saat fokus (bawaan; query realtime mengatur sendiri, lihat 6.10) |
+| Realtime | `laravel-echo` 2 + `pusher-js` 8 (protokol Pusher ke Laravel Reverb) | Dimuat lewat `import()` dinamis (chunk sendiri) hanya bila backend mengaktifkan realtime; tanpa `@laravel/echo-react`. Lihat 6.10 |
 | HTTP | Axios | `withCredentials` + `withXSRFToken` |
 | Form | React Hook Form + Zod | |
 | Routing | React Router 7 | |
@@ -36,7 +37,8 @@
 
 SPA yang berkomunikasi dengan Laravel API lewat REST, terautentikasi Sanctum cookie.
 
-- **Server state** (surat, warga, notifikasi, konten) lewat TanStack Query dengan kunci terpusat di `shared/lib/queryKeys.ts` (`surat`, `kependudukan`, `notifications`, `cms`, `adminConfig`). Aksi yang mengubah surat (mis. keputusan) meng-invalidate `queryKeys.surat.all`.
+- **Server state** (surat, warga, notifikasi, konten) lewat TanStack Query dengan kunci terpusat di `shared/lib/queryKeys.ts` (`surat`, `kependudukan`, `notifications`, `disasterAlerts`, `dashboard`, `cms`, `adminConfig`). Aksi yang mengubah surat (mis. keputusan) meng-invalidate `queryKeys.surat.all`.
+- **Realtime** (Laravel Reverb + Echo): event dari server hanya sinyal `{ type, id }`; `RealtimeBridge` menerjemahkannya menjadi invalidasi query, lalu data diambil ulang lewat REST. Polling tetap ada sebagai cadangan saat WebSocket mati atau putus (6.10).
 - **Sesi** di `features/auth/contexts/AuthContext.tsx` (React Context): mengambil `GET /api/user`, CSRF `GET /sanctum/csrf-cookie`, logout `POST /logout`, dan membersihkan cache query saat logout.
 - **UI state** tetap lokal (`useState`). Tidak ada state manager global (Redux/Zustand).
 - **Identitas desa dari API.** Nama, logo, kontak, dan foto desa diambil dari `/api/villages/profile` atau `/api/public/*`; tidak di-hardcode di komponen.
@@ -88,9 +90,13 @@ src/
     profil-desa-admin/    Kelola Profil Desa (identitas, kop, logo, foto beranda, titik kantor
                           dari koordinat/link Google Maps, sambutan Kepala Desa)
     pengumuman/           API pengumuman beranda (halaman Kelola Pengumuman)
-    peringatan-bencana/   peringatan SIGAP: DisasterAlertBar (bar merah publik, dimuat ulang
-                          tiap 60 detik selama tab terlihat) dan PeringatanSigapPanel (tab
-                          Peringatan SIGAP di Kelola Pengumuman: turunkan / tampilkan lagi)
+    peringatan-bencana/   peringatan SIGAP: DisasterAlertBar (bar merah publik) dan
+                          PeringatanSigapPanel (tab Peringatan SIGAP di Kelola Pengumuman:
+                          turunkan / tampilkan lagi), keduanya React Query + realtime;
+                          useUnexpiredAlerts menyembunyikan peringatan tepat saat kedaluwarsa
+    realtime/             Laravel Echo: realtimeClient (koneksi lazy, status hidup per cakupan),
+                          RealtimeBridge (listener terpusat di App.tsx), useLiveRefetchInterval,
+                          api (GET /api/realtime/config, POST /api/broadcasting/auth)
     integrasi/            menu Integrasi (status dan token aplikasi pihak ketiga)
     info-admin/           Kelola Halaman Informasi (ListField: isian daftar dinamis)
     peraturan/, notifikasi/ (satu popover untuk semua peran, WebPushControls, deep link),
@@ -111,7 +117,8 @@ src/
   shared/lib/             queryClient, queryKeys, publicVillageParams, villageName, copyText,
                           villageMap (koordinat kantor → link Google Maps)
   styles/                 sid-global.css, public.css, beranda.css
-  test/                   setup Vitest, fixtures (partialFixture untuk data uji sebagian)
+  test/                   setup Vitest, fixtures (partialFixture untuk data uji sebagian),
+                          TestQueryProvider (QueryClient baru per render, tanpa retry)
   types/                  tipe domain & API lintas fitur (api, user, citizen, wilayah, letter,
                           news, notification); diimpor lewat `@/types`. react-css.d.ts mengizinkan
                           CSS custom property (`--sid-*`) di prop `style`
@@ -210,6 +217,23 @@ Jenis surat dengan `produces_letter = false` tidak punya pratinjau atau unduhan.
 ### 6.9 Surat Saya
 `MyLettersList` dipakai halaman Surat Saya pejabat (`/admin/surat-saya`) dan warga (`/surat-saya/daftar`): filter status dengan jumlah dari `GET /letters/summary?scope=mine`, dan jalur tahapan per surat (Diajukan → RT → Desa → Terbit) yang dihitung `letterProgress.ts` dari `status`, `current_step`, dan `rejected_at_step`. Halaman ajukan surat pejabat memakai `LetterTypePicker` (kartu jenis surat) sebelum `DynamicSuratForm`. Ringkasan jenis surat terpilih menampilkan persyaratan, `carry_documents`, dan bagian "Formulir yang diisi tangan" (`HandwrittenForms`) bila `handwritten_forms` tidak kosong: tombol Unduh per formulir memanggil `downloadFile(handwrittenFormUrl(id, key), 'formulir-<kode>-<key>.pdf', { download: 1 })` (sesi login, PDF berisi identitas pemohon), galatnya dibaca `downloadErrorMessage`. Isian tanggal `upcoming` dibatasi `min` hari ini di input dan ditolak skema zod bila sebelum hari ini (kebalikan `past`). Nilai awal isian `prefill_from_applicant` dibaca dari `user.citizen`, termasuk `domicile_duration_hint` (saran lama berdomisili Pengantar SKCK dari backend: "Sejak lahir" untuk warga lokal, lama sejak tercatat untuk pendatang); isian `from_applicant` seperti status perkawinan SKCK disembunyikan bila datanya ada dan baru ditanyakan bila kosong.
 
+### 6.10 Realtime (Laravel Echo + Reverb)
+Pengganti polling untuk data yang berubah karena aksi orang lain. Rencana dan keputusan: `docs/task/feature/realtime-reverb.md`.
+
+- **Koneksi** (`features/realtime/realtimeClient.ts`): satu instance Echo untuk seluruh aplikasi, dibuat saat langganan pertama dan hanya bila `GET /api/realtime/config` mengembalikan `enabled: true`. `host`/`port`/`scheme` `null` berarti ikut origin halaman (stack Docker: Nginx meneruskan `/app/` ke Reverb). Channel private diotorisasi lewat instance axios bersama (`POST /api/broadcasting/auth`, cookie sesi + XSRF), bukan pengirim bawaan pusher-js. Gagal memuat konfigurasi berarti tetap polling dan dicoba lagi pada langganan berikutnya.
+- **Listener terpusat** (`RealtimeBridge`, dipasang di `App.tsx` di dalam `AuthProvider`):
+
+| Channel | Siapa | Event → invalidasi |
+|---|---|---|
+| `disaster-alerts` (publik) | semua, termasuk tanpa login | `.disaster-alerts.changed` → `disasterAlerts.staffAll` segera, `disasterAlerts.public` setelah jeda acak ≤3 detik (bar publik bisa terbuka di banyak perangkat sekaligus) |
+| `App.Models.User.{id}` (private) | akun aktif yang tidak wajib ganti sandi | `.notification.created` → `notifications.all`; `.letter.changed` → surat (lihat baris berikut) |
+| `letters.staff` (private) | akun non-warga | `.letter.changed` → `surat.all` + `dashboard.letterStats`, digabung bila datang beruntun dalam 300 ms |
+
+  Channel private ditinggalkan saat logout atau akun berganti.
+- **Cakupan dan polling cadangan**: tiap channel memasok cakupan (`notifications`, `letters`, `disaster-alerts`); channel akun warga memasok `notifications` + `letters`, pejabat mendapat `letters` dari `letters.staff`. `useLiveRefetchInterval(cakupan, ms)` mengembalikan `REALTIME_SAFETY_INTERVAL` (5 menit) selama WebSocket tersambung **dan** channel cakupan itu berhasil di-subscribe; selain itu interval polling biasa (`ms`). Dipakai `useNotifications` (30 detik), `useSuratListQuery`/`useSuratSummaryQuery` (30 detik), `SuratStatChart` (60 detik), `usePublicDisasterAlerts` dan `PeringatanSigapPanel` (60 detik).
+- **Tersambung kembali**: query ber-`meta: REALTIME_QUERY_META` di-invalidate karena Reverb tidak mengirim ulang event selama putus.
+- **Peringatan bencana**: bar publik dan tab staf memakai React Query (`queryKeys.disasterAlerts`). `useUnexpiredAlerts` menyembunyikan peringatan tepat saat `expires_at` lewat tanpa menunggu pemuatan ulang; data terakhir tetap tampil bila pemuatan gagal.
+
 ---
 
 ## 7. Design System
@@ -220,8 +244,8 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 
 ## 8. Build, PWA & Environment
 
-- `.env`: `VITE_APP_NAME`, `VITE_API_URL`, `VITE_VAPID_PUBLIC_KEY` (harus sama dengan backend).
-- Dev server `127.0.0.1:5173` mem-proxy `/api` dan `/sanctum` ke `127.0.0.1:8000`.
+- `.env`: `VITE_APP_NAME`, `VITE_API_URL`, `VITE_VAPID_PUBLIC_KEY` (harus sama dengan backend). Realtime tidak butuh env frontend: alamat dan key Reverb dibaca saat runtime dari `GET /api/realtime/config`, jadi image `sid-web` tetap satu untuk semua lingkungan.
+- Dev server `127.0.0.1:5173` mem-proxy `/api` dan `/sanctum` ke `127.0.0.1:8000`. WebSocket lokal langsung ke `php artisan reverb:start` (`127.0.0.1:8080`, dari `REVERB_CLIENT_*` backend).
 - PWA manifest (nama "SIDUTama Cibenda", ikon 192/512/maskable), `navigateFallback` ke `index.html` kecuali `/api`, `/sanctum`, `/storage`, `/up`; gambar di-cache `StaleWhileRevalidate` 7 hari; chunk pdfjs tidak di-precache.
 - Image Docker `sid-web` menyajikan hasil build lewat Nginx bersama proxy ke PHP-FPM (lihat `deploy/`).
 
@@ -256,6 +280,7 @@ Tailwind v4 CSS-first. Token warna aplikasi didefinisikan di `src/index.css` (`@
 | 1.11 | 2026-10-31 | `noImplicitAny: true` di `tsconfig.json` (kode aplikasi dan test bebas `any` implisit); `DeepPartial` diekspor dari `src/test/fixtures.ts` |
 | 1.12 | 2026-10-31 | `strictNullChecks: true` di `tsconfig.json`; helper test `present()` di `src/test/fixtures.ts`; `FamilyNumberValue` untuk No. KK di Data Warga; relasi wilayah pejabat (`rt`/`rw`/`hamlet`) boleh `null` |
 | 1.13 | 2026-10-31 | `strict: true` di `tsconfig.json`, migrasi TypeScript selesai; galat `catch` dibaca lewat `getApiErrorMessage`, `apiErrorStatus`, dan `apiErrorBody` (`shared/lib/apiError.ts`) |
+| 1.19 | 2026-11-21 | Realtime Laravel Echo + Reverb (6.10): `features/realtime` (`realtimeClient`, `RealtimeBridge`, `useLiveRefetchInterval`), polling jadi cadangan untuk notifikasi, surat, grafik dashboard, dan peringatan bencana; peringatan bencana pindah ke React Query (`queryKeys.disasterAlerts`, `useUnexpiredAlerts`); `queryKeys.dashboard.letterStats`; `TestQueryProvider` |
 | 1.18 | 2026-11-19 | Sinkronisasi dengan source: folder `aktivasi-akun`, `activity-log`, `pelanggan-notifikasi`, `data-usaha`, `data-cpmi`; route manajemen akun, pengajuan reset, pelanggan notifikasi, Data Usaha, Data CPMI, `/forgot-password/nik`; form ber-section dan opsi select bersyarat; layanan tanpa surat (6.7); permintaan akun (6.8) |
 | 1.17 | 2026-11-19 | Pilihan kertas A4/F4 (bawaan F4) untuk unduh dan pratinjau semua PDF: `PaperSizeToggle`, `utils/paperSize.ts`, tipe `PaperSize` dan `LetterDocument.paper`; `DownloadSuratMenu` selalu membuka menu |
 | 1.16 | 2026-11-18 | `Citizen.domicile_duration_hint` untuk nilai awal lama berdomisili (A13 Pengantar SKCK) |

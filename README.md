@@ -43,8 +43,8 @@ sid-app/
 └── README.md
 ```
 
-- **Backend:** PHP 8.3+, Laravel 13, Laravel Sanctum, DomPDF, spatie/laravel-activitylog, queue & scheduler Laravel, PHPUnit.
-- **Frontend:** React 19, Vite 8, React Router, TanStack Query, Axios, Tailwind CSS v4, Vitest, React Testing Library.
+- **Backend:** PHP 8.3+, Laravel 13, Laravel Sanctum, DomPDF, spatie/laravel-activitylog, queue & scheduler Laravel, Laravel Reverb (WebSocket realtime), PHPUnit.
+- **Frontend:** React 19, Vite 8, React Router, TanStack Query, Axios, Laravel Echo + pusher-js, Tailwind CSS v4, Vitest, React Testing Library.
 - **Autentikasi:** Laravel Sanctum berbasis session/cookie HttpOnly. Token tidak disimpan di `localStorage` atau `sessionStorage`.
 - **Database:** PostgreSQL (`DB_CONNECTION=pgsql`). Test backend memakai SQLite in-memory.
 
@@ -55,14 +55,17 @@ sid-app/
 - Node.js 20.19+ atau 22.12+ (syarat Vite 8)
 - PostgreSQL
 
-## Fitur opsional: email dan Web Push
+## Fitur opsional: email, Web Push, dan realtime
 
-Aplikasi tetap jalan tanpa dua fitur ini; isi env-nya hanya bila fiturnya dipakai.
+Aplikasi tetap jalan tanpa ketiga fitur ini; isi env-nya hanya bila fiturnya dipakai.
 
 | Fitur | Dipakai untuk | Bila tidak dikonfigurasi |
 | --- | --- | --- |
 | Email (Mailtrap) | Tautan **Lupa Kata Sandi** lewat email, perintah `php artisan mail:test` | Pakai `MAIL_MAILER=log`: email tidak terkirim, isinya (termasuk tautan reset) ditulis ke `storage/logs/laravel.log` |
 | Web Push (VAPID) | Notifikasi push browser (status surat, permintaan reset kata sandi/TTD, dll.) | Push nonaktif; notifikasi in-app (lonceng) tetap masuk |
+| Realtime (Laravel Reverb) | Lonceng notifikasi, daftar surat, grafik dashboard, dan peringatan bencana langsung berubah tanpa menunggu | `BROADCAST_CONNECTION=log`/`null`: data diperbarui lewat polling (30–60 detik) seperti biasa |
+
+Realtime butuh `php artisan reverb:start` dan `queue:work` (event diantrekan). Bila Reverb, worker, atau koneksi WebSocket bermasalah, frontend otomatis kembali polling.
 
 Email dikirim lewat API Mailtrap (paket `railsware/mailtrap-php`, mailer `mailtrap-sdk`) secara langsung, tanpa `queue:work`. Web Push selalu diantrekan, jadi butuh `queue:work` (atau `QUEUE_CONNECTION=sync` di lokal). Browser hanya mengizinkan push di HTTPS, `localhost`, atau `127.0.0.1`.
 
@@ -131,6 +134,20 @@ VAPID_PRIVATE_KEY=<private_key>
 
 # Opsional: push dikirim langsung tanpa queue:work (tombol sedikit lebih lambat).
 # QUEUE_CONNECTION=sync
+
+# Realtime (Laravel Reverb), sudah terisi di .env.example. Butuh reverb:start + queue:work.
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=sid-local
+REVERB_APP_KEY=sid-local-key
+REVERB_APP_SECRET=sid-local-secret
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+REVERB_SERVER_HOST=127.0.0.1
+REVERB_SERVER_PORT=8080
+REVERB_CLIENT_HOST=127.0.0.1
+REVERB_CLIENT_PORT=8080
+REVERB_CLIENT_SCHEME=http
 ```
 
 Cara mendapatkan nilainya:
@@ -180,8 +197,9 @@ Masing-masing di terminal terpisah dan biarkan terbuka:
 | --- | --- | --- | --- | --- |
 | 1 | `apps\backend` | `php artisan serve` | API di `http://127.0.0.1:8000` | Ya |
 | 2 | `apps\backend` | `php artisan schedule:work` | Scheduler: pengingat approval tiap 5 menit, pembersihan log aktivitas harian | Untuk fitur pengingat |
-| 3 | `apps\backend` | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push | Untuk push browser (kecuali `QUEUE_CONNECTION=sync`) |
-| 4 | `apps\frontend` | `npm run dev` | Frontend di `http://127.0.0.1:5173` | Ya |
+| 3 | `apps\backend` | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push dan sinyal realtime | Untuk push browser dan realtime (kecuali `QUEUE_CONNECTION=sync`) |
+| 4 | `apps\backend` | `php artisan reverb:start` | Server WebSocket realtime di `127.0.0.1:8080` | Opsional; tanpa ini data diperbarui lewat polling |
+| 5 | `apps\frontend` | `npm run dev` | Frontend di `http://127.0.0.1:5173` | Ya |
 
 - Notifikasi in-app (lonceng) selalu masuk tanpa worker. Push yang tertunda langsung terkirim begitu `queue:work` dinyalakan.
 - Setelah mengubah kode backend atau `.env`, restart `queue:work` dan `schedule:work` (Ctrl+C lalu jalankan lagi).
@@ -194,9 +212,27 @@ Masing-masing di terminal terpisah dan biarkan terbuka:
 
 ## B. Produksi
 
-Stack staging/produksi memakai Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_web`). Image dibangun di server dari source (`--build`) atau ditarik dari registry, lalu dijalankan lewat skrip di `deploy/scripts/`. Di Docker, `QUEUE_CONNECTION=database`: push dikirim service `sid_worker` dan scheduler berjalan di `sid_scheduler`, jadi tidak perlu menjalankan worker/scheduler manual. Env runtime ada di `deploy/sid.env` (template `deploy/sid.env.example`, atau `deploy/sid.neon.env.example` untuk DB Neon) dan `deploy/compose.env` (template `deploy/compose.env.example`). Semua file env wajib `chmod 600`; skrip menolak jalan bila masih ada placeholder `<...>`.
+Stack staging/produksi memakai Docker (`sid_db`, `sid_api`, `sid_scheduler`, `sid_worker`, `sid_reverb`, `sid_web`). Image dibangun di server dari source (`--build`) atau ditarik dari registry, lalu dijalankan lewat skrip di `deploy/scripts/`. Di Docker, `QUEUE_CONNECTION=database`: push dan sinyal realtime dikirim service `sid_worker`, scheduler berjalan di `sid_scheduler`, dan server WebSocket di `sid_reverb` (Nginx `sid_web` meneruskan `/app/` ke sana), jadi tidak perlu menjalankan apa pun manual. Env runtime ada di `deploy/sid.env` (template `deploy/sid.env.example`, atau `deploy/sid.neon.env.example` untuk DB Neon) dan `deploy/compose.env` (template `deploy/compose.env.example`). Semua file env wajib `chmod 600`; skrip menolak jalan bila masih ada placeholder `<...>`.
 
-Satu-satunya port host adalah `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Reverse proxy server harus meneruskan header `Host` asli, mengirim `X-Forwarded-Proto: https` dan `X-Forwarded-For`, serta mengizinkan body minimal 25 MB (unggahan sampai 24 MB).
+Satu-satunya port host adalah `127.0.0.1:<SID_HTTP_PORT>` (default 8100). Reverse proxy server harus meneruskan header `Host` asli, mengirim `X-Forwarded-Proto: https` dan `X-Forwarded-For`, serta mengizinkan body minimal 25 MB (unggahan sampai 24 MB). Untuk realtime, proxy juga harus meneruskan **WebSocket** (`/app/`): header `Upgrade`/`Connection` dan batas waktu baca yang panjang. Contoh Nginx di host:
+
+```nginx
+map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+
+location / {
+    proxy_pass http://127.0.0.1:8100;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 300s;
+    client_max_body_size 31m;
+}
+```
+
+Bila proxy belum bisa meneruskan WebSocket, set `BROADCAST_CONNECTION=null`: aplikasi berjalan dengan polling.
 
 ### B1. Env backend (`deploy/sid.env` atau `.env` server)
 
@@ -253,11 +289,27 @@ VAPID_PRIVATE_KEY=<private_key_produksi>
 
 # Peringatan bencana SIGAP: domain situs SIGAP untuk link_url (dari tim SIGAP).
 SIGAP_LINK_HOSTS=<domain_sigap>
+
+# Realtime (Laravel Reverb, service sid_reverb). null = mati (polling).
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=sid
+REVERB_APP_KEY=<openssl rand -hex 16>
+REVERB_APP_SECRET=<openssl rand -hex 16>
+REVERB_HOST=sid_reverb
+REVERB_PORT=8080
+REVERB_SCHEME=http
+# Kosong: browser memakai origin halaman (wss://<hostname_publik>/app/...).
+REVERB_CLIENT_HOST=
+REVERB_CLIENT_PORT=
+REVERB_CLIENT_SCHEME=
+REVERB_ALLOWED_ORIGINS=<hostname_publik>
+REVERB_APP_MAX_CONNECTIONS=900
 ```
 
 Cara mendapatkan nilainya:
 
 - **Mailtrap Sending:** buka **Sending Domains**, tambahkan domain desa, pasang record DNS (SPF, DKIM, DMARC) sampai terverifikasi, lalu buat API token khusus produksi dengan akses **Sending** ke domain itu. Jangan pakai token dev. `FRONTEND_URL` harus URL publik HTTPS karena dipakai untuk tautan di email reset.
+- **Reverb:** `REVERB_APP_KEY` dan `REVERB_APP_SECRET` dibuat sekali dengan `openssl rand -hex 16`. Key ikut terkirim ke browser (lewat `GET /api/realtime/config`), secret tidak. `REVERB_APP_MAX_CONNECTIONS=900` karena event loop bawaan Reverb hanya sanggup ±1.024 koneksi; browser yang ditolak kembali polling.
 - **VAPID:** buat **sekali** dengan `php artisan webpush:vapid --show` (boleh di mesin lokal; `--show` hanya menampilkan, tidak menulis `.env`) dan simpan di secret manager. Jangan pakai ulang kunci dev, dan jangan ganti setelah rilis: semua langganan push lama jadi tidak berlaku dan pengguna harus mengaktifkan push ulang.
 
 ### B2. Env frontend (saat build)
@@ -280,6 +332,8 @@ VITE_VAPID_PUBLIC_KEY=<public_key_produksi>
 ```
 
 > Image `sid-web` dari `apps/frontend/Dockerfile` saat ini dibangun tanpa `VITE_VAPID_PUBLIC_KEY`, sehingga push nonaktif di stack Docker walaupun `VAPID_*` diisi di `deploy/sid.env`. Untuk mengaktifkannya, Dockerfile dan workflow rilis perlu menerima kunci publik tersebut sebagai build argument.
+>
+> Realtime tidak butuh env frontend: alamat dan key Reverb dibaca saat runtime dari backend, jadi cukup isi `REVERB_*` di `deploy/sid.env`.
 
 ### B3. Deploy pertama
 
@@ -310,8 +364,8 @@ bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (imag
 
 | Kebutuhan | Perintah |
 | --- | --- |
-| Status dan log | `bash deploy/scripts/lib.sh ps`, `bash deploy/scripts/lib.sh logs --tail 100 sid_api` (juga `sid_worker`, `sid_scheduler`, `sid_web`) |
-| Smoke test | `bash deploy/scripts/smoke.sh` (login ikut diuji bila `deploy/smoke.env` berisi `SID_SMOKE_USER`/`SID_SMOKE_PASS`) |
+| Status dan log | `bash deploy/scripts/lib.sh ps`, `bash deploy/scripts/lib.sh logs --tail 100 sid_api` (juga `sid_worker`, `sid_scheduler`, `sid_reverb`, `sid_web`) |
+| Smoke test | `bash deploy/scripts/smoke.sh` (login ikut diuji bila `deploy/smoke.env` berisi `SID_SMOKE_USER`/`SID_SMOKE_PASS`; bila realtime aktif, handshake WebSocket `/app/` ikut dicek dan kegagalannya hanya **PERINGATAN**, bukan rollback) |
 | Kembalikan data demo (hanya `SID_ROLE=demo`) | `bash deploy/scripts/reset-demo.sh` (`--check` hanya memeriksa syarat). Semua sesi keluar |
 | Buat ulang golden dump (setelah migrasi/seed berubah) | `bash deploy/scripts/make-golden.sh` |
 | Backup database | `docker exec sid_db pg_dump -U sid -d sid -Fc > sid_$(date +%Y%m%d).dump`; ikut cadangkan volume `public` dan `private` (berkas unggahan) |
@@ -319,7 +373,7 @@ bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (imag
 | Uji email | `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan mail:test <email_admin>`. Dengan `MAIL_MAILER=log`, tautan reset kata sandi hanya muncul di log `sid_api` |
 | Push / notifikasi peringatan SIGAP gagal | `bash deploy/scripts/lib.sh exec -u www-data sid_worker php artisan queue:failed`, lalu `... queue:retry all` |
 
-`sid_scheduler` dan `sid_worker` tidak punya healthcheck; cek status `Up` lewat `ps`. Worker keluar sendiri tiap jam lalu dinyalakan ulang Docker, jadi uptime pendek itu normal.
+`sid_scheduler` dan `sid_worker` tidak punya healthcheck; cek status `Up` lewat `ps`. `sid_reverb` punya healthcheck (`GET /up` milik Reverb), tetapi deploy tidak menunggunya karena realtime opsional. Worker keluar sendiri tiap jam lalu dinyalakan ulang Docker, jadi uptime pendek itu normal.
 
 **Mode Neon (fallback DB):** `bash deploy/scripts/deploy.sh <tag> --db neon` memakai `deploy/sid.neon.env` (host *pooled*, `DB_SSLMODE=require`); migrasi wajib lewat `DB_HOST_DIRECT`. Kembali dengan `--db local`. `reset-demo.sh` dan `make-golden.sh` selalu menolak mode neon. Mode ini belum teruji.
 
@@ -335,6 +389,8 @@ bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (imag
 | `GAGAL: placeholder <...>` / `izin ... harus 600` | Konfigurasi belum lengkap | Perbaiki file yang disebut |
 | `port is already allocated` | Bentrok port | `ss -ltnp \| grep 8100`; ganti `SID_HTTP_PORT` dan sesuaikan proxy |
 | `operasi lain sedang berjalan (.state/lock ada)` | Skrip sebelumnya terhenti paksa | Pastikan tidak ada skrip berjalan, hapus `deploy/.state/lock/owner` lalu `rmdir deploy/.state/lock` |
+| Notifikasi/surat tidak langsung berubah (baru setelah ±30 detik); console browser: `WebSocket connection ... failed` | Proxy tim tidak meneruskan WebSocket, `sid_reverb` mati, atau `REVERB_*` kosong | `curl -s https://<host>/api/realtime/config` (harus `"enabled":true`); `lib.sh logs sid_reverb`; cek header `Upgrade`/`Connection` di proxy. Sementara bisa `BROADCAST_CONNECTION=null` |
+| `queue:failed` berisi `BroadcastEvent` | `sid_reverb` mati saat event dikirim | Hidupkan `sid_reverb`; job lama boleh dihapus (`queue:flush`) karena tampilan sudah disegarkan polling |
 | Disk penuh | Image lama menumpuk | `docker system df`; hapus image SID lama satu per satu dengan `docker image rm <registry>/sid-api:<tag-lama>`. Jangan `prune` bila server dipakai sistem lain |
 
 Sebelum dipakai warga sungguhan: pastikan `sid_worker` berjalan (push, dan seluruh notifikasi peringatan SIGAP), situs disajikan lewat HTTPS, dan uji email berhasil.

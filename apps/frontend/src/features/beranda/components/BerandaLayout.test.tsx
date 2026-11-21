@@ -6,6 +6,7 @@ import { usePublicVillageInfo } from '@/features/info-desa/usePublicVillageInfo'
 import { BerandaLayout } from './BerandaLayout'
 import type { PublicAnnouncement } from '@/features/info-desa/usePublicVillageInfo'
 import { present } from '@/test/fixtures'
+import { TestQueryProvider } from '@/test/TestQueryProvider'
 
 const mockedUsePublicVillageInfo = vi.mocked(usePublicVillageInfo, { partial: true, deep: true })
 
@@ -29,6 +30,7 @@ const renderLayout = () =>
         <p>Isi beranda</p>
       </BerandaLayout>
     </MemoryRouter>,
+    { wrapper: TestQueryProvider },
   )
 
 describe('BerandaLayout', () => {

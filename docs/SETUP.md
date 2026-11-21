@@ -5,7 +5,7 @@ tags:
   - react
   - setup
   - sanctum
-date: 2026-11-19
+date: 2026-11-21
 ---
 
 # Setup Project
@@ -97,7 +97,11 @@ MAILTRAP_INBOX_ID=
 |---|---|---|
 | `SID_APP_NAME` | Nama aplikasi untuk pengguna: judul login, `<title>`, manifest PWA, dan label peran staf ("Staf {nama}") | Default `SIDUTama`. Samakan dengan `VITE_APP_NAME` |
 | `APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_FAKER_LOCALE` | Bahasa pesan validasi (`lang/id/validation.php`), pesan bawaan framework (`lang/id.json`, `lang/id/*.php`), email reset kata sandi, dan data palsu factory/seeder | Wajib `id`, `id` dan `id_ID` (sudah begitu di `.env.example`; `phpunit.xml` memaksa `APP_LOCALE` dan `APP_FALLBACK_LOCALE` = `id` untuk test). Nilai `en` membuat pesan validasi kembali berbahasa Inggris. Setelah mengubah, jalankan `php artisan config:clear` |
-| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push dan notifikasi peringatan SIGAP) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
+| `QUEUE_CONNECTION` | Cara mengirim pekerjaan antrean (Web Push, notifikasi peringatan SIGAP, dan sinyal realtime) | `database` = diantrekan, butuh `queue:work`; `sync` = langsung dikirim tanpa worker. Lihat bagian 3 |
+| `BROADCAST_CONNECTION` | Realtime (Laravel Reverb): notifikasi, surat, dan peringatan bencana diperbarui tanpa menunggu polling | `reverb` = aktif, butuh `php artisan reverb:start` dan `queue:work`; `log`/`null` = mati, frontend tetap polling. Lihat "Kenapa ada server Reverb?" di bagian 3 |
+| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` | Kredensial app Reverb | Lokal boleh nilai di `.env.example`. Key publik (dikirim ke browser), secret hanya backend |
+| `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` | Alamat server Reverb untuk backend saat mengirim event | Lokal `127.0.0.1`, `8080`, `http` |
+| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Alamat WebSocket untuk browser (dikirim lewat `GET /api/realtime/config`) | Lokal `127.0.0.1`, `8080`, `http`. Kosong = ikut origin halaman (stack Docker) |
 | `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Kunci Web Push | Buat dengan `php artisan webpush:vapid`. Kosong = push nonaktif, in-app tetap jalan |
 | `SESSION_DRIVER` | Penyimpanan sesi | `file` untuk lokal. Dengan `database`, `staf-sid:recover` juga menghapus sesi DB staf |
 | `MAIL_MAILER`, `MAILTRAP_*`, `MAIL_FROM_*` | Email tautan lupa kata sandi dan `php artisan mail:test` | Template memakai `mailtrap-sdk` + `sandbox.api.mailtrap.io`. Tanpa token Mailtrap, ganti ke `MAIL_MAILER=log` (email ditulis ke `storage/logs/laravel.log`). Notifikasi email status surat belum diimplementasi |
@@ -201,12 +205,14 @@ Jalankan di `apps\backend`, masing-masing di **terminal terpisah** dan biarkan t
 |---|---|---|---|
 | 1 | `php artisan serve` | API di `http://localhost:8000` | Ya |
 | 2 | `php artisan schedule:work` | Scheduler: tiap 5 menit menjalankan `approvals:send-reminders`, tiap jam `letters:send-expiry-reminders`, tiap menit `announcements:prune`, tiap hari pukul 02.00 `disaster-alerts:prune` (activity log sengaja tidak dibersihkan) | Untuk pengingat approval, pengingat masa berlaku surat, dan pembersihan pengumuman serta peringatan SIGAP lama |
-| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push, dan **seluruh** notifikasi peringatan SIGAP (in-app maupun push) | Untuk push browser, dan wajib untuk notifikasi peringatan SIGAP (bila `QUEUE_CONNECTION=database`) |
+| 3 | `php artisan queue:work` | Worker antrean: mengirim **semua** Web Push, **seluruh** notifikasi peringatan SIGAP (in-app maupun push), dan sinyal realtime | Untuk push browser, wajib untuk notifikasi peringatan SIGAP, dan untuk realtime (bila `QUEUE_CONNECTION=database`) |
+| 4 | `php artisan reverb:start` | Server WebSocket realtime di `127.0.0.1:8080` | Opsional. Tanpa ini (atau bila `BROADCAST_CONNECTION` bukan `reverb`), data tetap diperbarui lewat polling |
 
 ```powershell
 php artisan serve
 php artisan schedule:work
 php artisan queue:work
+php artisan reverb:start
 ```
 
 ### Kenapa ada scheduler?
@@ -247,7 +253,17 @@ Notifikasi surat dikirim lewat dua jalur: **in-app** (lonceng) ditulis langsung 
 
 Cek push yang gagal: `php artisan queue:failed`; coba lagi: `php artisan queue:retry all`.
 
-> Setelah mengubah kode backend atau `.env`, matikan (Ctrl+C) lalu jalankan ulang `schedule:work` dan `queue:work`, karena keduanya memuat kode sekali di awal.
+> Setelah mengubah kode backend atau `.env`, matikan (Ctrl+C) lalu jalankan ulang `schedule:work` dan `queue:work`, karena keduanya memuat kode sekali di awal. `reverb:start` cukup dijalankan ulang bila variabel `REVERB_*` berubah.
+
+### Kenapa ada server Reverb? (realtime, opsional)
+
+Tanpa realtime, browser menanyakan data berkala ke server (polling): jumlah notifikasi dan daftar surat tiap 30 detik, grafik dashboard dan peringatan bencana tiap 60 detik. Dengan realtime, server memberi sinyal lewat WebSocket begitu ada perubahan, lalu browser mengambil ulang datanya saat itu juga.
+
+- Alurnya: aksi pengguna (mis. Kades menyetujui surat) → event diantrekan → `queue:work` mengirimnya ke `reverb:start` → browser yang berlangganan menerima sinyal `{ type, id }` → React Query mengambil ulang lewat API biasa. Jadi realtime butuh **ketiganya**: `BROADCAST_CONNECTION=reverb`, `queue:work`, dan `reverb:start`.
+- Bila salah satunya mati, aplikasi tetap jalan: polling kembali ke interval di atas. Selama WebSocket tersambung, polling hanya berjalan tiap 5 menit sebagai jaring pengaman.
+- Dengan `QUEUE_CONNECTION=sync`, sinyal dikirim di dalam request. Bila `reverb:start` tidak jalan, aksi (mis. menyetujui surat) tetap berhasil; galat pengirimannya hanya dicatat di `storage/logs/laravel.log`.
+- Frontend tidak perlu env tambahan; alamat dan key Reverb dibaca dari `GET /api/realtime/config`.
+- Cek cepat: buka DevTools → Network → filter **WS**. Harus ada koneksi ke `127.0.0.1:8080/app/...` berstatus 101, dan pesan `notification.created` / `letter.changed` / `disaster-alerts.changed` muncul saat ada perubahan. `php artisan reverb:start --debug` menampilkan koneksi dan pesan di terminal.
 
 ### Notifikasi Web Push (opsional)
 
@@ -298,6 +314,8 @@ VITE_VAPID_PUBLIC_KEY=
 > `.env.example` frontend dan backend sama-sama memakai `127.0.0.1`. Pilih satu host (`localhost` atau `127.0.0.1`) dan pakai konsisten di `VITE_API_URL`, `APP_URL`, `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, dan alamat yang dibuka di browser; mencampur keduanya membuat cookie sesi tidak terkirim.
 
 Frontend jalan di `http://127.0.0.1:5173`. Setelah mengubah `.env` frontend, restart `npm run dev`.
+
+Realtime tidak butuh variabel frontend: alamat dan key Reverb dibaca dari backend (`GET /api/realtime/config`, diisi `REVERB_CLIENT_*` di `apps/backend/.env`).
 
 ---
 
@@ -362,6 +380,9 @@ npm run build
 | Pengingat approval tidak pernah datang | `schedule:work` tidak jalan, atau setting tahap nonaktif | Jalankan `php artisan schedule:work`; uji dengan `php artisan approvals:send-reminders` |
 | Pengingat masa berlaku surat tidak datang | `schedule:work` tidak jalan, belum jam kirim desa, titik dimatikan di tab Pengingat Masa Berlaku (Alur & Jenis Surat), akun pemohon nonaktif, atau jatuh tempo titik sebelum surat disetujui | Jalankan `php artisan schedule:work`; uji dengan `php artisan letters:send-expiry-reminders` |
 | Perubahan kode tidak berefek di push/pengingat | Worker/scheduler memakai kode lama | Restart `queue:work` dan `schedule:work` |
+| Notifikasi/surat tidak langsung berubah, baru setelah ±30 detik | Realtime nonaktif atau putus: `BROADCAST_CONNECTION` bukan `reverb`, `reverb:start` atau `queue:work` tidak jalan, atau config ter-cache | Jalankan ketiganya, `php artisan config:clear`, lalu muat ulang halaman. Cek `GET /api/realtime/config` (`enabled: true`) dan tab WS di DevTools |
+| Console browser: `WebSocket connection to 'ws://127.0.0.1:8080/app/...' failed` | `reverb:start` tidak jalan atau `REVERB_CLIENT_*` tidak cocok dengan alamat Reverb | Jalankan `php artisan reverb:start`; samakan `REVERB_CLIENT_*` dengan `REVERB_SERVER_HOST/PORT`. Aplikasi tetap jalan dengan polling |
+| `php artisan queue:failed` berisi `BroadcastEvent` | Reverb mati saat event dikirim | Nyalakan `reverb:start`; job lama boleh dihapus (`php artisan queue:flush`), tampilan sudah disegarkan polling |
 | Staf SIDUTama lupa kata sandi | Staf tidak bisa mereset dirinya sendiri | `php artisan staf-sid:recover --username=...` |
 | Akun baru tidak bisa login (`403` menunggu aktivasi) | Pendaftaran online belum disetujui petugas wilayah | Login sebagai RT wilayah warga (atau RW/Kadus/`demo_admin` bila jenjang di bawahnya kosong), setujui di Manajemen Akun → Aktivasi Akun |
 | Kamera tidak bisa dibuka di halaman Daftar / ganti foto | Browser menolak kamera di alamat non-HTTPS selain `localhost`/`127.0.0.1`, atau izin kamera ditolak | Buka lewat `127.0.0.1`/`localhost`, izinkan kamera di pengaturan situs |

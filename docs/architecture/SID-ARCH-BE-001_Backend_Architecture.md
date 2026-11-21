@@ -4,9 +4,9 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Kode Dokumen | SID-ARCH-BE-001 |
-| Status | Berlaku (Aktif) - Versi 1.10 |
+| Status | Berlaku (Aktif) - Versi 1.11 |
 | Audiens | Backend Developer, Reviewer, Tech Lead, QA Coordinator |
-| Sifat Dokumen | Keputusan struktural & alasan di baliknya, diselaraskan ke source `apps/backend` per 2026-11-19. Aturan penulisan kode ada di `DEV-CODE-001`. Skema tabel lengkap ada di `TDD-03_Database_Schema.md`. |
+| Sifat Dokumen | Keputusan struktural & alasan di baliknya, diselaraskan ke source `apps/backend` per 2026-11-21. Aturan penulisan kode ada di `DEV-CODE-001`. Skema tabel lengkap ada di `TDD-03_Database_Schema.md`. |
 | Dokumen Induk | `SID-ARCH-SYS-001` (System Architecture) |
 
 > Bila dokumen ini berbeda dengan source, source yang berlaku. Hal yang pernah didokumentasikan tetapi belum ada di source dicatat di `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md`.
@@ -23,7 +23,8 @@
 | Otorisasi | Middleware `role:` (`EnsureUserHasRole`) + Laravel Policy | Tanpa package RBAC pihak ketiga |
 | Database | PostgreSQL (`DB_CONNECTION=pgsql`); stack Docker memakai `postgres:18.6` atau Neon | SQLite dipakai test |
 | ORM | Eloquent | Enkripsi field via `$casts` |
-| Queue | Driver `database` (dev dan stack Docker; dikirim `sid_worker`) | Yang diantrekan: kanal Web Push dan job notifikasi peringatan SIGAP (`SendDisasterAlertNotifications`) |
+| Queue | Driver `database` (dev dan stack Docker; dikirim `sid_worker`) | Yang diantrekan: kanal Web Push, job notifikasi peringatan SIGAP (`SendDisasterAlertNotifications`), dan event broadcast realtime |
+| Realtime | `laravel/reverb` ^1.14 (server WebSocket, protokol Pusher; service `sid_reverb`) | Event `ShouldBroadcast` lewat antrean setelah commit; channel di `routes/channels.php`, otorisasi `POST /api/broadcasting/auth`. Lihat 7.1 |
 | Cache & Session | Driver `database` | Cache dipakai halaman publik (`PublicPageCache`) |
 | PDF | `barryvdh/laravel-dompdf` ^3.1; `setasign/fpdi` + `setasign/fpdf` | On-demand; surat approved dari snapshot (S6); FPDI menskalakan PDF ke kertas A4/F4 pilihan pengunduh |
 | Import Excel | `maatwebsite/excel` ^4 | Import warga |
@@ -39,7 +40,7 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 
 | Lapisan | Komponen |
 |---|---|
-| Controller API (`app/Http/Controllers/Api`; API integrasi di `Api/Integration`) | AccountRegistration, ActivityLog, CitizenBusiness, DisasterAlert, Identity, InfoPage, IntegrationClient, LetterResult, MigrantWorker, PasswordResetApproval, ProfilePhotoRequest, UserPhoto, WebPushSubscriber, ApprovalFlow, ApprovalSetting, Citizen, CurrentUser, Dashboard, Family, FamilySocioeconomic, Hamlet, KadesApproval, LetterAttachment, Letter, LetterDownload, LetterExpiryReminderSetting, LetterFulfillment, LetterSignature, LetterType, NewsCategory, News, Notification, Occupation, Official, OfficialPositionType, Profile, PublicPage, PushSubscription, Regulation, RtApproval, Rt, Rw, SignatureRequest, User, VillageOrgMember, VillageOrgPosition, VillageProfile |
+| Controller API (`app/Http/Controllers/Api`; API integrasi di `Api/Integration`) | AccountRegistration, ActivityLog, CitizenBusiness, DisasterAlert, Identity, InfoPage, IntegrationClient, LetterResult, MigrantWorker, PasswordResetApproval, ProfilePhotoRequest, UserPhoto, WebPushSubscriber, ApprovalFlow, ApprovalSetting, Citizen, CurrentUser, Dashboard, Family, FamilySocioeconomic, Hamlet, KadesApproval, LetterAttachment, Letter, LetterDownload, LetterExpiryReminderSetting, LetterFulfillment, LetterSignature, LetterType, NewsCategory, News, Notification, Occupation, Official, OfficialPositionType, Profile, PublicPage, PushSubscription, RealtimeConfig, Regulation, RtApproval, Rt, Rw, SignatureRequest, User, VillageOrgMember, VillageOrgPosition, VillageProfile |
 | Service domain surat | `LetterService`, `LetterFlowService`, `RtApprovalService`, `KadesApprovalService`, `LetterNumberGenerator`, `LetterSnapshotService`, `PdfService`, `LetterAttachmentService`, `LetterSignatureService`, `LetterFulfillmentService`, `LetterTypeService`, `ApprovalFlowService`, `ApprovalSettingService`, `LetterExpiryReminderService`, `LetterExpiryReminderSettingService`, `LetterResultService`, `MigrantWorkerService` (F11 CPMI), `CitizenBusinessService` (usaha dari A01) |
 | Service domain lain | `CitizenService`, `FamilyService`, `FamilySocioeconomicService`, `OccupationService`, `OfficialService`, `OfficialAssignmentService`, `OfficialPositionTypeService`, `UserService`, `ProfileService`, `Auth\AuthService`, `Auth\UsernameGenerator`, `HamletService`, `RtService`, `RwService`, `NewsService`, `NewsCategoryService`, `RegulationService`, `VillageProfileService`, `PublicPageService`, `DashboardService`, `NotificationService`, `PushSubscriptionService`, `VillageOrgPositionService`, `VillageOrgMemberService`, `AnnouncementService`, `InfoPageService`, `AccountActivationService`, `ProfilePhotoRequestService`, `PasswordResetRequestService`, `AreaApprovalRouter` (jenjang pemegang permintaan akun), `UserPhotoService`, `AccountAuditService`, `ActivityLogService`, `IdentityRevealService`, `WebPushSubscriberService`, `IntegrationClientService`, `SellerApplicationService` (API Cimart), `DisasterAlertService` (SIGAP) |
 | Support | `LetterFormSchema` (aturan validasi dari `form_fields`), `LetterValueFormatter` (format nilai isian di PDF), `OfficialPositionCatalog` (label jabatan), `PublicPageCache`, `VillageImageOptimizer`, `PaperSize`, `PdfRescaler`, `LetterIdentityMask` (NIK/No. KK isian surat tersamar), `GuardianRelation` (hubungan penanggung jawab CPMI dari SHDK), `DeviceLabel` (label perangkat Web Push), `PopulationScope`, `AuditContext`, `IntegrationAudit` |
@@ -47,7 +48,9 @@ Laravel Telescope **tidak** terpasang (lihat audit docs).
 | Middleware | `account.active`, `password.changed`, `role`, `verified`; API integrasi: `integration.client`, `abilities`/`ability` (Sanctum) |
 | Rule | `ValidOfficialPosition` |
 | Notifikasi | `LetterStatusNotification` (kanal database + WebPush); `AccountApprovalNotification` (aktivasi akun dan ganti foto), `PasswordResetRequestNotification`, `CimartApplicationNotification`, `ResetPasswordNotification` (email); `DisasterAlertNotification` (peringatan SIGAP, dikirim job `SendDisasterAlertNotifications` per 200 akun) |
-| Listener | `RecordWebPushDelivery` (mengisi `push_subscriptions.last_success_at`/`last_failed_at` dari event kanal Web Push) |
+| Listener | `RecordWebPushDelivery` (mengisi `push_subscriptions.last_success_at`/`last_failed_at` dari event kanal Web Push), `BroadcastNewDatabaseNotification` (sinyal realtime tiap notifikasi in-app, 7.1) |
+| Event broadcast | `NotificationCreated`, `LetterChanged`, `DisasterAlertsChanged` (semuanya `ShouldBroadcast` + `ShouldDispatchAfterCommit`, 7.1) |
+| Observer | `PopulationAuditObserver` (audit data kependudukan), `LetterRealtimeObserver` (sinyal realtime tiap perubahan surat) |
 | Console | `approvals:send-reminders`, `announcements:prune`, `staf-sid:first`, `staf-sid:recover`, `letters:backfill-snapshots`, `letters:send-expiry-reminders`, `integration:{create,enable,disable,rotate,tokens,revoke,abilities}`, `disaster-alerts:prune` (harian) |
 | Enum | `UserRole` (9), `OfficialPosition` (8 jabatan berakun), `LetterStatus`, `LetterDataAction`, `LetterFlowLogReason`, `ApprovalLevel`, `AssignedRole`, enum kependudukan |
 
@@ -67,7 +70,7 @@ Controller → Form Request → Service → Repository → Eloquent Model → DB
 - **Form Request** validasi input. `StoreLetterRequest` membangun aturan secara dinamis dari `letter_types.form_fields` milik desa pemohon (`LetterFormSchema`).
 - **Service** satu-satunya tempat `DB::transaction()`, aturan bisnis, dan pengiriman notifikasi. Keputusan approval mengunci baris surat (`lockForUpdate`) lalu memeriksa ulang status/step.
 - **Repository** membungkus query yang dipakai lintas service (scope daftar surat, resolve pejabat, counter nomor surat).
-- **Event/Listener/Job aplikasi minimal.** Hanya satu job (`SendDisasterAlertNotifications`) dan satu listener (`RecordWebPushDelivery`); selebihnya notifikasi dikirim langsung dari service; `LetterStatusNotification` memakai `afterCommit()` sehingga baru terkirim setelah transaksi commit.
+- **Event/Listener/Job aplikasi minimal.** Satu job (`SendDisasterAlertNotifications`), dua listener (`RecordWebPushDelivery`, `BroadcastNewDatabaseNotification`), dan tiga event broadcast realtime (7.1); selebihnya notifikasi dikirim langsung dari service. `LetterStatusNotification` memakai `afterCommit()` sehingga baru terkirim setelah transaksi commit.
 - `Model::preventLazyLoading()` aktif: gagal keras di test, hanya dicatat (warning) di lingkungan lain.
 
 ### Penanganan error & bahasa pesan
@@ -265,6 +268,26 @@ Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf S
 - Pengumuman beranda: command `announcements:prune` dijadwalkan tiap menit di `routes/console.php` dan menghapus pengumuman yang lewat `expires_at` per model (event `deleted` ikut menggugurkan cache publik). Pembacaan memakai scope `active()`, jadi pengumuman basi tidak tampil walau scheduler terlambat.
 - Tidak ada notifikasi email status surat.
 
+### 7.1 Realtime (Laravel Reverb)
+
+Pengganti polling frontend untuk notifikasi, surat, dan peringatan bencana. Rencana dan keputusan: `docs/task/feature/realtime-reverb.md`.
+
+- **Isi event hanya sinyal** `{ type, id }`. Frontend meng-invalidate cache lalu mengambil ulang lewat endpoint REST yang sudah ada, jadi aturan akses tetap di satu tempat dan data warga (nama, NIK, isi surat) tidak pernah lewat WebSocket.
+- **Pengiriman**: semua event `ShouldBroadcast` (lewat antrean, `sid_worker`) + `ShouldDispatchAfterCommit` + `ShouldRescue`. Reverb yang mati hanya menunda sinyal, tidak menggagalkan aksi pengguna; sinyal tidak mendahului data yang di-commit. `ShouldRescue` menjaga hal yang sama saat broadcast berjalan di dalam request (`QUEUE_CONNECTION=sync`): galatnya hanya dilaporkan ke log. Frontend tetap polling sebagai cadangan.
+- **Channel** (`routes/channels.php`, otorisasi `POST /api/broadcasting/auth` dengan middleware `api`, `auth:sanctum`, `account.active`, `password.changed`):
+
+| Channel | Jenis | Boleh | Event |
+|---|---|---|---|
+| `App.Models.User.{id}` | private | akun itu sendiri (pembanding string, tanpa query) | `notification.created`, `letter.changed` (surat yang diajukannya) |
+| `letters.staff` | private | `role !== warga` | `letter.changed` |
+| `disaster-alerts` | publik | semua | `disaster-alerts.changed` |
+
+- **`NotificationCreated`**: listener `BroadcastNewDatabaseNotification` pada `NotificationSent` kanal `database` (penerima `User`), tanpa mengubah kelas notifikasi. Notifikasi massal ditandai `App\Notifications\Contracts\BroadcastsInBulk` (`DisasterAlertNotification`) dan dilewati listener; `SendDisasterAlertNotifications` mengirim satu event per kelompok 200 akun (broadcaster memecahnya per 100 channel), bukan satu job per akun.
+- **`LetterChanged`**: `LetterRealtimeObserver` (didaftarkan di `AppServiceProvider`) pada `created`, `deleted`, dan `updated` bila ada kolom berubah selain `updated_at`, `expiry_notified_days`, `snapshot`. Bukan hanya `status`: perpindahan giliran (`current_step_order`) mengubah antrean pejabat tanpa mengubah status. Penulisan `letters` selalu lewat Eloquent (`EloquentOnlyWritesTest`), jadi observer menangkap semua jalur. Penerima: `letters.staff` + akun `submitted_by`.
+- **`DisasterAlertsChanged`**: dari `DisasterAlertService` saat peringatan diterima, diperbarui, diakhiri SIGAP, diturunkan, atau ditampilkan lagi. Pembaruan yang diabaikan (basi/sudah diakhiri) dan `prune` tidak mengirim sinyal.
+- **Konfigurasi browser**: `GET /api/realtime/config` (publik, `RealtimeConfigController`) mengembalikan `{ enabled, key, host, port, scheme }`. `enabled` = `BROADCAST_CONNECTION=reverb` dan `REVERB_APP_KEY` terisi; ini saklar mati realtime. `host/port/scheme` dari `REVERB_CLIENT_*` (`config/sid.php`, kosong = origin halaman). Secret tidak pernah dikirim.
+- **Server** (`config/reverb.php`): `REVERB_ALLOWED_ORIGINS` (host halaman, bawaan `*`), client event (whisper) dimatikan (`accept_client_events_from=none`), `REVERB_APP_MAX_CONNECTIONS` (Docker: 900, karena event loop bawaan `stream_select` dibatasi ±1.024 file terbuka).
+
 ---
 
 ## 8. Keamanan Data & Audit
@@ -299,7 +322,8 @@ Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf S
 | Deadline approval | `is_overdue` dihitung saat daftar dimuat; pengingat terjadwal `reminder_hours` sebelum deadline | Satu pengingat per tahap; tidak ada notifikasi overdue terpisah |
 | Konkurensi keputusan | Row lock + cek ulang | 409 untuk request kedua |
 | Surat tertahan | RT kosong, atau Kades/Sekdes pasangan pemohon kosong → ditahan + notifikasi Petugas | Dilepas saat pejabatnya ditetapkan |
-| Deployment | Docker image `sid-api` (PHP-FPM) + `sid-web` (Nginx + SPA), entrypoint tidak menjalankan migrate/seed | `deploy/docker-compose.yml` |
+| Realtime | Server Reverb terpisah (`sid_reverb`, `reverb:start` sebagai www-data, healthcheck `GET /up` milik Reverb); event lewat antrean | Opsional: Reverb atau worker mati hanya menunda sinyal, frontend kembali polling. Job broadcast yang gagal masuk `failed_jobs` setelah `--tries=3` |
+| Deployment | Docker image `sid-api` (PHP-FPM, juga menjalankan `sid_scheduler`, `sid_worker`, `sid_reverb`) + `sid-web` (Nginx + SPA, meneruskan `/app/` ke Reverb), entrypoint tidak menjalankan migrate/seed | `deploy/docker-compose.yml` |
 
 ---
 
@@ -334,6 +358,7 @@ Client dibuat dan diubah ability-nya hanya lewat artisan `integration:*`; Staf S
 | 1.1 | - | v5.1 Auth & Approval Flow |
 | 1.2 | 2026-10-06 | v5.2: sosio-ekonomi per KK, pekerjaan baku, stempel desa, upload privat |
 | 1.3 | 2026-10-16 | v5.3: kategori surat & verification_type dihapus; jenis surat data-driven (form_fields, data_action, signature_slots, supporting_template, classification_code); snapshot render; nomor surat per kode klasifikasi; TTD akun & permintaan TTD; lampiran; Terapkan; surat ditahan saat RT kosong; Web Push; jabatan tanpa akun dinamis & foto pejabat; kategori berita; identitas desa & cache halaman publik; register dengan tanggal lahir; paginasi; index performa; Docker |
+| 1.11 | 2026-11-21 | Realtime Laravel Reverb (7.1): channel `App.Models.User.{id}`, `letters.staff`, `disaster-alerts`; event `NotificationCreated` (listener `BroadcastNewDatabaseNotification`, notifikasi massal `BroadcastsInBulk`), `LetterChanged` (`LetterRealtimeObserver`), `DisasterAlertsChanged`; `GET /api/realtime/config`; service `sid_reverb` |
 | 1.10 | 2026-11-19 | Sinkronisasi dengan source: layanan F11 Pendataan CPMI (`produces_letter = false`, `migrant_workers`, opsi select ber-`visible_when`, `section`); usaha warga A01 (`citizen_businesses`); 4.5 permintaan akun warga (aktivasi pendaftaran, ganti foto, lupa sandi tanpa email, `AreaApprovalRouter`); penyamaran NIK isian surat (`LetterIdentityMask`); pemantauan Web Push (Pelanggan Notifikasi); audit akun (`AccountAuditService`, `/activity-logs/accounts`); inventaris komponen diperbarui |
 | 1.9 | 2026-11-19 | Pilihan kertas A4/F4 saat unduh/pratinjau (`?paper=`, `PaperSize::requested`, `PdfRescaler` berbasis FPDI: skala seragam, di tengah); `documents[].paper` di `LetterResource` |
 | 1.8 | 2026-11-18 | Jenis surat A13 Pengantar SKCK (template utuh tanpa kop/nomor, coretan Pernah/Tidak Pernah); placeholder wilayah dan Ketua RT/RW pemohon, agama, kewarganegaraan; `CitizenResource.domicile_duration_hint` (`App\Support\DomicileDuration`); seeder menerima `template` utuh dan mengatur ulang `issues_letter_number` |

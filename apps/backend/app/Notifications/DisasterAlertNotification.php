@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\DisasterAlert;
+use App\Notifications\Contracts\BroadcastsInBulk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -14,8 +15,10 @@ use NotificationChannels\WebPush\WebPushMessage;
  * Peringatan bencana dari SIGAP untuk semua akun aktif di desa, dikirim
  * SendDisasterAlertNotifications saat peringatan baru tampil atau levelnya
  * naik. Diklik membuka beranda publik, tempat bar peringatan tampil.
+ *
+ * BroadcastsInBulk: sinyal realtime dikirim job tersebut per kelompok akun.
  */
-class DisasterAlertNotification extends Notification implements ShouldQueue
+class DisasterAlertNotification extends Notification implements BroadcastsInBulk, ShouldQueue
 {
     use Queueable;
 

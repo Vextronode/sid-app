@@ -8,8 +8,10 @@ get:
     SIDUTama, dan belum lewat `expires_at`; urut level tertinggi lalu yang
     terbaru. **Tanpa cache halaman** (beda dengan endpoint publik lain):
     peringatan berhenti tampil karena waktu, dan turunan staf harus
-    langsung terlihat. Frontend memanggilnya tiap ±60 detik selama tab
-    terlihat. Dibatasi 300 request per menit per IP.
+    langsung terlihat. Frontend memanggilnya lagi saat menerima sinyal
+    realtime `disaster-alerts.changed` (dengan jeda acak ≤3 detik), dan
+    tiap ±60 detik selama tab terlihat bila realtime mati atau putus.
+    Dibatasi 300 request per menit per IP.
   operationId: getPublicDisasterAlerts
   parameters:
     - $ref: '../../parameters/common.yaml#/VillageCode'

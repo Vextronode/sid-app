@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { REALTIME_QUERY_META } from '@/features/realtime/constants'
+import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
 import api from '@/lib/api'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import type { LetterListItem, LetterSummary, PageMeta, PaginatedResponse } from '@/types'
@@ -13,13 +15,18 @@ const EMPTY_META: PageMeta = { current_page: 1, per_page: 20, total: 0, last_pag
 
 export const SURAT_REFRESH_INTERVAL = 30 * 1000
 
-// Penyegaran berkala berhenti saat tab tidak aktif dan langsung berjalan
-// lagi saat tab kembali dibuka.
-const LIVE_QUERY_OPTIONS = {
-  staleTime: 0,
-  refetchInterval: SURAT_REFRESH_INTERVAL,
-  refetchIntervalInBackground: false,
-  refetchOnWindowFocus: true,
+// Realtime: sinyal `letter.changed` (RealtimeBridge) membuat daftar dan
+// ringkasan diambil ulang segera. Saat WebSocket mati atau putus, polling
+// tiap 30 detik. Penyegaran berkala berhenti saat tab tidak aktif dan
+// langsung berjalan lagi saat tab kembali dibuka.
+function useLiveQueryOptions() {
+  return {
+    staleTime: 0,
+    refetchInterval: useLiveRefetchInterval('letters', SURAT_REFRESH_INTERVAL),
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    meta: REALTIME_QUERY_META,
+  }
 }
 
 function cleanParams(params?: SuratQueryParams) {
@@ -36,6 +43,7 @@ function cleanParams(params?: SuratQueryParams) {
 export function useSuratListQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
   const queryClient = useQueryClient()
+  const liveOptions = useLiveQueryOptions()
 
   // Setelah aksi (setujui, tolak, hapus, ajukan) daftar dan ringkasan
   // dashboard harus sama-sama segar.
@@ -57,7 +65,7 @@ export function useSuratListQuery(params?: SuratQueryParams) {
       }
     },
     placeholderData: keepPreviousData,
-    ...LIVE_QUERY_OPTIONS,
+    ...liveOptions,
   })
 
   return {
@@ -83,6 +91,7 @@ const EMPTY_SUMMARY: LetterSummary = {
 // daftar surat sehingga tidak perlu mengunduh seluruh baris.
 export function useSuratSummaryQuery(params?: SuratQueryParams) {
   const query = cleanParams(params)
+  const liveOptions = useLiveQueryOptions()
 
   const { data, isPending } = useQuery({
     queryKey: queryKeys.surat.summary(query),
@@ -93,7 +102,7 @@ export function useSuratSummaryQuery(params?: SuratQueryParams) {
 
       return response.data?.data ?? EMPTY_SUMMARY
     },
-    ...LIVE_QUERY_OPTIONS,
+    ...liveOptions,
   })
 
   return {

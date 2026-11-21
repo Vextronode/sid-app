@@ -1,7 +1,10 @@
 import { useState, useMemo, useRef } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { REALTIME_QUERY_META } from '@/features/realtime/constants'
+import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
 import { getLetterTypes } from '@/features/surat/api/letterTypeApi'
+import { queryKeys } from '@/shared/lib/queryKeys'
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -32,8 +35,12 @@ export default function SuratStatChart() {
   // LOAD CHART
   // ==========================================
 
+  // Realtime: sinyal `letter.changed` (RealtimeBridge) mengambil ulang
+  // grafik; saat WebSocket mati atau putus, polling tiap menit.
+  const refetchInterval = useLiveRefetchInterval('letters', 60 * 1000)
+
   const { data: chart, isFetching: loading } = useQuery({
-    queryKey: ['dashboard', 'letter-stats', selectedDate, letterType],
+    queryKey: [...queryKeys.dashboard.letterStats, selectedDate, letterType],
     queryFn: async () => {
       const response = await api.get<{ data?: { chart?: LetterStatsChart } }>(
         '/api/dashboard/letter-stats',
@@ -48,8 +55,9 @@ export default function SuratStatChart() {
       return response?.data?.data?.chart ?? null
     },
     placeholderData: keepPreviousData,
-    refetchInterval: 60 * 1000,
+    refetchInterval,
     refetchIntervalInBackground: false,
+    meta: REALTIME_QUERY_META,
   })
 
   const chartData = useMemo(

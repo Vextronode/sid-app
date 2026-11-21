@@ -100,6 +100,12 @@ tags:
       pendukung, Terapkan perubahan data. UC-03..UC-08, UC-25, UC-26.
   - name: Epic 6 - Sistem Notifikasi
     description: Notifikasi in-app (database) dan Web Push.
+  - name: Realtime
+    description: |
+      Laravel Reverb (WebSocket, protokol Pusher) lewat Laravel Echo.
+      Event hanya sinyal `{ type, id }` (`notification.created`,
+      `letter.changed`, `disaster-alerts.changed`); data diambil ulang
+      lewat endpoint REST. Bila realtime mati, frontend polling.
   - name: Epic 7 - Deadline & Reminder Approval
     description: Setting deadline & pengingat per level approver. UC-22. Pengingat dikirim scheduler (approvals:send-reminders) reminder_hours sebelum deadline. Juga titik pengingat masa berlaku surat untuk pemohon (H-30..H-1, letters:send-expiry-reminders).
   - name: Epic 8 - Dashboard & Statistik
@@ -380,6 +386,14 @@ paths:
     $ref: 'paths/push-subscriptions/push-subscriptions.yaml'
   /web-push-subscribers:
     $ref: 'paths/push-subscriptions/web-push-subscribers.yaml'
+
+  # ─────────────────────────────────────────────
+  # Realtime (Laravel Reverb)
+  # ─────────────────────────────────────────────
+  /realtime/config:
+    $ref: 'paths/realtime/config.yaml'
+  /broadcasting/auth:
+    $ref: 'paths/realtime/broadcasting-auth.yaml'
 
   # ─────────────────────────────────────────────
   # EPIC 7 - Deadline & Reminder Approval
