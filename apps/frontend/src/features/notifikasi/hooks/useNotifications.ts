@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { REALTIME_QUERY_META } from '@/features/realtime/constants'
+import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
 import { queryKeys } from '@/shared/lib/queryKeys'
 import type { ApiError, AppNotification } from '@/types'
 import {
@@ -23,11 +25,16 @@ function requestMessage(requestError: unknown, fallback: string): string {
 // Data notifikasi disimpan di cache React Query sehingga dipakai bersama
 // oleh semua layout: pindah halaman tidak memicu request ulang, dan hanya
 // ada satu polling jumlah belum dibaca.
+//
+// Realtime: notifikasi baru memicu invalidasi lewat RealtimeBridge
+// (event notification.created). Selama WebSocket hidup polling dijarangkan
+// menjadi jaring pengaman; saat putus kembali tiap 30 detik.
 export default function useNotifications() {
   const queryClient = useQueryClient()
   const [actionError, setActionError] = useState('')
   const [markingIds, setMarkingIds] = useState<string[]>([])
   const [markingAll, setMarkingAll] = useState(false)
+  const unreadRefreshInterval = useLiveRefetchInterval('notifications', UNREAD_REFRESH_INTERVAL)
 
   const listQuery = useQuery({
     queryKey: queryKeys.notifications.list,
@@ -42,6 +49,7 @@ export default function useNotifications() {
       return data
     },
     staleTime: UNREAD_REFRESH_INTERVAL,
+    meta: REALTIME_QUERY_META,
   })
 
   const countQuery = useQuery({
@@ -57,8 +65,9 @@ export default function useNotifications() {
       return count
     },
     staleTime: UNREAD_REFRESH_INTERVAL,
-    refetchInterval: UNREAD_REFRESH_INTERVAL,
+    refetchInterval: unreadRefreshInterval,
     refetchIntervalInBackground: false,
+    meta: REALTIME_QUERY_META,
   })
 
   const notifications = listQuery.data ?? EMPTY_NOTIFICATIONS
