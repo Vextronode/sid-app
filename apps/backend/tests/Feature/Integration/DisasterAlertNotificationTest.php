@@ -3,6 +3,7 @@
 namespace Tests\Feature\Integration;
 
 use App\Enums\IntegrationAbility;
+use App\Events\NotificationCreated;
 use App\Jobs\SendDisasterAlertNotifications;
 use App\Models\DisasterAlert;
 use App\Models\IntegrationClient;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
@@ -295,6 +297,28 @@ class DisasterAlertNotificationTest extends TestCase
         $row = $this->residents[0]->notifications()->sole();
         $this->assertSame('SIAGA: Gempa M5.2', $row->data['title']);
         $this->assertSame('disaster_alert', $row->data['context']['status']);
+    }
+
+    public function test_realtime_signal_is_sent_once_per_chunk_instead_of_once_per_account(): void
+    {
+        Event::fake([NotificationCreated::class]);
+        config(['disaster_alerts.notification_chunk' => 2]);
+
+        $this->sendAlert('gempa-881', ['level' => 'siaga'])->assertCreated();
+
+        $this->assertSame(3, $this->countNotifications());
+        Event::assertDispatchedTimes(NotificationCreated::class, 2);
+
+        $recipients = [];
+        Event::assertDispatched(NotificationCreated::class, function (NotificationCreated $event) use (&$recipients) {
+            $recipients = [...$recipients, ...$event->userIds];
+
+            return $event->notificationId === null;
+        });
+        $expected = array_map(fn (User $user) => $user->id, $this->residents);
+        sort($expected);
+        sort($recipients);
+        $this->assertSame($expected, $recipients);
     }
 
     private function countNotifications(): int
