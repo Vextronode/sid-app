@@ -5,7 +5,7 @@
 | Atribut Dokumen | Keterangan |
 |---|---|
 | Bagian | 4 dari 5 (+ Appendix) |
-| Status | v5.3 — diselaraskan ke source 2026-11-19 |
+| Status | v5.3 — diselaraskan ke source 2026-11-21 |
 | Cakupan | Keamanan per layer, klasifikasi data & threat modeling, NFR, compliance |
 | Dokumen terkait | `TDD-03_Database_Schema.md` (enkripsi field), `SID-ARCH-BE-001` (S8), OpenAPI Spec v5.3, `docs/audit-docs/AUDIT_DOCS_BELUM_DIIMPLEMENTASI.md` |
 
@@ -26,6 +26,7 @@
 - Lupa kata sandi: tautan email (akun ber-email), atau NIK + tanggal lahir yang disetujui Staf SIDUTama desa yang sama (throttle 5/menit per IP dan 5/jam per NIK). Kegagalan dijawab pesan yang sama; hanya pemegang token klaim (hash disimpan server, token di browser pengaju) yang dapat membuat kata sandi baru, maks 24 jam setelah disetujui. Akun Staf SIDUTama dikecualikan (pemulihan CLI).
 - API integrasi pihak ketiga (`/api/integrations/v1`): bearer token milik `IntegrationClient` (guard `integration`), ditolak di route internal dan sebaliknya; hak per endpoint lewat Sanctum abilities; 60 request/menit per client; aksi menu Integrasi Staf SIDUTama mewajibkan kata sandi ulang.
 - Session lifetime 120 menit (`SESSION_LIFETIME`), driver database.
+- Realtime (Laravel Reverb): channel private diotorisasi `POST /api/broadcasting/auth` dengan sesi Sanctum + CSRF dan middleware yang sama (`auth:sanctum`, `account.active`, `password.changed`). `App.Models.User.{id}` hanya untuk akun itu (pembanding string, tanpa query); `letters.staff` untuk akun non-warga. Channel `disaster-alerts` publik. Frontend meninggalkan channel private saat logout/berganti akun.
 - Menyetujui permintaan tanda tangan mewajibkan kata sandi ulang (`current_password`).
 
 **Data in Transit**
@@ -33,6 +34,7 @@
 - HTTPS: TLS diakhiri proxy di depan stack (`deploy/nginx`, `docs/deploy`) — **Di luar source**. Aplikasi mempercayai header proxy (`trustProxies('*')`) dan Nginx meneruskan `X-Forwarded-Proto`.
 - Laravel **tidak** memaksa HTTPS (`URL::forceScheme`) — **Belum diimplementasi**.
 - Cookie: `SESSION_SECURE_COOKIE` dari env; `SameSite` default **`lax`** (`SESSION_SAME_SITE`), bukan Strict.
+- WebSocket realtime (`wss://<host>/app/...`) lewat proxy TLS yang sama, satu origin dengan SPA. Event hanya membawa `{ type, id }` (jenis + UUID); data warga, isi surat, dan isi notifikasi tidak pernah lewat WebSocket, tetap diambil lewat REST dengan otorisasi masing-masing.
 
 **Data at Rest (Aktif)**
 
@@ -82,7 +84,8 @@
 
 | Kontrol | Kondisi |
 |---|---|
-| Docker stack | `sid_net` internal; hanya `sid_web` membuka port ke host dan hanya di loopback (`127.0.0.1:${SID_HTTP_PORT}`); `sid_api`/`sid_worker` keluar internet hanya lewat `sid_egress` (DB Neon, layanan push browser) |
+| Docker stack | `sid_net` internal; hanya `sid_web` membuka port ke host dan hanya di loopback (`127.0.0.1:${SID_HTTP_PORT}`); `sid_api`/`sid_worker` keluar internet hanya lewat `sid_egress` (DB Neon, layanan push browser); `sid_reverb` hanya di `sid_net` (tanpa port host dan tanpa internet) |
+| Reverb | Nginx hanya meneruskan jalur WebSocket `/app/`; API HTTP Reverb (`/apps/...`, bertanda tangan secret) tidak dibuka ke publik. `REVERB_ALLOWED_ORIGINS` = hostname publik, client event (whisper) dimatikan, `REVERB_APP_MAX_CONNECTIONS=900`. `REVERB_APP_SECRET` hanya di backend; key publik dikirim lewat `GET /api/realtime/config` |
 | Nginx | `server_tokens off`, `client_max_body_size 25m`, gzip; PHP hanya lewat front controller |
 | PHP | `docker/php.ini`, opcache (`docs/deploy/opcache.ini.example`) |
 | Firewall, SSH key-only, fail2ban, update OS | **Di luar source** |
@@ -124,6 +127,8 @@
 | Race condition approval / Terapkan | Dua aktor bersamaan | Row lock + cek ulang; 409 |
 | Reset password disalahgunakan | Akun tidak berwenang mereset | Hanya Staf SIDUTama; `must_change_password` |
 | Misconfig server | Port terbuka | Docker: satu port loopback; sisanya di luar source |
+| Menguping channel realtime | Pengguna berlangganan channel akun lain atau channel staf untuk melihat aktivitas | Otorisasi channel private di server (sesi + CSRF, akun aktif); payload hanya jenis + UUID, data tetap lewat REST yang menyaring akses; tanpa client event |
+| Banjir koneksi WebSocket | Banyak koneksi (mis. saat bencana) menghabiskan batas file terbuka Reverb | `REVERB_APP_MAX_CONNECTIONS=900`; koneksi berlebih ditolak dan browser kembali polling. Reverb terpisah dari PHP-FPM, jadi API tetap jalan |
 
 ### 2.3. Pengamanan jabatan dan akun Staf SIDUTama
 
@@ -145,7 +150,8 @@
 | Security | HTTPS, Argon2id, AES-256, RBAC, rate limiting | Lihat S1; HTTPS di proxy |
 | Reliability | Transaksi kritis atomik | `DB::transaction()` + rollback berkas yang sudah ditulis |
 | Notifikasi | In-app tidak hilang bila push gagal | Kanal database sinkron; Web Push diantrekan dan independen |
+| Realtime | Perubahan notifikasi, surat, dan peringatan bencana terlihat tanpa menunggu; aplikasi tetap jalan bila realtime gagal | Sinyal Reverb lewat antrean setelah commit, kegagalan broadcast tidak pernah menggagalkan aksi (`ShouldRescue`); bila Reverb/worker/proxy WebSocket bermasalah, frontend kembali polling 30–60 detik dan mengambil ulang data saat tersambung kembali |
 | Availability | 99% uptime | Healthcheck container (`/up`, FPM ping, `/healthz`); target belum diukur |
 | Maintainability | PSR-12 | Laravel Pint |
-| Documentation | Seluruh endpoint di OpenAPI | Semua route API dan route auth web terdokumentasi di `docs/api_spec` (lint valid, 2026-11-19); `/api/integrations/v1` di spec pihak ketiga (`docs/thirdparty`) |
+| Documentation | Seluruh endpoint di OpenAPI | Semua route API dan route auth web terdokumentasi di `docs/api_spec` (lint valid, 2026-11-19; endpoint realtime ditambahkan 2026-11-21, diperiksa lokal tanpa `redocly lint`); `/api/integrations/v1` di spec pihak ketiga (`docs/thirdparty`) |
 | Audit | Aksi kritis tercatat | Lihat tabel logging S1.1 |
