@@ -28,6 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // POST /api/broadcasting/auth: otorisasi channel private Reverb dengan
+    // sesi Sanctum SPA yang sama seperti API lain (grup `api` memulai sesi
+    // dan memeriksa CSRF), plus syarat akun aktif dan kata sandi sudah diganti.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', [
+        'prefix' => 'api',
+        'middleware' => ['api', 'auth:sanctum', 'account.active', 'password.changed'],
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
