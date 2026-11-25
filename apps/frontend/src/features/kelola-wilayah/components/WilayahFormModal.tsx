@@ -251,12 +251,16 @@ export default function WilayahFormModal({
                 <input
                   id="wilayah-rw-number"
                   type="text"
+                  inputMode="numeric"
                   value={form.number}
                   onChange={(event) => handleChange('number', event.target.value)}
                   placeholder="Contoh: 001"
-                  maxLength={10}
+                  maxLength={3}
                   required
                 />
+                <span className="sid-wilayah-form-help">
+                  Angka 1–999, unik se-desa. Disimpan tiga digit (1 menjadi 001).
+                </span>
               </div>
             </>
           )}
@@ -319,12 +323,16 @@ export default function WilayahFormModal({
                 <input
                   id="wilayah-rt-number"
                   type="text"
+                  inputMode="numeric"
                   value={form.number}
                   onChange={(event) => handleChange('number', event.target.value)}
                   placeholder="Contoh: 001"
-                  maxLength={10}
+                  maxLength={3}
                   required
                 />
+                <span className="sid-wilayah-form-help">
+                  Angka 1–999, unik di RW tersebut. Disimpan tiga digit (1 menjadi 001).
+                </span>
               </div>
             </>
           )}
