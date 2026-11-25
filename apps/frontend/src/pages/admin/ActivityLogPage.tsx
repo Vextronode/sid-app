@@ -1,7 +1,8 @@
 // ==========================================
 // ActivityLogPage.tsx
 // Log Aktivitas Staf SIDUTama (S-05): riwayat perubahan data warga & KK,
-// tindakan atas akun pengguna, dan riwayat status surat desa. Hanya baca.
+// tindakan atas akun pengguna, riwayat status surat desa, dan log lainnya
+// (pejabat, buka NIK di surat, data usaha, bencana, integrasi). Hanya baca.
 // Tab dan filter disimpan di query string agar bisa ditautkan dari baris
 // warga/KK.
 // ==========================================
@@ -21,6 +22,7 @@ import { SURAT_STATUS_OPTIONS, STATUS_LABELS } from '@/constants/suratStatus'
 import {
   getAccountLogs,
   getLetterActivityLogs,
+  getOtherLogs,
   getPopulationLogs,
 } from '@/features/activity-log/api'
 import {
@@ -29,6 +31,8 @@ import {
   fieldLabel,
   formatChangeValue,
   formatDateTime,
+  OTHER_TYPE_LABELS,
+  OTHER_TYPE_OPTIONS,
   POPULATION_EVENT_LABELS,
   POPULATION_EVENT_OPTIONS,
   POPULATION_TYPE_OPTIONS,
@@ -50,6 +54,7 @@ const TABS = [
   { value: 'penduduk', label: 'Data Warga & KK' },
   { value: 'akun', label: 'Akun Pengguna' },
   { value: 'surat', label: 'Surat' },
+  { value: 'lainnya', label: 'Lainnya' },
 ]
 
 const EMPTY_META: Pick<PageMeta, 'current_page' | 'last_page' | 'total'> = {
@@ -94,7 +99,8 @@ function Pagination({ meta, onChange, pageSize, onPageSizeChange }: PaginationPr
   )
 }
 
-function Actor({ actor }: { actor: LogActor | null }) {
+// Pelaku bisa petugas, klien integrasi (tanpa peran), atau sistem (null).
+function Actor({ actor }: { actor: Pick<LogActor, 'name' | 'role_label'> | null }) {
   if (!actor) return <span className="sid-activity-log-muted">Sistem</span>
 
   return (
@@ -524,6 +530,126 @@ function LetterTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
   )
 }
 
+// Pejabat, buka NIK di surat, data usaha (Cimart), peringatan bencana, dan
+// klien integrasi: log yang tidak punya tab sendiri.
+function OtherTab({ params, setParam, pageSize, onPageSizeChange }: TabProps) {
+  const filters = {
+    type: params.get('type') ?? '',
+    from: params.get('from') ?? '',
+    to: params.get('to') ?? '',
+    page: Number(params.get('page') ?? 1),
+    per_page: pageSize,
+  }
+
+  const { data, isPending, isError } = useQuery({
+    queryKey: ['activity-logs', 'others', filters],
+    queryFn: () => getOtherLogs(filters),
+    placeholderData: keepPreviousData,
+  })
+
+  const logs = data?.data ?? []
+  const meta = data?.meta ?? EMPTY_META
+
+  return (
+    <>
+      <div className="sid-operator-filter-card">
+        <div className="sid-operator-filter-grid sid-activity-log-filters">
+          <div className="sid-operator-filter-field">
+            <p>Jenis</p>
+            <select value={filters.type} onChange={(e) => setParam('type', e.target.value)}>
+              <option value="">Semua jenis</option>
+              {OTHER_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DateRangeFields from={filters.from} to={filters.to} onChange={setParam} />
+        </div>
+      </div>
+
+      <div className="sid-operator-table-card">
+        <div className="sid-operator-table-wrapper">
+          <table className="sid-operator-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pelaku</th>
+                <th>Jenis</th>
+                <th>Aksi</th>
+                <th>Rincian</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isPending ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Memuat riwayat...
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Gagal memuat riwayat lainnya.
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="sid-operator-table-message">
+                    Belum ada riwayat.
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => {
+                  const details = Object.entries(log.details ?? {})
+
+                  return (
+                    <tr key={log.id}>
+                      <td className="sid-activity-log-time center">
+                        {formatDateTime(log.created_at)}
+                      </td>
+                      <td className="center">
+                        <Actor actor={log.actor} />
+                      </td>
+                      <td className="center">{OTHER_TYPE_LABELS[log.log_name] ?? log.log_name}</td>
+                      <td className="center">
+                        <span>{log.description ?? log.event ?? '-'}</span>
+                        {log.subject_label && (
+                          <small className="sid-admin-cell-meta">{log.subject_label}</small>
+                        )}
+                      </td>
+                      <td>
+                        {details.length ? (
+                          <ul className="sid-activity-log-changes">
+                            {details.map(([key, value]) => (
+                              <li key={key}>
+                                <strong>{fieldLabel(key)}:</strong> {formatChangeValue(value, key)}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="sid-activity-log-muted">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          meta={meta}
+          onChange={(page) => setParam('page', String(page), false)}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+        />
+      </div>
+    </>
+  )
+}
+
 export default function ActivityLogPage() {
   const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
@@ -563,8 +689,9 @@ export default function ActivityLogPage() {
             <h1>Log Aktivitas</h1>
             <p>
               Riwayat perubahan data warga & Kartu Keluarga oleh petugas, tindakan atas akun
-              pengguna, dan riwayat status setiap surat. NIK, No. KK, dan alamat KK disamarkan; kata
-              sandi tidak pernah dicatat.
+              pengguna, riwayat status setiap surat, serta pejabat, data usaha, peringatan bencana,
+              dan akses klien integrasi. NIK, No. KK, dan alamat KK disamarkan; kata sandi tidak
+              pernah dicatat.
             </p>
           </div>
           <RefreshButton onRefresh={pageRefresh.refresh} refreshing={pageRefresh.refreshing} />
@@ -585,7 +712,14 @@ export default function ActivityLogPage() {
           ))}
         </div>
 
-        {activeTab === 'surat' ? (
+        {activeTab === 'lainnya' ? (
+          <OtherTab
+            params={params}
+            setParam={setParam}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        ) : activeTab === 'surat' ? (
           <LetterTab
             params={params}
             setParam={setParam}

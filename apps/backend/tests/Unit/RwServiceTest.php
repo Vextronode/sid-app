@@ -7,6 +7,7 @@ use App\Models\Hamlet;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Repositories\CitizenRepository;
+use App\Repositories\ReferenceRepository;
 use App\Repositories\RwRepository;
 use App\Services\RwService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,7 @@ class RwServiceTest extends TestCase
         $this->service = new RwService(
             new RwRepository,
             new CitizenRepository,
+            new ReferenceRepository,
         );
     }
 

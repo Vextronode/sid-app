@@ -348,13 +348,13 @@ class CitizenStoreUpdateTest extends TestCase
             ->assertJsonValidationErrors(['father_id']);
     }
 
-    public function test_update_forbidden_for_citizen_in_other_village(): void
+    public function test_update_of_citizen_in_other_village_is_not_found(): void
     {
         $citizen = Citizen::factory()->create();
 
         $this->actingAs($this->petugas())
             ->patchJson("/api/citizens/{$citizen->id}", ['name' => 'X'])
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_update_forbidden_for_non_staf_sid(): void

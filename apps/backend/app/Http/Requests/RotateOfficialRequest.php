@@ -30,8 +30,8 @@ class RotateOfficialRequest extends FormRequest
         $needsAccount = ! $old instanceof Official || OfficialPosition::tryFrom($old->position) !== null;
 
         return [
-            'user_id' => [Rule::requiredIf($needsAccount), 'nullable', 'exists:users,id'],
-            'citizen_id' => [Rule::requiredIf(! $needsAccount), 'nullable', 'exists:citizens,id'],
+            'user_id' => [Rule::requiredIf($needsAccount), 'nullable', 'bail', 'uuid', 'exists:users,id'],
+            'citizen_id' => [Rule::requiredIf(! $needsAccount), 'nullable', 'bail', 'uuid', 'exists:citizens,id'],
             'started_at' => ['required', 'date'],
             'term_ends_at' => ['nullable', 'date', 'after:started_at'],
             'phone_wa' => ['nullable', 'string', 'max:20'],

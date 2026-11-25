@@ -133,4 +133,43 @@ class CitizenDocumentFieldsTest extends TestCase
             'rt_id' => $this->rt->id,
         ];
     }
+
+    public function test_document_numbers_are_whole_only_for_population_managers_and_the_owner(): void
+    {
+        $villageId = $this->petugas->village_id;
+        $birth = '3201-LT-12052010-0042';
+        $marriage = '1234/56/VII/2015';
+        $citizen = Citizen::factory()->create([
+            'village_id' => $villageId,
+            'rt_id' => $this->rt->id,
+            'birth_certificate_number' => $birth,
+            'marriage_certificate_number' => $marriage,
+        ]);
+        $masked = fn (string $number): string => str_repeat('*', strlen($number) - 4).substr($number, -4);
+        $row = fn (User $user): array => collect($this->actingAs($user)->getJson('/api/citizens?per_page=50')->assertOk()->json('data'))
+            ->firstWhere('id', $citizen->id);
+
+        $kasi = $this->makeUserWithOfficialAssignment('kasi_pemerintahan', 'kasi_pemerintahan', $villageId);
+        $kaur = $this->makeUserWithOfficialAssignment('kaur_tu_umum', 'kaur_tu_umum', $villageId);
+        $rt = $this->makeUserWithOfficialAssignment('rt', 'rt', $villageId, ['rt_id' => $this->rt->id]);
+
+        // Pengelola data kependudukan melihat nomor utuh.
+        foreach ([$this->petugas, $kasi] as $manager) {
+            $this->assertSame([$birth, $marriage], [$row($manager)['birth_certificate_number'], $row($manager)['marriage_certificate_number']]);
+        }
+
+        // Pembaca lain melihat versi tersamar (empat karakter terakhir).
+        foreach ([$kaur, $rt] as $reader) {
+            $this->assertSame(
+                [$masked($birth), $masked($marriage)],
+                [$row($reader)['birth_certificate_number'], $row($reader)['marriage_certificate_number']],
+            );
+        }
+
+        // Pemilik data melihat nomornya sendiri utuh di profil akunnya.
+        $owner = User::factory()->create(['role' => 'warga', 'village_id' => $villageId, 'citizen_id' => $citizen->id]);
+        $this->actingAs($owner)->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('data.citizen.birth_certificate_number', $birth);
+    }
 }

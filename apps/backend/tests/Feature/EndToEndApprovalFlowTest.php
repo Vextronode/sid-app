@@ -161,6 +161,58 @@ class EndToEndApprovalFlowTest extends TestCase
         $this->assertTrue($rtOfficial->fresh()->is_active);
     }
 
+    public function test_kadus_sees_letters_of_citizens_added_through_the_app(): void
+    {
+        $village = Village::factory()->create();
+        ['rw' => $rw, 'rt' => $rt] = $this->makeArea($village);
+        $otherHamlet = Hamlet::factory()->create(['village_id' => $village->id]);
+        $staf = $this->makeOfficialUser('staf_sid', $village);
+        $rtApprover = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $kadus = $this->makeOfficialUser('kadus', $village, ['hamlet_id' => $rw->hamlet_id]);
+        $otherKadus = $this->makeOfficialUser('kadus', $village, ['hamlet_id' => $otherHamlet->id]);
+        $flow = $this->makeFlow([
+            ['position' => 'rt', 'final' => false],
+            ['position' => 'kepala_desa', 'final' => true],
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id, 'template' => 'Surat {{ applicant_name }}']);
+
+        // Form warga hanya mengirim rt_id; hamlet_id yang ikut terkirim
+        // (dusun lain) tidak dipakai.
+        $citizenId = $this->actingAs($staf['user'])
+            ->postJson('/api/citizens', [
+                'nik' => '3218201605130099',
+                'name' => 'Warga Baru',
+                'date_of_birth' => '1990-01-01',
+                'gender' => 'L',
+                'address' => 'Kp. Baru',
+                'rt_id' => $rt->id,
+                'hamlet_id' => $otherHamlet->id,
+            ])
+            ->assertCreated()
+            ->json('data.id');
+        $this->assertSame($rw->hamlet_id, Citizen::query()->findOrFail($citizenId)->hamlet_id);
+
+        $applicant = User::factory()->create(['role' => 'warga', 'village_id' => $village->id, 'citizen_id' => $citizenId]);
+        $letterId = $this->actingAs($applicant)
+            ->postJson('/api/letters', ['letter_type_id' => $letterType->id])
+            ->assertCreated()
+            ->json('data.id');
+        $this->assertDatabaseHas('letters', ['id' => $letterId, 'rt_id' => $rt->id, 'rw_id' => $rw->id, 'hamlet_id' => $rw->hamlet_id]);
+
+        $this->actingAs($rtApprover['user'])
+            ->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])
+            ->assertOk();
+
+        $this->actingAs($kadus['user'])
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $letterId]);
+        $this->actingAs($otherKadus['user'])
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $letterId]);
+    }
+
     public function test_kades_applicant_letter_is_held_at_final_step_while_sekdes_is_vacant(): void
     {
         $village = Village::factory()->create();
@@ -204,6 +256,13 @@ class EndToEndApprovalFlowTest extends TestCase
         // Sekdes yang baru ditetapkan langsung dapat menyetujuinya.
         $sekdes = $this->makeOfficialUser('sekretaris_desa', $village);
 
+        // Surat Kades juga harus tampil di daftar Sekdes, bukan hanya bisa
+        // dibuka lewat id.
+        $this->actingAs($sekdes['user'])
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $letterId]);
+
         $this->actingAs($sekdes['user'])
             ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
             ->assertOk();
@@ -232,6 +291,10 @@ class EndToEndApprovalFlowTest extends TestCase
 
         Notification::assertNotSentTo($rtUser['user'], LetterStatusNotification::class);
         Notification::assertSentTo($kades['user'], LetterStatusNotification::class);
+        $this->actingAs($kades['user'])
+            ->getJson('/api/letters')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $letterId]);
         $this->actingAs($applicant['user'])
             ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
             ->assertForbidden();
@@ -239,6 +302,47 @@ class EndToEndApprovalFlowTest extends TestCase
             ->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])
             ->assertOk();
         $this->assertSame('approved', Letter::query()->findOrFail($letterId)->status->value);
+    }
+
+    public function test_letter_approved_while_kades_is_vacant_explains_the_pending_pdf_and_tells_staf(): void
+    {
+        $village = Village::factory()->create();
+        ['rt' => $rt] = $this->makeArea($village);
+        $applicant = $this->makeCitizenAccount($village, $rt, 'warga');
+        $rtApprover = $this->makeOfficialUser('rt', $village, ['rt_id' => $rt->id]);
+        $sekdes = $this->makeOfficialUser('sekretaris_desa', $village);
+        $petugas = $this->makeOfficialUser('staf_sid', $village);
+        $flow = $this->makeFlow([
+            ['position' => 'rt', 'final' => false],
+            ['position' => 'kepala_desa', 'final' => true],
+        ]);
+        $letterType = LetterType::factory()->create(['flow_id' => $flow->id, 'template' => 'Surat {{ applicant_name }}']);
+
+        $letterId = $this->actingAs($applicant['user'])
+            ->postJson('/api/letters', ['letter_type_id' => $letterType->id])
+            ->assertCreated()
+            ->json('data.id');
+        $this->actingAs($rtApprover['user'])->patchJson("/api/rt/letters/{$letterId}/decision", ['status' => 'approved'])->assertOk();
+
+        // Jabatan Kepala Desa kosong: Sekdes menyetujui atas nama Kepala Desa.
+        $this->actingAs($sekdes['user'])->patchJson("/api/kades/letters/{$letterId}/decision", ['status' => 'approved'])->assertOk();
+
+        Notification::assertSentTo(
+            $petugas['user'],
+            LetterStatusNotification::class,
+            fn (LetterStatusNotification $n): bool => $n->toArray($petugas['user'])['context']['status'] === 'signer_vacant',
+        );
+        $this->actingAs($applicant['user'])
+            ->getJson("/api/letters/{$letterId}/download")
+            ->assertStatus(409)
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'jabatan Kepala Desa sedang kosong'));
+
+        // Setelah Kepala Desa diangkat, PDF dapat diunduh.
+        $this->makeOfficialUser('kepala_desa', $village);
+        $this->actingAs($applicant['user'])
+            ->get("/api/letters/{$letterId}/download")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_staf_is_told_to_fill_the_vacant_assigned_handler(): void

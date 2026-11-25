@@ -15,6 +15,12 @@ class ActivityLogRepository
     public const ACCOUNT_LOG_NAMES = ['user', 'password_reset_request', 'account_registration', 'profile_photo_request'];
 
     /**
+     * Tab "Lainnya": pengangkatan pejabat, buka NIK di surat, data usaha
+     * (Cimart), peringatan bencana SIGAP, dan akses klien integrasi.
+     */
+    public const OTHER_LOG_NAMES = ['official', 'letter', 'citizen_business', 'disaster_alert', 'integration'];
+
+    /**
      * Riwayat data kependudukan satu desa (S-05). Desa disimpan di
      * properties karena subjek bisa sudah dihapus.
      *
@@ -23,6 +29,7 @@ class ActivityLogRepository
     public function paginatePopulation(string $villageId, array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->villageLogs(isset($filters['type']) ? [$filters['type']] : self::POPULATION_LOG_NAMES, $villageId, $filters)
+            ->with('causer:id,name,role')
             ->when($filters['subject_id'] ?? null, fn ($query, $subjectId) => $query->where('subject_id', $subjectId))
             ->paginate($perPage);
     }
@@ -34,7 +41,22 @@ class ActivityLogRepository
      */
     public function paginateAccounts(string $villageId, array $filters, int $perPage): LengthAwarePaginator
     {
-        return $this->villageLogs(self::ACCOUNT_LOG_NAMES, $villageId, $filters)->paginate($perPage);
+        return $this->villageLogs(self::ACCOUNT_LOG_NAMES, $villageId, $filters)
+            ->with('causer:id,name,role')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Log lain satu desa. Pelakunya bisa pengguna atau klien integrasi
+     * (tanpa kolom role), jadi relasi causer dimuat utuh.
+     *
+     * @param  array{type?: string|null, event?: string|null, from?: string|null, to?: string|null}  $filters
+     */
+    public function paginateOthers(string $villageId, array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->villageLogs(isset($filters['type']) ? [$filters['type']] : self::OTHER_LOG_NAMES, $villageId, $filters)
+            ->with('causer')
+            ->paginate($perPage);
     }
 
     /**
@@ -50,7 +72,6 @@ class ActivityLogRepository
             ->when($filters['event'] ?? null, fn ($query, $event) => $query->where('event', $event))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
-            ->with('causer:id,name,role')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
     }

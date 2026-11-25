@@ -105,6 +105,13 @@ class Citizen extends Model
                 $citizen->nik_hash = hash('sha256', $citizen->nik);
             }
 
+            // Dusun warga selalu dusun milik RW dari RT-nya, bukan isian
+            // terpisah: daftar surat Kadus, salinan wilayah di surat, dan cek
+            // hapus Dusun jadi membaca wilayah yang sama dengan RT.
+            if ($citizen->isDirty(['rt_id', 'hamlet_id'])) {
+                $citizen->hamlet_id = Rt::parentIds($citizen->rt_id)['hamlet_id'];
+            }
+
             // Kolom terenkripsi tidak punya default di database.
             $citizen->has_disorder ??= false;
 

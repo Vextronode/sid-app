@@ -19,6 +19,11 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->index('village_id', 'idx_rws_village');
+            // Nomor RW urut se-desa, tidak mulai lagi di tiap dusun (data
+            // desa dan impor Excel memakai aturan ini). Nomor selalu tiga
+            // digit (App\Support\AreaNumber), jadi "1" tidak bisa jadi
+            // duplikat "001".
+            $table->unique(['village_id', 'number']);
         });
     }
 

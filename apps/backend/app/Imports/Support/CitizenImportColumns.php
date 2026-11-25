@@ -15,8 +15,9 @@ namespace App\Imports\Support;
  *
  * Kolom bantu yang bukan field warga, dipakai CitizenImportResolver:
  * `no_kk` (cari/buat KK), `rt`/`rw`/`rt_rw` (nomor RT/RW -> rt_id),
- * `hamlet` (nama dusun -> hamlet_id), dan `occupation` (nama pekerjaan di
- * Katalog Pekerjaan -> occupation_id).
+ * `hamlet` (nama dusun, hanya dibandingkan dengan dusun RW; dusun warga
+ * diturunkan dari RT), dan `occupation` (nama pekerjaan di Katalog
+ * Pekerjaan -> occupation_id).
  */
 final class CitizenImportColumns
 {
@@ -36,7 +37,7 @@ final class CitizenImportColumns
      */
     public const SYSTEM_FIELDS = [
         'nik', 'name', 'date_of_birth', 'place_of_birth', 'gender', 'blood_type', 'address',
-        'rt_id', 'hamlet_id', 'family_id', 'family_role', 'father_id', 'mother_id',
+        'rt_id', 'family_id', 'family_role', 'father_id', 'mother_id',
         'father_name_text', 'mother_name_text', 'marital_status', 'religion', 'last_education',
         'domicile_status', 'current_domicile', 'residency_type', 'origin_region',
         'title_front', 'title_back', 'birth_certificate_number', 'marriage_certificate_number',
@@ -107,7 +108,6 @@ final class CitizenImportColumns
         'rt_rw' => 'RT/RW',
         'rt_id' => 'RT (ID sistem)',
         'hamlet' => 'Dusun',
-        'hamlet_id' => 'Dusun (ID sistem)',
         'family_id' => 'KK (ID sistem)',
         'family_role' => 'SHDK',
         'father_id' => 'Ayah (ID sistem)',

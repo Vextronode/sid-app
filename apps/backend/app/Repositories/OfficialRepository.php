@@ -270,18 +270,6 @@ class OfficialRepository
     }
 
     /**
-     * Mencerminkan query asli PdfService::download()/preview() (query
-     * yang sama diduplikasi di kedua method tersebut sebelum refactor):
-     * kepala desa aktif dengan relasi citizen ter-load dan yang belum
-     * berakhir masa jabatannya (ended_at masih null). Dipakai firstOrFail
-     * karena kode asli mengharapkan pasti ada kepala desa aktif.
-     */
-    public function findActiveVillageHeadWithCitizenOrFail(string $villageId): Official
-    {
-        return $this->activeVillageHeadQuery($villageId)->firstOrFail();
-    }
-
-    /**
      * Pejabat aktif sebuah jabatan di desa (mis. Kasi Pemerintahan sebagai
      * petugas pada formulir F-1.02).
      */

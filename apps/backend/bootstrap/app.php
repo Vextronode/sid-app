@@ -1,7 +1,7 @@
 <?php
 
 use App\Exceptions\OccupationInUseException;
-use App\Exceptions\RegionContainsCitizensException;
+use App\Exceptions\RecordInUseException;
 use App\Exceptions\RegionHasActiveCitizensException;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureIntegrationClient;
@@ -61,7 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $exceptions->render(function (
-            RegionHasActiveCitizensException|RegionContainsCitizensException|OccupationInUseException $exception,
+            RegionHasActiveCitizensException|RecordInUseException|OccupationInUseException $exception,
             Request $request
         ): JsonResponse {
             return response()->json([

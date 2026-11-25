@@ -3,9 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Family;
-use App\Models\Hamlet;
 use App\Models\Rt;
-use App\Models\Rw;
 use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,9 +24,8 @@ class FamilyFactory extends Factory
             'no_kk' => fake()->unique()->numerify('################'),
             'family_address' => fake()->address(),
             'family_status' => 'aktif',
+            // rw_id dan hamlet_id diturunkan Family dari RT.
             'rt_id' => Rt::factory(),
-            'rw_id' => Rw::query()->value('id') ?? Rw::factory(),
-            'hamlet_id' => Hamlet::query()->value('id') ?? Hamlet::factory(),
         ];
     }
 }

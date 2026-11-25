@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\AreaNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,14 @@ class StoreRwRequest extends FormRequest
         return $this->user()?->role === 'staf_sid';
     }
 
+    /** Nomor dinormalkan dulu ("1" -> "001") supaya cek unik membandingkan format yang sama. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('number')) {
+            $this->merge(['number' => AreaNumber::normalize($this->input('number'))]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,12 +33,14 @@ class StoreRwRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'hamlet_id' => 'required|exists:hamlets,id',
+            'hamlet_id' => 'bail|required|integer|exists:hamlets,id',
             'number' => [
+                'bail',
                 'required',
                 'string',
-                'max:10',
-                Rule::unique('rws')->where(fn ($q) => $q->where('hamlet_id', $this->input('hamlet_id'))),
+                AreaNumber::RULE,
+                // Nomor RW urut se-desa, tidak mulai lagi di tiap dusun.
+                Rule::unique('rws')->where('village_id', $this->user()?->village_id),
             ],
         ];
     }
@@ -37,7 +48,8 @@ class StoreRwRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'number.unique' => 'RW dengan nomor ini sudah ada di dusun tersebut',
+            'number.regex' => 'Nomor RW harus angka 1 sampai 999.',
+            'number.unique' => 'RW dengan nomor ini sudah ada di desa ini.',
         ];
     }
 }

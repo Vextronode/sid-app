@@ -19,6 +19,8 @@ class LetterIndexRequest extends FormRequest
 
             'letter_type_id' => [
                 'nullable',
+                'bail',
+                'integer',
                 'exists:letter_types,id',
             ],
 

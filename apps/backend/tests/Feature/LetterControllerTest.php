@@ -204,8 +204,8 @@ class LetterControllerTest extends TestCase
     {
         $oldRw = Rw::factory()->create();
         $oldRt = Rt::factory()->create(['rw_id' => $oldRw->id]);
-        $oldHamlet = Hamlet::factory()->create();
-        $citizen = Citizen::factory()->create(['rt_id' => $oldRt->id, 'hamlet_id' => $oldHamlet->id]);
+        $oldHamlet = $oldRw->hamlet;
+        $citizen = Citizen::factory()->create(['rt_id' => $oldRt->id]);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
         $letter->approvals()->create([
             'approved_by' => User::factory()->create(['village_id' => $letter->village_id])->id,
@@ -216,7 +216,7 @@ class LetterControllerTest extends TestCase
         // Pisah KK ke dusun/RW/RT lain setelah surat diajukan.
         $newRw = Rw::factory()->create();
         $newRt = Rt::factory()->create(['rw_id' => $newRw->id]);
-        $citizen->update(['rt_id' => $newRt->id, 'hamlet_id' => Hamlet::factory()->create()->id]);
+        $citizen->update(['rt_id' => $newRt->id]);
 
         $official = fn (string $role, array $region): User => tap(User::factory()->create(['role' => $role]), fn (User $user) => $user->official()
             ->save(Official::factory()->create(['position' => $role, 'is_active' => true, ...$region])))->fresh();
@@ -231,6 +231,34 @@ class LetterControllerTest extends TestCase
             ->getJson('/api/letters')
             ->assertOk()
             ->assertJsonMissing(['id' => $letter->id]);
+    }
+
+    public function test_village_roles_read_letters_by_account_village_without_an_official_row(): void
+    {
+        $village = Village::factory()->create();
+        $letter = Letter::factory()->create([
+            'village_id' => $village->id,
+            'citizen_id' => Citizen::factory()->create(['village_id' => $village->id])->id,
+        ]);
+        $letter->approvals()->create([
+            'approved_by' => User::factory()->create(['village_id' => $village->id])->id,
+            'approval_level' => 'rt',
+            'action' => 'approved',
+        ]);
+        $otherVillageLetter = Letter::factory()->create(['village_id' => Village::factory()->create()->id]);
+
+        // Akun Staf/Kades tanpa baris jabatan aktif: desa dibaca dari akun,
+        // sama dengan Data Penduduk (dulu daftar kosong dan detail 403).
+        foreach (['staf_sid', 'kepala_desa'] as $role) {
+            $user = User::factory()->create(['role' => $role, 'village_id' => $village->id]);
+
+            $this->actingAs($user)->getJson('/api/letters')
+                ->assertOk()
+                ->assertJsonFragment(['id' => $letter->id])
+                ->assertJsonMissing(['id' => $otherVillageLetter->id]);
+            $this->actingAs($user)->getJson("/api/letters/{$letter->id}")->assertOk();
+            $this->actingAs($user)->getJson("/api/letters/{$otherVillageLetter->id}")->assertForbidden();
+        }
     }
 
     public function test_index_for_kadus_is_available_with_own_hamlet_scope(): void
@@ -274,7 +302,7 @@ class LetterControllerTest extends TestCase
     public function test_show_for_kadus_includes_citizen_from_own_hamlet(): void
     {
         $hamlet = Hamlet::factory()->create();
-        $citizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $citizen = $this->makeCitizenInHamlet($hamlet);
         $letter = Letter::factory()->create(['citizen_id' => $citizen->id]);
         $approver = User::factory()->create(['village_id' => $letter->village_id]);
         $letter->approvals()->create([
@@ -296,8 +324,8 @@ class LetterControllerTest extends TestCase
     {
         $ownHamlet = Hamlet::factory()->create();
         $otherHamlet = Hamlet::factory()->create();
-        $ownCitizen = Citizen::factory()->create(['hamlet_id' => $ownHamlet->id]);
-        $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
+        $ownCitizen = $this->makeCitizenInHamlet($ownHamlet);
+        $otherCitizen = $this->makeCitizenInHamlet($otherHamlet);
         $otherHamletLetter = Letter::factory()->create(['citizen_id' => $otherCitizen->id]);
         $unapprovedLetter = Letter::factory()->create(['citizen_id' => $ownCitizen->id]);
         $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', null, [

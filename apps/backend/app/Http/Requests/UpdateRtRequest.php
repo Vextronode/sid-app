@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Rt;
+use App\Support\AreaNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,14 @@ class UpdateRtRequest extends FormRequest
         return $this->user()?->role === 'staf_sid';
     }
 
+    /** Nomor dinormalkan dulu ("1" -> "001") supaya cek unik membandingkan format yang sama. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('number')) {
+            $this->merge(['number' => AreaNumber::normalize($this->input('number'))]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -29,9 +38,10 @@ class UpdateRtRequest extends FormRequest
 
         return [
             'number' => [
+                'bail',
                 'sometimes',
                 'string',
-                'max:10',
+                AreaNumber::RULE,
                 Rule::unique('rts')->where(fn ($q) => $q->where('rw_id', $rt->rw_id))->ignore($rt->id),
             ],
             'is_active' => 'sometimes|boolean',
@@ -41,7 +51,8 @@ class UpdateRtRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'number.unique' => 'RT dengan nomor ini sudah ada di RW tersebut',
+            'number.regex' => 'Nomor RT harus angka 1 sampai 999.',
+            'number.unique' => 'RT dengan nomor ini sudah ada di RW tersebut.',
         ];
     }
 }

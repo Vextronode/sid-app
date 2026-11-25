@@ -19,7 +19,7 @@ class IndexPopulationLogRequest extends FormRequest
     {
         return [
             'type' => ['nullable', Rule::in(['citizen', 'family'])],
-            'event' => ['nullable', Rule::in(['created', 'updated', 'deleted', 'imported', 'socioeconomic_updated', 'letter_fulfilled'])],
+            'event' => ['nullable', Rule::in(['created', 'updated', 'deleted', 'imported', 'socioeconomic_updated', 'letter_fulfilled', 'identity_viewed'])],
             'subject_id' => ['nullable', 'string', 'max:36'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],

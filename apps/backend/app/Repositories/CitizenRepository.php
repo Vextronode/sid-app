@@ -145,23 +145,16 @@ class CitizenRepository
             ->get();
     }
 
-    public function existsByHamlet(int $hamletId): bool
-    {
-        return Citizen::query()->where('hamlet_id', $hamletId)->exists();
-    }
-
+    /**
+     * Cek nonaktifkan wilayah: warga aktif yang RT-nya ada di wilayah ini
+     * (lewat RT -> RW, sama dengan cakupan Data Penduduk). Cek hapus wilayah
+     * ada di ReferenceRepository.
+     */
     public function existsActiveByHamlet(int $hamletId): bool
     {
         return Citizen::query()
-            ->where('hamlet_id', $hamletId)
+            ->whereHas('rt.rw', fn ($query) => $query->where('hamlet_id', $hamletId))
             ->where('is_active', true)
-            ->exists();
-    }
-
-    public function existsByRw(int $rwId): bool
-    {
-        return Citizen::query()
-            ->whereHas('rt', fn ($query) => $query->where('rw_id', $rwId))
             ->exists();
     }
 
@@ -173,11 +166,6 @@ class CitizenRepository
             ->exists();
     }
 
-    public function existsByRt(int $rtId): bool
-    {
-        return Citizen::query()->where('rt_id', $rtId)->exists();
-    }
-
     public function existsActiveByRt(int $rtId): bool
     {
         return Citizen::query()
@@ -186,33 +174,15 @@ class CitizenRepository
             ->exists();
     }
 
-    public function countByGender(string $villageId, string $gender, ?int $rtId = null, ?int $rwId = null): int
-    {
-        $query = Citizen::query()
-            ->where('village_id', $villageId)
-            ->where('gender', $gender);
-
-        if ($rtId !== null) {
-            $query->where('rt_id', $rtId);
-        }
-
-        if ($rwId !== null) {
-            $query->whereHas('rt', fn ($rtQuery) => $rtQuery->where('rw_id', $rwId));
-        }
-
-        return $query->count();
-    }
-
     /**
+     * Warga aktif dalam cakupan pembaca, dikelompokkan menurut gender.
+     *
      * @return array<string, int> jumlah warga berkunci gender (L/P)
      */
-    public function countGroupedByGender(string $villageId, ?int $rtId = null, ?int $rwId = null): array
+    public function countGroupedByGender(PopulationScope $scope): array
     {
-        return Citizen::query()
-            ->where('village_id', $villageId)
+        return $scope->apply(Citizen::query())
             ->where('is_active', true)
-            ->when($rtId !== null, fn ($query) => $query->where('rt_id', $rtId))
-            ->when($rwId !== null, fn ($query) => $query->whereHas('rt', fn ($rtQuery) => $rtQuery->where('rw_id', $rwId)))
             ->selectRaw('gender, COUNT(*) as aggregate')
             ->groupBy('gender')
             ->pluck('aggregate', 'gender')

@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Enums\UserRole;
-use App\Exceptions\RegionContainsCitizensException;
+use App\Exceptions\RecordInUseException;
 use App\Exceptions\RegionHasActiveCitizensException;
 use App\Models\Hamlet;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
+use App\Repositories\ReferenceRepository;
 use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -17,6 +18,7 @@ class HamletService
     public function __construct(
         protected HamletRepository $hamletRepository,
         protected CitizenRepository $citizenRepository,
+        protected ReferenceRepository $referenceRepository,
     ) {}
 
     public function getAllOrderedByName(User $user): Collection
@@ -83,8 +85,10 @@ class HamletService
         if ($hamlet->village_id !== $this->villageId($user)) {
             abort(404, 'Dusun tidak ditemukan.');
         }
-        if ($this->citizenRepository->existsByHamlet($hamlet->id)) {
-            throw new RegionContainsCitizensException('dusun');
+        // Termasuk RW dan RT di bawahnya, yang ikut terhapus lewat cascade.
+        $usedBy = $this->referenceRepository->regionUsedBy($hamlet);
+        if ($usedBy !== []) {
+            throw RecordInUseException::region('Dusun', $usedBy);
         }
 
         return $this->hamletRepository->delete($hamlet);

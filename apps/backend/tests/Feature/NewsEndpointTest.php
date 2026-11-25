@@ -6,9 +6,13 @@ use App\Models\News;
 use App\Models\NewsCategory;
 use App\Models\User;
 use App\Models\Village;
+use App\Repositories\NewsRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -361,5 +365,44 @@ class NewsEndpointTest extends TestCase
         $this->actingAs($user)->patchJson("/api/news/{$news->id}", ['category_ids' => []])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['category_ids']);
+    }
+
+    #[Test]
+    public function a_new_thumbnail_replaces_the_old_file_after_saving(): void
+    {
+        Storage::fake('public');
+        $user = $this->stafSid();
+        $news = $this->draftNews($user);
+        Storage::disk('public')->put('news/lama.jpg', 'lama');
+        $news->update(['thumbnail' => 'news/lama.jpg']);
+
+        $this->actingAs($user)
+            ->patch("/api/news/{$news->id}", ['thumbnail' => UploadedFile::fake()->image('baru.jpg')])
+            ->assertOk();
+
+        $newPath = $news->fresh()->thumbnail;
+        Storage::disk('public')->assertMissing('news/lama.jpg');
+        Storage::disk('public')->assertExists($newPath);
+    }
+
+    #[Test]
+    public function a_failed_update_keeps_the_old_thumbnail_and_removes_the_upload(): void
+    {
+        Storage::fake('public');
+        $user = $this->stafSid();
+        $news = $this->draftNews($user);
+        Storage::disk('public')->put('news/lama.jpg', 'lama');
+        $news->update(['thumbnail' => 'news/lama.jpg']);
+        // Penyimpanan data gagal setelah file baru terunggah.
+        $this->partialMock(NewsRepository::class, fn ($mock) => $mock
+            ->shouldReceive('update')->andThrow(new RuntimeException('gagal menyimpan')));
+
+        $this->actingAs($user)
+            ->patch("/api/news/{$news->id}", ['thumbnail' => UploadedFile::fake()->image('baru.jpg')])
+            ->assertStatus(500);
+
+        // Berita tetap menunjuk file lama yang masih ada; file baru tidak tertinggal.
+        $this->assertSame('news/lama.jpg', $news->fresh()->thumbnail);
+        $this->assertSame(['news/lama.jpg'], Storage::disk('public')->files('news'));
     }
 }

@@ -15,6 +15,7 @@ export const POPULATION_EVENT_LABELS: Record<string, string> = {
   imported: 'Impor Excel',
   socioeconomic_updated: 'Sosio-ekonomi diperbarui',
   letter_fulfilled: 'Diubah lewat surat',
+  identity_viewed: 'NIK/No. KK utuh dilihat',
 }
 
 export const POPULATION_EVENT_OPTIONS = Object.entries(POPULATION_EVENT_LABELS).map(
@@ -40,6 +41,20 @@ export const ACCOUNT_EVENT_LABELS: Record<string, string> = {
 }
 
 export const ACCOUNT_EVENT_OPTIONS = Object.entries(ACCOUNT_EVENT_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}))
+
+// Jenis log tab "Lainnya" (activity_log.log_name).
+export const OTHER_TYPE_LABELS: Record<string, string> = {
+  official: 'Pejabat',
+  letter: 'Buka NIK di surat',
+  citizen_business: 'Data usaha (Cimart)',
+  disaster_alert: 'Peringatan bencana',
+  integration: 'Klien integrasi',
+}
+
+export const OTHER_TYPE_OPTIONS = Object.entries(OTHER_TYPE_LABELS).map(([value, label]) => ({
   value,
   label,
 }))

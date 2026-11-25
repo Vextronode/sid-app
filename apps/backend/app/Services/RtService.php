@@ -3,15 +3,19 @@
 namespace App\Services;
 
 use App\Enums\UserRole;
-use App\Exceptions\RegionContainsCitizensException;
+use App\Exceptions\RecordInUseException;
 use App\Exceptions\RegionHasActiveCitizensException;
 use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
+use App\Repositories\ReferenceRepository;
 use App\Repositories\RtRepository;
 use App\Repositories\RwRepository;
 use App\Support\PopulationScope;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RtService
 {
@@ -19,6 +23,7 @@ class RtService
         protected RtRepository $rtRepository,
         protected RwRepository $rwRepository,
         protected CitizenRepository $citizenRepository,
+        protected ReferenceRepository $referenceRepository,
     ) {}
 
     public function getAllOrderedByNumber(User $user, ?int $rwId = null): Collection
@@ -29,14 +34,16 @@ class RtService
     public function create(array $data, User $user): Rt
     {
         $villageId = $this->villageId($user);
-        $rw = $this->rwRepository->findOrFail($data['rw_id'], $villageId);
+        // RW dikirim di isi request: milik desa lain = input salah (422).
+        $rw = $this->rwRepository->findForVillage((int) $data['rw_id'], $villageId)
+            ?? throw ValidationException::withMessages(['rw_id' => ['RW harus berasal dari desa Anda.']]);
 
-        return $this->rtRepository->create([
+        return $this->guardDuplicateNumber(fn () => $this->rtRepository->create([
             'rw_id' => $data['rw_id'],
-            'village_id' => $rw->hamlet->village_id,
+            'village_id' => $rw->village_id,
             'number' => $data['number'],
             'is_active' => true,
-        ]);
+        ]));
     }
 
     public function update(Rt $rt, array $data, User $user): Rt
@@ -52,7 +59,7 @@ class RtService
             throw new RegionHasActiveCitizensException('RT');
         }
 
-        return $this->rtRepository->update($rt, $data);
+        return $this->guardDuplicateNumber(fn () => $this->rtRepository->update($rt, $data));
     }
 
     public function delete(Rt $rt, User $user): bool
@@ -60,8 +67,9 @@ class RtService
         if ($rt->village_id !== $this->villageId($user)) {
             abort(404, 'RT tidak ditemukan.');
         }
-        if ($this->citizenRepository->existsByRt($rt->id)) {
-            throw new RegionContainsCitizensException('RT');
+        $usedBy = $this->referenceRepository->regionUsedBy($rt);
+        if ($usedBy !== []) {
+            throw RecordInUseException::region('RT', $usedBy);
         }
 
         return $this->rtRepository->delete($rt);
@@ -79,6 +87,26 @@ class RtService
         }
 
         return $user->village_id;
+    }
+
+    /**
+     * Dua permintaan bersamaan dengan nomor sama sama-sama lolos validasi;
+     * unique index menolak yang kedua dan dijawab 422, bukan 500. Ditulis di
+     * dalam transaksi supaya kegagalannya tidak membatalkan transaksi luar
+     * (PostgreSQL).
+     *
+     * @template T
+     *
+     * @param  callable(): T  $write
+     * @return T
+     */
+    private function guardDuplicateNumber(callable $write): mixed
+    {
+        try {
+            return DB::transaction($write);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['number' => ['RT dengan nomor ini sudah ada di RW tersebut.']]);
+        }
     }
 
     private function villageId(User $user): string

@@ -73,6 +73,9 @@ export default function NotificationPopover({
   unreadCount,
   loading,
   error,
+  hasMore,
+  loadingMore,
+  loadMore,
   markingIds,
   markingAll,
   markAsRead,
@@ -189,6 +192,18 @@ export default function NotificationPopover({
 
           {!loading && filtered.length === 0 && !error && (
             <p className="sid-notification-empty">Tidak ada notifikasi.</p>
+          )}
+
+          {/* Notifikasi dimuat 20 per halaman; yang lebih lama menyusul. */}
+          {hasMore && (
+            <button
+              type="button"
+              className="sid-notification-load-more"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+            >
+              {loadingMore ? 'Memuat...' : 'Muat lebih banyak'}
+            </button>
           )}
         </div>
       </div>

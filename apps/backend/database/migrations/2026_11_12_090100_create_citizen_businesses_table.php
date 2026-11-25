@@ -16,7 +16,9 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             // Satu warga boleh punya beberapa usaha (beberapa SKU).
-            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->noActionOnDelete();
             $table->foreignUuid('letter_id')->unique()->constrained('letters')->cascadeOnDelete();
             $table->string('business_name');
             $table->string('business_activity');

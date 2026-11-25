@@ -24,7 +24,10 @@ class DashboardStatsRequest extends FormRequest
     {
         return [
             'date' => ['nullable', 'date'],
-            'letter_type' => ['nullable', 'string', 'max:50'],
+            // Id jenis surat (angka) atau "all". Nilai lain ditolak di sini
+            // karena dibandingkan langsung dengan kolom angka letter_type_id
+            // (PostgreSQL melempar error untuk teks bukan angka).
+            'letter_type' => ['nullable', 'regex:/^(all|[0-9]+)$/'],
         ];
     }
 }

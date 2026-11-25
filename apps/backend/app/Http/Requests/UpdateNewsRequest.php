@@ -50,6 +50,7 @@ class UpdateNewsRequest extends FormRequest
             // `sometimes`: PATCH publish/unpublish tidak mengirim kategori.
             'category_ids' => ['sometimes', 'required', 'array', 'min:1', 'max:2'],
             'category_ids.*' => [
+                'bail',
                 'integer',
                 'distinct',
                 Rule::exists('news_categories', 'id')->where('village_id', $this->user()?->village_id),

@@ -2,12 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Models\Citizen;
 use App\Models\Hamlet;
 use App\Models\User;
 use App\Models\Village;
 use App\Repositories\CitizenRepository;
 use App\Repositories\HamletRepository;
+use App\Repositories\ReferenceRepository;
 use App\Services\HamletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -26,6 +26,7 @@ class HamletServiceTest extends TestCase
         $this->service = new HamletService(
             new HamletRepository,
             new CitizenRepository,
+            new ReferenceRepository,
         );
     }
 
@@ -54,7 +55,7 @@ class HamletServiceTest extends TestCase
     public function test_update_blocks_deactivation_when_active_citizens_exist(): void
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
-        Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => true]);
+        $this->makeCitizenInHamlet($hamlet, ['is_active' => true]);
         $user = $this->makeStafSidActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);
@@ -66,7 +67,7 @@ class HamletServiceTest extends TestCase
     public function test_update_allows_deactivation_when_only_inactive_citizens_exist(): void
     {
         $hamlet = Hamlet::factory()->create(['is_active' => true]);
-        Citizen::factory()->create(['hamlet_id' => $hamlet->id, 'is_active' => false]);
+        $this->makeCitizenInHamlet($hamlet, ['is_active' => false]);
         $user = $this->makeStafSidActor($hamlet->village_id);
 
         $updated = $this->service->update($hamlet, ['is_active' => false], $user);
@@ -88,7 +89,7 @@ class HamletServiceTest extends TestCase
     public function test_delete_is_blocked_when_citizens_still_registered(): void
     {
         $hamlet = Hamlet::factory()->create();
-        Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $this->makeCitizenInHamlet($hamlet);
         $user = $this->makeStafSidActor($hamlet->village_id);
 
         $this->expectException(HttpException::class);

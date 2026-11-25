@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\Family;
+use App\Models\IntegrationClient;
 use App\Models\Letter;
 use App\Models\LetterStatusLog;
 use App\Models\Rt;
@@ -11,7 +12,10 @@ use App\Models\User;
 use App\Models\Village;
 use App\Services\PopulationAuditService;
 use App\Support\AuditContext;
+use App\Support\IntegrationAudit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -260,5 +264,50 @@ class ActivityLogTest extends TestCase
     private function existing(\Closure $create): mixed
     {
         return app(AuditContext::class)->muted($create);
+    }
+
+    public function test_other_logs_tab_lists_official_identity_business_alert_and_integration_logs(): void
+    {
+        // Pengangkatan pejabat lewat alur asli: lognya kini membawa desa dan event.
+        $rt = Rt::factory()->create();
+        $candidate = User::factory()->create(['role' => 'warga', 'village_id' => $this->village->id,
+            'citizen_id' => Citizen::factory()->create(['village_id' => $this->village->id, 'name' => 'Budi'])->id]);
+        Storage::fake('public');
+        $this->actingAs($this->staf)->post('/api/officials/promote', [
+            'user_id' => $candidate->id, 'position' => 'rt', 'rt_id' => $rt->id, 'started_at' => now()->toDateString(),
+            'photo' => UploadedFile::fake()->image('foto.jpg'),
+        ], ['Accept' => 'application/json'])->assertSuccessful();
+
+        $client = IntegrationClient::factory()->create(['village_id' => $this->village->id, 'name' => 'SIGAP']);
+        IntegrationAudit::record($client, 'ping', 'Klien integrasi memeriksa koneksi');
+        foreach (['letter' => 'identity_viewed', 'citizen_business' => 'cimart_cancelled', 'disaster_alert' => 'dismissed'] as $logName => $event) {
+            activity($logName)->causedBy($this->staf)->event($event)
+                ->withProperties(['village_id' => $this->village->id])->log("Uji {$logName}");
+        }
+        // Desa lain tidak ikut.
+        activity('official')->event('promoted')->withProperties(['village_id' => Village::factory()->create()->id])->log('Pejabat diangkat');
+
+        $response = $this->actingAs($this->staf)->getJson('/api/activity-logs/others')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 5);
+        $this->assertEqualsCanonicalizing(
+            ['official', 'integration', 'letter', 'citizen_business', 'disaster_alert'],
+            array_column($response->json('data'), 'log_name'),
+        );
+
+        $official = collect($response->json('data'))->firstWhere('log_name', 'official');
+        $this->assertSame('promoted', $official['event']);
+        $this->assertSame('Pejabat diangkat', $official['description']);
+        $this->assertStringStartsWith('Budi (', $official['subject_label']);
+
+        // Pelaku klien integrasi (tanpa role) tidak membuat query gagal.
+        $this->actingAs($this->staf)->getJson('/api/activity-logs/others?type=integration')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.actor.name', 'SIGAP')
+            ->assertJsonPath('data.0.actor.role_label', 'Klien integrasi')
+            ->assertJsonPath('data.0.details.client', $client->slug);
+
+        $this->actingAs($this->staf)->getJson('/api/activity-logs/others?type=citizen')->assertUnprocessable();
     }
 }

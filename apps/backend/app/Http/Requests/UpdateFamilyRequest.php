@@ -26,9 +26,7 @@ class UpdateFamilyRequest extends FormRequest
         return [
             'family_address' => ['sometimes', 'string'],
             'family_status' => ['sometimes', Rule::in(['aktif', 'pindah', 'bubar'])],
-            'rt_id' => ['nullable', 'exists:rts,id'],
-            'rw_id' => ['nullable', 'exists:rws,id'],
-            'hamlet_id' => ['nullable', 'exists:hamlets,id'],
+            'rt_id' => ['nullable', 'bail', 'integer', 'exists:rts,id'],
         ];
     }
 }

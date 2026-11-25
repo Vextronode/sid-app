@@ -14,25 +14,26 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Menurunkan wilayah dan KK warga impor dari kolom file desa:
- * - RW dicari dari nomornya di seluruh desa (penomoran RW tidak mulai lagi
- *   di tiap dusun), lalu RT dicari di dalam RW itu. "001" sama dengan "1".
+ * - RW dicari dari nomornya di seluruh desa (nomor RW unik se-desa, tidak
+ *   mulai lagi di tiap dusun), lalu RT dicari di dalam RW itu. "001" sama
+ *   dengan "1".
  * - Kolom RT/RW gabungan ("001/003") dipecah menjadi RT dan RW.
- * - Dusun diambil dari kolom DUSUN bila ada; kalau tidak, dari nama dusun
- *   di ALAMAT; bila ALAMAT tidak menyebut dusun (mis. nama perumahan), ikut
- *   dusun milik RW.
+ * - Dusun tidak diambil dari file: Citizen menurunkannya dari RT -> RW.
+ *   Kolom DUSUN hanya dibandingkan; bila berbeda dengan dusun RW, baris
+ *   tetap diimpor dengan peringatan supaya Staf bisa memeriksa datanya.
  * - NKK dipakai untuk menautkan ke KK yang ada atau membuat KK baru.
  *
  * Data wilayah dimuat sekali per impor.
  */
 final class CitizenImportResolver
 {
-    /** @var Collection<int, Collection<int, Rw>>|null nomor RW (int) => RW */
+    /** @var Collection<int, Rw>|null RW desa, key = id */
     private ?Collection $rws = null;
 
-    /** @var Collection<string, Rt>|null "rw_id:nomor RT" => RT */
+    /** @var Collection<int, Rt>|null RT desa, key = id */
     private ?Collection $rts = null;
 
-    /** @var array<string, string>|null id dusun => nama dusun ringkas (huruf saja) */
+    /** @var array<int|string, string>|null id dusun => nama dusun */
     private ?array $hamlets = null;
 
     /** @var array<string, Occupation>|null nama pekerjaan ternormalisasi => pekerjaan */
@@ -45,12 +46,12 @@ final class CitizenImportResolver
     ) {}
 
     /**
-     * Isi rt_id, rw_id, dan hamlet_id dari kolom rt/rw/rt_rw/hamlet/address.
-     * Baris yang sudah membawa rt_id (template sistem) tidak dicari lagi;
-     * hamlet_id yang sudah diisi tidak ditimpa.
+     * Isi rt_id dari kolom rt/rw/rt_rw. Baris yang sudah membawa rt_id
+     * (template sistem) tidak dicari lagi. Kolom DUSUN hanya dibandingkan
+     * dengan dusun milik RW dari RT tersebut.
      *
      * @param  array<string, mixed>  $data
-     * @param  list<string>  $warnings  nama dusun yang tidak ditemukan
+     * @param  list<string>  $warnings  dusun di file yang tidak cocok dengan RW
      * @return array<string, mixed>
      *
      * @throws ValidationException RW/RT tidak ditemukan
@@ -65,22 +66,17 @@ final class CitizenImportResolver
             }
         }
 
-        if (isset($data['hamlet'])) {
-            $data['hamlet_id'] ??= $this->hamletByName((string) $data['hamlet'], $warnings);
-        }
-
+        $hamletName = trim((string) ($data['hamlet'] ?? ''));
         unset($data['rt_rw'], $data['hamlet']);
 
         // Template sistem memakai rt_id langsung; jalur ini untuk file desa.
-        if (isset($data['rt_id']) || (! isset($data['rw']) && ! isset($data['rt']))) {
-            return $data;
+        if (! isset($data['rt_id']) && (isset($data['rw']) || isset($data['rt']))) {
+            $data['rt_id'] = $this->findRt($this->findRw($data['rw'] ?? null), $data['rt'] ?? null)->id;
         }
 
-        $rw = $this->findRw($data['rw'] ?? null);
-        $data['rt_id'] = $this->findRt($rw, $data['rt'] ?? null)->id;
-        $data['rw_id'] = $rw->id;
-        $data['hamlet_id'] ??= $this->hamletFromAddress((string) ($data['address'] ?? ''), $rw->hamlet_id)
-            ?? $rw->hamlet_id;
+        if ($hamletName !== '' && isset($data['rt_id'])) {
+            $this->compareHamlet($hamletName, $data['rt_id'], $warnings);
+        }
 
         return $data;
     }
@@ -124,9 +120,9 @@ final class CitizenImportResolver
     }
 
     /**
-     * ID KK untuk No KK ini; KK baru dibuat dengan alamat & wilayah warga
-     * pertama yang memakainya. Dipanggil di dalam transaksi baris supaya KK
-     * ikut batal bila warganya gagal disimpan.
+     * ID KK untuk No KK ini; KK baru dibuat dengan alamat & RT warga pertama
+     * yang memakainya (RW dan Dusun KK diturunkan dari RT). Dipanggil di
+     * dalam transaksi baris supaya KK ikut batal bila warganya gagal disimpan.
      *
      * @param  array<string, mixed>  $data
      */
@@ -142,43 +138,32 @@ final class CitizenImportResolver
             return $family->id;
         }
 
-        $rwId = $data['rw_id'] ?? (isset($data['rt_id']) ? Rt::query()->whereKey($data['rt_id'])->value('rw_id') : null);
-
         return $this->familyService->create([
             'no_kk' => $noKk,
             'family_address' => $data['address'],
             'rt_id' => $data['rt_id'] ?? null,
-            'rw_id' => $rwId,
-            'hamlet_id' => $data['hamlet_id'] ?? null,
         ], $this->user)->id;
     }
 
     private function findRw(mixed $number): Rw
     {
-        $this->rws ??= Rw::query()
-            ->where('village_id', $this->user->village_id)
-            ->get()
-            ->groupBy(fn (Rw $rw) => self::number($rw->number));
+        $rw = self::isNumber($number)
+            ? $this->rws()->first(fn (Rw $rw) => self::number($rw->number) === self::number($number))
+            : null;
 
-        $matches = self::isNumber($number) ? $this->rws->get(self::number($number), collect()) : collect();
-
-        if ($matches->count() !== 1) {
-            throw ValidationException::withMessages(['rw' => [$matches->isEmpty()
-                ? "RW {$number} tidak ditemukan di data wilayah desa."
-                : "RW {$number} ada di lebih dari satu dusun; isi kolom rt_id."]]);
+        if ($rw === null) {
+            throw ValidationException::withMessages(['rw' => ["RW {$number} tidak ditemukan di data wilayah desa."]]);
         }
 
-        return $matches->first();
+        return $rw;
     }
 
     private function findRt(Rw $rw, mixed $number): Rt
     {
-        $this->rts ??= Rt::query()
-            ->where('village_id', $this->user->village_id)
-            ->get()
-            ->keyBy(fn (Rt $rt) => $rt->rw_id.':'.self::number($rt->number));
-
-        $rt = self::isNumber($number) ? $this->rts->get($rw->id.':'.self::number($number)) : null;
+        $rt = self::isNumber($number)
+            ? $this->rts()->first(fn (Rt $rt) => (int) $rt->rw_id === (int) $rw->id
+                && self::number($rt->number) === self::number($number))
+            : null;
 
         if ($rt === null) {
             throw ValidationException::withMessages(['rt' => ["RT {$number} tidak ditemukan di RW {$rw->number}."]]);
@@ -188,18 +173,49 @@ final class CitizenImportResolver
     }
 
     /**
-     * Dusun dari kolom DUSUN: nama sama persis (huruf saja, "SINAR GALIH" =
-     * "Sinargalih") atau beda salah ketik kecil. Tidak ditemukan -> null,
-     * lalu dusun diambil dari ALAMAT/RW seperti biasa.
+     * Bandingkan kolom DUSUN dengan dusun milik RW dari RT warga. Dusun yang
+     * disimpan tetap dusun RW; yang tidak cocok hanya diberi peringatan.
      *
      * @param  list<string>  $warnings
      */
-    private function hamletByName(string $name, array &$warnings): ?int
+    private function compareHamlet(string $name, mixed $rtId, array &$warnings): void
+    {
+        $rt = $this->rts()->get((int) $rtId);
+        $rw = $rt !== null ? $this->rws()->get((int) $rt->rw_id) : null;
+
+        // RT dari desa lain atau tidak ada: baris ditolak validasi/service.
+        if ($rw === null) {
+            return;
+        }
+
+        $named = $this->hamletByName($name);
+
+        if ($named === (int) $rw->hamlet_id) {
+            return;
+        }
+
+        $rwHamlet = $this->hamlets()[$rw->hamlet_id] ?? '-';
+        $warnings[] = $named === null
+            ? "Dusun \"{$name}\" tidak ditemukan; dusun mengikuti RW {$rw->number} ({$rwHamlet})."
+            : "Dusun \"{$name}\" berbeda dengan dusun RW {$rw->number} ({$rwHamlet}); dusun mengikuti RW.";
+    }
+
+    /**
+     * Dusun dari kolom DUSUN: nama sama persis (huruf saja, "SINAR GALIH" =
+     * "Sinargalih") atau beda salah ketik kecil. Tidak ditemukan -> null.
+     */
+    private function hamletByName(string $name): ?int
     {
         $wanted = self::letters((string) preg_replace('/^\s*(DUSUN|DSN|DUSUNN)\b\.?/i', '', $name));
         $best = null;
 
-        foreach ($this->hamletNames() as $id => $hamlet) {
+        foreach ($this->hamlets() as $id => $hamlet) {
+            $hamlet = self::letters($hamlet);
+
+            if ($hamlet === '') {
+                continue;
+            }
+
             $distance = levenshtein($wanted, $hamlet);
 
             if ($distance <= (strlen($hamlet) >= 7 ? 2 : 1) && ($best === null || $distance < $best[0])) {
@@ -207,82 +223,34 @@ final class CitizenImportResolver
             }
         }
 
-        if ($best === null) {
-            $warnings[] = "Dusun \"{$name}\" tidak ditemukan; dusun diambil dari ALAMAT atau RW.";
-
-            return null;
-        }
-
-        return (int) $best[1];
+        return $best === null ? null : (int) $best[1];
     }
 
-    /** @return array<int|string, string> id dusun => nama dusun ringkas (huruf saja) */
-    private function hamletNames(): array
+    /** @return Collection<int, Rw> */
+    private function rws(): Collection
+    {
+        return $this->rws ??= Rw::query()
+            ->where('village_id', $this->user->village_id)
+            ->get()
+            ->keyBy('id');
+    }
+
+    /** @return Collection<int, Rt> */
+    private function rts(): Collection
+    {
+        return $this->rts ??= Rt::query()
+            ->where('village_id', $this->user->village_id)
+            ->get()
+            ->keyBy('id');
+    }
+
+    /** @return array<int|string, string> id dusun => nama dusun */
+    private function hamlets(): array
     {
         return $this->hamlets ??= Hamlet::query()
             ->where('village_id', $this->user->village_id)
             ->pluck('name', 'id')
-            ->map(fn (string $name) => self::letters($name))
-            ->filter()
             ->all();
-    }
-
-    /**
-     * Cari nama dusun di dalam ALAMAT. Pembanding hanya huruf ("DUSUN SINAR
-     * GALIH" -> "DUSUNSINARGALIH"), dengan toleransi salah ketik kecil
-     * ("SIRNAGALIH"). Nama desa/kecamatan dibuang dulu karena bisa sama
-     * dengan nama dusun ("SINARGALIH DESA CIBENDA"). Bila beberapa dusun
-     * tersebut, dusun milik RW diutamakan, lalu yang paling awal disebut.
-     */
-    private function hamletFromAddress(string $address, int $rwHamletId): ?int
-    {
-        $text = preg_replace('/\b(DESA|DS|KEL|KELURAHAN|KEC|KECAMATAN|KAB|KABUPATEN)\b\.?\s*[A-Z]+/', ' ', strtoupper($address));
-        $compact = self::letters((string) $text);
-
-        if ($compact === '') {
-            return null;
-        }
-
-        $positions = [];
-
-        foreach ($this->hamletNames() as $id => $name) {
-            $position = strpos($compact, $name);
-            $positions[$id] = $position !== false ? $position : self::fuzzyPosition($compact, $name);
-        }
-
-        $positions = array_filter($positions, fn ($position) => $position !== null);
-
-        if ($positions === []) {
-            return null;
-        }
-
-        if (array_key_exists($rwHamletId, $positions)) {
-            return $rwHamletId;
-        }
-
-        asort($positions);
-
-        return (int) array_key_first($positions);
-    }
-
-    /** Posisi potongan teks yang paling mirip nama dusun, bila cukup mirip. */
-    private static function fuzzyPosition(string $text, string $name): ?int
-    {
-        $length = strlen($name);
-        $maxDistance = $length >= 7 ? 2 : 1;
-        $best = null;
-
-        for ($size = $length - 1; $size <= $length + 1; $size++) {
-            for ($i = 0; $i + $size <= strlen($text); $i++) {
-                $distance = levenshtein(substr($text, $i, $size), $name);
-
-                if ($distance <= $maxDistance && ($best === null || $distance < $best[0])) {
-                    $best = [$distance, $i];
-                }
-            }
-        }
-
-        return $best[1] ?? null;
     }
 
     private static function occupationKey(string $name): string

@@ -3,7 +3,10 @@
 namespace Tests;
 
 use App\Models\Citizen;
+use App\Models\Hamlet;
 use App\Models\Official;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -36,5 +39,17 @@ abstract class TestCase extends BaseTestCase
         ], $officialData));
 
         return $user->fresh();
+    }
+
+    /**
+     * Warga yang RT-nya ada di dusun ini. Dusun warga selalu diturunkan dari
+     * RT -> RW (Citizen::booted), jadi hamlet_id tidak bisa diisi langsung.
+     */
+    protected function makeCitizenInHamlet(Hamlet $hamlet, array $attributes = []): Citizen
+    {
+        $rw = Rw::factory()->create(['hamlet_id' => $hamlet->id]);
+        $rt = Rt::factory()->create(['rw_id' => $rw->id]);
+
+        return Citizen::factory()->create(['rt_id' => $rt->id, ...$attributes]);
     }
 }

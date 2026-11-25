@@ -127,19 +127,4 @@ class FamilyRepository
         return Schema::hasColumn('citizens', 'family_id')
             && $family->members()->exists();
     }
-
-    public function existsByHamlet(int $hamletId): bool
-    {
-        return Family::query()->where('hamlet_id', $hamletId)->exists();
-    }
-
-    public function existsByRw(int $rwId): bool
-    {
-        return Family::query()->where('rw_id', $rwId)->exists();
-    }
-
-    public function existsByRt(int $rtId): bool
-    {
-        return Family::query()->where('rt_id', $rtId)->exists();
-    }
 }

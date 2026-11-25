@@ -403,7 +403,7 @@ class LetterService
                 'kasi_pemerintahan', 'kaur_tu_umum' => $this->scopeForKasiKaur($user),
                 'staf_sid' => $this->letterRepository
                     ->queryForList()
-                    ->where('village_id', $user->official?->village_id),
+                    ->where('village_id', $this->accountVillageId($user)),
                 default => abort(403, 'Anda tidak berwenang mengakses daftar surat ini.'),
             };
         }
@@ -455,17 +455,26 @@ class LetterService
 
     private function scopeForKadesSekdes(User $user): Builder
     {
-        $official = $this->officialService->getCurrentOfficial($user);
-
-        return $this->letterRepository->queryRtApprovedInVillage($official->village_id);
+        return $this->letterRepository->queryRtApprovedInVillage($this->accountVillageId($user));
     }
 
     private function scopeForKasiKaur(User $user): Builder
     {
-        $official = $this->officialService->getCurrentOfficial($user);
-
         return $this->letterRepository
-            ->queryApprovedForAssignedRole($user->role, $official->village_id);
+            ->queryApprovedForAssignedRole($user->role, $this->accountVillageId($user));
+    }
+
+    /**
+     * Peran se-desa membaca surat desa akunnya, sama dengan LetterPolicy dan
+     * PopulationScope: tidak bergantung pada baris jabatan aktif.
+     */
+    private function accountVillageId(User $user): string
+    {
+        if (! $user->is_active || ! $user->village_id) {
+            abort(403, 'Akun aktif dengan desa yang valid diperlukan.');
+        }
+
+        return $user->village_id;
     }
 
     private function applyFilters(Builder $query, array $filters): void

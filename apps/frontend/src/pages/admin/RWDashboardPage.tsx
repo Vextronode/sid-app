@@ -16,6 +16,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { getGreeting } from '@/lib/utils/greeting'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
+import GenderStatsPanel from '@/features/dashboard-mobile/components/GenderStatsPanel'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
@@ -171,6 +172,11 @@ export default function RWDashboardPage() {
           <div className="sid-dashboard-chart">
             <SuratStatChart />
           </div>
+
+          {/* Warga menurut jenis kelamin, dalam cakupan pengguna. */}
+          <div className="sid-dashboard-chart">
+            <GenderStatsPanel />
+          </div>
         </div>
 
         {/* ======================================
@@ -239,6 +245,10 @@ export default function RWDashboardPage() {
 
           <div className="sid-dashboard-chart-mobile">
             <SuratStatChart />
+          </div>
+
+          <div className="sid-dashboard-chart-mobile">
+            <GenderStatsPanel />
           </div>
         </div>
 

@@ -26,12 +26,16 @@ class UpdateOfficialRequest extends FormRequest
         return [
             'citizen_id' => [
                 'sometimes',
+                'bail',
+                'uuid',
                 'exists:citizens,id',
             ],
 
             'user_id' => [
                 'sometimes',
                 'nullable',
+                'bail',
+                'uuid',
                 'exists:users,id',
             ],
 
@@ -44,24 +48,32 @@ class UpdateOfficialRequest extends FormRequest
             'village_id' => [
                 'sometimes',
                 'nullable',
+                'bail',
+                'uuid',
                 'exists:villages,id',
             ],
 
             'rt_id' => [
                 'sometimes',
                 'nullable',
+                'bail',
+                'integer',
                 'exists:rts,id',
             ],
 
             'rw_id' => [
                 'sometimes',
                 'nullable',
+                'bail',
+                'integer',
                 'exists:rws,id',
             ],
 
             'hamlet_id' => [
                 'sometimes',
                 'nullable',
+                'bail',
+                'integer',
                 'exists:hamlets,id',
             ],
 

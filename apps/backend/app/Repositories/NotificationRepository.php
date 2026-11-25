@@ -3,9 +3,11 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Carbon;
 
 class NotificationRepository
 {
@@ -14,11 +16,11 @@ class NotificationRepository
         //
     }
 
-    public function allForUserLatestFirst(User $user): Collection
+    public function paginateForUserLatestFirst(User $user, int $perPage): LengthAwarePaginator
     {
         return $user->notifications()
             ->latest()
-            ->get();
+            ->paginate($perPage);
     }
 
     public function findOrFailForUser(User $user, string $id): Collection|Model
@@ -39,5 +41,14 @@ class NotificationRepository
     public function countUnreadForUser(User $user): int
     {
         return $user->unreadNotifications()->count();
+    }
+
+    /** Notifikasi yang dibaca sebelum $cutoff; yang belum dibaca tidak disentuh. */
+    public function deleteReadBefore(Carbon $cutoff): int
+    {
+        return DatabaseNotification::query()
+            ->whereNotNull('read_at')
+            ->where('read_at', '<', $cutoff)
+            ->delete();
     }
 }

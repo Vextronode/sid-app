@@ -43,16 +43,37 @@ class DashboardControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/dashboard/gender-stats')
             ->assertStatus(403)
-            ->assertJsonPath('message', 'Tidak memiliki akses.');
+            ->assertJsonPath('message', 'Anda tidak berhak melihat Data Penduduk.');
     }
 
-    public function test_gender_stats_forbids_kadus(): void
+    public function test_gender_stats_forbid_kadus_without_an_area(): void
     {
         $user = User::factory()->create(['role' => 'kadus']);
 
         $this->actingAs($user)
             ->getJson('/api/dashboard/gender-stats')
             ->assertForbidden();
+    }
+
+    public function test_gender_stats_follow_the_population_scope_of_each_role(): void
+    {
+        $village = Village::factory()->create();
+        $hamletA = Hamlet::factory()->create(['village_id' => $village->id]);
+        $hamletB = Hamlet::factory()->create(['village_id' => $village->id]);
+        $inA = $this->makeCitizenInHamlet($hamletA, ['village_id' => $village->id, 'gender' => 'L']);
+        $this->makeCitizenInHamlet($hamletA, ['village_id' => $village->id, 'gender' => 'P']);
+        $this->makeCitizenInHamlet($hamletB, ['village_id' => $village->id, 'gender' => 'P']);
+
+        $stats = fn (User $user) => $this->actingAs($user)->getJson('/api/dashboard/gender-stats')->assertOk()->json('data');
+        $kades = $this->makeUserWithOfficialAssignment('kepala_desa', 'kepala_desa', $village->id);
+        $kadus = $this->makeUserWithOfficialAssignment('kadus', 'kadus', $village->id, ['hamlet_id' => $hamletA->id]);
+        $rt = $this->makeUserWithOfficialAssignment('rt', 'rt', $village->id, ['rt_id' => $inA->rt_id]);
+
+        // Tiga pejabat dari helper juga warga desa ini (gender acak), di RT
+        // di luar Dusun A: hanya ikut terhitung dalam cakupan se-desa Kades.
+        $this->assertSame(6, $stats($kades)['total']);
+        $this->assertSame(['total' => 2, 'laki' => 1, 'perempuan' => 1], $stats($kadus));
+        $this->assertSame(['total' => 1, 'laki' => 1, 'perempuan' => 0], $stats($rt));
     }
 
     public function test_letter_stats_returns_chart_structure(): void
@@ -101,8 +122,8 @@ class DashboardControllerTest extends TestCase
         $otherHamlet = Hamlet::factory()->create(['village_id' => $village->id]);
         $user = $this->makeUserWithOfficialAssignment('kadus', 'kadus', $village->id, ['hamlet_id' => $hamlet->id]);
 
-        $ownCitizen = Citizen::factory()->create(['village_id' => $village->id, 'hamlet_id' => $hamlet->id]);
-        $otherCitizen = Citizen::factory()->create(['village_id' => $village->id, 'hamlet_id' => $otherHamlet->id]);
+        $ownCitizen = $this->makeCitizenInHamlet($hamlet, ['village_id' => $village->id]);
+        $otherCitizen = $this->makeCitizenInHamlet($otherHamlet, ['village_id' => $village->id]);
         $ownApproved = Letter::factory()->create(['village_id' => $village->id, 'citizen_id' => $ownCitizen->id]);
         $otherApproved = Letter::factory()->create(['village_id' => $village->id, 'citizen_id' => $otherCitizen->id]);
         $this->approveAtRt($ownApproved);

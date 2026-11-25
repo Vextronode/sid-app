@@ -10,7 +10,9 @@ use App\Support\PublicPageCache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class NewsService
 {
@@ -37,16 +39,17 @@ class NewsService
             'published_at' => $isPublished ? now() : null,
         ];
 
-        if (isset($data['thumbnail']) && $data['thumbnail'] instanceof UploadedFile) {
-            $payload['thumbnail'] = $data['thumbnail']->store('news', 'public');
+        $newThumbnail = $this->storeThumbnail($data);
+        if ($newThumbnail !== null) {
+            $payload['thumbnail'] = $newThumbnail;
         }
 
-        $news = DB::transaction(function () use ($payload, $data) {
+        $news = $this->writeWithThumbnail($newThumbnail, fn () => DB::transaction(function () use ($payload, $data) {
             $news = $this->repository->create($payload);
             $this->repository->syncCategories($news, $data['category_ids']);
 
             return $news;
-        });
+        }));
 
         $this->flushPublicCache($news);
 
@@ -62,20 +65,10 @@ class NewsService
             array_flip(['title', 'content'])
         );
 
-        if (
-            isset($data['thumbnail']) &&
-            $data['thumbnail'] instanceof UploadedFile
-        ) {
-            $oldThumbnail = $news->thumbnail;
-
-            $payload['thumbnail'] = $data['thumbnail']->store(
-                'news',
-                'public'
-            );
-
-            if ($oldThumbnail) {
-                \Storage::disk('public')->delete($oldThumbnail);
-            }
+        $oldThumbnail = $news->thumbnail;
+        $newThumbnail = $this->storeThumbnail($data);
+        if ($newThumbnail !== null) {
+            $payload['thumbnail'] = $newThumbnail;
         }
 
         if (array_key_exists('is_published', $data)) {
@@ -86,7 +79,7 @@ class NewsService
                 : null;
         }
 
-        $news = DB::transaction(function () use ($news, $payload, $data) {
+        $news = $this->writeWithThumbnail($newThumbnail, fn () => DB::transaction(function () use ($news, $payload, $data) {
             $news = $this->repository->update($news, $payload);
 
             if (array_key_exists('category_ids', $data)) {
@@ -94,7 +87,13 @@ class NewsService
             }
 
             return $news;
-        });
+        }));
+
+        // File lama baru dihapus setelah data tersimpan: bila penyimpanan
+        // gagal, berita tetap menunjuk file lama yang masih ada.
+        if ($newThumbnail !== null && $oldThumbnail) {
+            DB::afterCommit(fn () => Storage::disk('public')->delete($oldThumbnail));
+        }
 
         $this->flushPublicCache($news);
 
@@ -106,6 +105,35 @@ class NewsService
         $news = $this->repository->findByIdForVillageOrFail($id, $this->villageId($user));
 
         $this->repository->delete($news);
+    }
+
+    private function storeThumbnail(array $data): ?string
+    {
+        return isset($data['thumbnail']) && $data['thumbnail'] instanceof UploadedFile
+            ? $data['thumbnail']->store('news', 'public')
+            : null;
+    }
+
+    /**
+     * Jalankan penulisan data; bila gagal, thumbnail baru yang sudah
+     * terunggah dihapus supaya tidak tertinggal tanpa berita.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $write
+     * @return T
+     */
+    private function writeWithThumbnail(?string $newThumbnail, callable $write): mixed
+    {
+        try {
+            return $write();
+        } catch (Throwable $exception) {
+            if ($newThumbnail !== null) {
+                Storage::disk('public')->delete($newThumbnail);
+            }
+
+            throw $exception;
+        }
     }
 
     /**

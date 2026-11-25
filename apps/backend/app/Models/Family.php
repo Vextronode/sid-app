@@ -44,6 +44,14 @@ class Family extends Model
                 );
             }
 
+            // RW dan Dusun KK (ikut tercetak di surat) selalu induk dari
+            // RT-nya; KK tanpa RT berarti RW dan Dusun-nya juga kosong.
+            if ($family->isDirty(['rt_id', 'rw_id', 'hamlet_id'])) {
+                $area = Rt::parentIds($family->rt_id);
+                $family->rw_id = $area['rw_id'];
+                $family->hamlet_id = $area['hamlet_id'];
+            }
+
         });
     }
 

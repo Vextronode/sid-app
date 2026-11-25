@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
 use App\Models\FamilySocioeconomic;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
@@ -46,10 +45,15 @@ class FamilySocioeconomicService
         ])->setRelation('family', $family));
     }
 
+    /**
+     * Siapa yang boleh membaca/mengisi diatur ShowFamilySocioeconomicRequest
+     * (Staf, Kasi, Kaur) dan UpsertFamilySocioeconomicRequest (Staf, Kasi);
+     * di sini cukup desa akunnya.
+     */
     private function villageId(User $user): string
     {
-        if ($user->role !== 'staf_sid' || ! $user->is_active || ! $user->village_id) {
-            throw new HttpException(403, UserRole::stafSidLabel().' aktif dengan desa yang valid diperlukan.');
+        if (! $user->is_active || ! $user->village_id) {
+            throw new HttpException(403, 'Akun aktif dengan desa yang valid diperlukan.');
         }
 
         return $user->village_id;

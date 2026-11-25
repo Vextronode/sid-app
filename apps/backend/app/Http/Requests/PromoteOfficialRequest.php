@@ -22,12 +22,12 @@ class PromoteOfficialRequest extends FormRequest
         $needsAccount = ! is_string($position) || $position === '' || OfficialPosition::tryFrom($position) !== null;
 
         return [
-            'user_id' => [Rule::requiredIf($needsAccount), 'nullable', 'exists:users,id'],
-            'citizen_id' => [Rule::requiredIf(! $needsAccount), 'nullable', 'exists:citizens,id'],
+            'user_id' => [Rule::requiredIf($needsAccount), 'nullable', 'bail', 'uuid', 'exists:users,id'],
+            'citizen_id' => [Rule::requiredIf(! $needsAccount), 'nullable', 'bail', 'uuid', 'exists:citizens,id'],
             'position' => ['required', 'string', new ValidOfficialPosition($this->user()?->village_id)],
-            'rt_id' => ['required_if:position,rt', 'nullable', 'exists:rts,id'],
-            'rw_id' => ['required_if:position,rw', 'nullable', 'exists:rws,id'],
-            'hamlet_id' => ['required_if:position,kadus', 'nullable', 'exists:hamlets,id'],
+            'rt_id' => ['required_if:position,rt', 'nullable', 'bail', 'integer', 'exists:rts,id'],
+            'rw_id' => ['required_if:position,rw', 'nullable', 'bail', 'integer', 'exists:rws,id'],
+            'hamlet_id' => ['required_if:position,kadus', 'nullable', 'bail', 'integer', 'exists:hamlets,id'],
             'started_at' => ['required', 'date'],
             'term_ends_at' => ['nullable', 'date', 'after:started_at'],
             'phone_wa' => ['nullable', 'string', 'max:20'],

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Citizen;
 use App\Repositories\CitizenRepository;
+use App\Repositories\ReferenceRepository;
 use App\Services\CitizenService;
 use App\Services\PopulationAuditService;
 use App\Support\AuditContext;
@@ -20,7 +21,7 @@ class CitizenServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new CitizenService(new CitizenRepository, new PopulationAuditService, new AuditContext);
+        $this->service = new CitizenService(new CitizenRepository, new PopulationAuditService, new AuditContext, new ReferenceRepository);
     }
 
     public function test_get_all_with_wilayah_returns_all_citizens(): void

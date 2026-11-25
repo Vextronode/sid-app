@@ -16,13 +16,15 @@ return new class extends Migration
             $table->foreignUuid('village_id')->constrained('villages')->cascadeOnDelete();
             $table->foreignId('letter_type_id')->constrained('letter_types')->restrictOnDelete();
             $table->foreignUuid('submitted_by')->constrained('users')->restrictOnDelete();
-            $table->foreignUuid('on_behalf_of')->nullable()->constrained('citizens')->nullOnDelete();
-            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('on_behalf_of')->nullable()->constrained('citizens')->noActionOnDelete();
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->noActionOnDelete();
             // Wilayah pemohon saat mengajukan: riwayat RT/RW/Kadus tetap di
             // wilayah lama walau pemohon kemudian pindah (mis. pisah KK).
-            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
-            $table->foreignId('hamlet_id')->nullable()->constrained('hamlets')->nullOnDelete();
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->noActionOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->noActionOnDelete();
+            $table->foreignId('hamlet_id')->nullable()->constrained('hamlets')->noActionOnDelete();
             $table->string('letter_number', 50)->unique()->nullable();
             $table->string('applicant_name', 100);
             $table->text('applicant_nik');
