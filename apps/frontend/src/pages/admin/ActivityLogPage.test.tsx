@@ -3,12 +3,17 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getPopulationLogs, getLetterActivityLogs } = vi.hoisted(() => ({
+const { getPopulationLogs, getLetterActivityLogs, getOtherLogs } = vi.hoisted(() => ({
   getPopulationLogs: vi.fn(),
   getLetterActivityLogs: vi.fn(),
+  getOtherLogs: vi.fn(),
 }))
 
-vi.mock('@/features/activity-log/api', () => ({ getPopulationLogs, getLetterActivityLogs }))
+vi.mock('@/features/activity-log/api', () => ({
+  getPopulationLogs,
+  getLetterActivityLogs,
+  getOtherLogs,
+}))
 vi.mock('@/components/layout/SiteFooter', () => ({ SiteFooter: (): null => null }))
 
 import ActivityLogPage from './ActivityLogPage'
@@ -94,6 +99,47 @@ describe('ActivityLogPage', () => {
       expect(getPopulationLogs).toHaveBeenLastCalledWith(
         expect.objectContaining({ subject_id: '' }),
       ),
+    )
+  })
+
+  it('lists other logs with their type and actor, and filters by type', async () => {
+    getOtherLogs.mockResolvedValue({
+      data: [
+        {
+          id: 21,
+          log_name: 'official',
+          event: 'promoted',
+          description: 'Pejabat diangkat',
+          subject_label: 'Budi (Ketua RT)',
+          details: {},
+          actor,
+          created_at: '2026-10-18T03:00:00Z',
+        },
+        {
+          id: 22,
+          log_name: 'integration',
+          event: 'ping',
+          description: 'Klien integrasi memeriksa koneksi',
+          subject_label: 'SIGAP',
+          details: { client: 'sigap' },
+          actor: { id: 'c1', name: 'SIGAP', role: null, role_label: 'Klien integrasi' },
+          created_at: '2026-10-18T04:00:00Z',
+        },
+      ],
+      meta: { current_page: 1, last_page: 1, total: 2 },
+    })
+    renderPage('/admin/log-aktivitas?tab=lainnya')
+
+    expect(await screen.findByText('Pejabat diangkat')).toBeInTheDocument()
+    expect(screen.getByText('Budi (Ketua RT)')).toBeInTheDocument()
+    expect(screen.getByText('Pejabat', { selector: 'td' })).toBeInTheDocument()
+    expect(screen.getAllByText('Klien integrasi').length).toBeGreaterThan(0)
+    expect(screen.getByText('Client:').parentElement).toHaveTextContent('Client: sigap')
+
+    fireEvent.change(screen.getByDisplayValue('Semua jenis'), { target: { value: 'official' } })
+
+    await waitFor(() =>
+      expect(getOtherLogs).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'official' })),
     )
   })
 
