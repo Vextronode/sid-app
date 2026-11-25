@@ -1,8 +1,12 @@
 import api from '@/lib/api'
-import type { AppNotification, CollectionResponse, ResourceResponse } from '@/types'
+import type { AppNotification, LaravelPaginatedResponse, ResourceResponse } from '@/types'
 
-export function getNotifications() {
-  return api.get<CollectionResponse<AppNotification>>('/api/notifications')
+// Berhalaman (20 per halaman, terbaru dulu); halaman berikutnya dimuat
+// lewat tombol "Muat lebih banyak" di popover.
+export function getNotifications(page = 1) {
+  return api.get<LaravelPaginatedResponse<AppNotification>>('/api/notifications', {
+    params: { page },
+  })
 }
 
 export function getUnreadNotificationCount() {

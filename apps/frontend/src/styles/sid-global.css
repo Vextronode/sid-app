@@ -17042,6 +17042,29 @@ button.sid-operator-profile {
   text-decoration: underline;
 }
 
+/* Muat notifikasi berikutnya (20 per halaman). */
+.sid-notification-load-more {
+  display: block;
+  width: 100%;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--sid-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sid-notification-load-more:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.sid-notification-load-more:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .sid-webpush-controls {
   display: grid;
   grid-template-columns: 1fr auto;

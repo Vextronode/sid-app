@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { InfiniteData } from '@tanstack/react-query'
 
 import { REALTIME_QUERY_META } from '@/features/realtime/constants'
 import { useLiveRefetchInterval } from '@/features/realtime/hooks/useLiveRefetchInterval'
@@ -15,6 +16,9 @@ import {
 const EMPTY_NOTIFICATIONS: AppNotification[] = []
 const UNREAD_REFRESH_INTERVAL = 30 * 1000
 
+// Satu halaman daftar notifikasi dari backend (20 per halaman).
+type NotificationPage = { items: AppNotification[]; nextPage: number | null }
+
 // Hasil hook, dipakai juga sebagai props popover notifikasi.
 export type NotificationState = ReturnType<typeof useNotifications>
 
@@ -26,6 +30,10 @@ function requestMessage(requestError: unknown, fallback: string): string {
 // oleh semua layout: pindah halaman tidak memicu request ulang, dan hanya
 // ada satu polling jumlah belum dibaca.
 //
+// Daftar dimuat berhalaman (useInfiniteQuery): halaman pertama saat dibuka,
+// berikutnya lewat loadMore(). Invalidasi memuat ulang halaman yang sudah
+// terbuka.
+//
 // Realtime: notifikasi baru memicu invalidasi lewat RealtimeBridge
 // (event notification.created). Selama WebSocket hidup polling dijarangkan
 // menjadi jaring pengaman; saat putus kembali tiap 30 detik.
@@ -36,18 +44,24 @@ export default function useNotifications() {
   const [markingAll, setMarkingAll] = useState(false)
   const unreadRefreshInterval = useLiveRefetchInterval('notifications', UNREAD_REFRESH_INTERVAL)
 
-  const listQuery = useQuery({
+  const listQuery = useInfiniteQuery({
     queryKey: queryKeys.notifications.list,
-    queryFn: async () => {
-      const response = await getNotifications()
+    queryFn: async ({ pageParam }): Promise<NotificationPage> => {
+      const response = await getNotifications(pageParam)
       const data = response.data?.data
+      const meta = response.data?.meta
 
       if (!Array.isArray(data)) {
         throw new Error('Respons daftar notifikasi tidak valid.')
       }
 
-      return data
+      return {
+        items: data,
+        nextPage: meta && meta.current_page < meta.last_page ? meta.current_page + 1 : null,
+      }
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
     staleTime: UNREAD_REFRESH_INTERVAL,
     meta: REALTIME_QUERY_META,
   })
@@ -70,7 +84,10 @@ export default function useNotifications() {
     meta: REALTIME_QUERY_META,
   })
 
-  const notifications = listQuery.data ?? EMPTY_NOTIFICATIONS
+  const notifications = useMemo(
+    () => listQuery.data?.pages.flatMap((page) => page.items) ?? EMPTY_NOTIFICATIONS,
+    [listQuery.data],
+  )
   const unreadCount = countQuery.data ?? 0
 
   const refreshUnreadCount = useCallback(
@@ -78,15 +95,21 @@ export default function useNotifications() {
     [queryClient],
   )
 
+  // Perubahan lokal diterapkan ke semua halaman yang sudah dimuat.
   const setNotifications = useCallback(
     (update: (current: AppNotification[]) => AppNotification[]) =>
-      queryClient.setQueryData<AppNotification[]>(queryKeys.notifications.list, (current) =>
-        update(current ?? EMPTY_NOTIFICATIONS),
+      queryClient.setQueryData<InfiniteData<NotificationPage, number>>(
+        queryKeys.notifications.list,
+        (current) =>
+          current && {
+            ...current,
+            pages: current.pages.map((page) => ({ ...page, items: update(page.items) })),
+          },
       ),
     [queryClient],
   )
 
-  const { refetch: refetchList } = listQuery
+  const { refetch: refetchList, fetchNextPage } = listQuery
   const { refetch: refetchCount } = countQuery
 
   const reload = useCallback(async () => {
@@ -95,6 +118,11 @@ export default function useNotifications() {
 
     return !list.isError && !count.isError
   }, [refetchList, refetchCount])
+
+  const loadMore = useCallback(async () => {
+    setActionError('')
+    await fetchNextPage()
+  }, [fetchNextPage])
 
   const markAsRead = useCallback(
     async (id: string) => {
@@ -154,6 +182,9 @@ export default function useNotifications() {
     unreadCount,
     loading: listQuery.isPending,
     error,
+    hasMore: listQuery.hasNextPage,
+    loadingMore: listQuery.isFetchingNextPage,
+    loadMore,
     markingIds,
     markingAll,
     markAsRead,
