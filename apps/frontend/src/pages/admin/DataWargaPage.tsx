@@ -154,6 +154,13 @@ export default function DataWargaPage() {
   const { user } = useAuth()
   // Log Aktivitas hanya dapat dibuka Staf SIDUTama.
   const canViewHistory = user?.role === 'staf_sid'
+  // Sama dengan route backend: hanya Staf SIDUTama dan Kasi Pemerintahan
+  // yang mengubah data penduduk; Kaur TU & Umum membaca saja (termasuk
+  // survei sosio-ekonomi, tanpa mengubah).
+  const canManagePopulation = user?.role === 'staf_sid' || user?.role === 'kasi_pemerintahan'
+  const canViewSocioeconomic = canManagePopulation || user?.role === 'kaur_tu_umum'
+  const hasRowActions = canManagePopulation || canViewHistory
+  const columnCount = hasRowActions ? 12 : 11
   const [searchParams, setSearchParams] = useSearchParams()
   const activeSection = searchParams.get('tab') === 'kk' ? 'kk' : 'penduduk'
   const switchSection = (value: string) =>
@@ -325,15 +332,21 @@ export default function DataWargaPage() {
     if (
       await confirmDialog({
         title: `Hapus data warga ${name}?`,
-        message: 'Tindakan ini tidak dapat dibatalkan.',
+        message:
+          'Hapus hanya untuk data salah input yang belum punya riwayat (akun, jabatan, surat, dan lainnya). Tindakan ini tidak dapat dibatalkan.',
         confirmLabel: 'Hapus',
       })
     ) {
       try {
         await deleteWarga(id)
         notifySuccess(`Data warga ${name} berhasil dihapus.`)
-      } catch {
-        alertDialog({ title: 'Terjadi kesalahan', message: 'Gagal menghapus data warga.' })
+      } catch (err) {
+        // 409 dari backend menjelaskan riwayat apa yang membuat warga ini
+        // tidak bisa dihapus; tampilkan apa adanya.
+        alertDialog({
+          title: 'Data warga tidak dihapus',
+          message: getApiErrorMessage(err, 'Gagal menghapus data warga.'),
+        })
       }
     }
   }
@@ -542,7 +555,7 @@ export default function DataWargaPage() {
               onRefresh={() => (activeSection === 'kk' ? familyList.reload() : reload())}
             />
 
-            {activeSection === 'penduduk' && (
+            {activeSection === 'penduduk' && canManagePopulation && (
               <>
                 <button
                   type="button"
@@ -560,7 +573,7 @@ export default function DataWargaPage() {
               </>
             )}
 
-            {activeSection === 'kk' && (
+            {activeSection === 'kk' && canManagePopulation && (
               <button
                 type="button"
                 className="sid-operator-primary"
@@ -595,6 +608,8 @@ export default function DataWargaPage() {
             <FamilyManagementPanel
               ref={familyPanelRef}
               familyList={familyList}
+              canEdit={canManagePopulation}
+              canViewSocioeconomic={canViewSocioeconomic}
               canViewHistory={canViewHistory}
             />
           </div>
@@ -656,25 +671,25 @@ export default function DataWargaPage() {
                       <th className="center">Peran KK</th>
                       <th className="center">Pekerjaan</th>
                       <th className="center">Sinkronisasi</th>
-                      <th className="center">Aksi</th>
+                      {hasRowActions && <th className="center">Aksi</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={12} className="empty">
+                        <td colSpan={columnCount} className="empty">
                           Memuat data...
                         </td>
                       </tr>
                     ) : error ? (
                       <tr>
-                        <td colSpan={12} className="empty sid-admin-error">
+                        <td colSpan={columnCount} className="empty sid-admin-error">
                           {error}
                         </td>
                       </tr>
                     ) : data.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="empty">
+                        <td colSpan={columnCount} className="empty">
                           Belum ada data warga.
                         </td>
                       </tr>
@@ -729,40 +744,46 @@ export default function DataWargaPage() {
                               </small>
                             )}
                           </td>
-                          <td className="center">
-                            <div className="sid-operator-actions">
-                              <button
-                                type="button"
-                                title="Edit"
-                                className="sid-operator-action edit"
-                                onClick={() => handleOpenEditModal(warga)}
-                              >
-                                <Edit size={16} />
-                              </button>
-                              {canViewHistory && (
-                                <button
-                                  type="button"
-                                  title="Riwayat perubahan"
-                                  className="sid-operator-action detail"
-                                  onClick={() =>
-                                    navigate(
-                                      `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
-                                    )
-                                  }
-                                >
-                                  <History size={16} />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                title="Hapus"
-                                className="sid-operator-action delete"
-                                onClick={() => handleDeleteWarga(warga.id, warga.name)}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
+                          {hasRowActions && (
+                            <td className="center">
+                              <div className="sid-operator-actions">
+                                {canManagePopulation && (
+                                  <button
+                                    type="button"
+                                    title="Edit"
+                                    className="sid-operator-action edit"
+                                    onClick={() => handleOpenEditModal(warga)}
+                                  >
+                                    <Edit size={16} />
+                                  </button>
+                                )}
+                                {canViewHistory && (
+                                  <button
+                                    type="button"
+                                    title="Riwayat perubahan"
+                                    className="sid-operator-action detail"
+                                    onClick={() =>
+                                      navigate(
+                                        `/admin/log-aktivitas?tab=penduduk&type=citizen&subject=${encodeURIComponent(warga.id)}`,
+                                      )
+                                    }
+                                  >
+                                    <History size={16} />
+                                  </button>
+                                )}
+                                {canManagePopulation && (
+                                  <button
+                                    type="button"
+                                    title="Hapus"
+                                    className="sid-operator-action delete"
+                                    onClick={() => handleDeleteWarga(warga.id, warga.name)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}
