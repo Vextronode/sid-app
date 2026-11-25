@@ -22,15 +22,16 @@ class NotificationRepositoryTest extends TestCase
         $this->repository = new NotificationRepository;
     }
 
-    public function test_all_for_user_latest_first_returns_notifications(): void
+    public function test_paginate_for_user_latest_first_returns_notifications(): void
     {
         $user = User::factory()->create();
         $letter = Letter::factory()->create();
         $user->notify(new LetterStatusNotification($letter, 'Judul', 'Pesan', 'pending'));
 
-        $result = $this->repository->allForUserLatestFirst($user);
+        $result = $this->repository->paginateForUserLatestFirst($user, 20);
 
-        $this->assertCount(1, $result);
+        $this->assertCount(1, $result->items());
+        $this->assertSame(1, $result->total());
     }
 
     public function test_find_or_fail_for_user_returns_notification_by_id(): void
