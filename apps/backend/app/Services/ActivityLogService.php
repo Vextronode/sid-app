@@ -32,6 +32,11 @@ class ActivityLogService
         return $this->activityLogRepository->paginateAccounts($this->villageId($user), $filters, $this->perPage($filters));
     }
 
+    public function others(User $user, array $filters): LengthAwarePaginator
+    {
+        return $this->activityLogRepository->paginateOthers($this->villageId($user), $filters, $this->perPage($filters));
+    }
+
     public function letters(User $user, array $filters): LengthAwarePaginator
     {
         return $this->letterStatusLogRepository->paginateForVillage($this->villageId($user), $filters, $this->perPage($filters));

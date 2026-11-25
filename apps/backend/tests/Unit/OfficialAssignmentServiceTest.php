@@ -54,7 +54,7 @@ class OfficialAssignmentServiceTest extends TestCase
         $this->assertSame('rt', $target->fresh()->role);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'promoted',
+            'event' => 'promoted',
             'subject_id' => (string) $official->id,
             'causer_id' => (string) $actor->id,
         ]);
@@ -154,7 +154,7 @@ class OfficialAssignmentServiceTest extends TestCase
         $this->assertSame(1, $result['warnings'][0]['count']);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'demoted',
+            'event' => 'demoted',
             'subject_id' => (string) $official->id,
         ]);
     }
@@ -237,7 +237,7 @@ class OfficialAssignmentServiceTest extends TestCase
         $this->assertSame('rt', $newUser->fresh()->role);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'rotated',
+            'event' => 'rotated',
             'subject_id' => (string) $oldOfficial->id,
         ]);
     }

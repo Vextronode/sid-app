@@ -59,7 +59,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $this->assertSame('rt', $target->fresh()->role);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'promoted',
+            'event' => 'promoted',
             'subject_id' => (string) $response->json('data.id'),
             'causer_id' => (string) $actor->id,
         ]);
@@ -266,7 +266,7 @@ class OfficialPromoteDemoteTest extends TestCase
         $this->assertSame('warga', $target->fresh()->role);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'demoted',
+            'event' => 'demoted',
             'subject_id' => (string) $official->id,
         ]);
     }
