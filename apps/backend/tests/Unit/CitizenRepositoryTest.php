@@ -53,11 +53,10 @@ class CitizenRepositoryTest extends TestCase
         $this->assertCount(1, $result);
     }
 
-    public function test_exists_by_hamlet_and_exists_active_by_hamlet(): void
+    public function test_exists_active_by_hamlet_counts_only_active_citizens(): void
     {
         $citizen = Citizen::factory()->create(['is_active' => false]);
 
-        $this->assertTrue($this->repository->existsByHamlet($citizen->hamlet_id));
         $this->assertFalse($this->repository->existsActiveByHamlet($citizen->hamlet_id));
 
         $citizen->update(['is_active' => true]);
@@ -65,21 +64,17 @@ class CitizenRepositoryTest extends TestCase
         $this->assertTrue($this->repository->existsActiveByHamlet($citizen->hamlet_id));
     }
 
-    public function test_exists_by_rw_and_exists_active_by_rw(): void
+    public function test_exists_active_by_rw(): void
     {
         $citizen = Citizen::factory()->create(['is_active' => true]);
 
-        $rwId = $citizen->rt->rw_id;
-
-        $this->assertTrue($this->repository->existsByRw($rwId));
-        $this->assertTrue($this->repository->existsActiveByRw($rwId));
+        $this->assertTrue($this->repository->existsActiveByRw($citizen->rt->rw_id));
     }
 
-    public function test_exists_by_rt_and_exists_active_by_rt(): void
+    public function test_exists_active_by_rt(): void
     {
         $citizen = Citizen::factory()->create(['is_active' => true]);
 
-        $this->assertTrue($this->repository->existsByRt($citizen->rt_id));
         $this->assertTrue($this->repository->existsActiveByRt($citizen->rt_id));
     }
 

@@ -204,15 +204,17 @@ class LetterPolicy
         return $letter->rw_id === $official->rw_id;
     }
 
+    /**
+     * Desa akun, sama dengan PopulationScope dan daftar surat: Staf,
+     * Kades/Sekdes, dan Kasi/Kaur tidak wajib punya baris jabatan aktif untuk
+     * melihat surat desanya. Jabatan tetap dicek untuk peran wilayah
+     * (RT/RW/Kadus), karena wilayahnya diambil dari jabatan.
+     */
     private function isSameVillage(User $user, Letter $letter): bool
     {
-        $official = $this->currentOfficial($user);
-
-        if (! $official) {
-            return false;
-        }
-
-        return $letter->village_id === $official->village_id;
+        return $user->is_active
+            && $user->village_id !== null
+            && $letter->village_id === $user->village_id;
     }
 
     private function isSameHamlet(User $user, Letter $letter): bool
