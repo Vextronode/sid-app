@@ -83,11 +83,14 @@ class Letter extends Model
         // Wilayah pemohon dibekukan saat pemohon ditautkan ke surat, bukan
         // dibaca dari alamat warga yang sekarang.
         static::saving(function (Letter $letter) {
+            // RW dan Dusun diturunkan dari RT, sama seperti cakupan Data
+            // Penduduk, bukan dari kolom dusun warga.
             if ($letter->citizen_id !== null && $letter->isDirty('citizen_id') && ! $letter->isDirty('rt_id')) {
-                $citizen = Citizen::query()->with('rt:id,rw_id')->find($letter->citizen_id);
-                $letter->rt_id = $citizen?->rt_id;
-                $letter->rw_id = $citizen?->rt?->rw_id;
-                $letter->hamlet_id = $citizen?->hamlet_id;
+                $rtId = Citizen::query()->whereKey($letter->citizen_id)->value('rt_id');
+                $area = Rt::parentIds($rtId);
+                $letter->rt_id = $rtId;
+                $letter->rw_id = $area['rw_id'];
+                $letter->hamlet_id = $area['hamlet_id'];
             }
         });
 

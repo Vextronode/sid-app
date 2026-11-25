@@ -17,8 +17,7 @@ class StafSidFirstCommand extends Command
         {--gender= : Jenis kelamin (L atau P)}
         {--address= : Alamat lengkap}
         {--village= : UUID desa, wajib jika citizen belum terdaftar}
-        {--rt= : ID RT, wajib jika citizen belum terdaftar}
-        {--hamlet= : ID dusun (opsional)}';
+        {--rt= : ID RT, wajib jika citizen belum terdaftar (dusun mengikuti RT)}';
 
     protected $description = 'Membuat akun dan mempromosikan Staf SIDUTama desa (staf_sid) pertama.';
 
@@ -32,7 +31,6 @@ class StafSidFirstCommand extends Command
             'address' => $this->option('address'),
             'village_id' => $this->option('village'),
             'rt_id' => $this->option('rt'),
-            'hamlet_id' => $this->option('hamlet'),
         ];
 
         $validator = Validator::make($data, [

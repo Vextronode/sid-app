@@ -313,18 +313,8 @@ class FamilyControllerTest extends TestCase
         $user = $this->stafSid($village);
         $rt = Rt::factory()->create();
         $otherRt = Rt::factory()->create();
-        // rw_id/hamlet_id KK sengaja tidak sinkron: filter mengikuti RT.
-        $target = Family::factory()->create([
-            'village_id' => $village->id,
-            'rt_id' => $rt->id,
-            'rw_id' => $otherRt->rw_id,
-            'hamlet_id' => $otherRt->rw->hamlet_id,
-        ]);
-        Family::factory()->create([
-            'village_id' => $village->id,
-            'rt_id' => $otherRt->id,
-            'rw_id' => $otherRt->rw_id,
-        ]);
+        $target = Family::factory()->create(['village_id' => $village->id, 'rt_id' => $rt->id]);
+        Family::factory()->create(['village_id' => $village->id, 'rt_id' => $otherRt->id]);
 
         foreach ([
             'hamlet_id='.$rt->rw->hamlet_id,
@@ -342,6 +332,43 @@ class FamilyControllerTest extends TestCase
             ->getJson('/api/families?rt_id=abc')
             ->assertUnprocessable()
             ->assertJsonValidationErrors('rt_id');
+    }
+
+    public function test_family_rw_and_hamlet_always_follow_its_rt(): void
+    {
+        $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
+        $user = $this->stafSid($village);
+        $rt = Rt::factory()->create(['village_id' => $village->id]);
+        $otherRt = Rt::factory()->create(['village_id' => $village->id]);
+
+        // RW/Dusun yang dikirim (tidak cocok dengan RT) tidak dipakai.
+        $familyId = $this->actingAs($user)
+            ->postJson('/api/families', [
+                'no_kk' => '3201011234560009',
+                'family_address' => 'Jl. Merdeka No. 10',
+                'rt_id' => $rt->id,
+                'rw_id' => $otherRt->rw_id,
+                'hamlet_id' => $otherRt->rw->hamlet_id,
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $family = Family::query()->findOrFail($familyId);
+        $this->assertSame([$rt->rw_id, $rt->rw->hamlet_id], [$family->rw_id, $family->hamlet_id]);
+
+        // Pindah RT: RW dan Dusun ikut.
+        $this->actingAs($user)
+            ->patchJson("/api/families/{$familyId}", ['rt_id' => $otherRt->id])
+            ->assertOk();
+        $family->refresh();
+        $this->assertSame([$otherRt->rw_id, $otherRt->rw->hamlet_id], [$family->rw_id, $family->hamlet_id]);
+
+        // Tanpa RT, RW dan Dusun ikut kosong.
+        $this->actingAs($user)
+            ->patchJson("/api/families/{$familyId}", ['rt_id' => null])
+            ->assertOk();
+        $family->refresh();
+        $this->assertSame([null, null], [$family->rw_id, $family->hamlet_id]);
     }
 
     public function test_family_options_returns_every_family_without_plain_no_kk(): void

@@ -19,7 +19,9 @@ class RtFactory extends Factory
      */
     public function definition(): array
     {
-        $number = fake()->unique()->numberBetween(1, 20);
+        // 100-999: tidak bentrok dengan nomor kecil yang ditulis eksplisit di
+        // test (nomor unik per desa untuk RW, per RW untuk RT).
+        $number = fake()->unique()->numberBetween(100, 999);
 
         return [
             'rw_id' => Rw::factory(),

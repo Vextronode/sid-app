@@ -51,9 +51,9 @@ class VillageAreaFieldTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Budiasih')
-            ->assertJsonPath('data.0.rws.0.number', '19')
+            ->assertJsonPath('data.0.rws.0.number', '019')
             ->assertJsonPath('data.0.rws.0.rts.0.id', $this->budiasih->id)
-            ->assertJsonPath('data.0.rws.0.rts.0.number', '2');
+            ->assertJsonPath('data.0.rws.0.rts.0.number', '002');
     }
 
     public function test_submission_stores_the_printable_labels_of_the_chosen_rt(): void

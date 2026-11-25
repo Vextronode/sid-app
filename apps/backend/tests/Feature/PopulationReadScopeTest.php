@@ -203,12 +203,13 @@ class PopulationReadScopeTest extends TestCase
         $numbers = fn (User $user, string $path) => collect($this->actingAs($user)->getJson($path)->assertOk()->json('data'))
             ->pluck('number')->map(fn ($number) => (string) $number)->sort()->values()->all();
 
-        $this->assertSame(['1', '2'], $numbers($rw, '/api/rts'));
-        $this->assertSame(['1'], $numbers($rw, '/api/rws'));
-        $this->assertSame(['1', '2', '3'], $numbers($kadus, '/api/rts'));
-        $this->assertSame(['1', '2'], $numbers($kadus, '/api/rws'));
+        // Nomor RW/RT tersimpan tiga digit (App\Support\AreaNumber).
+        $this->assertSame(['001', '002'], $numbers($rw, '/api/rts'));
+        $this->assertSame(['001'], $numbers($rw, '/api/rws'));
+        $this->assertSame(['001', '002', '003'], $numbers($kadus, '/api/rts'));
+        $this->assertSame(['001', '002'], $numbers($kadus, '/api/rws'));
         $this->assertCount(1, $this->actingAs($kadus)->getJson('/api/hamlets')->assertOk()->json('data'));
-        $this->assertSame(['1', '2', '3', '4'], $numbers($kades, '/api/rts'));
+        $this->assertSame(['001', '002', '003', '004'], $numbers($kades, '/api/rts'));
     }
 
     #[Test]
