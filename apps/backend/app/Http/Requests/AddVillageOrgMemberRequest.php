@@ -31,7 +31,7 @@ class AddVillageOrgMemberRequest extends FormRequest
         return [
             // Warga desa pemegang jabatan; nama diambil dari data warga.
             'nik' => ['required_without:from_member_id', 'nullable', 'string', 'digits:16'],
-            'from_member_id' => ['nullable', 'integer', 'exists:village_org_members,id'],
+            'from_member_id' => ['nullable', 'bail', 'integer', 'exists:village_org_members,id'],
             'previous_holder' => ['sometimes', 'string', 'in:end,to_member'],
             'phone_wa' => ['nullable', 'string', 'max:20'],
             'started_at' => ['required', 'date'],

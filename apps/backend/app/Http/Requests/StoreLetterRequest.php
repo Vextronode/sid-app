@@ -36,6 +36,8 @@ class StoreLetterRequest extends FormRequest
         $rules = [
             'letter_type_id' => [
                 'required',
+                'bail',
+                'integer',
                 'exists:letter_types,id',
             ],
 
