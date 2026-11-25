@@ -13,15 +13,17 @@ return new class extends Migration
     {
         Schema::create('officials', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('citizen_id')->constrained()->cascadeOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->constrained()->noActionOnDelete();
             $table->foreignUuid('user_id')->nullable()->constrained()->nullOnDelete();
             // Nilai App\Enums\OfficialPosition (jabatan berakun) atau `code`
             // dari official_position_types (jabatan tanpa akun).
             $table->string('position', 50);
             $table->foreignUuid('village_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
-            $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->noActionOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->noActionOnDelete();
+            $table->foreignId('hamlet_id')->nullable()->constrained()->noActionOnDelete();
             $table->string('photo_img')->nullable();
             $table->string('phone_wa')->nullable();
             $table->date('started_at');

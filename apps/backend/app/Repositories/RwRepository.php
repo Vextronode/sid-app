@@ -32,9 +32,9 @@ class RwRepository
         return Rw::create($data);
     }
 
-    public function findOrFail(int $id, ?string $villageId = null): Rw
+    public function findForVillage(int $id, string $villageId): ?Rw
     {
-        return Rw::query()->with('hamlet')->when($villageId, fn ($query) => $query->where('village_id', $villageId))->findOrFail($id);
+        return Rw::query()->where('village_id', $villageId)->find($id);
     }
 
     public function update(Rw $rw, array $data): Rw

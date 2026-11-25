@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Hamlet;
 use App\Models\Rw;
+use App\Models\Village;
 use App\Repositories\RwRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,7 +28,8 @@ class RwRepositoryTest extends TestCase
         $hamletB = Hamlet::factory()->create();
         Rw::factory()->create(['hamlet_id' => $hamletA->id, 'number' => '002']);
         Rw::factory()->create(['hamlet_id' => $hamletA->id, 'number' => '001']);
-        Rw::factory()->create(['hamlet_id' => $hamletB->id, 'number' => '001']);
+        // Nomor RW unik se-desa: RW di dusun lain memakai nomor lanjutannya.
+        Rw::factory()->create(['hamlet_id' => $hamletB->id, 'number' => '003']);
 
         $result = $this->repository->allOrderedByNumber($hamletA->village_id, $hamletA->id);
 
@@ -58,13 +60,12 @@ class RwRepositoryTest extends TestCase
         $this->assertDatabaseHas('rws', ['id' => $rw->id]);
     }
 
-    public function test_find_or_fail_returns_rw(): void
+    public function test_find_for_village_returns_only_rws_of_that_village(): void
     {
         $rw = Rw::factory()->create();
 
-        $found = $this->repository->findOrFail($rw->id);
-
-        $this->assertSame($rw->id, $found->id);
+        $this->assertSame($rw->id, $this->repository->findForVillage($rw->id, $rw->village_id)?->id);
+        $this->assertNull($this->repository->findForVillage($rw->id, Village::factory()->create()->id));
     }
 
     public function test_update_persists_changes(): void

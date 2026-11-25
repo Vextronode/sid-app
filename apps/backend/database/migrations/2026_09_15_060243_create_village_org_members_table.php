@@ -18,7 +18,9 @@ return new class extends Migration
             // adalah salinan nama saat ditetapkan, supaya riwayat tetap
             // terbaca walau data warga berubah atau dihapus. Baris tidak
             // pernah dihapus: berakhirnya jabatan dicatat lewat ended_at.
-            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->noActionOnDelete();
             $table->string('member_name', 150);
             $table->string('photo_img')->nullable();
             $table->string('phone_wa', 20)->nullable();
