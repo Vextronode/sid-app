@@ -185,7 +185,9 @@ class KadesApprovalService
             'processed_at' => now(),
         ]);
 
-        $this->letterSnapshotService->captureOnFinalApproval($letter);
+        if (! $this->letterSnapshotService->captureOnFinalApproval($letter)) {
+            $this->letterFlowService->notifySignerVacant($letter);
+        }
 
         // SKU: data usaha (dan pendaftaran Cimart bila dipilih) dicatat di
         // transaksi yang sama, jadi bila gagal surat juga batal terbit.
