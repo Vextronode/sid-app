@@ -34,4 +34,16 @@ return [
         'client_scheme' => env('REVERB_CLIENT_SCHEME') ?: null,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Masa simpan notifikasi
+    |--------------------------------------------------------------------------
+    | Notifikasi yang sudah dibaca lebih dari sekian hari dihapus harian oleh
+    | `notifications:prune`. Notifikasi yang belum dibaca tidak dihapus.
+    */
+
+    'notifications' => [
+        'read_retention_days' => (int) env('NOTIFICATIONS_READ_RETENTION_DAYS', 90),
+    ],
+
 ];

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\RecordInUseException;
 use App\Imports\CitizensImport;
 use App\Imports\CitizensWorkbookImport;
 use App\Imports\Support\CitizenImportColumns;
@@ -9,11 +10,11 @@ use App\Imports\Support\CitizenImportLayout;
 use App\Imports\Support\XlsxStreamReader;
 use App\Models\Citizen;
 use App\Models\Family;
-use App\Models\Hamlet;
 use App\Models\Occupation;
 use App\Models\Rt;
 use App\Models\User;
 use App\Repositories\CitizenRepository;
+use App\Repositories\ReferenceRepository;
 use App\Support\AuditContext;
 use App\Support\PopulationScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -43,6 +44,7 @@ class CitizenService
         protected CitizenRepository $citizenRepository,
         protected PopulationAuditService $audit,
         protected AuditContext $auditContext,
+        protected ReferenceRepository $referenceRepository,
     ) {}
 
     /** Daftar warga dalam cakupan pembaca (PopulationScope). */
@@ -88,9 +90,8 @@ class CitizenService
      */
     public function update(Citizen $citizen, array $data, User $user): Citizen
     {
-        if ($citizen->village_id !== $user->village_id) {
-            abort(403, 'Anda tidak berwenang mengubah data warga ini.');
-        }
+        // Warga desa lain: 404, sama dengan lihat/hapus (tidak dibocorkan).
+        $this->guardCitizenVillage($citizen, $user);
 
         $this->guardRelatedRecords($data, $user, $citizen);
 
@@ -306,6 +307,13 @@ class CitizenService
     {
         $this->guardCitizenVillage($citizen, $user);
 
+        // Hapus hanya untuk data salah input: warga yang sudah punya riwayat
+        // (akun, jabatan, surat, ...) ditolak, dan database juga menolaknya.
+        $usedBy = $this->referenceRepository->citizenUsedBy($citizen);
+        if ($usedBy !== []) {
+            throw RecordInUseException::citizen($usedBy);
+        }
+
         // Transaksi: data dan Log Aktivitas dari observer tersimpan bersama.
         return DB::transaction(fn () => $this->citizenRepository->delete($citizen));
     }
@@ -341,34 +349,33 @@ class CitizenService
             abort(422, 'RT harus berasal dari desa Anda.');
         }
 
-        foreach (['hamlet_id' => Hamlet::class, 'family_id' => Family::class] as $field => $model) {
-            $id = $data[$field] ?? $citizen?->{$field};
-            if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
-                abort(422, 'Data wilayah atau keluarga harus berasal dari desa Anda.');
+        // Dusun tidak dicek di sini: Citizen menurunkannya dari RT.
+        $familyId = $data['family_id'] ?? $citizen?->family_id;
+        if ($familyId !== null && ! Family::query()->whereKey($familyId)->where('village_id', $villageId)->exists()) {
+            abort(422, 'Data wilayah atau keluarga harus berasal dari desa Anda.');
+        }
+
+        $occupationId = array_key_exists('occupation_id', $data)
+            ? $data['occupation_id']
+            : $citizen?->occupation_id;
+
+        if ($occupationId !== null) {
+            $occupation = Occupation::query()
+                ->whereKey($occupationId)
+                ->where('village_id', $villageId)
+                ->first();
+
+            if (! $occupation) {
+                throw ValidationException::withMessages([
+                    'occupation_id' => ['Pekerjaan harus berasal dari desa Anda.'],
+                ]);
             }
 
-            $occupationId = array_key_exists('occupation_id', $data)
-                ? $data['occupation_id']
-                : $citizen?->occupation_id;
-
-            if ($occupationId !== null) {
-                $occupation = Occupation::query()
-                    ->whereKey($occupationId)
-                    ->where('village_id', $villageId)
-                    ->first();
-
-                if (! $occupation) {
-                    throw ValidationException::withMessages([
-                        'occupation_id' => ['Pekerjaan harus berasal dari desa Anda.'],
-                    ]);
-                }
-
-                $occupationIsUnchanged = $citizen && (int) $citizen->occupation_id === (int) $occupationId;
-                if (! $occupation->is_active && ! $occupationIsUnchanged) {
-                    throw ValidationException::withMessages([
-                        'occupation_id' => ['Pekerjaan nonaktif tidak dapat dipilih.'],
-                    ]);
-                }
+            $occupationIsUnchanged = $citizen && (int) $citizen->occupation_id === (int) $occupationId;
+            if (! $occupation->is_active && ! $occupationIsUnchanged) {
+                throw ValidationException::withMessages([
+                    'occupation_id' => ['Pekerjaan nonaktif tidak dapat dipilih.'],
+                ]);
             }
         }
 

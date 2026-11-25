@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Models\Family;
 use App\Repositories\CitizenRepository;
 use App\Repositories\FamilyRepository;
+use App\Repositories\ReferenceRepository;
 use App\Services\CitizenService;
 use App\Services\FamilyService;
 use App\Services\PopulationAuditService;
@@ -60,7 +61,7 @@ class PopulationUniqueIndexTest extends TestCase
 
         $repository = Mockery::mock(CitizenRepository::class)->makePartial();
         $repository->shouldReceive('existsFamilyHead')->andReturnFalse();
-        $service = new CitizenService($repository, new PopulationAuditService, new AuditContext);
+        $service = new CitizenService($repository, new PopulationAuditService, new AuditContext, new ReferenceRepository);
 
         $this->assertValidationErrorOn('family_role', fn () => $service->create(
             $this->citizenData(['family_id' => $family->id, 'family_role' => 'kepala_keluarga']),
@@ -79,7 +80,7 @@ class PopulationUniqueIndexTest extends TestCase
 
         $repository = Mockery::mock(CitizenRepository::class)->makePartial();
         $repository->shouldReceive('findByNikHash')->andReturnNull();
-        $service = new CitizenService($repository, new PopulationAuditService, new AuditContext);
+        $service = new CitizenService($repository, new PopulationAuditService, new AuditContext, new ReferenceRepository);
 
         $this->assertValidationErrorOn('nik', fn () => $service->create($this->citizenData(['nik' => '3207010101900001']), $user));
         $this->assertSame(1, Citizen::query()->count());

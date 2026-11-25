@@ -13,11 +13,17 @@ class CitizenResource extends JsonResource
      * Transform the resource into an array.
      *
      * NIK dan No KK tidak pernah dikirim plaintext (paths/citizens/citizens.yaml).
+     * Nomor akta (lahir, kawin, cerai) utuh hanya untuk pengelola data
+     * kependudukan (Staf SIDUTama, Kasi Pemerintahan) dan pemilik datanya;
+     * pembaca lain (Kaur, Kades, Sekdes, Kadus, RW, RT) melihat versi
+     * tersamar.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
+        $document = fn (?string $number): ?string => $this->seesDocumentNumbers($request) ? $number : $this->mask($number);
+
         return [
             'id' => $this->id,
             'village_id' => $this->village_id,
@@ -63,10 +69,10 @@ class CitizenResource extends JsonResource
             // Dokumen & keterangan tambahan (F-1.01).
             'title_front' => $this->title_front,
             'title_back' => $this->title_back,
-            'birth_certificate_number' => $this->birth_certificate_number,
-            'marriage_certificate_number' => $this->marriage_certificate_number,
+            'birth_certificate_number' => $document($this->birth_certificate_number),
+            'marriage_certificate_number' => $document($this->marriage_certificate_number),
             'marriage_date' => $this->marriage_date?->toDateString(),
-            'divorce_certificate_number' => $this->divorce_certificate_number,
+            'divorce_certificate_number' => $document($this->divorce_certificate_number),
             'divorce_date' => $this->divorce_date?->toDateString(),
             'has_disorder' => (bool) $this->has_disorder,
             'disability' => $this->disability,
@@ -79,6 +85,16 @@ class CitizenResource extends JsonResource
             'rw' => new RwResource($this->whenLoaded('rw')),
             'hamlet' => new HamletResource($this->whenLoaded('hamlet')),
         ];
+    }
+
+    private function seesDocumentNumbers(Request $request): bool
+    {
+        $viewer = $request->user();
+
+        return $viewer !== null && (
+            in_array($viewer->role, ['staf_sid', 'kasi_pemerintahan'], true)
+            || ($viewer->citizen_id !== null && $viewer->citizen_id === $this->id)
+        );
     }
 
     private function mask(?string $value): ?string

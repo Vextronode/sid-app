@@ -18,9 +18,11 @@ return new class extends Migration
             $table->string('no_kk_hash')->unique();
             $table->text('family_address');
             $table->enum('family_status', ['aktif', 'pindah', 'bubar'])->default('aktif');
-            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
-            $table->foreignId('hamlet_id')->nullable()->constrained()->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->noActionOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->noActionOnDelete();
+            $table->foreignId('hamlet_id')->nullable()->constrained()->noActionOnDelete();
             $table->timestamps();
         });
     }

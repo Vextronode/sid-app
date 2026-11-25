@@ -16,7 +16,6 @@ use App\Services\LetterSnapshotService;
 use App\Services\PdfService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response as LaravelResponse;
 use Mockery;
@@ -116,7 +115,9 @@ class PdfServiceTest extends TestCase
         ]);
         $user = User::factory()->create(['role' => 'staf_sid']);
 
-        $this->expectException(ModelNotFoundException::class);
+        // Kades kosong: 409 dengan penjelasan, bukan 404 teknis.
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('jabatan Kepala Desa sedang kosong');
 
         $this->service->download($letter, $user);
     }

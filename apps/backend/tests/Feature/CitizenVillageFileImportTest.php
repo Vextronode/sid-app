@@ -151,20 +151,21 @@ class CitizenVillageFileImportTest extends TestCase
         $this->assertTrue((bool) $citizen->has_disorder);
     }
 
-    public function test_hamlet_comes_from_address_with_typos_or_falls_back_to_the_rw(): void
+    public function test_hamlet_always_follows_the_rw_not_the_address(): void
     {
         $this->import($this->villageFile([
-            // Salah ketik nama dusun tetap dikenali.
             ['3218200101100002', '3218200303910001', 'ERIK', 'KUNINGAN', '03|03|1991', 'B', 'L', 'DUSUN SIRNAGALIH', '001', '006', 0],
-            // Alamat perumahan tanpa nama dusun: ikut dusun milik RW 006.
             ['3218200101100003', '3218200404920001', 'ASEP', 'CIAMIS', '04|04|1992', 'B', 'L', 'PERUM CITIIS INDAH NO 28', '002', '006', 0],
-            // Nama desa di alamat tidak dianggap nama dusun.
+            // Alamat menyebut dusun lain (mis. nama jalan/kampung): tetap
+            // dusun milik RW 006, tanpa menebak dari alamat.
             ['3218200101100004', '3218200505930001', 'UJANG', 'CIAMIS', '05|05|1993', 'B', 'L', 'PATROL DESA SINARGALIH', '001', '006', 0],
-        ]))->assertJsonPath('data.success_count', 3);
+        ]))
+            ->assertJsonPath('data.success_count', 3)
+            ->assertJsonPath('data.warning_count', 0);
 
-        $this->assertSame($this->sinargalih->id, $this->citizen('3218200303910001')->hamlet_id);
-        $this->assertSame($this->sinargalih->id, $this->citizen('3218200404920001')->hamlet_id);
-        $this->assertSame($this->patrol->id, $this->citizen('3218200505930001')->hamlet_id);
+        foreach (['3218200303910001', '3218200404920001', '3218200505930001'] as $nik) {
+            $this->assertSame($this->sinargalih->id, $this->citizen($nik)->hamlet_id);
+        }
     }
 
     public function test_unknown_rw_or_rt_fails_only_that_row(): void

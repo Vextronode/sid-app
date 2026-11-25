@@ -90,11 +90,12 @@ class CitizenAliasColumnImportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.success_count', 2)
             ->assertJsonPath('data.error_count', 0)
-            ->assertJsonPath('data.warning_count', 2);
+            ->assertJsonPath('data.warning_count', 3);
 
         $this->assertSame([
+            ['row' => 2, 'message' => 'Dusun "Sinar Galih" berbeda dengan dusun RW 006 (Patrol); dusun mengikuti RW.'],
             ['row' => 3, 'message' => 'Agama "KEPERCAYAAN" tidak dikenali; kolom ini dikosongkan.'],
-            ['row' => 3, 'message' => 'Dusun "Dusun Antah" tidak ditemukan; dusun diambil dari ALAMAT atau RW.'],
+            ['row' => 3, 'message' => 'Dusun "Dusun Antah" tidak ditemukan; dusun mengikuti RW 006 (Patrol).'],
         ], $response->json('data.warnings'));
 
         $head = Citizen::query()->where('nik_hash', hash('sha256', '3201012345670001'))->firstOrFail();
@@ -109,8 +110,9 @@ class CitizenAliasColumnImportTest extends TestCase
         $this->assertSame('Udin', $head->father_name_text);
         $this->assertSame('Iyah', $head->mother_name_text);
         $this->assertSame($this->rt->id, $head->rt_id);
-        // Kolom DUSUN mengalahkan dusun milik RW (Patrol).
-        $this->assertSame($this->sinargalih->id, $head->hamlet_id);
+        // Dusun selalu dusun milik RW (Patrol); kolom DUSUN yang berbeda
+        // hanya menghasilkan peringatan.
+        $this->assertSame($this->patrol->id, $head->hamlet_id);
         $this->assertSame('3201010000000001', $head->family->no_kk);
 
         $wife = Citizen::query()->where('nik_hash', hash('sha256', '3201012345670002'))->firstOrFail();

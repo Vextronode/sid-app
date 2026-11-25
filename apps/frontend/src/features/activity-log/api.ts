@@ -55,6 +55,20 @@ export type LetterActivityLog = {
   created_at: IsoDateString | null
 }
 
+// OtherLogResource: tab "Lainnya" (pejabat, buka NIK di surat, data usaha,
+// peringatan bencana, klien integrasi). Pelaku bisa klien integrasi (tanpa
+// role) atau sistem (null).
+export type OtherLog = {
+  id: number
+  log_name: string
+  event: string | null
+  description: string | null
+  subject_label: string | null
+  details: Record<string, unknown>
+  actor: (Omit<LogActor, 'role'> & { role: string | null }) | null
+  created_at: IsoDateString | null
+}
+
 type LogParams = Record<string, string | number | null | undefined>
 
 // Hanya parameter yang terisi yang dikirim ke server.
@@ -79,6 +93,15 @@ export async function getPopulationLogs(params: LogParams = {}) {
 // Riwayat tindakan atas akun pengguna desa - khusus Staf SIDUTama.
 export async function getAccountLogs(params: LogParams = {}) {
   const response = await api.get<PaginatedResponse<AccountLog>>('/api/activity-logs/accounts', {
+    params: compact(params),
+  })
+
+  return response.data
+}
+
+// Log lain yang tidak punya tab sendiri - khusus Staf SIDUTama.
+export async function getOtherLogs(params: LogParams = {}) {
+  const response = await api.get<PaginatedResponse<OtherLog>>('/api/activity-logs/others', {
     params: compact(params),
   })
 

@@ -4,9 +4,6 @@
 // Styling menggunakan Global CSS SID.
 // ==========================================
 
-import { useQuery } from '@tanstack/react-query'
-
-import { getGenderStats } from '@/features/approval/api'
 import { useSuratSummaryQuery } from '@/features/surat/hooks/useSuratListQuery'
 
 import { useAuth } from '@/features/auth/contexts/AuthContext'
@@ -14,7 +11,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext'
 import { ClipboardList, ListChecks, CheckCircle2 } from 'lucide-react'
 
 import SuratStatChart from '@/features/dashboard-mobile/components/SuratStatChart'
-import GenderStatCard from '@/features/operator-desa/components/GenderStatCard'
+import GenderStatsPanel from '@/features/dashboard-mobile/components/GenderStatsPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import DashboardFlowCard from '@/features/operator-desa/components/DashboardFlowCard'
 import { getGreeting } from '@/lib/utils/greeting'
@@ -23,8 +20,6 @@ import { SURAT_STATUS } from '@/constants/suratStatus'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 import { useQueryRefresh } from '@/shared/hooks/useQueryRefresh'
 
-const EMPTY_GENDER_STATS = { total: 0, laki: 0, perempuan: 0 }
-
 export default function OperatorDesaDashboardPage() {
   const pageRefresh = useQueryRefresh(['surat'], ['dashboard'])
   const { user } = useAuth()
@@ -32,12 +27,6 @@ export default function OperatorDesaDashboardPage() {
 
   // Angka dihitung backend atas scope yang sama dengan daftar surat.
   const { summary, loading } = useSuratSummaryQuery()
-
-  const { data: genderStats = EMPTY_GENDER_STATS } = useQuery({
-    queryKey: ['dashboard', 'gender-stats'],
-    queryFn: async () => (await getGenderStats()).data?.data ?? EMPTY_GENDER_STATS,
-    staleTime: 5 * 60 * 1000,
-  })
 
   // ==========================================
   // STATISTIK
@@ -134,11 +123,7 @@ export default function OperatorDesaDashboardPage() {
           {/* GENDER */}
 
           <div className="sid-operator-gender-card">
-            <GenderStatCard
-              total={genderStats.total}
-              laki={genderStats.laki}
-              perempuan={genderStats.perempuan}
-            />
+            <GenderStatsPanel />
           </div>
         </section>
 

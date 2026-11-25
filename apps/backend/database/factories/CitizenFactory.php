@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Enums\DomicileStatus;
 use App\Enums\LastEducation;
 use App\Models\Citizen;
-use App\Models\Hamlet;
 use App\Models\Rt;
 use App\Models\Village;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -30,8 +29,8 @@ class CitizenFactory extends Factory
             'place_of_birth' => fake()->city(),
             'gender' => fake()->randomElement(['L', 'P']),
             'address' => fake()->address(),
+            // hamlet_id diturunkan Citizen dari RT.
             'rt_id' => Rt::factory(),
-            'hamlet_id' => fn () => Hamlet::query()->value('id') ?? Hamlet::factory()->create()->id,
             'marital_status' => fake()->randomElement(['belum_kawin', 'kawin', 'cerai_hidup', 'cerai_mati']),
             'occupation_id' => null,
             'religion' => fake()->randomElement(['islam', 'kristen', 'katolik', 'hindu', 'buddha', 'konghucu']),

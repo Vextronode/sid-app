@@ -16,7 +16,9 @@ return new class extends Migration
         Schema::create('migrant_workers', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->noActionOnDelete();
             $table->foreignUuid('letter_id')->unique()->constrained('letters')->cascadeOnDelete();
 
             $table->unsignedSmallInteger('height_cm')->nullable();

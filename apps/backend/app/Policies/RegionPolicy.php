@@ -6,6 +6,7 @@ use App\Models\Hamlet;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class RegionPolicy
 {
@@ -19,13 +20,23 @@ class RegionPolicy
         return $user->role === 'staf_sid' && $user->is_active && $user->village_id !== null;
     }
 
-    public function update(User $user, Hamlet|Rw|Rt $region): bool
+    /**
+     * Wilayah desa lain dijawab 404, sama dengan data warga/KK desa lain:
+     * keberadaannya tidak dibocorkan. Peran yang memang tidak boleh
+     * mengelola wilayah tetap 403.
+     */
+    public function update(User $user, Hamlet|Rw|Rt $region): Response
     {
-        return $this->create($user)
-            && $this->belongsToUserVillage($user, $region);
+        if (! $this->create($user)) {
+            return Response::deny();
+        }
+
+        return $this->belongsToUserVillage($user, $region)
+            ? Response::allow()
+            : Response::denyAsNotFound();
     }
 
-    public function delete(User $user, Hamlet|Rw|Rt $region): bool
+    public function delete(User $user, Hamlet|Rw|Rt $region): Response
     {
         return $this->update($user, $region);
     }

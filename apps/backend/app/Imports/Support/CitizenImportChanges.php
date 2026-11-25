@@ -3,7 +3,6 @@
 namespace App\Imports\Support;
 
 use App\Models\Citizen;
-use App\Models\Hamlet;
 use App\Models\Occupation;
 use App\Models\Rt;
 use App\Support\CitizenLabels;
@@ -18,10 +17,9 @@ use Illuminate\Support\Carbon;
  */
 final class CitizenImportChanges
 {
-    /** rt_id/hamlet_id di sini hasil resolusi RT/RW & dusun, bukan kolom ID. */
+    /** rt_id di sini hasil resolusi nomor RT/RW, bukan kolom ID. */
     private const LABELS = [
         'rt_id' => 'RT/RW',
-        'hamlet_id' => 'Dusun',
     ];
 
     private const VALUE_LABELS = [
@@ -33,9 +31,6 @@ final class CitizenImportChanges
 
     /** @var array<int, string> */
     private array $rtLabels = [];
-
-    /** @var array<int, string> */
-    private array $hamletNames = [];
 
     /** @var array<int, string> */
     private array $occupationNames = [];
@@ -114,7 +109,6 @@ final class CitizenImportChanges
             $field === 'date_of_birth' => Carbon::parse((string) $value)->format('d/m/Y'),
             is_bool($value) => $value ? 'Ya' : 'Tidak',
             $field === 'rt_id' => $this->rtLabel((int) $value),
-            $field === 'hamlet_id' => $this->hamletName((int) $value),
             $field === 'occupation_id' => $this->occupationNames[(int) $value]
                 ??= Occupation::query()->whereKey($value)->value('name') ?? '-',
             isset(self::VALUE_LABELS[$field]) => self::VALUE_LABELS[$field][(string) $value] ?? (string) $value,
@@ -127,11 +121,6 @@ final class CitizenImportChanges
         return $this->rtLabels[$id] ??= ($rt = Rt::query()->with('rw')->find($id))
             ? 'RT '.$rt->number.' / RW '.($rt->rw?->number ?? '-')
             : '-';
-    }
-
-    private function hamletName(int $id): string
-    {
-        return $this->hamletNames[$id] ??= Hamlet::query()->whereKey($id)->value('name') ?? '-';
     }
 
     private static function maskNoKk(?string $noKk): string

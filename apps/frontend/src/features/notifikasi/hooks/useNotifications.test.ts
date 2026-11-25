@@ -74,6 +74,37 @@ describe('useNotifications', () => {
     expect(result.current.unreadCount).toBe(1)
   })
 
+  it('loads older notifications page by page and marks across loaded pages', async () => {
+    const olderNotifications = [{ id: 'notification-3', title: 'Surat lama', read: false }]
+    mockedGetNotifications.mockImplementation(async (page = 1) =>
+      page === 1
+        ? { data: { data: notifications, meta: { current_page: 1, last_page: 2 } } }
+        : { data: { data: olderNotifications, meta: { current_page: 2, last_page: 2 } } },
+    )
+    const { result } = renderNotifications()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.hasMore).toBe(true)
+
+    await act(async () => {
+      await result.current.loadMore()
+    })
+
+    expect(getNotifications).toHaveBeenLastCalledWith(2)
+    expect(result.current.notifications.map((item) => item.id)).toEqual([
+      'notification-1',
+      'notification-2',
+      'notification-3',
+    ])
+    expect(result.current.hasMore).toBe(false)
+
+    await act(async () => {
+      await result.current.markAllAsRead()
+    })
+
+    expect(result.current.notifications.every((item) => item.read)).toBe(true)
+  })
+
   it('updates a notification locally only after mark-read succeeds', async () => {
     const { result } = renderNotifications()
     await waitFor(() => expect(result.current.loading).toBe(false))

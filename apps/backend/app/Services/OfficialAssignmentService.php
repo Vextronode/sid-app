@@ -17,6 +17,7 @@ use App\Repositories\OfficialPositionTypeRepository;
 use App\Repositories\OfficialRepository;
 use App\Repositories\UserRepository;
 use App\Services\Auth\UsernameGenerator;
+use App\Support\OfficialPositionCatalog;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -203,9 +204,8 @@ class OfficialAssignmentService
                     'date_of_birth' => ['required', 'date'],
                     'gender' => ['required', Rule::in(['L', 'P'])],
                     'address' => ['required', 'string'],
-                    'village_id' => ['required', 'uuid', 'exists:villages,id'],
-                    'rt_id' => ['required', 'integer', 'exists:rts,id'],
-                    'hamlet_id' => ['nullable', 'integer', 'exists:hamlets,id'],
+                    'village_id' => ['required', 'bail', 'uuid', 'exists:villages,id'],
+                    'rt_id' => ['required', 'bail', 'integer', 'exists:rts,id'],
                 ]);
                 $validator->validate();
 
@@ -214,10 +214,7 @@ class OfficialAssignmentService
                     throw new RuntimeException('RT harus berasal dari desa yang dipilih.');
                 }
 
-                if (! empty($data['hamlet_id']) && ! Hamlet::query()->whereKey($data['hamlet_id'])->where('village_id', $data['village_id'])->exists()) {
-                    throw new RuntimeException('Dusun harus berasal dari desa yang dipilih.');
-                }
-
+                // Dusun diturunkan Citizen dari RT.
                 $citizen = Citizen::create([
                     'nik' => $data['nik'],
                     'name' => $data['name'],
@@ -226,7 +223,6 @@ class OfficialAssignmentService
                     'address' => $data['address'],
                     'village_id' => $data['village_id'],
                     'rt_id' => $data['rt_id'],
-                    'hamlet_id' => $data['hamlet_id'] ?: null,
                     'data_source' => 'manual_input_desa',
                     'is_active' => true,
                 ]);
@@ -532,6 +528,9 @@ class OfficialAssignmentService
     }
 
     /**
+     * Log `official` (tab "Lainnya" di Log Aktivitas): kode aksi di event,
+     * desa di properties untuk penyaring per desa.
+     *
      * @param  array<string, mixed>  $properties
      */
     private function logActivity(?User $actor, Official $official, string $event, array $properties): void
@@ -543,7 +542,19 @@ class OfficialAssignmentService
         }
 
         $logger->performedOn($official)
-            ->withProperties($properties)
-            ->log($event);
+            ->event($event)
+            ->withProperties([
+                'village_id' => $official->village_id,
+                // Mis. "Budi (Ketua RT)": nama pejabat dan jabatannya.
+                'subject_label' => trim(($official->citizen?->name ?? '').' ('
+                    .(app(OfficialPositionCatalog::class)->label($official->position, $official->village_id) ?? $official->position).')'),
+                ...$properties,
+            ])
+            ->log(match ($event) {
+                'promoted' => 'Pejabat diangkat',
+                'demoted' => 'Pejabat diturunkan',
+                'rotated' => 'Pejabat diganti (rotasi)',
+                default => $event,
+            });
     }
 }

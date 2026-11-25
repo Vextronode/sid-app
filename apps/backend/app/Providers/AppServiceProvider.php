@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 
@@ -68,6 +69,20 @@ class AppServiceProvider extends ServiceProvider
         // Sinyal realtime (Reverb) setiap kali surat berubah, dari service
         // mana pun; lihat docs/task/feature/realtime-reverb.md.
         Letter::observe(LetterRealtimeObserver::class);
+
+        // Format id parameter route dicek sebelum query: PostgreSQL melempar
+        // error (500) untuk `where id = 'abc'` pada kolom bigint/uuid. Id
+        // salah format langsung 404 (route tidak cocok). `{id}` biasa diberi
+        // whereUuid/whereNumber per route di routes/api.php.
+        Route::patterns(array_fill_keys([
+            'accountRegistration', 'attachment', 'hamlet', 'letterType', 'official',
+            'position', 'profilePhotoRequest', 'resetRequest', 'result', 'rt', 'rw',
+            'signatureBlock', 'signatureRequest',
+        ], '[0-9]+'));
+        Route::patterns(array_fill_keys([
+            'citizen', 'citizenBusiness', 'disasterAlert', 'family', 'integrationClient',
+            'letter', 'migrantWorker', 'user',
+        ], '[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}'));
 
         RateLimiter::for('register', function (Request $request) {
             return [

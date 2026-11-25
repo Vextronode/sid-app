@@ -19,6 +19,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->index('village_id', 'idx_rts_village');
+            // Nomor RT mulai lagi di tiap RW (RT 001 ada di banyak RW).
+            $table->unique(['rw_id', 'number']);
         });
     }
 

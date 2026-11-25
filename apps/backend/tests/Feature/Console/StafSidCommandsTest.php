@@ -36,7 +36,7 @@ class StafSidCommandsTest extends TestCase
         $this->assertTrue($official->is_active);
         $this->assertDatabaseHas('activity_log', [
             'log_name' => 'official',
-            'description' => 'promoted',
+            'event' => 'promoted',
             'subject_id' => (string) $official->id,
             'causer_id' => null,
         ]);

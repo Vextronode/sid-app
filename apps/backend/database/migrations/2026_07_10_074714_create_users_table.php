@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('village_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignUuid('citizen_id')->nullable()->constrained()->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->nullable()->constrained()->noActionOnDelete();
             $table->string('name');
             $table->enum('role', ['warga', 'rt', 'rw', 'kadus', 'kasi_pemerintahan', 'kaur_tu_umum', 'staf_sid', 'kepala_desa', 'sekretaris_desa'])->nullable();
             $table->string('username', 30)->unique()->after('name');

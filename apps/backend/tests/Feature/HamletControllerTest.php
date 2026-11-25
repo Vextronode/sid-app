@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Citizen;
 use App\Models\Hamlet;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\User;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,7 +73,10 @@ class HamletControllerTest extends TestCase
         $village = Village::create(['name' => 'Desa Cibenda', 'code' => 'CBD']);
         $user = $this->stafSid($village);
         $hamlet = Hamlet::create(['name' => 'Dusun A', 'code' => 'PTR', 'village_id' => $village->id, 'is_active' => true]);
+        $rw = Rw::create(['hamlet_id' => $hamlet->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
+        $rt = Rt::create(['rw_id' => $rw->id, 'village_id' => $village->id, 'number' => '001', 'is_active' => true]);
 
+        // Warga dusun = warga yang RT-nya ada di dusun ini.
         Citizen::create([
             'village_id' => $village->id,
             'nik' => '3218030101010001',
@@ -80,7 +85,7 @@ class HamletControllerTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'gender' => 'L',
             'address' => 'Desa Cibenda',
-            'hamlet_id' => $hamlet->id,
+            'rt_id' => $rt->id,
             'is_active' => true,
         ]);
 

@@ -3,9 +3,7 @@
 namespace App\Services;
 
 use App\Models\Family;
-use App\Models\Hamlet;
 use App\Models\Rt;
-use App\Models\Rw;
 use App\Models\User;
 use App\Repositories\FamilyRepository;
 use App\Support\PopulationScope;
@@ -57,9 +55,8 @@ class FamilyService
                 'no_kk' => $data['no_kk'],
                 'family_address' => $data['family_address'],
                 'family_status' => $data['family_status'] ?? 'aktif',
+                // RW dan Dusun KK diturunkan Family dari RT ini.
                 'rt_id' => $data['rt_id'] ?? null,
-                'rw_id' => $data['rw_id'] ?? null,
-                'hamlet_id' => $data['hamlet_id'] ?? null,
             ]));
         } catch (UniqueConstraintViolationException $exception) {
             // Dua KK dengan No KK sama yang dibuat bersamaan sama-sama lolos
@@ -117,12 +114,10 @@ class FamilyService
 
     private function guardRelatedRegions(array $data, User $user, ?Family $family = null): void
     {
-        $villageId = $this->villageId($user);
-        foreach (['rt_id' => Rt::class, 'rw_id' => Rw::class, 'hamlet_id' => Hamlet::class] as $field => $model) {
-            $id = $data[$field] ?? $family?->{$field};
-            if ($id !== null && ! $model::query()->whereKey($id)->where('village_id', $villageId)->exists()) {
-                abort(422, 'Wilayah keluarga harus berasal dari desa Anda.');
-            }
+        // Cukup RT: RW dan Dusun KK diturunkan dari RT (Family::booted).
+        $rtId = $data['rt_id'] ?? $family?->rt_id;
+        if ($rtId !== null && ! Rt::query()->whereKey($rtId)->where('village_id', $this->villageId($user))->exists()) {
+            abort(422, 'Wilayah keluarga harus berasal dari desa Anda.');
         }
     }
 

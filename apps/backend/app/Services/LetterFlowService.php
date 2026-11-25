@@ -94,6 +94,24 @@ class LetterFlowService
         }
     }
 
+    /**
+     * Surat disetujui saat jabatan Kepala Desa kosong (disetujui Sekdes):
+     * PDF belum bisa dibuat karena penanda tangannya Kepala Desa aktif. Staf
+     * diberi tahu agar mengangkat Kepala Desa; PDF dibuat saat diunduh
+     * setelahnya.
+     */
+    public function notifySignerVacant(Letter $letter): void
+    {
+        foreach ($this->officialService->resolveStafSidUsers($letter->village_id) as $petugas) {
+            $petugas->notify(new LetterStatusNotification(
+                $letter,
+                'PDF Surat Tertunda: Kepala Desa Kosong',
+                'Ada surat yang sudah disetujui, tetapi PDF-nya belum bisa dibuat karena jabatan Kepala Desa kosong (surat ditandatangani Kepala Desa). Angkat Kepala Desa agar PDF surat dapat diunduh.',
+                'signer_vacant',
+            ));
+        }
+    }
+
     /** Pemohon adalah Kepala Desa atau Sekretaris Desa aktif di desa surat. */
     public function isVillageHeadApplicant(Letter $letter): bool
     {

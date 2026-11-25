@@ -27,9 +27,7 @@ class StoreFamilyRequest extends FormRequest
             'no_kk' => ['required', 'digits:16'],
             'family_address' => ['required', 'string'],
             'family_status' => ['sometimes', Rule::in(['aktif', 'pindah', 'bubar'])],
-            'rt_id' => ['nullable', 'exists:rts,id'],
-            'rw_id' => ['nullable', 'exists:rws,id'],
-            'hamlet_id' => ['nullable', 'exists:hamlets,id'],
+            'rt_id' => ['nullable', 'bail', 'integer', 'exists:rts,id'],
         ];
     }
 

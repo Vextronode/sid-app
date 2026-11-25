@@ -106,9 +106,10 @@ function sortMembersByRole(members: FamilyMember[]): FamilyMember[] {
 
 /**
  * Daftar Kartu Keluarga. `canEdit` = false untuk tampilan khusus-baca
- * (Kaur TU & Umum dan pejabat pembaca lain); `canViewHistory` hanya untuk
- * Staf SIDUTama (Log Aktivitas). `filterLevels` = tingkat filter wilayah
- * yang tampil (lihat wilayahFilterLevels).
+ * (Kaur TU & Umum dan pejabat pembaca lain); `canViewSocioeconomic` membuka
+ * survei sosio-ekonomi (Staf, Kasi, dan Kaur; tanpa `canEdit` hanya lihat);
+ * `canViewHistory` hanya untuk Staf SIDUTama (Log Aktivitas).
+ * `filterLevels` = tingkat filter wilayah yang tampil (lihat wilayahFilterLevels).
  * `ref` mengekspos openCreate() untuk tombol Tambah KK di header halaman.
  */
 export type FamilyManagementPanelHandle = { openCreate: () => void }
@@ -116,6 +117,7 @@ export type FamilyManagementPanelHandle = { openCreate: () => void }
 type FamilyManagementPanelProps = {
   familyList: ReturnType<typeof useFamilyList>
   canEdit?: boolean
+  canViewSocioeconomic?: boolean
   canViewHistory?: boolean
   filterLevels?: (keyof WilayahFilters)[]
   ref?: Ref<FamilyManagementPanelHandle>
@@ -124,6 +126,7 @@ type FamilyManagementPanelProps = {
 export default function FamilyManagementPanel({
   familyList,
   canEdit = true,
+  canViewSocioeconomic = canEdit,
   canViewHistory = true,
   filterLevels,
   ref,
@@ -145,9 +148,10 @@ export default function FamilyManagementPanel({
     editFamily,
     removeFamily,
   } = familyList
-  const hasActions = canEdit || canViewHistory
+  const hasActions = canEdit || canViewSocioeconomic || canViewHistory
   const columnCount = hasActions ? 6 : 5
   const [modal, setModal] = useState<'family' | 'socioeconomic' | null>(null)
+  const socioeconomicReadOnly = modal === 'socioeconomic' && !canEdit
   const [familyForm, setFamilyForm] = useState(EMPTY_FAMILY)
   const [socioeconomic, setSocioeconomic] = useState(EMPTY_SOCIOECONOMIC)
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
@@ -253,7 +257,7 @@ export default function FamilyManagementPanel({
 
   const handleSocioeconomicSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!selectedFamily) return
+    if (!selectedFamily || !canEdit) return
     setBusy(true)
     setMessage('')
     try {
@@ -426,12 +430,14 @@ export default function FamilyManagementPanel({
                             <Pencil size={16} />
                           </button>
                         )}
-                        {canEdit && (
+                        {canViewSocioeconomic && (
                           <button
                             type="button"
                             className="sid-operator-action toggle"
-                            title="Survei sosio-ekonomi"
-                            aria-label="Survei sosio-ekonomi"
+                            title={canEdit ? 'Survei sosio-ekonomi' : 'Lihat survei sosio-ekonomi'}
+                            aria-label={
+                              canEdit ? 'Survei sosio-ekonomi' : 'Lihat survei sosio-ekonomi'
+                            }
                             onClick={() => openSocioeconomic(family)}
                           >
                             <RefreshCw size={16} />
@@ -649,104 +655,127 @@ export default function FamilyManagementPanel({
                     </strong>
                   </p>
                 )}
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>
-                  <select
-                    style={fieldStyle}
-                    value={socioeconomic.household_income_range}
-                    onChange={(event) =>
-                      setSocioeconomic({
-                        ...socioeconomic,
-                        household_income_range: event.target.value,
-                      })
-                    }
+                {socioeconomicReadOnly && (
+                  <p
+                    style={{
+                      margin: '0 0 0.75rem',
+                      color: 'var(--sid-text-muted)',
+                      fontSize: '0.8rem',
+                    }}
                   >
-                    <option value="">Pilih</option>
-                    {['<1jt', '1-3jt', '3-5jt', '5-10jt', '>10jt'].map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Kepemilikan Rumah</span>
-                  <select
-                    style={fieldStyle}
-                    value={socioeconomic.house_ownership_status}
-                    onChange={(event) =>
-                      setSocioeconomic({
-                        ...socioeconomic,
-                        house_ownership_status: event.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Pilih</option>
-                    {optionsOf(HOUSE_OWNERSHIP_LABELS).map(({ value, label }) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Sumber Air</span>
-                  <select
-                    style={fieldStyle}
-                    value={socioeconomic.water_source}
-                    onChange={(event) =>
-                      setSocioeconomic({ ...socioeconomic, water_source: event.target.value })
-                    }
-                  >
-                    <option value="">Pilih</option>
-                    {optionsOf(WATER_SOURCE_LABELS).map(({ value, label }) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Sumber Listrik</span>
-                  <select
-                    style={fieldStyle}
-                    value={socioeconomic.electricity_source}
-                    onChange={(event) =>
-                      setSocioeconomic({ ...socioeconomic, electricity_source: event.target.value })
-                    }
-                  >
-                    <option value="">Pilih</option>
-                    {optionsOf(ELECTRICITY_SOURCE_LABELS).map(({ value, label }) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Jumlah Tanggungan</span>
-                  <input
-                    style={fieldStyle}
-                    type="number"
-                    min="0"
-                    value={socioeconomic.dependents_count}
-                    onChange={(event) =>
-                      setSocioeconomic({ ...socioeconomic, dependents_count: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="sid-form-group">
-                  <span className="sid-form-label">Aset Produktif (JSON object)</span>
-                  <textarea
-                    style={fieldStyle}
-                    rows={4}
-                    value={socioeconomic.productive_assets}
-                    onChange={(event) =>
-                      setSocioeconomic({ ...socioeconomic, productive_assets: event.target.value })
-                    }
-                    placeholder='{"kendaraan":"motor"}'
-                  />
-                </label>
+                    Hanya Staf SIDUTama dan Kasi Pemerintahan yang dapat mengubah survei ini.
+                  </p>
+                )}
+                {/* Kaur TU & Umum hanya melihat: semua isian dikunci. */}
+                <fieldset
+                  disabled={socioeconomicReadOnly}
+                  style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+                >
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Rentang Penghasilan Rumah Tangga</span>
+                    <select
+                      style={fieldStyle}
+                      value={socioeconomic.household_income_range}
+                      onChange={(event) =>
+                        setSocioeconomic({
+                          ...socioeconomic,
+                          household_income_range: event.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Pilih</option>
+                      {['<1jt', '1-3jt', '3-5jt', '5-10jt', '>10jt'].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Kepemilikan Rumah</span>
+                    <select
+                      style={fieldStyle}
+                      value={socioeconomic.house_ownership_status}
+                      onChange={(event) =>
+                        setSocioeconomic({
+                          ...socioeconomic,
+                          house_ownership_status: event.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Pilih</option>
+                      {optionsOf(HOUSE_OWNERSHIP_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Sumber Air</span>
+                    <select
+                      style={fieldStyle}
+                      value={socioeconomic.water_source}
+                      onChange={(event) =>
+                        setSocioeconomic({ ...socioeconomic, water_source: event.target.value })
+                      }
+                    >
+                      <option value="">Pilih</option>
+                      {optionsOf(WATER_SOURCE_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Sumber Listrik</span>
+                    <select
+                      style={fieldStyle}
+                      value={socioeconomic.electricity_source}
+                      onChange={(event) =>
+                        setSocioeconomic({
+                          ...socioeconomic,
+                          electricity_source: event.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Pilih</option>
+                      {optionsOf(ELECTRICITY_SOURCE_LABELS).map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Jumlah Tanggungan</span>
+                    <input
+                      style={fieldStyle}
+                      type="number"
+                      min="0"
+                      value={socioeconomic.dependents_count}
+                      onChange={(event) =>
+                        setSocioeconomic({ ...socioeconomic, dependents_count: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="sid-form-group">
+                    <span className="sid-form-label">Aset Produktif (JSON object)</span>
+                    <textarea
+                      style={fieldStyle}
+                      rows={4}
+                      value={socioeconomic.productive_assets}
+                      onChange={(event) =>
+                        setSocioeconomic({
+                          ...socioeconomic,
+                          productive_assets: event.target.value,
+                        })
+                      }
+                      placeholder='{"kendaraan":"motor"}'
+                    />
+                  </label>
+                </fieldset>
               </>
             )}
 
@@ -761,11 +790,13 @@ export default function FamilyManagementPanel({
                 className="sid-button sid-button-outline"
                 onClick={() => requestClose(closeModal)}
               >
-                Batal
+                {socioeconomicReadOnly ? 'Tutup' : 'Batal'}
               </button>
-              <button type="submit" className="sid-button sid-button-primary" disabled={busy}>
-                {busy ? 'Menyimpan...' : 'Simpan'}
-              </button>
+              {!socioeconomicReadOnly && (
+                <button type="submit" className="sid-button sid-button-primary" disabled={busy}>
+                  {busy ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              )}
             </div>
           </form>
         </div>

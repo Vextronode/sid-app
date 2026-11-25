@@ -542,9 +542,9 @@ class LetterServiceTest extends TestCase
     public function test_get_scoped_letters_for_kadus_is_scoped_to_own_hamlet(): void
     {
         $hamlet = Hamlet::factory()->create();
-        $ownCitizen = Citizen::factory()->create(['hamlet_id' => $hamlet->id]);
+        $ownCitizen = $this->makeCitizenInHamlet($hamlet);
         $otherHamlet = Hamlet::factory()->create();
-        $otherCitizen = Citizen::factory()->create(['hamlet_id' => $otherHamlet->id]);
+        $otherCitizen = $this->makeCitizenInHamlet($otherHamlet);
         [$ownLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $ownCitizen->id]);
         [$otherLetter] = $this->makeLetterAtStep('kepala_desa', 2, ['citizen_id' => $otherCitizen->id]);
         $official = Official::factory()->create(['position' => 'kadus', 'hamlet_id' => $hamlet->id]);

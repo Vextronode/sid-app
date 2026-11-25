@@ -26,11 +26,15 @@ class StoreOfficialRequest extends FormRequest
         return [
             'citizen_id' => [
                 'required',
+                'bail',
+                'uuid',
                 'exists:citizens,id',
             ],
 
             'user_id' => [
                 'nullable',
+                'bail',
+                'uuid',
                 'exists:users,id',
             ],
 
@@ -42,21 +46,29 @@ class StoreOfficialRequest extends FormRequest
 
             'village_id' => [
                 'nullable',
+                'bail',
+                'uuid',
                 'exists:villages,id',
             ],
 
             'rt_id' => [
                 'nullable',
+                'bail',
+                'integer',
                 'exists:rts,id',
             ],
 
             'rw_id' => [
                 'nullable',
+                'bail',
+                'integer',
                 'exists:rws,id',
             ],
 
             'hamlet_id' => [
                 'nullable',
+                'bail',
+                'integer',
                 'exists:hamlets,id',
             ],
 

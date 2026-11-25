@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Models\Rt;
 use App\Models\Rw;
 use App\Repositories\CitizenRepository;
+use App\Repositories\ReferenceRepository;
 use App\Repositories\RtRepository;
 use App\Repositories\RwRepository;
 use App\Services\RtService;
@@ -27,6 +28,7 @@ class RtServiceTest extends TestCase
             new RtRepository,
             new RwRepository,
             new CitizenRepository,
+            new ReferenceRepository,
         );
     }
 

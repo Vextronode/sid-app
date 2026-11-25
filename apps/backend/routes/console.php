@@ -43,6 +43,13 @@ Schedule::command('disaster-alerts:prune')
     ->dailyAt('02:00')
     ->withoutOverlapping();
 
+// Notifikasi yang sudah dibaca lebih dari masa simpan
+// (config sid.notifications.read_retention_days, bawaan 90 hari) dihapus;
+// yang belum dibaca tetap disimpan.
+Schedule::command('notifications:prune')
+    ->dailyAt('02:30')
+    ->withoutOverlapping();
+
 // Activity log sengaja tidak dibersihkan otomatis (`activitylog:clean` tidak
 // dijadwalkan): riwayat data warga/KK, jabatan, akun, dan akses identitas
 // menjadi bukti bila ada sengketa bertahun-tahun kemudian. Retensi baru

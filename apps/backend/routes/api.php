@@ -202,7 +202,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->prefix('approval-flows')
         ->group(function () {
             Route::get('/', [ApprovalFlowController::class, 'index']);
-            Route::get('/{id}', [ApprovalFlowController::class, 'show']);
+            Route::get('/{id}', [ApprovalFlowController::class, 'show'])->whereNumber('id');
         });
 
     /*
@@ -215,7 +215,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->prefix('approval-settings')
         ->group(function () {
             Route::get('/', [ApprovalSettingController::class, 'index']);
-            Route::patch('/{id}', [ApprovalSettingController::class, 'update']);
+            Route::patch('/{id}', [ApprovalSettingController::class, 'update'])->whereNumber('id');
         });
 
     /*
@@ -289,22 +289,26 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
     |----------------------------------------------------------------------
     | Sama seperti Citizens: Staf SIDUTama dan Kasi Pemerintahan mengelola,
     | peran pembaca lain hanya membaca dalam cakupan PopulationScope. Survei
-    | sosio-ekonomi tetap dibatasi ShowFamilySocioeconomicRequest.
+    | sosio-ekonomi dibaca Staf, Kasi Pemerintahan, dan Kaur TU & Umum, dan
+    | diisi Staf serta Kasi Pemerintahan (sama dengan FormRequest-nya).
     */
     Route::middleware(UserRole::middleware(...PopulationScope::readerRoles()))
         ->prefix('families')
         ->group(function () {
             Route::get('/', [FamilyController::class, 'index']);
             Route::get('/options', [FamilyController::class, 'options']);
-            Route::get('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show']);
             Route::get('/{family}', [FamilyController::class, 'show']);
         });
+
+    Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan, UserRole::KaurTuUmum))
+        ->get('/families/{id}/socioeconomic', [FamilySocioeconomicController::class, 'show'])
+        ->whereUuid('id');
 
     Route::middleware(UserRole::middleware(UserRole::StafSid, UserRole::KasiPemerintahan))
         ->prefix('families')
         ->group(function () {
             Route::post('/', [FamilyController::class, 'store']);
-            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert']);
+            Route::put('/{id}/socioeconomic', [FamilySocioeconomicController::class, 'upsert'])->whereUuid('id');
             Route::patch('/{family}', [FamilyController::class, 'update']);
             Route::delete('/{family}', [FamilyController::class, 'destroy']);
         });
@@ -321,6 +325,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
             Route::get('/population', [ActivityLogController::class, 'population']);
             Route::get('/accounts', [ActivityLogController::class, 'accounts']);
             Route::get('/letters', [ActivityLogController::class, 'letters']);
+            // Pejabat, buka NIK di surat, data usaha, bencana, integrasi.
+            Route::get('/others', [ActivityLogController::class, 'others']);
         });
 
     /*
@@ -363,8 +369,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->prefix('occupations')
         ->group(function () {
             Route::post('/', [OccupationController::class, 'store']);
-            Route::patch('/{id}', [OccupationController::class, 'update']);
-            Route::delete('/{id}', [OccupationController::class, 'destroy']);
+            Route::patch('/{id}', [OccupationController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [OccupationController::class, 'destroy'])->whereNumber('id');
         });
 
     /*
@@ -463,7 +469,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/summary', [LetterController::class, 'summary']);
         // Laporan Excel atas scope dan filter yang sama dengan daftar.
         Route::get('/export', [LetterController::class, 'export']);
-        Route::get('/{id}', [LetterController::class, 'show']);
+        Route::get('/{id}', [LetterController::class, 'show'])->whereUuid('id');
         Route::delete('/{letter}', [LetterController::class, 'destroy']);
         //        Route::patch('/{letter}/resubmit', [LetterController::class, 'resubmit']);
         Route::get('/{letter}/download', [LetterDownloadController::class, 'download']);
@@ -510,8 +516,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [NewsController::class, 'index']);
             Route::post('/', [NewsController::class, 'store']);
-            Route::patch('/{id}', [NewsController::class, 'update']);
-            Route::delete('/{id}', [NewsController::class, 'destroy']);
+            Route::patch('/{id}', [NewsController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [NewsController::class, 'destroy'])->whereNumber('id');
         });
 
     Route::middleware(UserRole::middleware(UserRole::StafSid))
@@ -519,8 +525,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [NewsCategoryController::class, 'index']);
             Route::post('/', [NewsCategoryController::class, 'store']);
-            Route::patch('/{id}', [NewsCategoryController::class, 'update']);
-            Route::delete('/{id}', [NewsCategoryController::class, 'destroy']);
+            Route::patch('/{id}', [NewsCategoryController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [NewsCategoryController::class, 'destroy'])->whereNumber('id');
         });
 
     /*
@@ -534,7 +540,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
         Route::post('/read-all', [NotificationController::class, 'readAll']);
-        Route::post('/{id}/read', [NotificationController::class, 'read']);
+        Route::post('/{id}/read', [NotificationController::class, 'read'])->whereUuid('id');
     });
 
     /*
@@ -562,8 +568,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [RegulationController::class, 'index']);
             Route::post('/', [RegulationController::class, 'store']);
-            Route::patch('/{id}', [RegulationController::class, 'update']);
-            Route::delete('/{id}', [RegulationController::class, 'destroy']);
+            Route::patch('/{id}', [RegulationController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [RegulationController::class, 'destroy'])->whereNumber('id');
         });
 
     /*
@@ -764,8 +770,8 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [OfficialPositionTypeController::class, 'index']);
             Route::post('/', [OfficialPositionTypeController::class, 'store']);
-            Route::patch('/{id}', [OfficialPositionTypeController::class, 'update']);
-            Route::delete('/{id}', [OfficialPositionTypeController::class, 'destroy']);
+            Route::patch('/{id}', [OfficialPositionTypeController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [OfficialPositionTypeController::class, 'destroy'])->whereNumber('id');
         });
 
     /*
@@ -782,12 +788,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'password.changed'])->group
         ->group(function () {
             Route::get('/', [VillageOrgPositionController::class, 'index']);
             Route::get('/citizen-lookup', [VillageOrgMemberController::class, 'citizenLookup'])->middleware('throttle:30,1');
-            Route::get('/{id}', [VillageOrgPositionController::class, 'show']);
+            Route::get('/{id}', [VillageOrgPositionController::class, 'show'])->whereNumber('id');
 
             Route::post('/{position}/members', [VillageOrgMemberController::class, 'store']);
-            Route::patch('/{position}/members/{id}', [VillageOrgMemberController::class, 'update']);
-            Route::post('/{position}/members/{id}/end', [VillageOrgMemberController::class, 'end']);
-            Route::post('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'uploadPhoto']);
-            Route::delete('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'destroyPhoto']);
+            Route::patch('/{position}/members/{id}', [VillageOrgMemberController::class, 'update'])->whereNumber('id');
+            Route::post('/{position}/members/{id}/end', [VillageOrgMemberController::class, 'end'])->whereNumber('id');
+            Route::post('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'uploadPhoto'])->whereNumber('id');
+            Route::delete('/{position}/members/{id}/photo', [VillageOrgMemberController::class, 'destroyPhoto'])->whereNumber('id');
         });
 });

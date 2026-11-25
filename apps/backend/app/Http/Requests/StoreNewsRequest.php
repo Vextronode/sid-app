@@ -50,6 +50,7 @@ class StoreNewsRequest extends FormRequest
             'is_published' => ['nullable', 'boolean'],
             'category_ids' => ['required', 'array', 'min:1', 'max:2'],
             'category_ids.*' => [
+                'bail',
                 'integer',
                 'distinct',
                 Rule::exists('news_categories', 'id')->where('village_id', $this->user()?->village_id),

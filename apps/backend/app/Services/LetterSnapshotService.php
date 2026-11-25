@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LetterStatus;
 use App\Enums\OfficialPosition;
 use App\Enums\ResidencyType;
+use App\Enums\UserRole;
 use App\Models\Hamlet;
 use App\Models\Letter;
 use App\Models\Official;
@@ -68,21 +69,27 @@ class LetterSnapshotService
      * Dipanggil saat final approve. Tanda tangan dan stempel tetap milik
      * Kepala Desa yang menjabat saat itu, termasuk bila Sekdes yang
      * menyetujui. Bila belum ada Kepala Desa aktif, snapshot ditunda
-     * sampai unduhan pertama.
+     * sampai unduhan pertama setelah Kepala Desa diangkat.
+     *
+     * @return bool false bila snapshot ditunda karena Kepala Desa kosong
      */
-    public function captureOnFinalApproval(Letter $letter): void
+    public function captureOnFinalApproval(Letter $letter): bool
     {
         if (! $this->signedByVillageHead($letter)) {
             $this->capture($letter, null);
 
-            return;
+            return true;
         }
 
         $kades = $this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id);
 
-        if ($kades !== null) {
-            $this->capture($letter, $kades);
+        if ($kades === null) {
+            return false;
         }
+
+        $this->capture($letter, $kades);
+
+        return true;
     }
 
     /**
@@ -305,9 +312,15 @@ class LetterSnapshotService
         return $letter->loadMissing('letterType')->letterType?->signed_by_village_head ?? true;
     }
 
+    /**
+     * Surat ditandatangani Kepala Desa aktif. Saat jabatan itu kosong, PDF
+     * belum bisa dibuat: dijawab 409 dengan penjelasan, bukan 404 teknis.
+     */
     private function activeVillageHeadOrFail(Letter $letter): Official
     {
-        return $this->officialRepository->findActiveVillageHeadWithCitizenOrFail($letter->village_id);
+        return $this->officialRepository->findActiveVillageHeadWithCitizen($letter->village_id)
+            ?? abort(409, 'PDF surat belum bisa dibuat karena jabatan Kepala Desa sedang kosong (surat ditandatangani Kepala Desa). '
+                .UserRole::stafSidLabel().' perlu mengangkat Kepala Desa terlebih dahulu.');
     }
 
     /**

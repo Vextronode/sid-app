@@ -17,11 +17,13 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('village_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->nullOnDelete();
+            // NO ACTION: warga/wilayah yang masih dirujuk tidak bisa dihapus.
+            // ReferenceRepository menolaknya lebih dulu dengan pesan 409.
+            $table->foreignUuid('citizen_id')->nullable()->constrained('citizens')->noActionOnDelete();
             // Wilayah warga saat meminta: dasar routing dan riwayat per jenjang.
-            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
-            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
-            $table->foreignId('hamlet_id')->nullable()->constrained('hamlets')->nullOnDelete();
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->noActionOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->noActionOnDelete();
+            $table->foreignId('hamlet_id')->nullable()->constrained('hamlets')->noActionOnDelete();
             $table->string('status', 20)->default('pending');
             // Foto dari kamera (disk privat); dipindah menjadi foto profil
             // begitu disetujui.

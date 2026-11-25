@@ -81,7 +81,7 @@ class DashboardServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'rt']);
 
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Data official RT tidak ditemukan.');
+        $this->expectExceptionMessage('Anda tidak berhak melihat Data Penduduk.');
 
         $this->service->getGenderStats($user);
     }
@@ -91,7 +91,7 @@ class DashboardServiceTest extends TestCase
         $user = User::factory()->create(['role' => 'warga']);
 
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Tidak memiliki akses.');
+        $this->expectExceptionMessage('Anda tidak berhak melihat Data Penduduk.');
 
         $this->service->getGenderStats($user);
     }

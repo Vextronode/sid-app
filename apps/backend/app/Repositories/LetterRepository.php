@@ -389,7 +389,11 @@ class LetterRepository
             ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
 
-    /** Letters that passed RT approval or have a recorded RT skip, in one village. */
+    /**
+     * Letters that passed RT approval or have a recorded RT skip, in one village.
+     * Both skip reasons count: applicant is the RT official, or applicant is
+     * the Kepala Desa/Sekretaris Desa (their letter goes to the other one).
+     */
     public function queryRtApprovedInVillage(string $villageId): Builder
     {
         return Letter::query()
@@ -398,10 +402,10 @@ class LetterRepository
                 $query->whereHas('approvals', fn (Builder $q) => $q
                     ->where('approval_level', 'rt')
                     ->where('action', 'approved'))
-                    ->orWhereHas('statusLogs', fn (Builder $q) => $q->where(
-                        'reason',
+                    ->orWhereHas('statusLogs', fn (Builder $q) => $q->whereIn('reason', [
                         LetterFlowLogReason::RtStageSkippedForOfficialApplicant->value,
-                    ));
+                        LetterFlowLogReason::RtStageSkippedForVillageHeadApplicant->value,
+                    ]));
             })
             ->with(['citizen.occupation', 'letterType', 'approvals.approvedBy:id,name', 'approvals.flowStep', 'flow.steps', 'user']);
     }
