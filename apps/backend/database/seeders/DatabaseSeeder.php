@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
@@ -11,23 +12,17 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * Hanya untuk development/testing: data demo lengkap. Desa sungguhan
+     * dipasang dengan sid:install (desa + data acuan), lalu data acuannya
+     * diperbarui setelah rilis dengan sid:sync-reference-data.
      */
     public function run(): void
     {
-        $this->call([
-            DemoVillageSeeder::class,
-            OfficialPositionTypeSeeder::class,
-            NewsCategorySeeder::class,
-            OccupationSeeder::class,
-            DemoCitizenSeeder::class,
-            DemoOfficialSeeder::class,
-            DemoNewsSeeder::class,
-            ApprovalFlowSeeder::class,
-            ApprovalSettingSeeder::class,
-            LetterExpiryReminderSettingSeeder::class,
-            LetterTypeSeeder::class,
-            ServiceLetterTypeSeeder::class,
-            VillageOrgPositionSeeder::class,
-        ]);
+        if (app()->environment('production')) {
+            throw new RuntimeException('db:seed tidak dipakai di production. Pasang desa dengan php artisan sid:install; setelah pembaruan aplikasi, jalankan php artisan sid:sync-reference-data.');
+        }
+
+        $this->call(DemoDataSeeder::class);
     }
 }
