@@ -87,7 +87,7 @@ if [ "$USE_DEMO" -eq 1 ]; then
   info "  Login demo      : demo_admin (kata sandi di docs/SETUP.md)"
   warn "Salin isi deploy/backups/ (golden dump) dan deploy/*.env ke tempat aman di luar server."
 else
-  info "  DB masih kosong. Buat Staf SIDUTama pertama (lihat docs/SETUP.md):"
-  info "    bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:first --help"
+  info "  DB masih kosong. Pasang desa dan Staf SIDUTama pertama (lihat docs/SETUP.md):"
+  info "    bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan sid:install --help"
   warn "Simpan salinan deploy/*.env di tempat aman di luar server."
 fi
