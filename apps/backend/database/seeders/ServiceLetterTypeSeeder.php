@@ -9,7 +9,6 @@ use App\Enums\FamilyRole;
 use App\Enums\LetterDataAction;
 use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
-use App\Models\LetterType;
 use App\Models\MigrantWorker;
 use App\Models\Village;
 use App\Services\MigrantWorkerService;
@@ -271,8 +270,9 @@ class ServiceLetterTypeSeeder extends Seeder
                 ->firstOrFail();
 
             foreach ([...$this->letterTypes(), $this->migrantWorkerType()] as $type) {
-                LetterType::updateOrCreate(
-                    ['village_id' => $village->id, 'code' => $type['code']],
+                $this->upsertLetterType(
+                    $village->id,
+                    $type['code'],
                     array_merge([
                         'requirement_info' => null,
                         'carry_documents' => null,

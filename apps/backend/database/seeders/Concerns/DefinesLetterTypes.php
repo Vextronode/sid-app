@@ -2,6 +2,9 @@
 
 namespace Database\Seeders\Concerns;
 
+use App\Models\LetterType;
+use Illuminate\Support\Arr;
+
 /**
  * Penyusun definisi isian form dan potongan template yang dipakai bersama
  * seeder Persuratan Desa (LetterTypeSeeder) dan Layanan Kependudukan
@@ -9,6 +12,30 @@ namespace Database\Seeders\Concerns;
  */
 trait DefinesLetterTypes
 {
+    /**
+     * Jenis surat baru dibuat lengkap. Jenis surat yang sudah ada hanya
+     * diperbarui strukturnya; pengaturan desa (LetterType::
+     * VILLAGE_SETTING_COLUMNS) dibiarkan, supaya menjalankan ulang seeder
+     * (sid:sync-reference-data) tidak membatalkan perubahan Staf SIDUTama.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function upsertLetterType(string $villageId, string $code, array $attributes): void
+    {
+        $existing = LetterType::query()
+            ->where('village_id', $villageId)
+            ->where('code', $code)
+            ->first();
+
+        if ($existing === null) {
+            LetterType::query()->create([...$attributes, 'village_id' => $villageId, 'code' => $code]);
+
+            return;
+        }
+
+        $existing->update(Arr::except($attributes, LetterType::VILLAGE_SETTING_COLUMNS));
+    }
+
     // ------------------------------------------------------------------
     // Isian form
     // ------------------------------------------------------------------

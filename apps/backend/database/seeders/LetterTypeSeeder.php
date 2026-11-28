@@ -8,7 +8,6 @@ use App\Enums\AssignedRole;
 use App\Enums\BusinessCategory;
 use App\Enums\LetterTypeCategory;
 use App\Models\ApprovalFlow;
-use App\Models\LetterType;
 use App\Models\Village;
 use App\Support\CitizenLabels;
 use Database\Seeders\Concerns\DefinesLetterTypes;
@@ -68,8 +67,9 @@ class LetterTypeSeeder extends Seeder
                 $template = $type['template'] ?? $this->page($heading, $sections, $opening, $footer);
                 unset($type['sections'], $type['opening'], $type['heading'], $type['footer'], $type['template']);
 
-                LetterType::updateOrCreate(
-                    ['village_id' => $village->id, 'code' => $type['code']],
+                $this->upsertLetterType(
+                    $village->id,
+                    $type['code'],
                     array_merge([
                         'category' => LetterTypeCategory::Persuratan->value,
                         'assigned_role' => AssignedRole::KaurTuUmum->value,
