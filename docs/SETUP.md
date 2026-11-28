@@ -152,15 +152,65 @@ Akun demo sudah aktif. Untuk mencoba **pendaftaran akun baru**: daftar di halama
 
 Akun dan identitas tersebut hanya untuk development/testing. Seeder demo menolak berjalan di environment `production`. Untuk mengganti data demo lama, gunakan `migrate:fresh --seed` hanya pada database yang boleh dihapus; menjalankan `db:seed` sendiri tidak menghapus data lama.
 
-### Staf SIDUTama pertama (database tanpa data demo)
+Seeder terbagi dua:
 
-Staf SIDUTama (`staf_sid`) pertama diinisialisasi langsung pada database yang belum memiliki staf aktif. Untuk citizen baru, berikan data wajib citizen sesuai form dashboard, UUID desa, dan ID RT:
+- `ReferenceDataSeeder`: data acuan tiap desa yang sudah ada, tidak bergantung pada data demo dan dipakai juga oleh `sid:install`. Isinya katalog yang setelah pemasangan dikelola desa (jenis jabatan, kategori berita, pekerjaan) ditambah `ReferenceDataSyncSeeder`.
+- `ReferenceDataSyncSeeder`: data acuan milik developer yang ikut pembaruan aplikasi (alur persetujuan, setting tahap persetujuan, titik pengingat masa berlaku, jenis surat, slot organisasi desa). Aman diulang: baris baru dibuat dan struktur jenis surat diperbarui, tetapi pengaturan desa tidak ditimpa. Dipakai `sid:sync-reference-data`.
+- `DemoDataSeeder`: Desa Cibenda beserta wilayah, data acuannya (lewat `ReferenceDataSeeder`), warga, perangkat desa, akun demo, dan berita.
+
+`DatabaseSeeder` (dipakai `--seed` dan `db:seed`) hanya memanggil `DemoDataSeeder` dan menolak environment `production`.
+
+Setelah `git pull` yang menambah jenis surat atau mengubah template/isian surat, jalankan `php artisan sid:sync-reference-data` (lihat [Perbarui data acuan setelah rilis](#perbarui-data-acuan-setelah-rilis)). Data lokal, termasuk data demo, tidak dihapus.
+
+### Pasang desa sungguhan (database tanpa data demo)
+
+SID melayani **satu desa per instalasi**. Pada database kosong (setelah `php artisan migrate`), pasang desa sekali dengan `sid:install`:
 
 ```powershell
-php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas" --village="<UUID_DESA>" --rt=1
+php artisan sid:install --village-name="Desa Sukamaju" --village-code=3201010001 --district="Cibadak" --regency="Sukabumi" --province="Jawa Barat" --postal-code=43351 --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas"
 ```
 
-Ganti `--rt=1` dengan ID RT yang benar-benar ada di desa tersebut. Jika citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Akun wajib menggantinya saat login pertama. Command menolak jika Staf SIDUTama aktif sudah ada, jadi pada database demo gunakan `demo_admin`.
+Dalam satu transaksi, perintah ini:
+
+1. membuat desa (`--village-name` dan `--village-code` wajib; kode desa = kode wilayah Kemendagri 10 digit tanpa titik; `--head-name`, `--district`, `--regency`, `--province`, dan `--postal-code` opsional),
+2. mengisi data acuan desa (`ReferenceDataSeeder`),
+3. membuat data warga, akun, dan jabatan Staf SIDUTama pertama dari `--nik`, `--name`, `--dob`, `--gender`, dan `--address`.
+
+Opsi wajib yang kosong ditanyakan di terminal; dengan `--no-interaction` perintah langsung gagal. Data yang tidak valid ditolak sebelum ada yang tersimpan, dan perintah ditolak bila desa sudah ada (identitas desa diubah dari Kelola Profil Desa). Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali; akun wajib menggantinya saat login pertama.
+
+Di lokal, jalankan pada database kosong (`php artisan migrate:fresh` tanpa `--seed`; data lama terhapus), atau coba dulu di SQLite sekali pakai lewat `--env=testing` (bagian Test & Pemeriksaan Kode). Di server Docker, jalankan dengan awalan `bash deploy/scripts/lib.sh exec -u www-data sid_api` setelah `deploy/scripts/setup.sh` (README B3).
+
+Wilayah Staf SIDUTama boleh dibuat sekaligus dengan `--dusun="Nama Dusun" --rw=1 --rt=1` (ketiganya diisi bersama). Perintah membuat satu dusun (kode `<kode desa>01`), satu RW, dan satu RT, lalu memasukkan warga staf ke RT itu. Tanpa opsi ini RT warga staf dibiarkan kosong. Staf SIDUTama tetap berwenang di seluruh desa; setelah login, buat Dusun/RW/RT di Kelola Wilayah lalu lengkapi RT data warganya sebelum staf mengajukan surat untuk dirinya sendiri. Lengkapi juga alamat, kontak, dan logo desa di Kelola Profil Desa.
+
+### Perbarui data acuan setelah rilis
+
+Rilis aplikasi bisa membawa jenis surat baru atau perubahan template/isian jenis surat. Desa yang sudah berjalan menerimanya lewat:
+
+```powershell
+php artisan sid:sync-reference-data
+```
+
+Perintah ini (meminta konfirmasi di production; `--force` untuk eksekusi non-interaktif) menjalankan `ReferenceDataSyncSeeder` dalam satu transaksi dan mencetak kode jenis surat yang baru ditambahkan. Yang **tidak** diubah:
+
+- pengaturan desa: kategori/petugas, masa berlaku, dan status aktif jenis surat; tenggat dan pengingat persetujuan; nyala/mati pengingat masa berlaku;
+- katalog milik desa (jenis jabatan, kategori berita, pekerjaan), supaya bawaan yang sudah dihapus atau dinonaktifkan desa tidak muncul lagi.
+
+Perubahan bawaan pada kolom milik desa (mis. petugas default sebuah jenis surat) hanya berlaku untuk pemasangan baru; desa yang berjalan mengubahnya sendiri dari menu Alur & Jenis Surat. `db:seed` tidak dipakai di production.
+
+Kapan dijalankan:
+
+- **Lokal:** setelah `git pull` yang menyentuh `database/seeders`, cukup `php artisan sid:sync-reference-data` (tanpa konfirmasi di environment lokal).
+- **Server Docker:** setiap selesai `deploy.sh`, jalankan `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan sid:sync-reference-data --force` (README B4). Aman diulang walau rilis tidak membawa data acuan baru.
+
+### Staf SIDUTama pertama untuk desa yang sudah terpasang
+
+`staf-sid:first` membuat Staf SIDUTama pertama pada desa yang sudah ada tetapi belum memiliki staf aktif. Bila citizen sudah ada, cukup berikan `--nik`; command akan membuat akun atau mempromosikan akun warga yang terhubung. Untuk citizen baru, berikan data wajib citizen:
+
+```powershell
+php artisan staf-sid:first --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas"
+```
+
+Desa otomatis memakai desa satu-satunya di instalasi; `--village=<UUID_DESA>` hanya perlu bila ada lebih dari satu desa. `--rt=<ID_RT>` opsional dan harus RT dari desa tersebut; tanpa itu RT warga staf kosong dan dilengkapi nanti dari Kelola Wilayah. Username dibuat otomatis dan password sementara acak hanya ditampilkan sekali. Command menolak jika Staf SIDUTama aktif sudah ada, jadi pada database demo gunakan `demo_admin`.
 
 Staf SIDUTama hanya **satu per desa**; penggantinya diproses lewat Rotasi di halaman Pejabat Desa (boleh oleh staf itu sendiri). Label perannya mengikuti `SID_APP_NAME` / `VITE_APP_NAME`, default "Staf SIDUTama".
 
@@ -362,6 +412,8 @@ npm run build
 ```
 
 > Jangan menjalankan `php artisan migrate` manual untuk "mengecek" migration: perintah itu memakai database di `.env`. Cukup jalankan test.
+
+Untuk mencoba perintah artisan tanpa menyentuh database `.env`, buat `apps/backend/.env.testing` (tidak di-commit) dari `.env.example` dengan `APP_ENV=testing`, `DB_CONNECTION=sqlite`, `DB_DATABASE=database/testing.sqlite`, `SESSION_DRIVER=array`, `CACHE_STORE=array`, `QUEUE_CONNECTION=sync`, `BROADCAST_CONNECTION=null`, dan `MAIL_MAILER=array`, lalu isi kuncinya dengan `php artisan key:generate --env=testing`. Perintah dengan `--env=testing` (dijalankan dari `apps/backend`) memakai berkas SQLite sekali pakai itu, mis. `php artisan migrate:fresh --env=testing` lalu `php artisan sid:install --env=testing ...`. `php artisan test` juga memuat `.env.testing` bila ada, tetapi nilai di `phpunit.xml` (SQLite in-memory) tetap berlaku. Cek tujuan database dulu dengan `php artisan config:show database.default --env=testing` (harus `sqlite`).
 
 ---
 

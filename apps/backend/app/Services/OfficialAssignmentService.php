@@ -199,22 +199,29 @@ class OfficialAssignmentService
                 ->first();
 
             if (! $citizen) {
+                $data['village_id'] = $this->bootstrapVillageId($data['village_id'] ?? null);
+                $data['rt_id'] = filled($data['rt_id'] ?? null) ? $data['rt_id'] : null;
+
                 $validator = Validator::make($data, [
                     'name' => ['required', 'string', 'max:100'],
                     'date_of_birth' => ['required', 'date'],
                     'gender' => ['required', Rule::in(['L', 'P'])],
                     'address' => ['required', 'string'],
                     'village_id' => ['required', 'bail', 'uuid', 'exists:villages,id'],
-                    'rt_id' => ['required', 'bail', 'integer', 'exists:rts,id'],
+                    // Opsional: Staf SIDUTama berwenang se-desa; RT dilengkapi
+                    // nanti dari Kelola Wilayah bila staf mengajukan surat.
+                    'rt_id' => ['nullable', 'bail', 'integer', 'exists:rts,id'],
                 ]);
                 $validator->validate();
 
-                $rt = Rt::query()->whereKey($data['rt_id'])->first();
-                if (! $rt || $rt->village_id !== $data['village_id']) {
-                    throw new RuntimeException('RT harus berasal dari desa yang dipilih.');
+                if ($data['rt_id'] !== null) {
+                    $rt = Rt::query()->whereKey($data['rt_id'])->first();
+                    if (! $rt || $rt->village_id !== $data['village_id']) {
+                        throw new RuntimeException('RT harus berasal dari desa yang dipilih.');
+                    }
                 }
 
-                // Dusun diturunkan Citizen dari RT.
+                // Dusun diturunkan Citizen dari RT (kosong bila RT kosong).
                 $citizen = Citizen::create([
                     'nik' => $data['nik'],
                     'name' => $data['name'],
@@ -277,6 +284,24 @@ class OfficialAssignmentService
 
             return ['user' => $target->fresh(), 'temporary_password' => $temporaryPassword];
         });
+    }
+
+    /**
+     * Desa untuk citizen staf baru: --village bila diisi, selain itu desa
+     * satu-satunya di instalasi ini.
+     */
+    private function bootstrapVillageId(?string $villageId): string
+    {
+        if (filled($villageId)) {
+            return $villageId;
+        }
+
+        if (! Village::query()->exists()) {
+            throw new RuntimeException('Belum ada desa. Pasang desa terlebih dahulu dengan php artisan sid:install.');
+        }
+
+        return Village::soleId()
+            ?? throw new RuntimeException('Terdapat lebih dari satu desa; tentukan desa dengan --village=<UUID desa>.');
     }
 
     private function promoteInTransaction(User $actor, array $data): Official

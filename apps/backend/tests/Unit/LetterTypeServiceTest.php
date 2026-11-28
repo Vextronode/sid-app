@@ -3,8 +3,6 @@
 namespace Tests\Unit;
 
 use App\Models\LetterType;
-use App\Repositories\ApprovalFlowRepository;
-use App\Repositories\LetterTypeRepository;
 use App\Services\LetterTypeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,10 +17,7 @@ class LetterTypeServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new LetterTypeService(
-            new LetterTypeRepository,
-            new ApprovalFlowRepository,
-        );
+        $this->service = $this->app->make(LetterTypeService::class);
     }
 
     public function test_list_returns_only_valid_letter_types_by_default(): void

@@ -233,7 +233,13 @@ package "Service" #E8F5E9 {
     +findCandidateByNik(actor, nik, position)
     +demote(actor, official, notes)
     +rotate(actor, official, data)
-    +bootstrapFirstPetugas(data) (staf-sid:first)
+    +bootstrapFirstPetugas(data) (staf-sid:first, sid:install)
+  }
+  class VillageInstallService {
+    +install(village, area, staff) (sid:install)
+  }
+  class ReferenceDataSyncService {
+    +sync() (sid:sync-reference-data)
   }
   class OfficialPositionTypeService {
     +list() / create() / update() / delete()

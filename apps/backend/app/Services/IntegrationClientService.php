@@ -209,13 +209,8 @@ class IntegrationClientService
         }
 
         // SID melayani satu desa; pilihan --village hanya perlu bila ada lebih dari satu.
-        $ids = Village::query()->limit(2)->pluck('id');
-
-        if ($ids->count() !== 1) {
-            throw new InvalidArgumentException('Tentukan desa dengan --village=<uuid desa>.');
-        }
-
-        return (string) $ids->first();
+        return Village::soleId()
+            ?? throw new InvalidArgumentException('Tentukan desa dengan --village=<uuid desa>.');
     }
 
     private function createToken(IntegrationClient $client, ?User $actor): string

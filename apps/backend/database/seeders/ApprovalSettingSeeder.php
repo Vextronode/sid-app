@@ -12,7 +12,9 @@ class ApprovalSettingSeeder extends Seeder
     /**
      * Setiap desa mendapat setting untuk dua tahap approval aktif. Tidak ada endpoint POST di api_spec - baris ini murni
      * di-seed sekali saat instalasi, hanya deadline_hours/reminder_hours
-     * yang bisa diubah lewat PATCH /approval-settings/{id}.
+     * yang bisa diubah lewat PATCH /approval-settings/{id}. Baris yang sudah
+     * ada tidak ditimpa, jadi sid:sync-reference-data hanya menambah tahap
+     * yang belum punya setting.
      */
     public function run(): void
     {
@@ -23,7 +25,7 @@ class ApprovalSettingSeeder extends Seeder
 
         foreach (Village::query()->pluck('id') as $villageId) {
             foreach ($defaults as $level => $hours) {
-                ApprovalSetting::updateOrCreate(
+                ApprovalSetting::query()->firstOrCreate(
                     ['village_id' => $villageId, 'approval_level' => $level],
                     [...$hours, 'is_active' => true],
                 );

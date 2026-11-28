@@ -102,7 +102,8 @@ Struktur berikut merangkum lapisan yang benar-benar ada di source. Route API ber
 apps/backend/
 ├── app/
 │   ├── Casts/
-│   ├── Console/Commands/        # staf-sid:first|recover, letters:backfill-snapshots, approvals:send-reminders,
+│   ├── Console/Commands/        # sid:install, sid:sync-reference-data, staf-sid:first|recover,
+│   │                            # letters:backfill-snapshots, approvals:send-reminders,
 │   │                            # letters:send-expiry-reminders, announcements:prune, disaster-alerts:prune,
 │   │                            # Integration/ (integration:*)
 │   ├── Enums/
@@ -131,7 +132,8 @@ apps/backend/
 ├── config/                      # termasuk letters.php, sid.php, disaster_alerts.php, webpush.php, dompdf.php
 ├── database/{factories,migrations,seeders}/   # seeders/assets = foto demo; seeders/templates = formulir
 │                                              # Disdukcapil (HTML dari Excel); LetterTypeSeeder (Axx),
-│                                              # ServiceLetterTypeSeeder (Fxx)
+│                                              # ServiceLetterTypeSeeder (Fxx); ReferenceDataSeeder =
+│                                              # data acuan per desa, DemoDataSeeder = data demo
 ├── docker/                      # entrypoint.sh, php.ini, www.conf
 ├── resources/views/pdf/templates/   # letter.blade.php (satu view untuk semua PDF)
 ├── routes/{api,auth,console,web}.php

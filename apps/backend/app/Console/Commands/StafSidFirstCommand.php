@@ -16,8 +16,8 @@ class StafSidFirstCommand extends Command
         {--dob= : Tanggal lahir (YYYY-MM-DD)}
         {--gender= : Jenis kelamin (L atau P)}
         {--address= : Alamat lengkap}
-        {--village= : UUID desa, wajib jika citizen belum terdaftar}
-        {--rt= : ID RT, wajib jika citizen belum terdaftar (dusun mengikuti RT)}';
+        {--village= : UUID desa, hanya perlu bila ada lebih dari satu desa}
+        {--rt= : ID RT warga staf (opsional; dusun mengikuti RT, bisa dilengkapi nanti di Kelola Wilayah)}';
 
     protected $description = 'Membuat akun dan mempromosikan Staf SIDUTama desa (staf_sid) pertama.';
 

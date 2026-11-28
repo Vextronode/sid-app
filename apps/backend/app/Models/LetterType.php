@@ -13,6 +13,15 @@ class LetterType extends Model
 {
     use HasFactory;
 
+    /**
+     * Kolom milik desa: diubah Staf SIDUTama lewat menu Alur & Jenis Surat
+     * (UpdateLetterTypeRequest; petugas mengikuti kategori). Seeder hanya
+     * mengisinya saat jenis surat dibuat dan tidak menimpanya pada baris yang
+     * sudah ada; struktur lain (template, isian, flow, aksi data) milik
+     * developer dan selalu diperbarui dari definisi seeder.
+     */
+    public const VILLAGE_SETTING_COLUMNS = ['category', 'assigned_role', 'validity_days', 'is_active'];
+
     protected $fillable = [
         'village_id',
         'code',

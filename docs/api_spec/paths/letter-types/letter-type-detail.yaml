@@ -7,6 +7,13 @@ put:
     Persuratan Desa dan Layanan Kependudukan di pilihan pengajuan, dan
     `assigned_role` ikut diganti (Persuratan Desa = kaur_tu_umum, Layanan
     Kependudukan = kasi_pemerintahan); `assigned_role` yang dikirim diabaikan.
+    Bila `assigned_role` berubah, surat jenis ini yang sudah disetujui dan
+    tugas petugasnya belum selesai ikut pindah ke petugas baru, yang diberi
+    notifikasi per surat: `letter_result_submitted` (hasil dari instansi
+    menunggu verifikasi) atau `letter_needs_fulfillment` (perubahan data
+    belum diterapkan; untuk jenis wajib unggah hasil, setelah hasilnya
+    diterima). Bila jabatan petugas baru kosong, Staf SIDUTama menerima
+    `handler_vacant`. Surat yang cukup dicetak tidak diberi notifikasi ulang.
     Flow, template, isian form,
     aksi data, dan dokumen pendukung diset developer lewat seeder. Tipe surat
     dicari dalam desa Petugas yang login; milik desa lain menghasilkan 404.
