@@ -393,7 +393,7 @@ Alternative Flow:
 | Post-condition | Akun/jabatan diperbarui atau password sementara diterbitkan sesuai operasi |
 
 Main Flow:
-1. CLI `staf-sid:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen beserta desa dan RT. Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Staf SIDUTama dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
+1. Instalasi baru memakai CLI `sid:install`: membuat desa satu-satunya, data acuannya, dan Staf SIDUTama pertama (wilayah Dusun/RW/RT staf opsional; tanpa itu RT staf kosong dan dilengkapi dari Kelola Wilayah). Untuk desa yang sudah ada tanpa staf aktif, CLI `staf-sid:first --nik=...` mencari citizen; jika belum ada, Petugas awal memasukkan data wajib citizen (desa otomatis desa satu-satunya, RT opsional). Command membuat atau menggunakan citizen, membuat atau mempromosikan akun, lalu membuat jabatan Staf SIDUTama dalam satu transaksi. Username otomatis dan password sementara acak ditampilkan sekali; akun wajib menggantinya saat login pertama. Demote dan reset password selanjutnya dilakukan Petugas melalui dashboard.
 2. Staf SIDUTama menjalankan promote, demote, rotate, update non-sensitif, toggle status, atau reset password melalui endpoint yang sesuai.
 3. Promote menghubungkan akun warga aktif dengan citizen ke jabatan/wilayah valid; demote dan rotate mengubah akun serta official secara transaksional.
 4. Reset password hanya untuk akun non-Staf SIDUTama selain diri sendiri; password acak 12 karakter ditandai `must_change_password=true` dan hanya ditampilkan sekali.
@@ -626,6 +626,7 @@ Main Flow:
 - Petugas membuka pengaturan jenis surat lewat menu **Alur & Jenis Surat** (`/admin/alur-persetujuan`); daftar berasal dari `GET /letter-types?include_inactive=1` (khusus Staf SIDUTama) yang berisi semua jenis surat desa dengan badge Draft / Aktif / Nonaktif
 - Petugas mengubah: `validity_days` (minimal 1 atau kosong), `category` (Persuratan Desa / Layanan Kependudukan; menentukan kelompok di pilihan pengajuan dan petugas: Kaur TU & Umum / Kasi Pemerintahan), toggle `is_active` (Aktifkan / Nonaktifkan). Jenis Draft (belum ber-template) tidak bisa diaktifkan (422)
 - Sistem menyimpan perubahan ke `letter_types` dan menggugurkan cache halaman publik
+- Bila perubahan `category` mengganti petugas, surat jenis itu yang sudah disetujui ikut pindah ke petugas baru (akses Kasi/Kaur mengikuti `assigned_role` saat ini). Petugas baru diberi notifikasi per surat yang tugasnya belum selesai: `letter_result_submitted` (hasil dari instansi menunggu verifikasi) atau `letter_needs_fulfillment` (perubahan data belum diterapkan); bila jabatannya kosong, Staf SIDUTama menerima `handler_vacant`. Surat yang cukup dicetak tidak punya penanda selesai, jadi tidak diberi notifikasi ulang
 - Petugas dapat melihat flow approval (read-only) di halaman Approval Flows
 
 > Flow, template, isian form, aksi data, dokumen pendukung, dan kode klasifikasi diset developer lewat seeder; tidak ada endpoint untuk mengubahnya. Daftar untuk warga (`GET /letter-types` tanpa parameter) tetap hanya jenis aktif ber-template.

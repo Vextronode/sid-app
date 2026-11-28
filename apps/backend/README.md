@@ -15,7 +15,7 @@ PHP 8.3+, Laravel 13, Laravel Sanctum (session/cookie SPA), PostgreSQL, DomPDF, 
 | `app/Support` | Helper bersama, mis. `LetterFormSchema` (definisi & validasi isian form surat), `CitizenDocumentRules` |
 | `app/Enums`, `app/Models`, `app/Policies`, `app/Repositories` | Enum peran/status, model Eloquent, otorisasi, akses data |
 | `database/migrations` | Skema database (pre-produksi: migrasi diedit langsung, lalu `migrate:fresh --seed`) |
-| `database/seeders` | Data awal & demo. `LetterTypeSeeder` (Persuratan Desa A01–A11), `ServiceLetterTypeSeeder` (Layanan Kependudukan F01–F10 + Surat Kuasa F-1.07) |
+| `database/seeders` | Data awal & demo. `ReferenceDataSeeder` (data acuan per desa, dipakai `sid:install`), `ReferenceDataSyncSeeder` (bagian data acuan yang diperbarui `sid:sync-reference-data`), `DemoDataSeeder` (data demo, menolak production), `LetterTypeSeeder` (Persuratan Desa A01–A11), `ServiceLetterTypeSeeder` (Layanan Kependudukan F01–F10 + Surat Kuasa F-1.07) |
 | `database/seeders/templates` | Formulir Disdukcapil (F-1.01, F-1.02, F-2.01, ...) hasil konversi dari Excel asli di `docs/template-surat/pelayanan` |
 | `routes/api.php`, `routes/console.php` | Seluruh route API dan jadwal scheduler |
 | `tests/Feature`, `tests/Unit` | Pengujian (SQLite in-memory) |
@@ -33,7 +33,7 @@ php artisan test                   # tidak menyentuh database di .env
 .\vendor\bin\pint --test
 ```
 
-Perintah artisan khusus aplikasi (`staf-sid:first`, `staf-sid:recover`, `approvals:send-reminders`, `letters:backfill-snapshots`) dijelaskan di README utama.
+Perintah artisan khusus aplikasi (`sid:install`, `sid:sync-reference-data`, `staf-sid:first`, `staf-sid:recover`, `approvals:send-reminders`, `letters:backfill-snapshots`) dijelaskan di README utama.
 
 ## Dokumentasi terkait
 

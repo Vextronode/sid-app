@@ -2,18 +2,25 @@
 
 namespace App\Services;
 
+use App\Enums\LetterResultStage;
 use App\Enums\LetterTypeCategory;
+use App\Enums\UserRole;
 use App\Models\Letter;
 use App\Models\LetterType;
 use App\Models\User;
+use App\Notifications\LetterStatusNotification;
+use App\Repositories\LetterRepository;
 use App\Repositories\LetterTypeRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class LetterTypeService
 {
     public function __construct(
         protected LetterTypeRepository $letterTypeRepository,
+        protected LetterRepository $letterRepository,
+        protected OfficialService $officialService,
     ) {}
 
     /**
@@ -46,7 +53,49 @@ class LetterTypeService
             $data['assigned_role'] = LetterTypeCategory::from($data['category'])->handlerRole()->value;
         }
 
-        return $this->letterTypeRepository->update($letterType, $data);
+        $previousHandler = $letterType->assigned_role;
+
+        return DB::transaction(function () use ($letterType, $data, $previousHandler): LetterType {
+            $updated = $this->letterTypeRepository->update($letterType, $data);
+
+            if ($updated->assigned_role !== $previousHandler) {
+                $this->notifyNewHandlerOfOpenLetters($updated);
+            }
+
+            return $updated;
+        });
+    }
+
+    /**
+     * Surat yang sudah disetujui ikut berpindah ke petugas baru, tetapi
+     * notifikasi tugasnya dulu terkirim ke petugas lama. Petugas baru diberi
+     * tahu per surat yang tugasnya belum selesai (verifikasi hasil dari
+     * instansi atau Terapkan); bila jabatannya kosong, notifyLetterHandlers
+     * memberi tahu Staf SIDUTama.
+     */
+    private function notifyNewHandlerOfOpenLetters(LetterType $letterType): void
+    {
+        $handler = UserRole::tryFrom((string) $letterType->assigned_role)?->label() ?? 'petugas baru';
+        $moved = "Penanganan {$letterType->name} dipindahkan ke {$handler}.";
+
+        foreach ($this->letterRepository->awaitingHandlerForLetterType($letterType) as $letter) {
+            $this->officialService->notifyLetterHandlers(
+                $letter,
+                $letter->resultStage() === LetterResultStage::UnderReview
+                    ? new LetterStatusNotification(
+                        $letter,
+                        'Hasil dari instansi menunggu verifikasi',
+                        "{$moved} Pemohon sudah mengunggah hasil dari instansi. Periksa berkasnya lalu terima atau tolak.",
+                        'letter_result_submitted',
+                    )
+                    : new LetterStatusNotification(
+                        $letter,
+                        'Perubahan data menunggu diterapkan',
+                        "{$moved} Surat ini sudah disetujui. Tinjau dan terapkan perubahan data kependudukan yang diajukan.",
+                        'letter_needs_fulfillment',
+                    ),
+            );
+        }
     }
 
     /**

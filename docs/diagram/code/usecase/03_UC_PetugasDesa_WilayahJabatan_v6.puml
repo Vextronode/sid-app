@@ -39,6 +39,8 @@ rectangle "SIDUTama" {
     usecase "Rotasi Pejabat" as UC_ROTATE
     usecase "Ganti Foto Pejabat" as UC_PHOTO
     usecase "Kelola Jenis Jabatan\nTanpa Akun" as UC_POSTYPE
+    usecase "Pasang Desa + Data Acuan\n+ Staf SIDUTama Pertama\n(sid:install)" as UC_INSTALL
+    usecase "Perbarui Data Acuan Setelah Rilis\n(sid:sync-reference-data)" as UC_SYNC
     usecase "Buat Staf SIDUTama Pertama\n(staf-sid:first)" as UC_FIRST
     usecase "Pulihkan Staf SIDUTama\n(staf-sid:recover)" as UC_RECOVER
   }
@@ -73,6 +75,8 @@ PD -- UC_PHOTO
 PD -- UC_POSTYPE
 PD -- UC_DEADLINE
 PD -- UC_ORG
+DEV -- UC_INSTALL
+DEV -- UC_SYNC
 DEV -- UC_FIRST
 DEV -- UC_RECOVER
 DEV -- UC_INTCLI

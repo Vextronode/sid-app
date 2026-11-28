@@ -2,12 +2,16 @@
 
 namespace App\Repositories;
 
+use App\Enums\LetterDataAction;
 use App\Enums\LetterFlowLogReason;
 use App\Enums\LetterStatus;
 use App\Models\FlowStep;
 use App\Models\Letter;
 use App\Models\LetterApproval;
+use App\Models\LetterResult;
+use App\Models\LetterType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\LazyCollection;
 
@@ -197,6 +201,47 @@ class LetterRepository
                 'approvals.approvedBy:id,name',
                 'approvals.flowStep',
             ]);
+    }
+
+    /**
+     * Surat disetujui dari jenis surat ini yang masih menunggu tindakan
+     * Kasi/Kaur: hasil dari instansi menunggu verifikasi, atau perubahan data
+     * belum diterapkan (bila jenis suratnya wajib unggah hasil: setelah
+     * hasilnya diterima, sama dengan syarat Terapkan). Surat yang cukup
+     * dicetak tidak punya penanda selesai, jadi tidak termasuk.
+     *
+     * @return EloquentCollection<int, Letter>
+     */
+    public function awaitingHandlerForLetterType(LetterType $letterType): EloquentCollection
+    {
+        $reviewsResult = (bool) $letterType->requires_result_upload;
+        $appliesData = ($letterType->data_action ?? LetterDataAction::None) !== LetterDataAction::None;
+
+        if (! $reviewsResult && ! $appliesData) {
+            return new EloquentCollection;
+        }
+
+        $latestResultIs = fn (string $status) => fn (Builder $result) => $result->where('status', $status);
+
+        return Letter::query()
+            ->where('village_id', $letterType->village_id)
+            ->where('letter_type_id', $letterType->id)
+            ->where('status', LetterStatus::Approved)
+            ->where(function (Builder $query) use ($reviewsResult, $appliesData, $latestResultIs): void {
+                if ($reviewsResult) {
+                    $query->orWhereHas('latestResult', $latestResultIs(LetterResult::STATUS_SUBMITTED));
+                }
+
+                if ($appliesData) {
+                    $query->orWhere(fn (Builder $pending) => $pending
+                        ->whereNull('fulfilled_at')
+                        ->when($reviewsResult, fn (Builder $accepted) => $accepted
+                            ->whereHas('latestResult', $latestResultIs(LetterResult::STATUS_ACCEPTED))));
+                }
+            })
+            ->with(['letterType', 'latestResult'])
+            ->orderBy('submitted_at')
+            ->get();
     }
 
     public function countWaitingAtStep(array $positions, string $villageId, ?int $rtId = null): int
