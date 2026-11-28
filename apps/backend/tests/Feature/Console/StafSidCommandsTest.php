@@ -100,6 +100,76 @@ class StafSidCommandsTest extends TestCase
         $this->assertTrue($user->must_change_password);
     }
 
+    public function test_petugas_first_uses_the_sole_village_and_allows_empty_rt(): void
+    {
+        $village = Village::factory()->create();
+
+        $this->artisan('staf-sid:first', $this->newCitizenOptions())->assertExitCode(0);
+
+        $user = User::query()->where('role', 'staf_sid')->sole();
+        $this->assertSame($village->id, $user->village_id);
+        $this->assertSame($village->id, $user->citizen->village_id);
+        $this->assertNull($user->citizen->rt_id);
+        $this->assertNull($user->citizen->hamlet_id);
+        $this->assertDatabaseHas('officials', [
+            'user_id' => $user->id,
+            'position' => 'staf_sid',
+            'village_id' => $village->id,
+        ]);
+    }
+
+    public function test_petugas_first_accepts_rt_without_village_option(): void
+    {
+        [$village, $rt] = $this->villageWithRt();
+
+        $this->artisan('staf-sid:first', [...$this->newCitizenOptions(), '--rt' => $rt->id])->assertExitCode(0);
+
+        $citizen = User::query()->where('role', 'staf_sid')->sole()->citizen;
+        $this->assertSame($village->id, $citizen->village_id);
+        $this->assertSame($rt->id, $citizen->rt_id);
+        $this->assertSame($rt->rw->hamlet_id, $citizen->hamlet_id);
+    }
+
+    public function test_petugas_first_rejects_rt_from_another_village(): void
+    {
+        [, $rt] = $this->villageWithRt();
+        $village = Village::factory()->create();
+
+        $this->artisan('staf-sid:first', [...$this->newCitizenOptions(), '--village' => $village->id, '--rt' => $rt->id])
+            ->expectsOutputToContain('RT harus berasal dari desa yang dipilih.')
+            ->assertExitCode(1);
+        $this->assertSame(0, Citizen::query()->count());
+    }
+
+    public function test_petugas_first_requires_village_option_when_several_villages_exist(): void
+    {
+        Village::factory()->count(2)->create();
+
+        $this->artisan('staf-sid:first', $this->newCitizenOptions())
+            ->expectsOutputToContain('--village=<UUID desa>')
+            ->assertExitCode(1);
+        $this->assertSame(0, Citizen::query()->count());
+    }
+
+    public function test_petugas_first_points_to_sid_install_when_no_village_exists(): void
+    {
+        $this->artisan('staf-sid:first', $this->newCitizenOptions())
+            ->expectsOutputToContain('sid:install')
+            ->assertExitCode(1);
+        $this->assertSame(0, Citizen::query()->count());
+    }
+
+    private function newCitizenOptions(): array
+    {
+        return [
+            '--nik' => '3201010101010002',
+            '--name' => 'Siti Aminah',
+            '--dob' => '1985-03-04',
+            '--gender' => 'P',
+            '--address' => 'Jalan Desa',
+        ];
+    }
+
     private function residentAccount(Village $village, string $username): User
     {
         $citizen = Citizen::factory()->create([

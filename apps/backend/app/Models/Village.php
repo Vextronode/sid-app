@@ -78,6 +78,18 @@ class Village extends Model
     }
 
     /**
+     * SID melayani satu desa per instalasi. Mengembalikan UUID desa itu, atau
+     * null bila belum ada desa atau ada lebih dari satu (perintah konsol
+     * lalu meminta --village secara eksplisit).
+     */
+    public static function soleId(): ?string
+    {
+        $ids = self::query()->limit(2)->pluck('id');
+
+        return $ids->count() === 1 ? (string) $ids->first() : null;
+    }
+
+    /**
      * Logo dan foto hero berisi path aset frontend (/assets/..., dari seeder),
      * URL lengkap, atau path unggahan di disk public. Hanya yang terakhir
      * berupa berkas milik backend.
