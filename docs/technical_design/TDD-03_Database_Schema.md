@@ -330,7 +330,7 @@ Constraint: `UNIQUE(flow_id, step_order)`
 
 **Tabel: letter_types**
 
-Master data jenis surat. Struktur (template, isian, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Staf SIDUTama hanya mengubah `validity_days`, `assigned_role`, `is_active`.
+Master data jenis surat. Struktur (template, isian, aksi data, flow) diisi developer lewat `LetterTypeSeeder`; Staf SIDUTama hanya mengubah `validity_days`, `category` (menentukan `assigned_role`), `is_active` (`LetterType::VILLAGE_SETTING_COLUMNS`). `sid:sync-reference-data` membuat jenis surat baru dan memperbarui struktur jenis surat yang ada tanpa menimpa kolom milik desa tersebut.
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|

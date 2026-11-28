@@ -187,7 +187,15 @@ php artisan storage:link
 
 Seeder membuat Desa Cibenda lengkap dengan wilayah, perangkat desa, warga, berita, dan akun demo (mis. `demo_admin` untuk Staf SIDUTama, `demo_warga` untuk warga, `demo_warga2`/`demo_warga3` untuk istri dan anaknya; kata sandi `Password123!`). Daftar lengkap akun ada di SETUP. Seeder demo menolak berjalan di `APP_ENV=production`.
 
-Untuk database tanpa data demo, buat Staf SIDUTama pertama dengan `php artisan staf-sid:first` (lihat SETUP).
+Untuk database lokal tanpa data demo (meniru desa sungguhan), kosongkan dengan `php artisan migrate:fresh` lalu pasang desa dan Staf SIDUTama pertama dengan `php artisan sid:install`. Data wajib yang tidak diberikan lewat opsi akan ditanyakan; contoh lengkap ada di SETUP.
+
+Setelah `git pull` yang menambah jenis surat atau mengubah template/isian surat, perbarui data acuan tanpa menghapus data lokal:
+
+```powershell
+php artisan sid:sync-reference-data
+```
+
+`migrate:fresh --seed` juga memuat data acuan terbaru, tetapi mengulang data demo dari awal.
 
 ### A5. Jalankan
 
@@ -348,7 +356,17 @@ bash deploy/scripts/setup.sh --demo <tag>    # staging/demo: + data demo (butuh 
 
 `setup.sh` membangun image (5-15 menit pertama kali), menjalankan migrasi, menyalakan stack, lalu smoke test. Menjalankannya lagi hanya memastikan stack hidup; data tidak diubah.
 
-- **Desa sungguhan** (`SID_ROLE=production`, default template): jangan pakai data demo (seeder demo juga menolak `APP_ENV=production`). Buat Staf SIDUTama pertama dengan `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:first ...` (lihat [`docs/SETUP.md`](docs/SETUP.md)).
+Untuk desa sungguhan, pasang desa sekali setelah `setup.sh`. Password sementara Staf SIDUTama hanya tampil sekali, jadi simpan saat itu juga:
+
+```bash
+bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan sid:install \
+  --village-name="Desa Sukamaju" --village-code=3201010001 \
+  --district="Cibadak" --regency="Sukabumi" --province="Jawa Barat" --postal-code=43351 \
+  --nik=3201012345670001 --name="Nama Petugas" --dob=1980-01-01 --gender=L --address="Alamat Petugas"
+# opsional: --dusun="Nama Dusun" --rw=1 --rt=1 (wilayah Staf SIDUTama), --head-name="Nama Kepala Desa"
+```
+
+- **Desa sungguhan** (`SID_ROLE=production`, default template): jangan pakai data demo (`db:seed` dan seeder demo menolak `APP_ENV=production`). Desa, data acuannya, dan Staf SIDUTama pertama dipasang dengan `sid:install` di atas (penjelasan opsi di [`docs/SETUP.md`](docs/SETUP.md#pasang-desa-sungguhan-database-tanpa-data-demo)); perintah ditolak bila desa sudah ada. Wilayah lainnya dibuat Staf SIDUTama dari Kelola Wilayah.
 - **Staging/demo** (`SID_ROLE=demo`): data diisi dari *golden dump* hasil seed demo (`deploy/backups/golden-*.dump`, dibuat `make-golden.sh`). Login dengan akun demo (`demo_admin`, dll.). Siapa pun yang tahu URL bisa login dengan kata sandi demo yang tercantum di repo, jadi batasi akses di reverse proxy.
 - **Integrasi pihak ketiga** (Cimart, SIGAP): buat client sekali per aplikasi dengan `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan integration:create ...` (lihat [`docs/SETUP.md`](docs/SETUP.md#integrasi-pihak-ketiga-cimart-sigap)), lalu serahkan domain production SID dan token ke tim Cimart/SIGAP lewat jalur aman. Penggantian dan pencabutan token berikutnya dari menu **Integrasi**.
 
@@ -357,6 +375,7 @@ bash deploy/scripts/setup.sh --demo <tag>    # staging/demo: + data demo (butuh 
 ```bash
 git fetch --tags && git checkout <tag>
 bash deploy/scripts/deploy.sh <tag> --build --migrate   # --migrate menampilkan migrasi pending lalu minta ketik ya
+bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan sid:sync-reference-data --force   # data acuan dari rilis (jenis surat baru, template); aman diulang
 bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (image lama masih ada)
 ```
 
@@ -367,6 +386,7 @@ bash deploy/scripts/deploy.sh <tag-sebelumnya> --no-pull # rollback manual (imag
 | Status dan log | `bash deploy/scripts/lib.sh ps`, `bash deploy/scripts/lib.sh logs --tail 100 sid_api` (juga `sid_worker`, `sid_scheduler`, `sid_reverb`, `sid_web`) |
 | Smoke test | `bash deploy/scripts/smoke.sh` (login ikut diuji bila `deploy/smoke.env` berisi `SID_SMOKE_USER`/`SID_SMOKE_PASS`; bila realtime aktif, handshake WebSocket `/app/` ikut dicek dan kegagalannya hanya **PERINGATAN**, bukan rollback) |
 | Kembalikan data demo (hanya `SID_ROLE=demo`) | `bash deploy/scripts/reset-demo.sh` (`--check` hanya memeriksa syarat). Semua sesi keluar |
+| Data acuan baru dari rilis (jenis surat baru, perubahan template/isian) | `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan sid:sync-reference-data --force` setiap selesai deploy; pengaturan desa tidak ditimpa |
 | Buat ulang golden dump (setelah migrasi/seed berubah) | `bash deploy/scripts/make-golden.sh` |
 | Backup database | `docker exec sid_db pg_dump -U sid -d sid -Fc > sid_$(date +%Y%m%d).dump`; ikut cadangkan volume `public` dan `private` (berkas unggahan) |
 | Staf SIDUTama lupa kata sandi | `bash deploy/scripts/lib.sh exec -u www-data sid_api php artisan staf-sid:recover --username=<username> --force` (kata sandi sementara tampil sekali) |
@@ -418,7 +438,9 @@ npm run build
 
 | Perintah | Kegunaan |
 | --- | --- |
-| `php artisan staf-sid:first --nik=... [data citizen]` | Bootstrap Staf SIDUTama pertama (ditolak bila sudah ada staf aktif) |
+| `php artisan sid:install --village-name=... --village-code=... --nik=... [data staf] [--dusun= --rw= --rt=]` | Pasang desa pada instalasi baru: desa, data acuan, dan Staf SIDUTama pertama (ditolak bila desa sudah ada) |
+| `php artisan sid:sync-reference-data [--force]` | Perbarui data acuan desa yang berjalan setelah rilis (jenis surat baru, template/isian) tanpa menimpa pengaturan desa |
+| `php artisan staf-sid:first --nik=... [data citizen] [--rt=...]` | Bootstrap Staf SIDUTama pertama untuk desa yang sudah ada (ditolak bila sudah ada staf aktif) |
 | `php artisan staf-sid:recover --username=... [--force]` | Pemulihan darurat bila Staf SIDUTama lupa kata sandi: kata sandi sementara, wajib ganti saat login, sesi lama dicabut, tercatat |
 | `php artisan approvals:send-reminders` | Kirim pengingat approval yang jatuh tempo sekarang (normalnya otomatis lewat `schedule:work`) |
 | `php artisan letters:backfill-snapshots` | Bekukan snapshot render untuk surat approved lama yang belum punya snapshot |

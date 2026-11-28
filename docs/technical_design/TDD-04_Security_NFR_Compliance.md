@@ -134,7 +134,7 @@
 
 - Jabatan berakun hanya berubah lewat promote/demote/rotate (transaksional, audit).
 - Akun tidak dapat menonaktifkan dirinya; Staf SIDUTama aktif terakhir tidak dapat diturunkan.
-- Petugas pertama dibuat sekali lewat `php artisan staf-sid:first --nik=...` (password sementara dicetak sekali, wajib diganti).
+- Petugas pertama dibuat sekali lewat `php artisan sid:install` (instalasi baru, sekaligus desa dan data acuan) atau `php artisan staf-sid:first --nik=...` (desa yang sudah ada); password sementara dicetak sekali, wajib diganti.
 - Pemulihan darurat bila Staf SIDUTama tidak dapat login: `php artisan staf-sid:recover --username=...` (kata sandi sementara, `must_change_password`, sesi & token dicabut, activity log `staf_sid_recovered`). Jalur lupa sandi tanpa email tidak berlaku untuk akun Staf SIDUTama.
 
 ---
